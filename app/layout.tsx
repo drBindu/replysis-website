@@ -11,6 +11,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://verchor.com'),
+  alternates: { canonical: '/' },
   title: 'Verchor - Master Every Interview',
   description: 'Verchor listens to your interview in real time and streams tailored answers in under 2 seconds, grounded in your resume. Used by 50,000+ candidates to land offers at Google, Meta, Microsoft and more.',
   keywords: ['AI interview assistant', 'interview copilot', 'real-time interview help', 'mock interview AI', 'job interview preparation', 'AI coaching', 'career'],
