@@ -1,0 +1,109 @@
+name: Deploy Frontend to Oracle Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout exact release source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.4.1
+
+      - name: Verify production build
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          fingerprint: ${{ secrets.ORACLE_SSH_FINGERPRINT }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ~/coopilotx/frontend
+            git fetch --no-tags origin ${{ github.sha }}
+            git checkout --detach ${{ github.sha }}
+            mkdir -p ~/coopilotx/assets
+            touch ~/coopilotx/assets/InterviewCopilot.appinstaller
+
+            # Keep the currently-running image as a rollback target before
+            # building the new one.
+            docker tag coopilotx-frontend:latest coopilotx-frontend:previous 2>/dev/null || true
+
+            docker build --no-cache \
+              --build-arg NEXT_PUBLIC_BACKEND_URL=https://coopilotxai.com \
+              --build-arg NEXT_PUBLIC_SPEECHMATICS_RT_HOST=eu.rt.speechmatics.com \
+              -t coopilotx-frontend:latest .
+
+            docker rm -f coopilotx-frontend || true
+            docker run -d \
+              --name coopilotx-frontend \
+              --restart always \
+              -p 127.0.0.1:3000:3000 \
+              --memory=1g \
+              --cpus=1.5 \
+              --pids-limit=200 \
+              --security-opt=no-new-privileges:true \
+              --cap-drop=ALL \
+              --read-only \
+              --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+              -v ~/coopilotx/assets/InterviewCopilot.appinstaller:/app/public/InterviewCopilot.appinstaller:ro \
+              --env-file ~/coopilotx/.env \
+              -e PORT=3000 \
+              coopilotx-frontend:latest
+
+            # Health check: poll the new container for up to 60s. If it never
+            # serves traffic, roll back to the previous image automatically so
+            # a bad push can't take the site down.
+            healthy=false
+            for i in $(seq 1 12); do
+              sleep 5
+              if curl -fsS -o /dev/null http://localhost:3000; then
+                healthy=true
+                break
+              fi
+            done
+
+            if [ "$healthy" = "true" ]; then
+              echo "Deployed successfully — health check passed"
+            else
+              if ! docker image inspect coopilotx-frontend:previous >/dev/null 2>&1; then
+                echo "Health check FAILED and no rollback image exists"
+                exit 1
+              fi
+              echo "Health check FAILED — rolling back to previous image"
+              docker rm -f coopilotx-frontend || true
+              docker run -d \
+                --name coopilotx-frontend \
+                --restart always \
+              -p 127.0.0.1:3000:3000 \
+                --memory=1g \
+                --cpus=1.5 \
+                --pids-limit=200 \
+                --security-opt=no-new-privileges:true \
+                --cap-drop=ALL \
+                --read-only \
+                --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+                -v ~/coopilotx/assets/InterviewCopilot.appinstaller:/app/public/InterviewCopilot.appinstaller:ro \
+                --env-file ~/coopilotx/.env \
+                -e PORT=3000 \
+                coopilotx-frontend:previous
+              echo "Rollback complete"
+              exit 1
+            fi
