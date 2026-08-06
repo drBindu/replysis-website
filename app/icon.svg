@@ -1,0 +1,18 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.4" />
+    </filter>
+  </defs>
+  <rect x="3" y="3" width="94" height="94" rx="26" fill="#0A140F" stroke="#1E4433" stroke-width="1.5" />
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#34E08A" stroke-width="8" filter="url(#g)" opacity="0.7">
+      <path d="M43 87 L24 78 L24 45 Q24 29 40 29 L60 29 Q76 29 76 45 L76 66" />
+      <path d="M33 65 L50 45 L67 63" />
+    </g>
+    <g stroke="#48E895" stroke-width="6.2">
+      <path d="M43 87 L24 78 L24 45 Q24 29 40 29 L60 29 Q76 29 76 45 L76 66" />
+      <path d="M33 65 L50 45 L67 63" />
+    </g>
+  </g>
+</svg>

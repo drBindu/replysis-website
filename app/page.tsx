@@ -168,10 +168,12 @@ export default function Home() {
 
           {/* ── Logo ── */}
           <button onClick={() => router.push("/")}
-            className="flex items-center gap-2.5 flex-shrink-0 group">
+            className="flex items-center gap-2 flex-shrink-0 group">
+            <img src="/verchor-mark.svg" alt="Verchor" width={28} height={28}
+              className="w-7 h-7 group-hover:scale-105 transition-transform duration-200" />
             <span className="text-[15px] font-extrabold tracking-tight text-gray-900">
               Verchor{" "}
-              <span style={{ background: "linear-gradient(135deg, #21924A, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
+              <span style={{ color: "#1C7A3E" }}>AI</span>
             </span>
           </button>
 

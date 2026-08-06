@@ -30,6 +30,13 @@ const FRIENDLY: Record<string, string> = {
   "auth/too-many-requests":    "Too many attempts. Please wait a moment and try again.",
   "auth/invalid-credential":   "Invalid email or password.",
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
+  "auth/popup-blocked":        "Your browser blocked the sign-in popup. Allow popups and try again.",
+  "auth/unauthorized-domain":  "This site isn't authorized for sign-in yet. (Add verchor.com to Firebase Authorized domains.)",
+  "auth/network-request-failed": "Network error. Check your connection and try again.",
+  "auth/operation-not-allowed": "This sign-in method isn't enabled in Firebase.",
+  "auth/invalid-api-key":      "Sign-in isn't configured correctly (invalid API key).",
+  "auth/api-key-not-valid":    "Sign-in isn't configured correctly (invalid API key).",
+  "auth/configuration-not-found": "Sign-in provider isn't configured in Firebase.",
 };
 
 export default function AuthModal({ open, initialMode = "signin", onClose, onSuccess }: Props) {
@@ -57,7 +64,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
       const result = await signInWithPopup(auth, provider);
       if (result.user) await saveUser(result.user);
       onSuccess?.(); onClose();
-    } catch (err: any) { setError(FRIENDLY[err.code] ?? "Something went wrong."); }
+    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
     finally { setLoading(false); }
   };
 
@@ -80,7 +87,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
         if (result.user) await saveUser(result.user);
         onSuccess?.(); onClose();
       }
-    } catch (err: any) { setError(FRIENDLY[err.code] ?? "Something went wrong."); }
+    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
     finally { setLoading(false); }
   };
 
@@ -89,7 +96,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess("Reset link sent! Check your inbox.");
-    } catch (err: any) { setError(FRIENDLY[err.code] ?? "Something went wrong."); }
+    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
     finally { setLoading(false); }
   };
 
