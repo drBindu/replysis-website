@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
+import BrandIcon from "../BrandIcon";
 
 interface Props {
   mounted: boolean;
@@ -466,8 +467,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   <div className="w-3 h-3 rounded-full bg-[#28c840]" />
                 </div>
                 <div className="flex items-center gap-2 ml-2 flex-1 min-w-0">
-                  <div className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center font-black text-[9px] text-white"
-                    style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>CX</div>
+                  <BrandIcon size={22} />
                   <span className="text-[12px] font-semibold text-gray-700">Verchor</span>
                   <span className="text-gray-300 mx-1">·</span>
                   <span className="text-[11px] text-gray-400">Interview Assistant</span>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import AiRobot3D from "../../components/AiRobot3D";
+import BrandIcon from "../../components/BrandIcon";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
@@ -1093,6 +1094,7 @@ export default function MockInterviewPage() {
           height: 58, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <BrandIcon size={30} />
             <span style={{ fontSize: 15, fontWeight: 800, color: T.text, letterSpacing: "-0.02em" }}>Verchor</span>
             <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 7px", borderRadius: 6,
               background: T.accentBg, border: `1px solid ${T.accentBrd}`, color: T.accent,

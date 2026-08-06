@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandIcon from "./BrandIcon";
 
 const NAV = [
   { label: "Features",     href: "/features" },
@@ -14,7 +15,8 @@ export function PageHeader() {
       <div className="max-w-6xl mx-auto px-6 py-0 h-16 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-1 flex-shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Verchor home">
+          <BrandIcon size={32} className="drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
           <span className="text-[15px] font-black text-gray-900 tracking-tight">
             Verchor{" "}
             <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>

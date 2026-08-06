@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../app/firebaseConfig";
 import { initializeUserCredits } from "../app/lib/credits";
+import BrandIcon from "./BrandIcon";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -128,6 +129,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
+                  <BrandIcon size={30} className="drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
                   <span className="text-[14px] font-extrabold text-gray-900">
                     Verchor{" "}
                     <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>

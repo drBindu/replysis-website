@@ -5,6 +5,7 @@ import {
   FaAt, FaEnvelope, FaFacebook, FaGithub, FaInstagram, FaLightbulb,
   FaBuilding, FaLinkedin, FaPaperPlane, FaRegCopyright, FaStar, FaTag, FaTwitter, FaYoutube,
 } from "react-icons/fa";
+import BrandIcon from "./BrandIcon";
 
 export default function Footer({ isDark = true }) {
   const currentYear = new Date().getFullYear();
@@ -82,6 +83,7 @@ export default function Footer({ isDark = true }) {
             className="flex flex-col space-y-4"
           >
             <div className="flex items-center space-x-3">
+              <BrandIcon size={36} className="drop-shadow-[0_6px_16px_rgba(52,224,138,0.22)]" />
               <span className="text-[15px] font-bold tracking-tight">
                 Verchor <span className="text-zinc-600">AI</span>
               </span>

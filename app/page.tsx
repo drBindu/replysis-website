@@ -7,6 +7,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebaseConfig";
 import CreditsBadge from "../components/CreditsBadge";
 import AuthModal from "../components/AuthModal";
+import BrandIcon from "../components/BrandIcon";
 
 import HeroSection from "../components/home/HeroSection";
 import DownloadSection from "../components/home/DownloadSection";
@@ -169,8 +170,8 @@ export default function Home() {
           {/* ── Logo ── */}
           <button onClick={() => router.push("/")}
             className="flex items-center gap-2 flex-shrink-0 group">
-            <img src="/verchor-mark.svg" alt="Verchor" width={28} height={28}
-              className="w-7 h-7 group-hover:scale-105 transition-transform duration-200" />
+            <BrandIcon size={32}
+              className="group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
             <span className="text-[15px] font-extrabold tracking-tight text-gray-900">
               Verchor{" "}
               <span style={{ color: "#1C7A3E" }}>AI</span>

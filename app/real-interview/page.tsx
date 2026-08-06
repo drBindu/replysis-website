@@ -13,6 +13,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import AuthModal from "../../components/AuthModal";
+import BrandIcon from "../../components/BrandIcon";
 import SetupForm from "./_components/SetupForm";
 
 export type InterviewConfig = {
@@ -188,6 +189,7 @@ export default function RealInterviewPage() {
 
               {/* Logo  -  Verchor */}
               <div className="flex items-center gap-3">
+                <BrandIcon size={32} />
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[16px] font-black tracking-tight text-slate-800">Verchor</span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md"
