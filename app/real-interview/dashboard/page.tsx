@@ -59,7 +59,7 @@ export default function DashboardPage() {
 
   if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: C.pageBg }}>
-      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      <Loader2 className="w-8 h-8 text-zinc-800 animate-spin" />
     </div>
   );
 
@@ -82,12 +82,12 @@ export default function DashboardPage() {
             <div className="h-4 w-px bg-slate-300" />
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+                style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                 <BrainCircuit size={14} className="text-white" />
               </div>
               <span className="text-[14px] font-black text-slate-800 tracking-tight">Verchor</span>
-              <span className="text-[10px] font-black text-indigo-500 px-1.5 py-0.5 rounded-md"
-                style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.18)" }}>
+              <span className="text-[10px] font-black text-zinc-800 px-1.5 py-0.5 rounded-md"
+                style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.18)" }}>
                 AI
               </span>
             </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
           <button onClick={() => router.push("/real-interview")}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-black text-white shadow-sm"
-            style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+            style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
             <Plus size={13} /> New Session
           </button>
         </div>
@@ -108,9 +108,9 @@ export default function DashboardPage() {
         {/* ── Stats row ── */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
-            { icon: MessageSquare, label: "Sessions",           value: sessions.length, color: "#4f46e5" },
-            { icon: BarChart2,     label: "Questions Answered", value: totalQuestions,  color: "#7c3aed" },
-            { icon: Calendar,      label: "Minutes Practiced",  value: totalMins,       color: "#059669" },
+            { icon: MessageSquare, label: "Sessions",           value: sessions.length, color: "#1C7A3E" },
+            { icon: BarChart2,     label: "Questions Answered", value: totalQuestions,  color: "#21924A" },
+            { icon: Calendar,      label: "Minutes Practiced",  value: totalMins,       color: "#21924A" },
           ].map(({ icon: Icon, label, value, color }) => (
             <motion.div key={label}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -128,7 +128,7 @@ export default function DashboardPage() {
         {/* ── Session list ── */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-zinc-600 animate-spin" />
             <p className="text-[13px] font-semibold text-slate-400">Loading sessions...</p>
           </div>
 
@@ -143,8 +143,8 @@ export default function DashboardPage() {
               <p className="text-[12px] font-medium text-slate-400 max-w-xs">{loadError}</p>
             </div>
             <button onClick={() => loadSessions()}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold text-indigo-600 transition-all"
-              style={{ border: "1px solid rgba(99,102,241,0.25)", background: "rgba(99,102,241,0.07)" }}>
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-bold text-zinc-900 transition-all"
+              style={{ border: "1px solid rgba(31,138,62,0.25)", background: "rgba(31,138,62,0.07)" }}>
               <RefreshCw size={13} /> Retry
             </button>
           </div>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
             </div>
             <button onClick={() => router.push("/real-interview")}
               className="flex items-center gap-2 px-6 py-3 rounded-xl text-[13px] font-black text-white shadow-sm"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+              style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
               <Plus size={14} /> Start First Session
             </button>
           </div>

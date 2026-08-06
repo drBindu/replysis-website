@@ -34,13 +34,13 @@ export default function PaywallModal({ onClose, creditsRemaining, action, credit
           </button>
 
           <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Zap size={32} className="text-amber-400" />
+            <div className="w-16 h-16 bg-zinc-800/10 border border-zinc-800/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Zap size={32} className="text-zinc-600" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Out of Credits</h2>
             <p className="text-slate-400 text-sm">
               <span className="text-white font-bold">{action}</span> requires{" "}
-              <span className="text-amber-400 font-bold">{creditsNeeded} credits</span>.
+              <span className="text-zinc-600 font-bold">{creditsNeeded} credits</span>.
               You have <span className="text-red-400 font-bold">{creditsRemaining}</span> remaining.
             </p>
             <p className="text-slate-500 text-xs mt-2">Your 100 free credits reset at the start of next month.</p>
@@ -48,34 +48,34 @@ export default function PaywallModal({ onClose, creditsRemaining, action, credit
 
           <div className="space-y-3 mb-6">
             {/* Pro */}
-            <div className="bg-purple-950/30 border border-purple-500/20 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-zinc-950/30 border border-zinc-800/20 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
-                  Pro <Crown size={13} className="text-purple-400" />
-                  <span className="text-purple-400 font-black">$24.99/mo</span>
+                  Pro <Crown size={13} className="text-zinc-600" />
+                  <span className="text-zinc-600 font-black">$24.99/mo</span>
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">5,000 credits/month — ~40 hrs live or 300+ mock sessions.</div>
               </div>
               <button
                 onClick={() => router.push("/pricing")}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition-all"
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-bold transition-all"
               >
                 Upgrade
               </button>
             </div>
 
             {/* Lifetime */}
-            <div className="bg-orange-950/20 border border-orange-500/20 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-zinc-950/20 border border-zinc-800/20 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
-                  Lifetime <Infinity size={13} className="text-orange-400" />
-                  <span className="text-orange-400 font-black">$299 once</span>
+                  Lifetime <Infinity size={13} className="text-zinc-600" />
+                  <span className="text-zinc-600 font-black">$299 once</span>
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">Pay once. All Pro features forever.</div>
               </div>
               <button
                 onClick={() => router.push("/pricing")}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-all"
+                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-bold transition-all"
               >
                 Get it
               </button>

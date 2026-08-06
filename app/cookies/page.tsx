@@ -24,11 +24,11 @@ export default function CookiesPage() {
       <PageHeader />
 
       {/* Hero */}
-      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 50%, #fdf8ff 100%)" }}>
+      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 50%, #ffffff 100%)" }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold text-teal-600 uppercase tracking-widest mb-3">Legal</p>
+          <p className="text-xs font-bold text-zinc-900 uppercase tracking-widest mb-3">Legal</p>
           <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Cookie Policy</h1>
-          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-teal-600 hover:underline">{CONTACT}</a></p>
+          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a></p>
         </div>
       </section>
 
@@ -56,12 +56,12 @@ export default function CookiesPage() {
                 <tbody>
                   {COOKIES.map((c, i) => (
                     <tr key={i} className={`border-b border-gray-50 ${i % 2 === 1 ? "bg-gray-50/50" : ""}`}>
-                      <td className="px-5 py-4 font-mono text-xs text-indigo-600">{c.name}</td>
+                      <td className="px-5 py-4 font-mono text-xs text-zinc-900">{c.name}</td>
                       <td className="px-5 py-4">
                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
                           c.type === "Essential"
-                            ? "bg-indigo-100 text-indigo-700"
-                            : "bg-teal-100 text-teal-700"
+                            ? "bg-zinc-200 text-zinc-900"
+                            : "bg-zinc-200 text-zinc-900"
                         }`}>{c.type}</span>
                       </td>
                       <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">{c.duration}</td>
@@ -75,7 +75,7 @@ export default function CookiesPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">Local storage</h2>
-            <p className="text-sm">In addition to cookies, Verchor uses browser <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to store your resume draft and session preferences locally on your machine. This data never leaves your device unless you explicitly submit it through the app.</p>
+            <p className="text-sm">In addition to cookies, Verchor uses browser <code className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to store your resume draft and session preferences locally on your machine. This data never leaves your device unless you explicitly submit it through the app.</p>
           </div>
 
           <div>
@@ -88,8 +88,8 @@ export default function CookiesPage() {
                 "We do not sell cookie data to any third party.",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span className="mt-0.5 w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   </span>
                   {item}
                 </li>
@@ -109,7 +109,7 @@ export default function CookiesPage() {
               ].map((b, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between">
                   <span className="font-bold text-gray-800 text-sm">{b.browser}</span>
-                  <code className="text-[11px] text-indigo-600 font-mono">{b.setting}</code>
+                  <code className="text-[11px] text-zinc-900 font-mono">{b.setting}</code>
                 </div>
               ))}
             </div>
@@ -120,9 +120,9 @@ export default function CookiesPage() {
             <p className="text-sm">If we start using new cookies we'll update this page and notify you in the app before they're set.</p>
           </div>
 
-          <div className="rounded-xl border border-teal-100 bg-teal-50 p-6">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-100 p-6">
             <h2 className="text-base font-black text-gray-900 mb-2">Questions?</h2>
-            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-teal-600 font-semibold hover:underline">{CONTACT}</a>.</p>
+            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 font-semibold hover:underline">{CONTACT}</a>.</p>
           </div>
 
         </div>

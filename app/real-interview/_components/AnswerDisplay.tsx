@@ -27,7 +27,7 @@ export default function AnswerDisplay({
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
         >
-          <Loader2 size={32} className="text-blue-500" />
+          <Loader2 size={32} className="text-zinc-800" />
         </motion.div>
         <span className="text-[10px] font-black text-slate-600 tracking-[0.4em] uppercase">
           Generating Answer...
@@ -44,7 +44,7 @@ export default function AnswerDisplay({
           animate={{ scale: [1, 1.15, 1] }}
           transition={{ repeat: Infinity, duration: 2 }}
         >
-          <BrainCircuit size={28} className="text-blue-400" />
+          <BrainCircuit size={28} className="text-zinc-600" />
         </motion.div>
         <p className="text-slate-600 text-sm font-mono uppercase tracking-widest">
           Listening...
@@ -111,7 +111,7 @@ export default function AnswerDisplay({
               className="flex gap-3 items-start"
             >
               {/* Bullet dot */}
-              <span className="text-blue-400 text-xl leading-none mt-1 shrink-0">
+              <span className="text-zinc-600 text-xl leading-none mt-1 shrink-0">
                 •
               </span>
               {/* Bullet text */}

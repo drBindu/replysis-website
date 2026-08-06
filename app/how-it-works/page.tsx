@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     n: "01",
-    color: "bg-indigo-600",
-    light: "bg-indigo-50 border-indigo-100",
-    accent: "text-indigo-600",
+    color: "bg-zinc-900",
+    light: "bg-zinc-100 border-zinc-200",
+    accent: "text-zinc-900",
     title: "Upload your resume",
     sub: "Takes 30 seconds. Works for every job you apply to.",
     desc: "Paste your resume text or upload a PDF. Verchor reads every role, project, metric, and skill you've listed. This becomes the context engine behind every answer, so nothing it says will ever sound generic or disconnected from your actual background.",
@@ -25,9 +25,9 @@ const STEPS = [
   },
   {
     n: "02",
-    color: "bg-violet-600",
-    light: "bg-violet-50 border-violet-100",
-    accent: "text-violet-600",
+    color: "bg-zinc-900",
+    light: "bg-zinc-100 border-zinc-200",
+    accent: "text-zinc-900",
     title: "Open Verchor before your interview",
     sub: "Desktop app for real interviews. Browser for practice.",
     desc: "Download the Windows or macOS app for live interviews. It captures audio at the system level, so no browser microphone permission prompts and no chance of the overlay appearing in screen-share. For mock practice, the browser version works perfectly.",
@@ -40,9 +40,9 @@ const STEPS = [
   },
   {
     n: "03",
-    color: "bg-orange-500",
-    light: "bg-orange-50 border-orange-100",
-    accent: "text-orange-600",
+    color: "bg-zinc-800",
+    light: "bg-zinc-100 border-zinc-200",
+    accent: "text-zinc-900",
     title: "Answer every question with confidence",
     sub: "1.8 seconds from question end to answer on screen.",
     desc: "Your interviewer asks a question. Verchor picks it up via your microphone, transcribes it in real time, matches it against your resume context, and streams a tailored answer to your private overlay in under 2 seconds. You read it naturally, in your own words.",
@@ -66,15 +66,15 @@ const FAQS = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "system-ui, sans-serif" }}>
+    <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "system-ui, sans-serif" }}>
       <PageHeader />
 
       {/* Hero */}
-      <section className="py-20 px-6" style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 40%, #fff4ec 80%, #fdf8ff 100%)" }}>
+      <section className="py-20 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 80%, #ffffff 100%)" }}>
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.05]">
             3 steps.<br />
-            <span style={{ background: "linear-gradient(135deg, #6d28d9, #9333ea, #ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               Then you win.
             </span>
           </h1>
@@ -152,11 +152,11 @@ export default function HowItWorksPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/mock-interview"
               className="px-8 py-4 rounded-xl font-black text-white transition-all hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg, #6d28d9, #9333ea)", boxShadow: "0 8px 24px rgba(109,40,217,0.3)" }}>
+              style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45)", boxShadow: "0 8px 24px rgba(31,138,62,0.3)" }}>
               Try mock interview free →
             </Link>
             <Link href="/features"
-              className="px-8 py-4 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 hover:border-violet-300 hover:text-violet-700 transition-all">
+              className="px-8 py-4 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 transition-all">
               See all features
             </Link>
           </div>

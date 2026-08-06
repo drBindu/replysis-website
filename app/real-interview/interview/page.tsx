@@ -63,8 +63,8 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="h-14 px-5 flex items-center justify-between shrink-0"
               style={{ borderBottom: `1px solid ${C.border}` }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                  <Settings size={13} className="text-indigo-500" />
+                <div className="w-7 h-7 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center">
+                  <Settings size={13} className="text-zinc-800" />
                 </div>
                 <span className="text-[14px] font-bold text-slate-700">Session Settings</span>
               </div>
@@ -81,7 +81,7 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
               {/* Model */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Cpu size={12} className="text-indigo-500" />
+                  <Cpu size={12} className="text-zinc-800" />
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">AI Model</p>
                 </div>
                 <div className="space-y-2">
@@ -89,19 +89,19 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                     <button key={m.id} onClick={() => set("model", m.id)}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
                         s.model === m.id
-                          ? "border-indigo-200 bg-indigo-50"
+                          ? "border-zinc-300 bg-zinc-100"
                           : "hover:border-slate-300"
                       }`}
                       style={{ borderColor: s.model === m.id ? undefined : C.border, background: s.model === m.id ? undefined : C.panelBg }}>
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-2 h-2 rounded-full ${s.model === m.id ? "bg-indigo-500" : "bg-slate-300"}`} />
-                        <span className={`text-[13px] font-bold ${s.model === m.id ? "text-indigo-700" : "text-slate-600"}`}>{m.label}</span>
+                        <div className={`w-2 h-2 rounded-full ${s.model === m.id ? "bg-zinc-800" : "bg-slate-300"}`} />
+                        <span className={`text-[13px] font-bold ${s.model === m.id ? "text-zinc-900" : "text-slate-600"}`}>{m.label}</span>
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-wide ${
-                        m.color === "blue"   ? "text-blue-600 bg-blue-50 border-blue-100"         :
-                        m.color === "purple" ? "text-purple-600 bg-purple-50 border-purple-100"   :
-                        m.color === "green"  ? "text-emerald-600 bg-emerald-50 border-emerald-100":
-                        m.color === "yellow" ? "text-amber-600 bg-amber-50 border-amber-100"      :
+                        m.color === "blue"   ? "text-zinc-900 bg-zinc-100 border-zinc-200"         :
+                        m.color === "purple" ? "text-zinc-900 bg-zinc-100 border-zinc-200"   :
+                        m.color === "green"  ? "text-zinc-900 bg-zinc-100 border-zinc-200":
+                        m.color === "yellow" ? "text-zinc-900 bg-zinc-100 border-zinc-200"      :
                                                "text-red-600 bg-red-50 border-red-100"
                       }`}>{m.tag}</span>
                     </button>
@@ -112,17 +112,17 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
               {/* STT */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Mic size={12} className="text-emerald-500" />
+                  <Mic size={12} className="text-zinc-800" />
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Speech Recognition</p>
                 </div>
                 <div className="mb-4 p-4 rounded-xl border" style={{ background: C.cardBg, borderColor: C.border }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[13px] text-slate-700 font-bold">Transcription Delay</span>
-                    <span className="text-[13px] font-black text-indigo-600 font-mono">{s.maxDelay}s</span>
+                    <span className="text-[13px] font-black text-zinc-900 font-mono">{s.maxDelay}s</span>
                   </div>
                   <input type="range" min={0.7} max={2.0} step={0.1}
                     value={s.maxDelay} onChange={e => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) set("maxDelay", v); }}
-                    className="w-full accent-indigo-500 cursor-pointer h-1.5" />
+                    className="w-full accent-zinc-800 cursor-pointer h-1.5" />
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-slate-400">Faster (0.7s)</span>
                     <span className="text-[10px] text-slate-400">Accurate (2.0s)</span>
@@ -135,7 +135,7 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                       <button key={op} onClick={() => set("operatingPoint", op)}
                         className={`py-2.5 rounded-xl text-[12px] font-bold uppercase tracking-wider border transition-all ${
                           s.operatingPoint === op
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            ? "bg-zinc-100 border-zinc-300 text-zinc-900"
                             : "text-slate-500 hover:border-slate-300"
                         }`}
                         style={{ borderColor: s.operatingPoint !== op ? C.border : undefined,
@@ -150,17 +150,17 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
               {/* Temperature */}
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Activity size={12} className="text-violet-500" />
+                  <Activity size={12} className="text-zinc-800" />
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Response Style</p>
                 </div>
                 <div className="p-4 rounded-xl border" style={{ background: C.cardBg, borderColor: C.border }}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[13px] text-slate-700 font-bold">Temperature</span>
-                    <span className="text-[13px] font-black text-violet-600 font-mono">{s.temperature}</span>
+                    <span className="text-[13px] font-black text-zinc-900 font-mono">{s.temperature}</span>
                   </div>
                   <input type="range" min={0.0} max={1.0} step={0.1}
                     value={s.temperature} onChange={e => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) set("temperature", v); }}
-                    className="w-full accent-violet-500 cursor-pointer h-1.5" />
+                    className="w-full accent-zinc-800 cursor-pointer h-1.5" />
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-slate-400">Precise (0.0)</span>
                     <span className="text-[10px] text-slate-400">Creative (1.0)</span>
@@ -172,11 +172,11 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="p-4 shrink-0" style={{ borderTop: `1px solid ${C.border}` }}>
               <button onClick={handleSave}
                 className={`w-full py-3 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 transition-all ${
-                  saved ? "border" : "text-white shadow-lg shadow-indigo-200"
+                  saved ? "border" : "text-white shadow-lg shadow-zinc-300"
                 }`}
                 style={saved
-                  ? { background: "rgba(16,185,129,0.08)", borderColor: "#6ee7b7", color: "#059669" }
-                  : { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+                  ? { background: "rgba(33,146,74,0.08)", borderColor: "#CB7748", color: "#21924A" }
+                  : { background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                 {saved ? <><Check size={15} /> Saved!</> : "Apply Settings"}
               </button>
             </div>
@@ -199,14 +199,14 @@ function AnswerRenderer({
       <div className="relative">
         <motion.div animate={{ scale: [1, 2.2], opacity: [0.15, 0] }}
           transition={{ repeat: Infinity, duration: 1.8 }}
-          className="absolute inset-0 rounded-full bg-indigo-300" />
+          className="absolute inset-0 rounded-full bg-zinc-400" />
         <motion.div animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
           className="absolute inset-[-6px] rounded-full"
-          style={{ background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(99,102,241,0.7) 80%, transparent 100%)" }}
+          style={{ background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(31,138,62,0.7) 80%, transparent 100%)" }}
         />
-        <div className="w-14 h-14 rounded-full bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center relative z-10">
-          <BrainCircuit size={22} className="text-indigo-500" />
+        <div className="w-14 h-14 rounded-full bg-zinc-100 border-2 border-zinc-300 flex items-center justify-center relative z-10">
+          <BrainCircuit size={22} className="text-zinc-800" />
         </div>
       </div>
       <div className="text-center">
@@ -216,7 +216,7 @@ function AnswerRenderer({
       <div className="flex gap-1.5">
         {[0, 1, 2, 3].map(i => (
           <motion.div key={i}
-            className="w-2 h-2 rounded-full bg-indigo-300"
+            className="w-2 h-2 rounded-full bg-zinc-400"
             animate={{ opacity: [0.25, 1, 0.25], scale: [0.8, 1.1, 0.8] }}
             transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
           />
@@ -230,16 +230,16 @@ function AnswerRenderer({
       <div className="relative">
         <motion.div animate={{ scale: [1, 1.8], opacity: [0.18, 0] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
-          className="absolute inset-0 rounded-full bg-emerald-300" />
+          className="absolute inset-0 rounded-full bg-zinc-400" />
         <motion.div animate={{ scale: [1, 1.7], opacity: [0.1, 0] }}
           transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }}
-          className="absolute inset-0 rounded-full bg-emerald-300" />
+          className="absolute inset-0 rounded-full bg-zinc-400" />
         <motion.div
           animate={{ scale: [1, 1.03, 1] }}
           transition={{ repeat: Infinity, duration: 1.8 }}
-          className="w-14 h-14 rounded-full bg-emerald-50 border-2 border-emerald-300 flex items-center justify-center relative z-10"
+          className="w-14 h-14 rounded-full bg-zinc-100 border-2 border-zinc-400 flex items-center justify-center relative z-10"
         >
-          <Mic size={22} className="text-emerald-500" />
+          <Mic size={22} className="text-zinc-800" />
         </motion.div>
       </div>
       <div className="text-center">
@@ -276,9 +276,9 @@ function AnswerRenderer({
       className="flex items-center justify-center min-h-[220px] px-8 py-10">
       <div className="text-center max-w-2xl">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-6"
-          style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)" }}>
-          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Suggested Response</span>
+          style={{ background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)" }}>
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+          <span className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">Suggested Response</span>
         </div>
         <p className="text-[24px] font-black text-slate-900 leading-[1.6] tracking-tight">
           {answer}
@@ -302,8 +302,8 @@ function AnswerRenderer({
             onMouseEnter={e => (e.currentTarget.style.borderColor = "#a5b4fc")}
             onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
           >
-            <div className="w-6 h-6 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0 mt-0.5">
-              <CheckCircle2 size={13} className="text-indigo-600" />
+            <div className="w-6 h-6 rounded-full bg-zinc-200 border border-zinc-300 flex items-center justify-center shrink-0 mt-0.5">
+              <CheckCircle2 size={13} className="text-zinc-900" />
             </div>
             <p className="text-[15px] font-bold text-slate-900 leading-[1.75]">{line.text}</p>
           </motion.div>
@@ -478,9 +478,9 @@ export default function InterviewPage() {
 
   // State pill config
   const stateConfig = isGenerating
-    ? { label: "Thinking...",  bg: "rgba(99,102,241,0.09)",  border: "rgba(99,102,241,0.22)",  text: "#4338ca",  dotClass: "bg-indigo-400",  spin: true  }
+    ? { label: "Thinking...",  bg: "rgba(31,138,62,0.09)",  border: "rgba(31,138,62,0.22)",  text: "#1C7A3E",  dotClass: "bg-zinc-600",  spin: true  }
     : isRecording
-    ? { label: "Listening",    bg: "rgba(16,185,129,0.09)",  border: "rgba(16,185,129,0.25)",  text: "#059669",  dotClass: "bg-emerald-500", spin: false }
+    ? { label: "Listening",    bg: "rgba(33,146,74,0.09)",  border: "rgba(33,146,74,0.25)",  text: "#21924A",  dotClass: "bg-zinc-800", spin: false }
     : { label: "Ready",        bg: "rgba(148,163,184,0.15)", border: "rgba(148,163,184,0.3)",  text: "#64748b",  dotClass: "bg-slate-400",   spin: false };
 
   return (
@@ -505,12 +505,12 @@ export default function InterviewPage() {
           {/* Brand */}
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+              style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
               <BrainCircuit size={14} className="text-white" />
             </div>
             <span className="text-[14px] font-black text-slate-800 tracking-tight">Verchor</span>
-            <span className="text-[10px] font-bold text-indigo-500 px-1.5 py-0.5 rounded-md"
-              style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.18)" }}>
+            <span className="text-[10px] font-bold text-zinc-800 px-1.5 py-0.5 rounded-md"
+              style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.18)" }}>
               AI
             </span>
           </div>
@@ -561,7 +561,7 @@ export default function InterviewPage() {
                 exit={{ opacity: 0, scale: 0.85 }}
                 transition={{ duration: 0.2 }}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-black"
-                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#059669" }}
+                style={{ background: "rgba(33,146,74,0.1)", border: "1px solid rgba(33,146,74,0.25)", color: "#21924A" }}
               >
                 <Check size={10} />
                 Saved
@@ -571,9 +571,9 @@ export default function InterviewPage() {
 
           {/* Model */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
-            style={{ border: "1px solid rgba(99,102,241,0.2)", background: "rgba(99,102,241,0.07)" }}>
-            <Zap size={10} className="text-indigo-500" />
-            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+            style={{ border: "1px solid rgba(31,138,62,0.2)", background: "rgba(31,138,62,0.07)" }}>
+            <Zap size={10} className="text-zinc-800" />
+            <span className="text-[10px] font-bold text-zinc-900 uppercase tracking-wider">
               {activeModel.label}
             </span>
           </div>
@@ -582,7 +582,7 @@ export default function InterviewPage() {
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
               !answer ? "opacity-30 cursor-not-allowed" : ""
             }`}
-            style={{ border: `1px solid ${copied ? "#6ee7b7" : C.border}`, background: copied ? "rgba(16,185,129,0.08)" : C.panelBg, color: copied ? "#059669" : "#94a3b8" }}>
+            style={{ border: `1px solid ${copied ? "#CB7748" : C.border}`, background: copied ? "rgba(33,146,74,0.08)" : C.panelBg, color: copied ? "#21924A" : "#94a3b8" }}>
             {copied ? <Check size={13} /> : <Copy size={13} />}
           </button>
 
@@ -612,9 +612,9 @@ export default function InterviewPage() {
         <div className="max-w-5xl mx-auto">
           <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border transition-all`}
             style={{
-              borderColor: isRecording ? "rgba(16,185,129,0.3)" : C.border,
-              background: isRecording ? "rgba(16,185,129,0.06)" : C.cardBg,
-              boxShadow: isRecording ? "0 0 0 3px rgba(16,185,129,0.1), 0 1px 6px rgba(16,185,129,0.08)" : "none",
+              borderColor: isRecording ? "rgba(33,146,74,0.3)" : C.border,
+              background: isRecording ? "rgba(33,146,74,0.06)" : C.cardBg,
+              boxShadow: isRecording ? "0 0 0 3px rgba(33,146,74,0.1), 0 1px 6px rgba(33,146,74,0.08)" : "none",
             }}>
 
             {/* Avatar with rotating ring when mic is active */}
@@ -626,20 +626,20 @@ export default function InterviewPage() {
                   className="absolute rounded-full"
                   style={{
                     inset: -3,
-                    background: "conic-gradient(from 0deg, transparent 0%, transparent 50%, rgba(16,185,129,0.85) 72%, transparent 100%)",
+                    background: "conic-gradient(from 0deg, transparent 0%, transparent 50%, rgba(33,146,74,0.85) 72%, transparent 100%)",
                   }}
                 />
               )}
               <div className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all absolute inset-0 z-10 ${
-                isRecording ? "bg-emerald-100 border-emerald-200" : "border-slate-200"
+                isRecording ? "bg-zinc-200 border-zinc-300" : "border-slate-200"
               }`} style={{ background: isRecording ? undefined : C.panelBg }}>
-                <User size={15} className={isRecording ? "text-emerald-600" : "text-slate-400"} />
+                <User size={15} className={isRecording ? "text-zinc-900" : "text-slate-400"} />
               </div>
             </div>
 
             <div className="flex-1 min-w-0">
               <p className={`text-[10px] font-black uppercase tracking-widest mb-1 transition-colors ${
-                isRecording ? "text-emerald-600" : "text-slate-400"
+                isRecording ? "text-zinc-900" : "text-slate-400"
               }`}>Interviewer</p>
 
               <p className="text-[14px] font-semibold text-slate-900 leading-relaxed">
@@ -658,7 +658,7 @@ export default function InterviewPage() {
                   <motion.span
                     animate={{ opacity: [1, 0.4, 1] }}
                     transition={{ repeat: Infinity, duration: 0.85 }}
-                    className="text-indigo-500 font-bold">
+                    className="text-zinc-800 font-bold">
                     {transcript ? " " : ""}{partial}
                   </motion.span>
                 )}
@@ -702,8 +702,8 @@ export default function InterviewPage() {
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Session</p>
             <div className="space-y-1">
               {[
-                { label: "Questions", value: qCount,                      color: "#4f46e5" },
-                { label: "Answers",   value: aCount,                      color: "#7c3aed" },
+                { label: "Questions", value: qCount,                      color: "#1C7A3E" },
+                { label: "Answers",   value: aCount,                      color: "#21924A" },
                 { label: "Duration",  value: formatDuration(sessionSecs), color: "#475569" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex items-center justify-between py-2.5 border-b"
@@ -717,21 +717,21 @@ export default function InterviewPage() {
 
           {/* Progress */}
           <div className="p-4 rounded-xl border"
-            style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.07), rgba(124,58,237,0.07))", borderColor: "rgba(99,102,241,0.18)" }}>
+            style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.07), rgba(31,138,62,0.07))", borderColor: "rgba(31,138,62,0.18)" }}>
             <div className="flex justify-between mb-2.5">
-              <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">Progress</p>
-              <p className="text-[11px] font-mono text-indigo-500 font-black">{qCount} {qCount === 1 ? "Q" : "Qs"}</p>
+              <p className="text-[11px] font-black text-zinc-900 uppercase tracking-widest">Progress</p>
+              <p className="text-[11px] font-mono text-zinc-800 font-black">{qCount} {qCount === 1 ? "Q" : "Qs"}</p>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: C.cardBg, border: `1px solid ${C.border}` }}>
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed)" }}
+                style={{ background: "linear-gradient(90deg, #1C7A3E, #21924A)" }}
                 animate={{ width: `${Math.min(qCount * 10, 100)}%` }}
                 transition={{ duration: 0.5 }}
               />
             </div>
             {qCount >= 10 && (
-              <p className="text-[10px] text-indigo-500 mt-2 font-bold text-center">Great session! 🎉</p>
+              <p className="text-[10px] text-zinc-800 mt-2 font-bold text-center">Great session! 🎉</p>
             )}
           </div>
 
@@ -769,7 +769,7 @@ export default function InterviewPage() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all ${
                   activeTab === id ? "text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
-                style={activeTab === id ? { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" } : {}}>
+                style={activeTab === id ? { background: "linear-gradient(135deg, #1C7A3E, #21924A)" } : {}}>
                 <Icon size={13} />
                 {label}
               </button>
@@ -787,9 +787,9 @@ export default function InterviewPage() {
                 <button onClick={copyAnswer}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold border transition-all`}
                   style={{
-                    borderColor: copied ? "#6ee7b7" : C.border,
-                    background: copied ? "rgba(16,185,129,0.08)" : C.panelBg,
-                    color: copied ? "#059669" : "#94a3b8",
+                    borderColor: copied ? "#CB7748" : C.border,
+                    background: copied ? "rgba(33,146,74,0.08)" : C.panelBg,
+                    color: copied ? "#21924A" : "#94a3b8",
                   }}>
                   {copied ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy</>}
                 </button>
@@ -821,11 +821,11 @@ export default function InterviewPage() {
                         turn.role === "interviewer" ? "rounded-tl-sm" : "text-white rounded-tr-sm"
                       }`}
                         style={turn.role === "candidate"
-                          ? { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }
+                          ? { background: "linear-gradient(135deg, #1C7A3E, #21924A)" }
                           : { background: C.cardBg, border: `1px solid ${C.border}`, color: "#1e293b" }
                         }>
                         <p className={`text-[10px] font-black uppercase tracking-widest mb-1.5 ${
-                          turn.role === "interviewer" ? "text-slate-400" : "text-indigo-200"
+                          turn.role === "interviewer" ? "text-slate-400" : "text-zinc-300"
                         }`}>
                           {turn.role === "interviewer" ? "Interviewer" : "You"}
                         </p>
@@ -858,13 +858,13 @@ export default function InterviewPage() {
             </div>
           ) : resumePreview.type === "binary" ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 rounded-xl border p-4"
-              style={{ background: "rgba(16,185,129,0.06)", borderColor: "rgba(16,185,129,0.2)" }}>
+              style={{ background: "rgba(33,146,74,0.06)", borderColor: "rgba(33,146,74,0.2)" }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                <CheckCircle2 size={18} className="text-emerald-600" />
+                style={{ background: "rgba(33,146,74,0.1)", border: "1px solid rgba(33,146,74,0.25)" }}>
+                <CheckCircle2 size={18} className="text-zinc-900" />
               </div>
-              <p className="text-[12px] text-emerald-700 text-center font-black">Resume loaded ✓</p>
-              <p className="text-[10px] text-emerald-600/70 text-center leading-relaxed font-medium">
+              <p className="text-[12px] text-zinc-900 text-center font-black">Resume loaded ✓</p>
+              <p className="text-[10px] text-zinc-900/70 text-center leading-relaxed font-medium">
                 Full context active
               </p>
             </div>
@@ -904,7 +904,7 @@ export default function InterviewPage() {
                   : micStatus.toLowerCase().includes("connect") ||
                     micStatus.toLowerCase().includes("token") ||
                     micStatus.toLowerCase().includes("retry")
-                  ? "text-amber-500"
+                  ? "text-zinc-800"
                   : "text-slate-400"
               }`}>{micStatus}</p>
             )}
@@ -968,8 +968,8 @@ export default function InterviewPage() {
                   background: "linear-gradient(135deg, #ef4444, #dc2626)",
                   boxShadow: "0 8px 28px rgba(239,68,68,0.4), 0 2px 8px rgba(239,68,68,0.2)",
                 } : {
-                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                  boxShadow: "0 8px 25px rgba(79,70,229,0.3), 0 2px 8px rgba(79,70,229,0.15)",
+                  background: "linear-gradient(135deg, #1C7A3E, #21924A)",
+                  boxShadow: "0 8px 25px rgba(31,138,62,0.3), 0 2px 8px rgba(31,138,62,0.15)",
                 }}
               >
                 {isRecording && (
@@ -993,9 +993,9 @@ export default function InterviewPage() {
               <button onClick={copyAnswer}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-bold transition-all shadow-sm"
                 style={{
-                  border: copied ? "1px solid #6ee7b7" : `1px solid ${C.borderXl}`,
-                  background: copied ? "rgba(16,185,129,0.08)" : C.panelBg,
-                  color: copied ? "#059669" : "#64748b",
+                  border: copied ? "1px solid #CB7748" : `1px solid ${C.borderXl}`,
+                  background: copied ? "rgba(33,146,74,0.08)" : C.panelBg,
+                  color: copied ? "#21924A" : "#64748b",
                 }}>
                 {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy</>}
               </button>

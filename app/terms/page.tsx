@@ -16,11 +16,11 @@ export default function TermsPage() {
       <PageHeader />
 
       {/* Hero */}
-      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 50%, #fdf8ff 100%)" }}>
+      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 50%, #ffffff 100%)" }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold text-violet-600 uppercase tracking-widest mb-3">Legal</p>
+          <p className="text-xs font-bold text-zinc-900 uppercase tracking-widest mb-3">Legal</p>
           <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Terms of Service</h1>
-          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-violet-600 hover:underline">{CONTACT}</a></p>
+          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a></p>
         </div>
       </section>
 
@@ -44,7 +44,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">3. Your account</h2>
-            <p className="text-sm">You are responsible for keeping your credentials secure and for all activity under your account. Contact <a href={`mailto:${CONTACT}`} className="text-violet-600 hover:underline">{CONTACT}</a> immediately if you suspect unauthorised access.</p>
+            <p className="text-sm">You are responsible for keeping your credentials secure and for all activity under your account. Contact <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a> immediately if you suspect unauthorised access.</p>
           </div>
 
           <div>
@@ -60,8 +60,8 @@ export default function TermsPage() {
                 "Use automated scripts or bots to interact with the Service",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  <span className="mt-0.5 w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </span>
                   {item}
                 </li>
@@ -122,9 +122,9 @@ export default function TermsPage() {
             <p className="text-sm">These Terms are governed by applicable laws. Disputes will be resolved through good-faith negotiation first. If that fails, through binding arbitration.</p>
           </div>
 
-          <div className="rounded-xl border border-violet-100 bg-violet-50 p-6">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-100 p-6">
             <h2 className="text-base font-black text-gray-900 mb-2">Questions about these Terms?</h2>
-            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-violet-600 font-semibold hover:underline">{CONTACT}</a>.</p>
+            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 font-semibold hover:underline">{CONTACT}</a>.</p>
           </div>
 
         </div>

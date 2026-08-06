@@ -39,18 +39,18 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
 
         <FadeUp delay={0.1}>
           <div className="relative rounded-3xl overflow-hidden bg-white border-2 border-gray-100 shadow-xl p-12 text-center">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-pink-500" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-zinc-800 via-zinc-800 to-zinc-800" />
 
             {/* OS-specific hero block */}
             {mounted && detectedOS === "win" && (
               <div className="mb-8">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-blue-600 shadow-2xl mb-5">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-zinc-900 shadow-2xl mb-5">
                   <WinIcon className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2">Verchor for Windows</h3>
                 <p className="text-gray-500 mb-7">MSIX installer · Works on Windows 10 and 11 · Auto-updates</p>
                 <button onClick={() => onDownload("win")}
-                  className="inline-flex items-center gap-3 px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-[0_8px_40px_rgba(37,99,235,0.4)] hover:shadow-[0_12px_48px_rgba(37,99,235,0.55)] transition-all active:scale-[0.97]">
+                  className="inline-flex items-center gap-3 px-10 py-5 bg-zinc-900 hover:bg-zinc-900 text-white font-black text-lg rounded-2xl shadow-[0_8px_40px_rgba(37,99,235,0.4)] hover:shadow-[0_12px_48px_rgba(37,99,235,0.55)] transition-all active:scale-[0.97]">
                   <WinIcon className="w-6 h-6" /> Download for Windows, Free
                 </button>
               </div>
@@ -83,7 +83,7 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
                   animate={badgesInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.09, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                   className="flex items-center gap-1.5 text-gray-500">
-                  <span className="text-emerald-500 font-bold">✓</span> {t}
+                  <span className="text-zinc-800 font-bold">✓</span> {t}
                 </motion.span>
               ))}
             </div>

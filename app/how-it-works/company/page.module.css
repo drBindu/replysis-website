@@ -3,7 +3,7 @@
   --surface: rgba(16, 20, 34, 0.72);
   --line: rgba(218, 228, 255, 0.12);
   --muted: #a7aec2;
-  --bright: #f4f6ff;
+  --bright: #fafafa;
   position: relative;
   min-height: 100vh;
   overflow: hidden;
@@ -198,7 +198,7 @@
 
 .primaryButton {
   color: #05060c;
-  background: linear-gradient(115deg, #eef4ff, #afc9ff 58%, #b6a2ff);
+  background: linear-gradient(115deg, #f4f4f5, #afc9ff 58%, #b6a2ff);
   box-shadow: 0 12px 34px rgba(103, 129, 255, 0.25), inset 0 1px rgba(255, 255, 255, 0.8);
 }
 
@@ -355,7 +355,7 @@
 
 .storyCopyItem h2 {
   margin: 0;
-  color: #f4f6ff;
+  color: #fafafa;
   font-size: clamp(2.9rem, 5.15vw, 5.1rem);
   font-weight: 620;
   letter-spacing: -0.075em;
@@ -724,14 +724,14 @@
   --muted: #57606a;
   --bright: #1f2328;
   background:
-    radial-gradient(circle at 75% 4%, rgba(31, 136, 61, 0.1), transparent 26rem),
+    radial-gradient(circle at 75% 4%, rgba(31,138,62, 0.1), transparent 26rem),
     radial-gradient(circle at 8% 40%, rgba(31, 35, 40, 0.045), transparent 30rem),
     var(--canvas);
 }
 
 .noise { opacity: 0.035; }
 
-.ambientOne { background: #2da44e; opacity: 0.07; }
+.ambientOne { background: #2E8B45; opacity: 0.07; }
 .ambientTwo { background: #8c959f; opacity: 0.07; }
 
 .navLinks a,
@@ -743,7 +743,7 @@
 
 .productLink,
 .productCta {
-  color: #1f6f37;
+  color: #21924A;
 }
 
 .eyebrow,
@@ -754,13 +754,13 @@
 }
 
 .statusDot {
-  background: #1f883d;
-  box-shadow: 0 0 0 5px rgba(31, 136, 61, 0.1), 0 0 20px rgba(31, 136, 61, 0.2);
+  background: #21924A;
+  box-shadow: 0 0 0 5px rgba(31,138,62, 0.1), 0 0 20px rgba(31,138,62, 0.2);
 }
 
 .hero h1 span,
 .storyCopyItem em {
-  background: linear-gradient(110deg, #1f883d 10%, #2da44e 55%, #116329 100%);
+  background: linear-gradient(110deg, #21924A 10%, #2E8B45 55%, #1C7A3E 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -768,13 +768,13 @@
 
 .primaryButton {
   color: #ffffff;
-  background: #1f883d;
-  box-shadow: 0 10px 24px rgba(31, 136, 61, 0.18), inset 0 1px rgba(255, 255, 255, 0.2);
+  background: #21924A;
+  box-shadow: 0 10px 24px rgba(31,138,62, 0.18), inset 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .primaryButton:hover {
   background: #1a7f37;
-  box-shadow: 0 14px 30px rgba(31, 136, 61, 0.26), inset 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 30px rgba(31,138,62, 0.26), inset 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .secondaryButton {
@@ -788,7 +788,7 @@
   background: #f6f8fa;
 }
 
-.heroNotes svg { color: #1f883d; }
+.heroNotes svg { color: #21924A; }
 
 .visualColumn,
 .storyVisual,
@@ -817,7 +817,7 @@
 
 .scrollSticky {
   background:
-    radial-gradient(circle at 72% 54%, rgba(31, 136, 61, 0.1), transparent 31rem),
+    radial-gradient(circle at 72% 54%, rgba(31,138,62, 0.1), transparent 31rem),
     linear-gradient(118deg, #ffffff 0%, #f6f8fa 56%, #ffffff 100%);
 }
 
@@ -828,7 +828,7 @@
     linear-gradient(90deg, rgba(31, 35, 40, 0.065) 1px, transparent 1px);
 }
 
-.storyProgress { background: linear-gradient(90deg, #1f883d, #3fb950); box-shadow: 0 0 12px rgba(31, 136, 61, 0.24); }
+.storyProgress { background: linear-gradient(90deg, #21924A, #A04E2C); box-shadow: 0 0 12px rgba(31,138,62, 0.24); }
 
 .productCard {
   border-color: #d0d7de;
@@ -837,16 +837,16 @@
 }
 
 .productGlow {
-  background: radial-gradient(circle, rgba(31, 136, 61, 0.15), transparent 63%);
+  background: radial-gradient(circle, rgba(31,138,62, 0.15), transparent 63%);
 }
 
 .productBadge {
-  border-color: rgba(31, 136, 61, 0.24);
-  color: #1f6f37;
-  background: #dafbe1;
+  border-color: rgba(31,138,62, 0.24);
+  color: #21924A;
+  background: #f4f4f5;
 }
 
-.productCta:hover { color: #116329; }
+.productCta:hover { color: #1C7A3E; }
 
 .productGrid {
   background-image:
@@ -860,10 +860,10 @@
   box-shadow: 0 30px 64px rgba(31, 35, 40, 0.16), inset 0 1px #ffffff;
 }
 
-.productPanel::before { background: linear-gradient(128deg, rgba(255, 255, 255, 0.94), transparent 32%, transparent 72%, rgba(31, 136, 61, 0.1)); }
+.productPanel::before { background: linear-gradient(128deg, rgba(255, 255, 255, 0.94), transparent 32%, transparent 72%, rgba(31,138,62, 0.1)); }
 .panelEyebrow { color: #57606a; }
 .productPanel strong { color: #1f2328; }
-.panelBars i { background: linear-gradient(to top, #1f883d, #3fb950); box-shadow: 0 0 12px rgba(31, 136, 61, 0.22); }
+.panelBars i { background: linear-gradient(to top, #21924A, #A04E2C); box-shadow: 0 0 12px rgba(31,138,62, 0.22); }
 
 .principleCard {
   border-color: #d0d7de;
@@ -877,20 +877,20 @@
 }
 
 .principleIcon {
-  border-color: rgba(31, 136, 61, 0.23);
-  color: #1f883d;
-  background: #dafbe1;
+  border-color: rgba(31,138,62, 0.23);
+  color: #21924A;
+  background: #f4f4f5;
 }
 
 .principleDepth {
-  border-color: rgba(31, 136, 61, 0.24);
+  border-color: rgba(31,138,62, 0.24);
   background: #f6f8fa;
   box-shadow: 0 20px 32px rgba(31, 35, 40, 0.08);
 }
 
 .navLinks a:hover,
 .footerLinks a:hover,
-.productLink:hover { color: #1f883d; }
+.productLink:hover { color: #21924A; }
 
 .productSection,
 .principlesSection,
@@ -920,9 +920,9 @@
 .productBackdrop {
   inset: 26px -80px -90px 42%;
   overflow: hidden;
-  border: 1px solid rgba(31, 136, 61, 0.13);
+  border: 1px solid rgba(31,138,62, 0.13);
   border-radius: 48px;
-  background: radial-gradient(circle at 70% 30%, rgba(31, 136, 61, 0.09), transparent 46%), rgba(246, 248, 250, 0.74);
+  background: radial-gradient(circle at 70% 30%, rgba(31,138,62, 0.09), transparent 46%), rgba(246, 248, 250, 0.74);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.92);
 }
 
@@ -945,9 +945,9 @@
   left: 50%;
   width: 70%;
   height: 42%;
-  border: 1px solid rgba(31, 136, 61, 0.24);
+  border: 1px solid rgba(31,138,62, 0.24);
   border-radius: 50%;
-  box-shadow: 0 0 48px rgba(31, 136, 61, 0.08);
+  box-shadow: 0 0 48px rgba(31,138,62, 0.08);
   translate: -50% -50%;
 }
 
@@ -959,8 +959,8 @@
   left: 3%;
   width: 54%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(31, 136, 61, 0.7), transparent);
-  box-shadow: 0 0 16px rgba(31, 136, 61, 0.28);
+  background: linear-gradient(90deg, transparent, rgba(31,138,62, 0.7), transparent);
+  box-shadow: 0 0 16px rgba(31,138,62, 0.28);
 }
 
 .productBackdropNode,
@@ -971,8 +971,8 @@
   aspect-ratio: 1;
   border: 3px solid #ffffff;
   border-radius: 50%;
-  background: #2da44e;
-  box-shadow: 0 0 0 5px rgba(31, 136, 61, 0.09), 0 0 20px rgba(31, 136, 61, 0.25);
+  background: #2E8B45;
+  box-shadow: 0 0 0 5px rgba(31,138,62, 0.09), 0 0 20px rgba(31,138,62, 0.25);
 }
 
 .productBackdropNode {
@@ -985,7 +985,7 @@
   overflow: hidden;
   border: 1px solid rgba(31, 35, 40, 0.075);
   border-radius: 999px;
-  background: radial-gradient(circle at 48% 46%, rgba(31, 136, 61, 0.075), transparent 50%);
+  background: radial-gradient(circle at 48% 46%, rgba(31,138,62, 0.075), transparent 50%);
 }
 
 .principlesBackdropGrid {

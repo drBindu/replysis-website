@@ -27,30 +27,30 @@ const PLAN_META: Record<PlanKey, {
 }> = {
   free: {
     label: "Starter",
-    pillClass: "border border-gray-200 bg-white text-gray-700 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50/60 shadow-sm",
+    pillClass: "border border-gray-200 bg-white text-gray-700 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-100/60 shadow-sm",
     icon: (
       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
-    dropdownAccent: "#7c3aed",
-    barColor: "linear-gradient(90deg, #7c3aed, #a855f7)",
+    dropdownAccent: "#21924A",
+    barColor: "linear-gradient(90deg, #21924A, #a855f7)",
   },
   pro: {
     label: "Pro",
     pillClass: "text-white border-transparent shadow-md",
-    pillStyle: { background: "linear-gradient(135deg, #5b21b6, #ea580c)", boxShadow: "0 2px 10px rgba(91,33,182,0.32)" },
+    pillStyle: { background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 2px 10px rgba(26,102,48,0.32)" },
     icon: (
       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
       </svg>
     ),
-    dropdownAccent: "#6d28d9",
-    barColor: "linear-gradient(90deg, #6d28d9, #ea580c)",
+    dropdownAccent: "#1C7A3E",
+    barColor: "linear-gradient(90deg, #1C7A3E, #21924A)",
   },
   lifetime: {
     label: "Lifetime",
-    pillClass: "border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 shadow-sm",
+    pillClass: "border border-zinc-400 bg-zinc-100 text-zinc-900 hover:bg-zinc-200 shadow-sm",
     icon: (
       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -61,14 +61,14 @@ const PLAN_META: Record<PlanKey, {
   },
   teams: {
     label: "Teams",
-    pillClass: "border border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 shadow-sm",
+    pillClass: "border border-zinc-400 bg-zinc-100 text-zinc-900 hover:bg-zinc-200 shadow-sm",
     icon: (
       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
-    dropdownAccent: "#0891b2",
-    barColor: "linear-gradient(90deg, #0891b2, #06b6d4)",
+    dropdownAccent: "#21924A",
+    barColor: "linear-gradient(90deg, #21924A, #06b6d4)",
   },
 };
 
@@ -147,11 +147,11 @@ export default function CreditsBadge() {
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all duration-150 ${meta.pillClass} ${isCrit ? "animate-pulse" : ""}`}
         style={meta.pillStyle}
         title="View your credits and plan">
-        <span className={isCrit ? "text-red-500" : isLow ? "text-amber-500" : ""}>{meta.icon}</span>
+        <span className={isCrit ? "text-red-500" : isLow ? "text-zinc-800" : ""}>{meta.icon}</span>
         {isPaid ? (
           <span>{meta.label}</span>
         ) : (
-          <span className={isCrit ? "text-red-600" : isLow ? "text-amber-600" : ""}>
+          <span className={isCrit ? "text-red-600" : isLow ? "text-zinc-900" : ""}>
             {credits.toLocaleString()} credits
           </span>
         )}
@@ -169,7 +169,7 @@ export default function CreditsBadge() {
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.16, ease: "easeOut" }}
             className="absolute right-0 mt-2 w-72 rounded-2xl overflow-hidden bg-white z-[200]"
-            style={{ border: "1px solid rgba(124,58,237,0.10)", boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(124,58,237,0.09)" }}>
+            style={{ border: "1px solid rgba(31,138,62,0.10)", boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(31,138,62,0.09)" }}>
 
             {/* Header bar */}
             <div className="px-5 py-4 border-b border-gray-100">
@@ -183,7 +183,7 @@ export default function CreditsBadge() {
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
-                  style={{ background: isPaid ? "linear-gradient(135deg,#5b21b6,#ea580c)" : "rgba(124,58,237,0.08)", color: isPaid ? "white" : "#6d28d9" }}>
+                  style={{ background: isPaid ? "linear-gradient(135deg,#1C7A3E,#21924A)" : "rgba(31,138,62,0.08)", color: isPaid ? "white" : "#1C7A3E" }}>
                   {meta.label}
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function CreditsBadge() {
                     <p className="text-[11px] font-bold text-red-500 mt-1">Almost out. Upgrade to keep going.</p>
                   )}
                   {isLow && !isCrit && (
-                    <p className="text-[11px] font-bold text-amber-500 mt-1">Running low. Upgrade for more.</p>
+                    <p className="text-[11px] font-bold text-zinc-800 mt-1">Running low. Upgrade for more.</p>
                   )}
                 </div>
               </div>
@@ -246,7 +246,7 @@ export default function CreditsBadge() {
                 <button
                   onClick={() => { router.push("/pricing"); setOpen(false); }}
                   className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all active:scale-[0.98] relative overflow-hidden group"
-                  style={{ background: "linear-gradient(135deg, #5b21b6, #ea580c)", boxShadow: "0 3px 12px rgba(91,33,182,0.32)" }}>
+                  style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.32)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)" }} />
                   Upgrade for 50x more credits
@@ -255,7 +255,7 @@ export default function CreditsBadge() {
               ) : (
                 <button
                   onClick={() => { router.push("/pricing"); setOpen(false); }}
-                  className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50/60 transition-all">
+                  className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-100/60 transition-all">
                   Manage plan
                 </button>
               )}

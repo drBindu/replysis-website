@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebaseConfig";
@@ -13,8 +13,6 @@ import DownloadSection from "../components/home/DownloadSection";
 import WhatIsItSection from "../components/home/WhatIsItSection";
 import DemoSection from "../components/home/DemoSection";
 import FeaturesSection from "../components/home/FeaturesSection";
-import SuccessSection from "../components/home/SuccessSection";
-import TestimonialsSection from "../components/home/TestimonialsSection";
 import EnterpriseSection from "../components/home/EnterpriseSection";
 import WhyUsSection from "../components/home/WhyUsSection";
 import {
@@ -33,11 +31,12 @@ export default function Home() {
   const [showMobile, setShowMobile]   = useState(false);   // mobile nav drawer
   const [authModal, setAuthModal]     = useState<{ open: boolean; mode: "signin" | "signup" }>({ open: false, mode: "signin" });
   const [mounted, setMounted]         = useState(false);
+  const [scrolled, setScrolled]       = useState(false);
   const [detectedOS, setDetectedOS]   = useState<"win" | "mac" | "other">("other");
   const menuRef   = useRef<HTMLDivElement>(null);
   const mobileRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll();
-  const headerBg = useTransform(scrollYProgress, [0, 0.05], ["rgba(250,247,255,0.50)", "rgba(252,250,255,0.96)"]);
+  const { scrollYProgress, scrollY } = useScroll();
+  const headerBg = useTransform(scrollYProgress, [0, 0.05], ["rgba(255,255,255,0.70)", "rgba(255,255,255,0.96)"]);
 
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -49,6 +48,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => { setMounted(true); }, []);
+  useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
   useEffect(() => { const u = onAuthStateChanged(auth, setUser); return () => u(); }, []);
 
   // Open auth modal automatically when middleware redirects here with ?auth=required
@@ -118,37 +118,60 @@ export default function Home() {
   };
 
   return (
-    <main className="bg-white text-gray-900 overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <main className="marketing bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      {/* Premium film-grain texture over the whole page */}
+      <div className="grain-overlay" aria-hidden />
 
       {/* Scroll progress bar */}
       <motion.div
         className="fixed top-0 left-0 right-0 z-[100] h-[3px]"
-        style={{ scaleX: scrollYProgress, transformOrigin: "0%", background: "linear-gradient(90deg, #7c3aed, #ea580c)" }}
+        style={{ scaleX: scrollYProgress, transformOrigin: "0%", background: "linear-gradient(90deg, #21924A, #21924A)" }}
       />
 
       {/* ══════════════ NAVBAR ══════════════ */}
-      <motion.header
-        style={{ backgroundColor: headerBg as any, borderBottom: "1px solid rgba(124,58,237,0.07)" }}
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-50">
 
-        {/* Announcement banner — slim top bar */}
-        {!user && (
+        {/* Announcement banner — slim top bar, retracts on scroll */}
+        <motion.div
+          animate={{ height: (!user && !scrolled) ? "auto" : 0, opacity: (!user && !scrolled) ? 1 : 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="overflow-hidden">
+          {!user && (
           <div className="w-full text-center py-2 text-[11px] font-semibold hidden md:flex items-center justify-center gap-3"
-            style={{ background: "linear-gradient(90deg, rgba(109,40,217,0.06), rgba(234,88,12,0.05))", borderBottom: "1px solid rgba(109,40,217,0.08)" }}>
-            <span className="text-[9px] font-black text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-full uppercase tracking-widest">NEW</span>
+            style={{ background: "linear-gradient(90deg, rgba(31,138,62,0.08), rgba(31,138,62,0.05))", borderBottom: "1px solid rgba(31,138,62,0.08)", backdropFilter: "blur(12px)" }}>
+            <span className="text-[9px] font-black text-white bg-[#21924A] px-1.5 py-0.5 rounded-full uppercase tracking-widest">NEW</span>
             <span className="text-gray-600">Screen analysis + multi-platform audio capture now live.</span>
-            <button onClick={() => go("real-interview")} className="text-violet-600 font-bold hover:text-violet-800 transition-colors underline underline-offset-2">Try it free →</button>
+            <button onClick={() => go("real-interview")} className="text-[#1C7A3E] font-bold hover:text-[#14532B] transition-colors underline underline-offset-2">Try it free →</button>
           </div>
-        )}
+          )}
+        </motion.div>
 
-        <div className="max-w-7xl mx-auto px-5 h-16 flex items-center gap-3">
+        {/* Floating pill nav — shrinks + lifts on scroll */}
+        <motion.div
+          animate={{
+            maxWidth: scrolled ? 940 : 1280,
+            marginTop: scrolled ? 12 : 0,
+            borderRadius: scrolled ? 999 : 0,
+            paddingLeft: scrolled ? 14 : 20,
+            paddingRight: scrolled ? 8 : 20,
+          }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            backgroundColor: scrolled ? "rgba(253,252,250,0.80)" : "rgba(253,252,250,0.55)",
+            border: scrolled ? "1px solid rgba(22,21,15,0.07)" : "1px solid rgba(31,138,62,0.06)",
+            boxShadow: scrolled ? "0 14px 44px -12px rgba(22,21,15,0.22), 0 4px 12px -8px rgba(22,21,15,0.14)" : "0 1px 0 rgba(22,21,15,0.02)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+          }}
+          className="mx-auto h-16 flex items-center gap-3">
 
           {/* ── Logo ── */}
           <button onClick={() => router.push("/")}
             className="flex items-center gap-2.5 flex-shrink-0 group">
             <span className="text-[15px] font-extrabold tracking-tight text-gray-900">
               Verchor{" "}
-              <span style={{ background: "linear-gradient(135deg, #7c3aed, #ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
+              <span style={{ background: "linear-gradient(135deg, #21924A, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
             </span>
           </button>
 
@@ -166,7 +189,7 @@ export default function Home() {
             ].map(item => (
               <button key={item.path}
                 onClick={() => item.direct ? router.push("/" + item.path) : go(item.path)}
-                className="px-4 py-2 text-[13px] font-semibold text-gray-600 hover:text-violet-700 hover:bg-violet-50/70 rounded-lg transition-all duration-150 whitespace-nowrap">
+                className="px-4 py-2 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 hover:bg-zinc-100/70 rounded-lg transition-all duration-150 whitespace-nowrap">
                 {item.label}
               </button>
             ))}
@@ -180,7 +203,7 @@ export default function Home() {
             {(!mounted || detectedOS !== "mac") && (
             <button onClick={() => download("win")}
               className="group relative flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap overflow-hidden"
-              style={{ background: "linear-gradient(135deg, #5b21b6, #ea580c)", boxShadow: "0 2px 10px rgba(91,33,182,0.28)" }}>
+              style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 2px 10px rgba(26,102,48,0.28)" }}>
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                 style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent)" }} />
               <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -194,7 +217,7 @@ export default function Home() {
             )}
             {(!mounted || detectedOS !== "win") && (
             <button onClick={() => download("mac")}
-              className="group flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-violet-300 hover:text-violet-700 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
+              className="group flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
               <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
               </svg>
@@ -217,14 +240,14 @@ export default function Home() {
               <>
                 {/* Log in  -  clearly outlined so it reads as "secondary" */}
                 <button onClick={() => setAuthModal({ open: true, mode: "signin" })}
-                  className="px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-violet-700 border border-gray-200 hover:border-violet-300 rounded-full transition-all whitespace-nowrap bg-white hover:bg-violet-50/60 shadow-sm">
+                  className="px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
                   Log in
                 </button>
 
                 {/* Get started  -  unmissable primary CTA */}
                 <button onClick={() => setAuthModal({ open: true, mode: "signup" })}
                   className="group flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap relative overflow-hidden"
-                  style={{ background: "linear-gradient(135deg, #5b21b6, #ea580c)", boxShadow: "0 3px 12px rgba(91,33,182,0.38), 0 1px 3px rgba(234,88,12,0.20)" }}>
+                  style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.38), 0 1px 3px rgba(31,138,62,0.20)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }} />
                   <span className="relative hidden sm:inline">Start free</span>
@@ -238,11 +261,11 @@ export default function Home() {
               /* Logged-in: avatar + dropdown */
               <div className="relative" ref={menuRef}>
                 <button onClick={() => setShowMenu(v => !v)}
-                  className="flex items-center gap-2 p-1 rounded-full hover:bg-violet-50 transition-all group focus:outline-none">
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-zinc-100 transition-all group focus:outline-none">
                   <img
                     src={user.photoURL || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
                     alt="Profile"
-                    className="w-7 h-7 rounded-full border-2 border-violet-200 group-hover:border-violet-400 transition-colors shadow-sm"
+                    className="w-7 h-7 rounded-full border-2 border-zinc-300 group-hover:border-zinc-600 transition-colors shadow-sm"
                   />
                   <svg className={`w-3 h-3 text-gray-400 transition-transform ${showMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -253,14 +276,14 @@ export default function Home() {
                   <motion.div initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.15 }}
                     className="absolute right-0 mt-2 w-60 rounded-2xl shadow-xl overflow-hidden bg-white"
-                    style={{ border: "1px solid rgba(124,58,237,0.10)", boxShadow: "0 16px 48px rgba(0,0,0,0.10), 0 4px 12px rgba(124,58,237,0.08)" }}>
+                    style={{ border: "1px solid rgba(31,138,62,0.10)", boxShadow: "0 16px 48px rgba(0,0,0,0.10), 0 4px 12px rgba(31,138,62,0.08)" }}>
                     {/* User info */}
                     <div className="px-4 py-3.5 border-b border-gray-100">
                       <div className="flex items-center gap-3">
                         <img
                           src={user.photoURL || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
                           alt="Profile"
-                          className="w-9 h-9 rounded-full border border-violet-100"
+                          className="w-9 h-9 rounded-full border border-zinc-200"
                         />
                         <div className="min-w-0">
                           <p className="text-[13px] font-semibold text-gray-900 truncate">{user.displayName || "User"}</p>
@@ -277,7 +300,7 @@ export default function Home() {
                         { label: "Pricing",         path: "pricing",       icon: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" },
                       ].map(item => (
                         <button key={item.path} onClick={() => { go(item.path); setShowMenu(false); }}
-                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-all">
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium text-gray-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-all">
                           <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                             <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                           </svg>
@@ -302,7 +325,7 @@ export default function Home() {
 
             {/* ── Hamburger  -  < lg only ── */}
             <button onClick={() => setShowMobile(v => !v)}
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:text-violet-700 hover:bg-violet-50 transition-all">
+              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all">
               {showMobile ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -314,7 +337,7 @@ export default function Home() {
               )}
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* ══ Mobile drawer  -  slides down from nav ══ */}
         {showMobile && (
@@ -335,7 +358,7 @@ export default function Home() {
               ].map(item => (
                 <button key={item.path}
                   onClick={() => { item.direct ? router.push("/" + item.path) : go(item.path); setShowMobile(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-[14px] font-semibold text-gray-700 hover:text-violet-700 hover:bg-violet-50 rounded-xl transition-all">
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-[14px] font-semibold text-gray-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-all">
                   <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                   </svg>
@@ -351,7 +374,7 @@ export default function Home() {
                 {(!mounted || detectedOS !== "mac") && (
                 <button onClick={() => { download("win"); setShowMobile(false); }}
                   className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-white rounded-xl"
-                  style={{ background: "linear-gradient(135deg, #5b21b6, #ea580c)" }}>
+                  style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
                   </svg>
@@ -374,19 +397,19 @@ export default function Home() {
             {!user && (
               <div className="px-4 pb-4 border-t border-gray-100 pt-3 flex gap-2">
                 <button onClick={() => { setAuthModal({ open: true, mode: "signin" }); setShowMobile(false); }}
-                  className="flex-1 py-2.5 text-[13px] font-semibold text-gray-700 border border-gray-200 hover:border-violet-300 hover:text-violet-700 rounded-xl transition-all">
+                  className="flex-1 py-2.5 text-[13px] font-semibold text-gray-700 border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 rounded-xl transition-all">
                   Log in
                 </button>
                 <button onClick={() => { setAuthModal({ open: true, mode: "signup" }); setShowMobile(false); }}
                   className="flex-1 py-2.5 text-[13px] font-bold text-white rounded-xl transition-all"
-                  style={{ background: "linear-gradient(135deg, #5b21b6, #ea580c)" }}>
+                  style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                   Get started free
                 </button>
               </div>
             )}
           </motion.div>
         )}
-      </motion.header>
+      </header>
 
       <HeroSection mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go} />
       <TrustedBySection />
@@ -397,8 +420,6 @@ export default function Home() {
       <HowItWorksSection />
       <FeaturesSection />
       <WhyUsSection />
-      <SuccessSection />
-      <TestimonialsSection />
       <DownloadSection mounted={mounted} detectedOS={detectedOS} onDownload={download} />
       <CtaSection onNav={go} />
 

@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+   VERCHOR — Premium Light + Forest Green
+   Warm off-white canvas · refined ink · forest-green accent · depth
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Canvas — warm whites read more expensive than pure #fff */
+  --paper:        #FDFCFA;  /* page background */
+  --paper-soft:   #F7F6F1;  /* alternating sections */
+  --paper-sunken: #F0EFE9;  /* wells / subtle panels */
+  --line:         #E9E7E0;  /* hairline borders */
+  --line-strong:  #DAD8CF;
+
+  /* Ink — warm near-black neutrals */
+  --ink:          #16150F;  /* headings */
+  --ink-strong:   #2A2A22;  /* strong text */
+  --ink-soft:     #4A4A41;  /* body text */
+  --ink-muted:    #78776C;  /* secondary text */
+  --ink-faint:    #A6A499;  /* captions / hints */
+
+  /* Forest-green accent scale */
+  --green:        #21924A;
+  --green-deep:   #14532B;
+  --green-lit:    #2E8B45;
+  --green-tint:   #EEF7EF;
+
+  /* Premium shadows — soft, warm, layered for real depth */
+  --shadow-sm: 0 1px 2px rgba(22,21,15,0.05), 0 1px 3px rgba(22,21,15,0.05);
+  --shadow-md: 0 6px 20px rgba(22,21,15,0.07), 0 2px 6px rgba(22,21,15,0.05);
+  --shadow-lg: 0 24px 60px rgba(22,21,15,0.10), 0 8px 20px rgba(22,21,15,0.06);
+  --shadow-xl: 0 44px 100px rgba(22,21,15,0.14), 0 14px 32px rgba(22,21,15,0.08);
+}
+
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -16,16 +48,72 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: clip;
-  background-color: #0a0a0f;
-  color: white;
+  background-color: var(--paper);
+  color: var(--ink);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Light-mode override for homepage */
+/* Homepage shares the same clean paper canvas */
 body.light-page {
-  background-color: #ffffff;
-  color: #0f0f1a;
+  background-color: var(--paper);
+  color: var(--ink);
 }
+
+/* ── Premium typography ──
+   Elegant display serif for big headlines; refined tracking. */
+.font-display {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif !important;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
+/* Marketing pages: section headings render in the display serif */
+.marketing h1, .marketing h2 {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  font-optical-sizing: auto;
+}
+/* Living aurora — slow drifting color under the whole page */
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  33%  { transform: translate3d(3%,-4%,0) scale(1.12); }
+  66%  { transform: translate3d(-4%,3%,0) scale(0.94); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+.aurora-bg {
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.6;
+  background:
+    radial-gradient(35% 40% at 20% 25%, rgba(33,146,74,0.14), transparent 70%),
+    radial-gradient(30% 35% at 80% 20%, rgba(46,139,69,0.10), transparent 70%),
+    radial-gradient(40% 45% at 65% 80%, rgba(20,83,43,0.08), transparent 72%);
+  animation: aurora-drift 26s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Fine film-grain overlay — a premium, editorial texture */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+.text-balance { text-wrap: balance; }
+.card-premium {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  border-radius: 20px;
+}
+::selection { background: rgba(33,146,74,0.16); }
 
 @keyframes float-slow {
   0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
@@ -59,9 +147,9 @@ body.light-page {
 }
 
 @keyframes pulse-ring {
-  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
-  70%  { transform: scale(1);    box-shadow: 0 0 0 12px rgba(99,102,241,0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(31,138,62,0.4); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 12px rgba(31,138,62,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(31,138,62,0); }
 }
 .animate-pulse-ring { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
 
@@ -82,14 +170,14 @@ main { overflow: visible !important; height: auto !important; }
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(59,130,246,0.5), rgba(139,92,246,0.5));
+  background: linear-gradient(180deg, rgba(31,138,62,0.5), rgba(33,146,74,0.5));
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgb(59,130,246), rgb(139,92,246));
+  background: linear-gradient(180deg, rgb(31,138,62), rgb(33,146,74));
 }
 ::-webkit-scrollbar-track { background: transparent; }
-* { scrollbar-width: thin; scrollbar-color: rgba(59,130,246,0.5) transparent; }
+* { scrollbar-width: thin; scrollbar-color: rgba(31,138,62,0.5) transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -101,7 +189,7 @@ main { overflow: visible !important; height: auto !important; }
 }
 
 button:focus-visible, a:focus-visible {
-  outline: 2px solid rgba(59,130,246,0.8);
+  outline: 2px solid rgba(31,138,62,0.8);
   outline-offset: 2px;
 }
 

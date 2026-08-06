@@ -26,9 +26,9 @@ export default function TranscriptBar({
           <motion.div
             animate={{ opacity: hasText ? [1, 0.3, 1] : 1 }}
             transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-2 h-2 rounded-full bg-blue-400"
+            className="w-2 h-2 rounded-full bg-zinc-600"
           />
-          <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
+          <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">
             Interviewer
           </span>
         </div>
@@ -41,7 +41,7 @@ export default function TranscriptBar({
             <motion.span
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ repeat: Infinity, duration: 1 }}
-              className="text-blue-400"
+              className="text-zinc-600"
             >
               {transcript ? " " : ""}{partial}
             </motion.span>
@@ -58,7 +58,7 @@ export default function TranscriptBar({
 
   // ── DESKTOP: slim bar ──
   return (
-    <div className="h-14 border-b border-white/5 flex items-center px-10 bg-blue-600/[0.02] relative overflow-hidden">
+    <div className="h-14 border-b border-white/5 flex items-center px-10 bg-zinc-900/[0.02] relative overflow-hidden">
       <div className="max-w-5xl w-full mx-auto flex items-center gap-4">
 
         {/* INTERVIEWER badge */}
@@ -66,9 +66,9 @@ export default function TranscriptBar({
           <motion.div
             animate={{ opacity: hasText ? [1, 0.3, 1] : 0.3 }}
             transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-1.5 h-1.5 rounded-full bg-blue-400"
+            className="w-1.5 h-1.5 rounded-full bg-zinc-600"
           />
-          <span className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em]">
+          <span className="text-[9px] font-black text-zinc-800 uppercase tracking-[0.3em]">
             Interviewer
           </span>
         </div>
@@ -93,7 +93,7 @@ export default function TranscriptBar({
               <motion.span
                 animate={{ opacity: [1, 0.6, 1] }}
                 transition={{ repeat: Infinity, duration: 0.8 }}
-                className="text-blue-400 font-medium"
+                className="text-zinc-600 font-medium"
               >
                 {transcript ? " " : ""}{partial}
               </motion.span>

@@ -41,11 +41,11 @@ const T = {
   text:      "#1a2332",        // primary text
   textMid:   "#475569",        // secondary text
   textFaint: "#94a3b8",        // placeholder / faint
-  accent:    "#4f46e5",        // indigo accent
-  accentBg:  "rgba(79,70,229,0.07)",
-  accentBrd: "rgba(79,70,229,0.18)",
-  success:   "#059669",
-  successBg: "rgba(5,150,105,0.07)",
+  accent:    "#1C7A3E",        // indigo accent
+  accentBg:  "rgba(31,138,62,0.07)",
+  accentBrd: "rgba(31,138,62,0.18)",
+  success:   "#21924A",
+  successBg: "rgba(31,138,62,0.07)",
   warn:      "#d97706",
   warnBg:    "rgba(217,119,6,0.07)",
   danger:    "#dc2626",
@@ -93,8 +93,8 @@ interface TaggedQuestion {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 const AI_MODELS: AiModel[] = [
-  { id: "gpt-4o",        name: "GPT-4o",        provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#6366f1" },
-  { id: "llama-3.3-70b", name: "Llama 3.3 70B", provider: "Groq",   badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 2, icon: "🦙", color: "#7c3aed" },
+  { id: "gpt-4o",        name: "GPT-4o",        provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#2E8B45" },
+  { id: "llama-3.3-70b", name: "Llama 3.3 70B", provider: "Groq",   badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 2, icon: "🦙", color: "#21924A" },
 ];
 
 const MIN_QUESTIONS          = 5;
@@ -115,11 +115,11 @@ const DIFFICULTY_OPTIONS: {
   id: Difficulty; label: string; sub: string; color: string;
   bg: string; brd: string; planRequired: "free" | "pro";
 }[] = [
-  { id: "easy",       label: "Easy",       sub: "Fundamentals and basics",         color: "#059669", bg: "rgba(5,150,105,0.08)",  brd: "rgba(5,150,105,0.22)",  planRequired: "free" },
+  { id: "easy",       label: "Easy",       sub: "Fundamentals and basics",         color: "#21924A", bg: "rgba(31,138,62,0.08)",  brd: "rgba(31,138,62,0.22)",  planRequired: "free" },
   { id: "medium",     label: "Medium",     sub: "Situational and problem-solving", color: "#d97706", bg: "rgba(217,119,6,0.08)",  brd: "rgba(217,119,6,0.22)",  planRequired: "pro"  },
   { id: "hard",       label: "Hard",       sub: "System design and leadership",    color: "#dc2626", bg: "rgba(220,38,38,0.08)",  brd: "rgba(220,38,38,0.22)",  planRequired: "pro"  },
-  { id: "behavioral", label: "Behavioral", sub: "STAR, culture fit, teamwork",     color: "#0891b2", bg: "rgba(8,145,178,0.08)",  brd: "rgba(8,145,178,0.22)",  planRequired: "free" },
-  { id: "mixed",      label: "Mixed",      sub: "Full distribution across levels", color: "#4f46e5", bg: "rgba(79,70,229,0.08)",  brd: "rgba(79,70,229,0.22)",  planRequired: "free" },
+  { id: "behavioral", label: "Behavioral", sub: "STAR, culture fit, teamwork",     color: "#21924A", bg: "rgba(8,145,178,0.08)",  brd: "rgba(8,145,178,0.22)",  planRequired: "free" },
+  { id: "mixed",      label: "Mixed",      sub: "Full distribution across levels", color: "#1C7A3E", bg: "rgba(31,138,62,0.08)",  brd: "rgba(31,138,62,0.22)",  planRequired: "free" },
 ];
 const CONTEXT_HISTORY_TURNS = 4; // last N turns injected into AI memory
 
@@ -504,9 +504,9 @@ function AuthGate({ onSignIn }: { onSignIn: () => void }) {
         <button onClick={onSignIn}
           style={{
             width: "100%", padding: "13px 0", borderRadius: 12, fontWeight: 800, fontSize: 14,
-            background: `linear-gradient(135deg, #4f46e5, #7c3aed)`, color: "white", border: "none",
+            background: `linear-gradient(135deg, #1C7A3E, #21924A)`, color: "white", border: "none",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: "0 4px 20px rgba(79,70,229,0.25)",
+            boxShadow: "0 4px 20px rgba(31,138,62,0.25)",
           }}>
           <LogIn size={16} /> Sign in / Create account
         </button>
@@ -1165,7 +1165,7 @@ export default function MockInterviewPage() {
         {/* Progress bar (interview phase) */}
         {phase === "interview" && (
           <div style={{ height: 2, background: T.border }}>
-            <motion.div style={{ height: "100%", background: `linear-gradient(90deg, ${T.accent}, #7c3aed)` }}
+            <motion.div style={{ height: "100%", background: `linear-gradient(90deg, ${T.accent}, #21924A)` }}
               animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
           </div>
         )}
@@ -1250,8 +1250,8 @@ export default function MockInterviewPage() {
                 {/* JD card */}
                 <div style={{ borderRadius: 16, border: `1px solid ${T.border}`, background: T.panel, overflow: "hidden" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderBottom: `1px solid ${T.border}` }}>
-                    <div style={{ padding: "7px 8px", borderRadius: 10, background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.18)" }}>
-                      <Briefcase size={14} style={{ color: "#7c3aed" }} />
+                    <div style={{ padding: "7px 8px", borderRadius: 10, background: "rgba(31,138,62,0.07)", border: "1px solid rgba(31,138,62,0.18)" }}>
+                      <Briefcase size={14} style={{ color: "#21924A" }} />
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Job Description</p>
@@ -1264,7 +1264,7 @@ export default function MockInterviewPage() {
                     placeholder="Paste the target job description to calibrate interview difficulty and domain-specific questions..."
                     style={{ width: "100%", height: 140, padding: "16px 18px", fontSize: 13, color: T.text,
                       background: "transparent", border: "none", outline: "none", resize: "none",
-                      lineHeight: 1.65, boxSizing: "border-box", caretColor: "#7c3aed" }}
+                      lineHeight: 1.65, boxSizing: "border-box", caretColor: "#21924A" }}
                     className="light-scrollbar"
                   />
                 </div>
@@ -1378,7 +1378,7 @@ export default function MockInterviewPage() {
                       className="cx-slider"
                       style={{
                         width: "100%",
-                        background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${sliderPct}%, ${T.border} ${sliderPct}%, ${T.border} 100%)`,
+                        background: `linear-gradient(to right, #1C7A3E 0%, #1C7A3E ${sliderPct}%, ${T.border} ${sliderPct}%, ${T.border} 100%)`,
                       }}
                     />
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
@@ -1439,7 +1439,7 @@ export default function MockInterviewPage() {
                     fontSize: 13.5, fontWeight: 700, border: "none", cursor: resumeText.trim() ? "pointer" : "not-allowed",
                     background: !resumeText.trim() || isGenerating
                       ? T.border
-                      : "#4f46e5",
+                      : "#1C7A3E",
                     color: !resumeText.trim() || isGenerating ? T.textFaint : "white",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     transition: "background 0.15s",
@@ -1537,8 +1537,8 @@ export default function MockInterviewPage() {
                     <div style={{ textAlign: "right" }}>
                       <p style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>This session needs</p>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                        <Flame size={12} style={{ color: "#f97316" }} />
-                        <span style={{ fontSize: 14, fontWeight: 900, color: "#f97316" }}>~{estimatedCredits}</span>
+                        <Flame size={12} style={{ color: "#2E8B45" }} />
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#2E8B45" }}>~{estimatedCredits}</span>
                         <span style={{ fontSize: 11, color: T.textFaint }}>credits</span>
                       </div>
                       {credits !== null && credits < estimatedCredits && (
@@ -1581,7 +1581,7 @@ export default function MockInterviewPage() {
                     {[
                       { label: "Questions",  value: questions.length.toString(), color: T.accent },
                       { label: "Difficulty", value: DIFFICULTY_OPTIONS.find(d => d.id === difficulty)?.label ?? "Mixed", color: DIFFICULTY_OPTIONS.find(d => d.id === difficulty)?.color ?? T.accent },
-                      { label: "AI Speed",   value: activeModel.speed, color: "#0891b2" },
+                      { label: "AI Speed",   value: activeModel.speed, color: "#21924A" },
                     ].map(({ label, value, color }) => (
                       <div key={label} style={{ padding: "12px 8px", borderRadius: 12, textAlign: "center",
                         border: `1px solid ${T.border}`, background: T.card }}>
@@ -1595,8 +1595,8 @@ export default function MockInterviewPage() {
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     style={{ width: "100%", padding: "14px 0", borderRadius: 14, fontWeight: 800,
                       fontSize: 15, border: "none", cursor: "pointer", color: "white",
-                      background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                      boxShadow: "0 6px 24px rgba(79,70,229,0.30)",
+                      background: "linear-gradient(135deg, #1C7A3E, #21924A)",
+                      boxShadow: "0 6px 24px rgba(31,138,62,0.30)",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                     <Play size={17} fill="white" /> Begin Interview
                   </motion.button>
@@ -1744,10 +1744,10 @@ export default function MockInterviewPage() {
                             opacity: isAnalyzing ? 0.5 : 1, transition: "all 0.2s", position: "relative",
                             background: isRecording
                               ? "rgba(220,38,38,0.08)"
-                              : `linear-gradient(135deg, #4f46e5, #7c3aed)`,
+                              : `linear-gradient(135deg, #1C7A3E, #21924A)`,
                             color: isRecording ? T.danger : "white",
                             border: isRecording ? `1.5px solid ${T.danger}40` : "1.5px solid transparent",
-                            boxShadow: isRecording ? "none" : "0 4px 16px rgba(79,70,229,0.28)",
+                            boxShadow: isRecording ? "none" : "0 4px 16px rgba(31,138,62,0.28)",
                           } as React.CSSProperties}>
                           {isAnalyzing
                             ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Analyzing...</>
@@ -1825,7 +1825,7 @@ export default function MockInterviewPage() {
                       )}
                       {jdText && (
                         <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 5,
-                          background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.2)", color: "#7c3aed",
+                          background: "rgba(31,138,62,0.07)", border: "1px solid rgba(31,138,62,0.2)", color: "#21924A",
                           textTransform: "uppercase", letterSpacing: "0.06em" }}>
                           Role-Specific
                         </span>
@@ -1953,7 +1953,7 @@ export default function MockInterviewPage() {
                 {[
                   { icon: Star,         label: "Average Score", value: `${avgScore}/10`,  color: T.accent   },
                   { icon: CheckCircle2, label: "Completed",     value: `${scores.length}`, color: T.success  },
-                  { icon: TrendingUp,   label: "Top Score",     value: `${Math.max(...(scores.length ? scores : [0]))}/10`, color: "#7c3aed" },
+                  { icon: TrendingUp,   label: "Top Score",     value: `${Math.max(...(scores.length ? scores : [0]))}/10`, color: "#21924A" },
                   { icon: Clock,        label: "Duration",      value: formatTime(sessionTime), color: T.warn },
                 ].map(({ icon: Icon, label, value, color }) => (
                   <div key={label} style={{ borderRadius: 14, border: `1px solid ${T.border}`, background: T.panel,
@@ -2042,8 +2042,8 @@ export default function MockInterviewPage() {
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   style={{ display: "flex", alignItems: "center", gap: 7, padding: "12px 22px",
                     borderRadius: 12, fontSize: 13, fontWeight: 800, cursor: "pointer", border: "none",
-                    background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white",
-                    boxShadow: "0 4px 16px rgba(79,70,229,0.28)" }}>
+                    background: "linear-gradient(135deg, #1C7A3E, #21924A)", color: "white",
+                    boxShadow: "0 4px 16px rgba(31,138,62,0.28)" }}>
                   <LayoutDashboard size={14} /> Return to Dashboard
                 </motion.button>
               </div>
@@ -2063,9 +2063,9 @@ export default function MockInterviewPage() {
         .light-scrollbar::-webkit-scrollbar-thumb { background: #d4dae6; border-radius: 8px; }
         .light-scrollbar::-webkit-scrollbar-thumb:hover { background: #b8c2d4; }
         .cx-slider { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px; outline: none; cursor: pointer; }
-        .cx-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #4f46e5; border: 2px solid white; box-shadow: 0 0 0 3px rgba(79,70,229,0.18), 0 2px 8px rgba(79,70,229,0.28); cursor: pointer; }
-        .cx-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; background: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.18); cursor: pointer; }
-        .cx-slider:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(79,70,229,0.28), 0 2px 8px rgba(79,70,229,0.3); }
+        .cx-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #1C7A3E; border: 2px solid white; box-shadow: 0 0 0 3px rgba(31,138,62,0.18), 0 2px 8px rgba(31,138,62,0.28); cursor: pointer; }
+        .cx-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; background: #1C7A3E; box-shadow: 0 0 0 3px rgba(31,138,62,0.18); cursor: pointer; }
+        .cx-slider:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(31,138,62,0.28), 0 2px 8px rgba(31,138,62,0.3); }
         @media (max-width: 900px) {
           .setup-grid     { grid-template-columns: 1fr !important; }
           .preflight-grid { grid-template-columns: 1fr !important; }

@@ -53,11 +53,11 @@ const DEFAULT_ORDER: SectionId[] = [
 ];
 
 const SECTION_META: Record<SectionId, { label: string; Icon: any; color: string; bg: string }> = {
-  summary:        { label: "Summary",        Icon: FileText,      color: "#6366f1", bg: "rgba(99,102,241,0.08)"  },
+  summary:        { label: "Summary",        Icon: FileText,      color: "#2E8B45", bg: "rgba(31,138,62,0.08)"  },
   skills:         { label: "Skills",         Icon: Wrench,        color: "#d97706", bg: "rgba(217,119,6,0.08)"   },
-  experience:     { label: "Experience",     Icon: Briefcase,     color: "#2563eb", bg: "rgba(37,99,235,0.08)"   },
-  projects:       { label: "Projects",       Icon: Code,          color: "#7c3aed", bg: "rgba(124,58,237,0.08)"  },
-  education:      { label: "Education",      Icon: GraduationCap, color: "#059669", bg: "rgba(5,150,105,0.08)"   },
+  experience:     { label: "Experience",     Icon: Briefcase,     color: "#1C7A3E", bg: "rgba(37,99,235,0.08)"   },
+  projects:       { label: "Projects",       Icon: Code,          color: "#21924A", bg: "rgba(31,138,62,0.08)"  },
+  education:      { label: "Education",      Icon: GraduationCap, color: "#21924A", bg: "rgba(31,138,62,0.08)"   },
   certifications: { label: "Certifications", Icon: Award,         color: "#db2777", bg: "rgba(219,39,119,0.08)"  },
 };
 
@@ -119,9 +119,9 @@ const FONTS = [
 ];
 
 const COLORS = [
-  "#1e40af","#2563eb","#0ea5e9","#0d9488","#059669","#15803d",
-  "#854d0e","#dc2626","#be123c","#db2777","#c026d3","#9333ea",
-  "#7c3aed","#4f46e5","#475569","#1e293b","#000000",
+  "#1e40af","#1C7A3E","#21924A","#0d9488","#21924A","#1C7A3E",
+  "#854d0e","#dc2626","#be123c","#db2777","#c026d3","#2E8B45",
+  "#21924A","#1C7A3E","#475569","#1e293b","#000000",
 ];
 
 const PAPER: Record<string, { w: number; h: number; label: string }> = {
@@ -144,14 +144,14 @@ const T = {
   accent:       "#2d5be3",
   accentHover:  "#2148c7",
   accentLight:  "rgba(45,91,227,0.08)",
-  success:      "#15803d",
+  success:      "#1C7A3E",
   successLight: "rgba(21,128,61,0.08)",
   warning:      "#d97706",
   warningLight: "rgba(217,119,6,0.08)",
   danger:       "#dc2626",
   dangerLight:  "rgba(220,38,38,0.08)",
-  purple:       "#7c3aed",
-  purpleLight:  "rgba(124,58,237,0.08)",
+  purple:       "#21924A",
+  purpleLight:  "rgba(31,138,62,0.08)",
   shadow:       "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
   shadowMd:     "0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
   shadowLg:     "0 8px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)",
@@ -647,7 +647,7 @@ export default function ResumePage() {
   const [jd,           setJd]           = useState("");
   const [aiProvider,   setAiProvider]   = useState<AiProvider>("openai");
 
-  const [accentColor,  setAccentColor]  = useState("#4f46e5");
+  const [accentColor,  setAccentColor]  = useState("#1C7A3E");
   const [fontSize,     setFontSize]     = useState(11);
   const [fontKey,      setFontKey]      = useState("georgia");
   const [lineHeight,   setLineHeight]   = useState(1.5);
@@ -1060,7 +1060,7 @@ export default function ResumePage() {
             <div style={{ fontSize:11, fontWeight:600, color:T.textTertiary }}>Profile completeness</div>
             <div style={{ width:120, height:5, borderRadius:3, background:T.border, overflow:"hidden" }}>
               <motion.div initial={{ width:0 }} animate={{ width:`${Math.round((completedSections/totalSections)*100)}%` }} transition={{ duration:0.6, ease:"easeOut" }}
-                style={{ height:"100%", borderRadius:3, background:completedSections===totalSections?`linear-gradient(90deg,${T.success},#22c55e)`:`linear-gradient(90deg,${T.accent},#6366f1)` }} />
+                style={{ height:"100%", borderRadius:3, background:completedSections===totalSections?`linear-gradient(90deg,${T.success},#22c55e)`:`linear-gradient(90deg,${T.accent},#2E8B45)` }} />
             </div>
             <span style={{ fontSize:11, fontWeight:700, color:T.textPrimary }}>{completedSections}/{totalSections}</span>
           </div>
@@ -1240,7 +1240,7 @@ export default function ResumePage() {
                           {[
                             { id:"personal",       label:"Personal Info",  Icon:User,        color:T.accent,        bg:T.accentLight },
                             ...sectionOrder.map(id => ({ id, ...SECTION_META[id] })),
-                            ...customSections.map(cs => ({ id:cs.id, label:cs.title, Icon:Plus, color:"#8b5cf6", bg:"rgba(139,92,246,0.08)" })),
+                            ...customSections.map(cs => ({ id:cs.id, label:cs.title, Icon:Plus, color:"#A04E2C", bg:"rgba(33,146,74,0.08)" })),
                             { id:"order",          label:"Section Order",  Icon:Layers,      color:T.textSecondary, bg:"rgba(107,100,96,0.07)" },
                           ].map(item => {
                             const active = editSection === item.id;
@@ -1354,7 +1354,7 @@ export default function ResumePage() {
                                               {(resumeData.experience||[]).map((exp:any,i:number)=>(
                                                 <div key={i} id={`editor-experience-${i}`}><SectionCard>
                                                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                                                    <span style={{ fontSize:12, fontWeight:700, color:"#2563eb" }}>{exp.company||`Experience #${i+1}`}</span>
+                                                    <span style={{ fontSize:12, fontWeight:700, color:"#1C7A3E" }}>{exp.company||`Experience #${i+1}`}</span>
                                                     <button onClick={()=>removeExperience(i)} style={{ border:"none", background:"none", cursor:"pointer", color:T.textTertiary, padding:4 }}
                                                       onMouseEnter={e=>(e.currentTarget as any).style.color=T.danger} onMouseLeave={e=>(e.currentTarget as any).style.color=T.textTertiary}>
                                                       <Trash2 size={13} />
@@ -1392,11 +1392,11 @@ export default function ResumePage() {
                                                       </div>
                                                     ))}
                                                   </div>
-                                                  <AddButton onClick={()=>addBullet("experience",i)} label="Add Bullet" color="#2563eb" small />
+                                                  <AddButton onClick={()=>addBullet("experience",i)} label="Add Bullet" color="#1C7A3E" small />
                                                 </SectionCard></div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addExperience} label="Add Experience" color="#2563eb" />
+                                            <AddButton onClick={addExperience} label="Add Experience" color="#1C7A3E" />
                                           </>
                                         )}
 
@@ -1527,7 +1527,7 @@ export default function ResumePage() {
                                                 <input value={cs.title} onChange={e=>updateCustomSectionTitle(cs.id, e.target.value)}
                                                   placeholder="Section Title"
                                                   style={{ background:"none", border:"none", outline:"none", fontSize:13, fontWeight:700,
-                                                    color:T.textPrimary, fontFamily:"inherit", borderBottom:`1.5px solid #8b5cf640`, paddingBottom:2 }} />
+                                                    color:T.textPrimary, fontFamily:"inherit", borderBottom:`1.5px solid #A04E2C40`, paddingBottom:2 }} />
                                                 <button onClick={()=>removeCustomSection(cs.id)}
                                                   style={{ padding:"3px 8px", borderRadius:T.radius, border:`1px solid ${T.danger}30`,
                                                     background:T.dangerLight, color:T.danger, fontSize:10, fontWeight:700, cursor:"pointer" }}>
@@ -1538,7 +1538,7 @@ export default function ResumePage() {
                                                 {cs.items.map((entry:any, idx:number) => (
                                                   <SectionCard key={idx}>
                                                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                                                      <span style={{ fontSize:11, fontWeight:700, color:"#8b5cf6" }}>{entry.title||`Entry ${idx+1}`}</span>
+                                                      <span style={{ fontSize:11, fontWeight:700, color:"#A04E2C" }}>{entry.title||`Entry ${idx+1}`}</span>
                                                       <button onClick={()=>removeCustomSectionItem(cs.id,idx)} style={{ border:"none", background:"none", cursor:"pointer", color:T.textTertiary, padding:2 }}
                                                         onMouseEnter={e=>(e.currentTarget as any).style.color=T.danger}
                                                         onMouseLeave={e=>(e.currentTarget as any).style.color=T.textTertiary}>
@@ -1554,7 +1554,7 @@ export default function ResumePage() {
                                                   </SectionCard>
                                                 ))}
                                               </div>
-                                              <AddButton onClick={()=>addCustomSectionItem(cs.id)} label="Add Entry" color="#8b5cf6" />
+                                              <AddButton onClick={()=>addCustomSectionItem(cs.id)} label="Add Entry" color="#A04E2C" />
                                             </>
                                           );
                                         })()}
@@ -1604,11 +1604,11 @@ export default function ResumePage() {
                         {/* Add Custom Section button */}
                         <button onClick={addCustomSection}
                           style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 10px",
-                            borderRadius:T.radius, cursor:"pointer", border:`1.5px dashed #8b5cf640`,
-                            background:"rgba(139,92,246,0.04)", color:"#8b5cf6cc",
+                            borderRadius:T.radius, cursor:"pointer", border:`1.5px dashed #A04E2C40`,
+                            background:"rgba(33,146,74,0.04)", color:"#A04E2Ccc",
                             fontSize:11, fontWeight:700, transition:"all 0.13s", marginTop:8 }}
-                          onMouseEnter={e=>{(e.currentTarget as any).style.background="rgba(139,92,246,0.10)";(e.currentTarget as any).style.borderColor="#8b5cf680";(e.currentTarget as any).style.color="#8b5cf6";}}
-                          onMouseLeave={e=>{(e.currentTarget as any).style.background="rgba(139,92,246,0.04)";(e.currentTarget as any).style.borderColor="#8b5cf640";(e.currentTarget as any).style.color="#8b5cf6cc";}}>
+                          onMouseEnter={e=>{(e.currentTarget as any).style.background="rgba(33,146,74,0.10)";(e.currentTarget as any).style.borderColor="#A04E2C80";(e.currentTarget as any).style.color="#A04E2C";}}
+                          onMouseLeave={e=>{(e.currentTarget as any).style.background="rgba(33,146,74,0.04)";(e.currentTarget as any).style.borderColor="#A04E2C40";(e.currentTarget as any).style.color="#A04E2Ccc";}}>
                           <Plus size={12} /> Add Custom Section
                         </button>
                       </>
@@ -1636,7 +1636,7 @@ export default function ResumePage() {
                         )}
                         <AiProviderSelector value={aiProvider} onChange={setAiProvider} />
                         <div style={{ padding:14, borderRadius:T.radiusMd, marginBottom:16,
-                          background:"linear-gradient(135deg,rgba(45,91,227,0.06),rgba(124,58,237,0.06))",
+                          background:"linear-gradient(135deg,rgba(45,91,227,0.06),rgba(31,138,62,0.06))",
                           border:`1.5px solid ${T.accent}20` }}>
                           <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
                             <div style={{ width:32, height:32, borderRadius:T.radius, background:T.accentLight,
@@ -1941,8 +1941,8 @@ export default function ResumePage() {
                 sidebar.scrollTo({ top: offset, behavior: "smooth" });
                 // Flash highlight animation
                 el.style.transition = "box-shadow 0.2s ease, outline 0.2s ease";
-                el.style.outline = "2px solid #6366f1";
-                el.style.boxShadow = "0 0 0 4px rgba(99,102,241,0.18)";
+                el.style.outline = "2px solid #2E8B45";
+                el.style.boxShadow = "0 0 0 4px rgba(31,138,62,0.18)";
                 el.style.borderRadius = "6px";
                 // Focus first input inside the element
                 setTimeout(() => {

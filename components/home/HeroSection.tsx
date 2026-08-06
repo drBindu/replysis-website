@@ -24,6 +24,27 @@ function MacIcon({ className }: { className?: string }) {
   );
 }
 
+/* Magnetic wrapper — child drifts toward the cursor while hovered */
+function Magnetic({ children, strength = 0.4, className = "" }: { children: React.ReactNode; strength?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mvx = useMotionValue(0);
+  const mvy = useMotionValue(0);
+  const sx = useSpring(mvx, { stiffness: 220, damping: 16, mass: 0.4 });
+  const sy = useSpring(mvy, { stiffness: 220, damping: 16, mass: 0.4 });
+  const onMove = (e: React.MouseEvent) => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    mvx.set((e.clientX - (r.left + r.width / 2)) * strength);
+    mvy.set((e.clientY - (r.top + r.height / 2)) * strength);
+  };
+  const reset = () => { mvx.set(0); mvy.set(0); };
+  return (
+    <motion.div ref={ref} onMouseMove={onMove} onMouseLeave={reset} style={{ x: sx, y: sy }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
 export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "default" }: {
   detectedOS: "win" | "mac" | "other"; mounted: boolean;
   onDownload: (os: "win" | "mac") => void; size?: "default" | "large";
@@ -32,9 +53,9 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
   const btn = (os: "win" | "mac", primary: boolean) => (
     <button key={os} onClick={() => onDownload(os)}
       className={`flex items-center justify-center font-semibold border transition-all active:scale-[0.97] ${cls} ${
-        primary ? "text-white border-transparent" : "bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-700 shadow-sm"
+        primary ? "text-white border-transparent" : "bg-white text-gray-600 border-gray-200 hover:border-zinc-400 hover:text-zinc-900 shadow-sm"
       }`}
-      style={primary ? { background: "linear-gradient(135deg,#7c3aed,#ea580c)", boxShadow: "0 6px 24px rgba(124,58,237,0.32)" } : undefined}>
+      style={primary ? { background: "linear-gradient(135deg,#21924A,#21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.32)" } : undefined}>
       {os === "win" ? <WinIcon className="w-4 h-4 flex-shrink-0" /> : <MacIcon className="w-4 h-4 flex-shrink-0" />}
       <span>{os === "win" ? "Download for Windows" : "Download for macOS"}</span>
       {primary && <span className="text-[10px] font-black bg-white/25 px-2 py-0.5 rounded-full">FREE</span>}
@@ -68,6 +89,13 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const mockY = useSpring(useTransform(scrollYProgress, [0, 1], [0, 60]), { stiffness: 60, damping: 20 });
+  /* Scroll-linked hero exit: text drifts up + fades as you scroll into the page */
+  const textY = useSpring(useTransform(scrollYProgress, [0, 1], [0, -90]), { stiffness: 60, damping: 22 });
+  const heroFade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
+  const mockScale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  /* Scroll-driven 3D rotation for the app window (it turns + tilts as you scroll) */
+  const mockRotX = useTransform(scrollYProgress, [0, 1], [13, 26]);
+  const mockRotY = useTransform(scrollYProgress, [0, 1], [-9, 13]);
 
   /* Mouse parallax */
   const rawX = useMotionValue(0);
@@ -80,6 +108,9 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
   const b2y = useTransform(my, [-1, 1], [14, -14]);
   const b3x = useTransform(mx, [-1, 1], [-12, 12]);
   const b3y = useTransform(my, [-1, 1], [8, -8]);
+  /* 3D tilt for the product mockup (mouse-follow) */
+  const tiltY = useTransform(mx, [-1, 1], [9, -9]);
+  const tiltX = useTransform(my, [-1, 1], [-6, 6]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -93,18 +124,23 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
   return (
     <section ref={ref}
       className="relative min-h-screen flex items-center pt-[60px] overflow-hidden"
-      style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 30%, #fff4ec 70%, #fdf8ff 100%)" }}>
+      style={{ background: "linear-gradient(150deg, #FEFEFC 0%, #F6F8F3 32%, #F4F7F1 68%, #FEFEFC 100%)" }}>
+
+      {/* ── Living aurora — slow drifting green light ── */}
+      <div aria-hidden className="absolute inset-[-15%] pointer-events-none"
+        style={{ animation: "aurora-drift 24s ease-in-out infinite",
+          background: "radial-gradient(30% 34% at 24% 30%, rgba(33,146,74,0.20), transparent 70%), radial-gradient(26% 30% at 80% 22%, rgba(46,139,69,0.14), transparent 70%), radial-gradient(36% 40% at 62% 88%, rgba(20,83,43,0.12), transparent 72%)" }} />
 
       {/* ── Mouse-parallax ambient blobs ── */}
       <motion.div className="absolute pointer-events-none"
         style={{ x: b1x, y: b1y, top: "-200px", left: "-180px", width: "700px", height: "700px", borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(124,58,237,0.26) 0%, rgba(109,40,217,0.08) 45%, transparent 68%)", filter: "blur(100px)" }} />
+          background: "radial-gradient(circle, rgba(31,138,62,0.26) 0%, rgba(31,138,62,0.08) 45%, transparent 68%)", filter: "blur(100px)" }} />
       <motion.div className="absolute pointer-events-none"
         style={{ x: b2x, y: b2y, top: "-80px", right: "-160px", width: "620px", height: "620px", borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(234,88,12,0.20) 0%, transparent 65%)", filter: "blur(90px)" }} />
+          background: "radial-gradient(circle, rgba(31,138,62,0.20) 0%, transparent 65%)", filter: "blur(90px)" }} />
       <motion.div className="absolute pointer-events-none"
         style={{ x: b3x, y: b3y, bottom: "-60px", left: "50%", marginLeft: "-400px", width: "800px", height: "450px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(147,51,234,0.12) 0%, transparent 68%)", filter: "blur(110px)" }} />
+          background: "radial-gradient(ellipse, rgba(31,138,62,0.12) 0%, transparent 68%)", filter: "blur(110px)" }} />
 
       {/* Waveform  -  thematic, barely visible */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ opacity: 0.055 }}>
@@ -113,7 +149,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             <motion.div key={i}
               animate={{ height: [6, w.h, 6] }}
               transition={{ duration: w.d, repeat: Infinity, ease: "easeInOut", delay: w.dl }}
-              style={{ width: "3px", borderRadius: "99px", background: "linear-gradient(to top, #7c3aed, #ea580c)" }}
+              style={{ width: "3px", borderRadius: "99px", background: "linear-gradient(to top, #21924A, #21924A)" }}
             />
           ))}
         </div>
@@ -121,29 +157,85 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
 
       {/* Dot grid  -  texture only */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ backgroundImage: "radial-gradient(circle, rgba(124,58,237,0.06) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+        style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.06) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
-      {/* ══════════════════ TWO-COLUMN LAYOUT ══════════════════ */}
-      <div className="relative w-full max-w-7xl mx-auto px-6 lg:px-14 z-10 py-10 lg:py-0">
-        <div className="grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-16 items-center">
+      {/* ── Floating side cards — fill the left/right space with a live scene ── */}
+      <div className="absolute inset-0 pointer-events-none hidden lg:block z-[5]">
+        {/* LEFT · Listening */}
+        <motion.div initial={{ opacity: 0, x: -30, rotate: -6 }} animate={{ opacity: 1, x: 0, rotate: -5 }} transition={{ delay: 0.5, duration: 0.8, ease: [0.16,1,0.3,1] }}
+          className="absolute left-[2.5%] top-[20%] w-[190px]">
+          <motion.div animate={{ y: [0, -14, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="rounded-2xl bg-white/85 backdrop-blur-md border border-[#16150F]/[0.07] p-3.5" style={{ boxShadow: "0 20px 44px -18px rgba(22,21,15,0.28)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-6 h-6 rounded-lg bg-[#EEF7EF] flex items-center justify-center text-[10px] font-black text-[#1C7A3E]">HR</span>
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Interviewer</span>
+              <span className="ml-auto flex items-end gap-[2px] h-3">
+                {[6,10,5,9,7].map((h,i)=>(<motion.span key={i} animate={{height:[3,h,3]}} transition={{duration:1+i*0.15,repeat:Infinity,ease:"easeInOut"}} className="w-[2px] rounded-full bg-[#21924A]" />))}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-600 leading-snug">"Tell me about a time you led under pressure."</p>
+          </motion.div>
+        </motion.div>
 
-          {/* ── LEFT: Text + CTAs ── */}
-          <div className="flex flex-col">
+        {/* LEFT · Resume loaded */}
+        <motion.div initial={{ opacity: 0, x: -30, rotate: 5 }} animate={{ opacity: 1, x: 0, rotate: 4 }} transition={{ delay: 0.8, duration: 0.8, ease: [0.16,1,0.3,1] }}
+          className="absolute left-[4%] bottom-[18%] w-[170px]">
+          <motion.div animate={{ y: [0, 12, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="rounded-2xl bg-white/85 backdrop-blur-md border border-[#16150F]/[0.07] p-3.5 flex items-center gap-2.5" style={{ boxShadow: "0 20px 44px -18px rgba(22,21,15,0.28)" }}>
+            <span className="w-8 h-8 rounded-xl bg-[#EEF7EF] flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-[#1C7A3E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <div><p className="text-[11px] font-black text-gray-800 leading-tight">Resume loaded</p><p className="text-[9px] text-gray-400">Answers grounded in your story</p></div>
+          </motion.div>
+        </motion.div>
+
+        {/* RIGHT · 1.8s response */}
+        <motion.div initial={{ opacity: 0, x: 30, rotate: 6 }} animate={{ opacity: 1, x: 0, rotate: 5 }} transition={{ delay: 0.6, duration: 0.8, ease: [0.16,1,0.3,1] }}
+          className="absolute right-[2.5%] top-[18%] w-[160px]">
+          <motion.div animate={{ y: [0, 13, 0] }} transition={{ duration: 6.5, repeat: Infinity, ease: "easeInOut" }}
+            className="rounded-2xl bg-white/85 backdrop-blur-md border border-[#16150F]/[0.07] p-3.5 flex items-center gap-2.5" style={{ boxShadow: "0 20px 44px -18px rgba(22,21,15,0.28)" }}>
+            <span className="w-8 h-8 rounded-xl bg-[#EEF7EF] flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-[#1C7A3E]" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </span>
+            <div><p className="text-[13px] font-black text-gray-900 leading-tight">1.8s</p><p className="text-[9px] text-gray-400">Answer on screen</p></div>
+          </motion.div>
+        </motion.div>
+
+        {/* RIGHT · Stealth */}
+        <motion.div initial={{ opacity: 0, x: 30, rotate: -5 }} animate={{ opacity: 1, x: 0, rotate: -4 }} transition={{ delay: 0.9, duration: 0.8, ease: [0.16,1,0.3,1] }}
+          className="absolute right-[3.5%] bottom-[20%] w-[180px]">
+          <motion.div animate={{ y: [0, -13, 0] }} transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
+            className="rounded-2xl bg-white/85 backdrop-blur-md border border-[#16150F]/[0.07] p-3.5" style={{ boxShadow: "0 20px 44px -18px rgba(22,21,15,0.28)" }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <svg className="w-3.5 h-3.5 text-[#1C7A3E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <span className="text-[10px] font-black text-gray-800">Stealth Active</span>
+            </div>
+            <p className="text-[9px] text-gray-400 leading-snug">Invisible on screen-share &amp; recordings</p>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* ══════════════════ CENTERED EDITORIAL LAYOUT ══════════════════ */}
+      <div className="relative w-full max-w-6xl mx-auto px-6 z-10 pt-24 pb-10 lg:pt-16">
+        <div className="flex flex-col items-center gap-12">
+
+          {/* ── Centered headline block + CTAs ── */}
+          <motion.div style={{ y: textY, opacity: heroFade }} className="flex flex-col items-center text-center max-w-3xl mx-auto">
 
             {/* Announcement badge */}
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
-              className="flex flex-col gap-2 mb-5 self-start">
+              className="flex flex-col gap-2 mb-5 self-center">
               {/* New feature pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full self-start"
-                style={{ background: "linear-gradient(135deg, rgba(109,40,217,0.08), rgba(234,88,12,0.06))", border: "1px solid rgba(109,40,217,0.18)" }}>
-                <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest bg-violet-100 px-1.5 py-0.5 rounded-full">NEW</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full self-center"
+                style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.08), rgba(31,138,62,0.06))", border: "1px solid rgba(31,138,62,0.18)" }}>
+                <span className="text-[9px] font-black text-zinc-900 uppercase tracking-widest bg-zinc-200 px-1.5 py-0.5 rounded-full">NEW</span>
                 <span className="text-[11px] font-semibold text-gray-600">Screen Analysis + Multi-platform audio capture</span>
               </div>
               {/* Status pill */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-violet-200/70 shadow-sm backdrop-blur-sm self-start">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-zinc-300/70 shadow-sm backdrop-blur-sm self-center">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-800 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-800" />
                 </span>
                 <span className="text-[11px] font-semibold text-gray-600 tracking-wide">
                   Real-Time &nbsp;·&nbsp; Stealth Mode &nbsp;·&nbsp; Sub-2s Response
@@ -155,19 +247,19 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             <motion.h1
               initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-[2.6rem] md:text-[3.2rem] lg:text-[3.6rem] font-black tracking-tight leading-[1.05] mb-4 text-gray-900">
+              className="font-display text-[2.9rem] md:text-[3.6rem] lg:text-[4.1rem] leading-[1.02] mb-5 text-[#16150F]">
               Ace every interview.
               <br />
-              <span style={{ background: "linear-gradient(135deg, #6d28d9 0%, #9333ea 45%, #ea580c 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              <span style={{ fontStyle: "italic", background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 Land the offer.
               </span>
             </motion.h1>
 
             {/* Sub-headline  -  concise */}
             <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.7 }}
-              className="text-[1rem] text-gray-500 leading-relaxed mb-5 max-w-[420px]">
+              className="text-[1.05rem] text-[#4A4A41] leading-[1.7] mb-6 max-w-[440px]">
               Listens live, reads your resume, and delivers the{" "}
-              <span className="text-violet-600 font-semibold">perfect answer in 1.8s</span>
+              <span className="text-[#1C7A3E] font-semibold">perfect answer in 1.8s</span>
               {" "}completely undetectable.
             </motion.p>
 
@@ -179,32 +271,45 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Windows button — primary when on Windows, secondary when on Mac */}
                 {(!mounted || detectedOS !== "mac") && (
-                <button onClick={() => onDownload("win")}
-                  className="group relative flex items-center gap-3 px-6 py-4 rounded-xl text-white font-bold overflow-hidden transition-all active:scale-[0.97] sm:flex-none"
-                  style={
-                    !mounted || detectedOS === "win" || detectedOS === "other"
-                      ? { background: "linear-gradient(135deg, #6d28d9 0%, #9333ea 50%, #ea580c 100%)", boxShadow: "0 8px 28px rgba(109,40,217,0.40), 0 2px 8px rgba(234,88,12,0.18)" }
-                      : { background: "linear-gradient(135deg, #18181b 0%, #27272a 100%)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.07)" }
-                  }>
-                  {/* auto-running shimmer sweep */}
-                  <motion.span className="absolute inset-0 pointer-events-none"
-                    style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%)", width: "60%" }}
-                    animate={{ x: ["-80%", "220%"] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }} />
-                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ background: "linear-gradient(135deg, #5b21b6 0%, #7c3aed 50%, #c2410c 100%)" }} />
-                  <WinIcon className="w-5 h-5 relative flex-shrink-0" />
-                  <span className="relative text-left leading-tight">
-                    <span className="block text-[9px] font-medium opacity-70 mb-0.5 uppercase tracking-wider">Download for</span>
-                    <span className="block text-[15px] font-black">Windows</span>
-                  </span>
-                  <span className="relative ml-auto flex items-center gap-1">
-                    <span className="text-[9px] font-black bg-white/22 px-2 py-0.5 rounded-full">FREE</span>
-                    <svg className="w-3.5 h-3.5 opacity-70 group-hover:translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
-                </button>
+                <Magnetic strength={0.3} className="sm:flex-none">
+                <motion.div className="relative" whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}>
+                  {/* breathing attention glow — makes download the focal point */}
+                  {(!mounted || detectedOS === "win" || detectedOS === "other") && (
+                    <motion.span aria-hidden className="absolute -inset-2.5 rounded-[20px] pointer-events-none"
+                      style={{ background: "radial-gradient(closest-side, rgba(33,146,74,0.55), rgba(33,146,74,0) 78%)", filter: "blur(12px)" }}
+                      animate={{ opacity: [0.35, 0.75, 0.35], scale: [0.97, 1.05, 0.97] }}
+                      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }} />
+                  )}
+                  <button onClick={() => onDownload("win")}
+                    className="group relative w-full flex items-center gap-3.5 px-8 py-[1.15rem] rounded-2xl text-white font-bold overflow-hidden"
+                    style={
+                      !mounted || detectedOS === "win" || detectedOS === "other"
+                        ? { background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 50%, #21924A 100%)", boxShadow: "0 14px 40px rgba(31,138,62,0.45), 0 4px 12px rgba(31,138,62,0.22)" }
+                        : { background: "linear-gradient(135deg, #1C7A3E 0%, #21924A 100%)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.07)" }
+                    }>
+                    {/* auto-running shimmer sweep */}
+                    <motion.span className="absolute inset-0 pointer-events-none"
+                      style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.30) 50%, transparent 70%)", width: "60%" }}
+                      animate={{ x: ["-80%", "220%"] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.6 }} />
+                    <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: "linear-gradient(135deg, #14532B 0%, #21924A 50%, #14532B 100%)" }} />
+                    <WinIcon className="w-6 h-6 relative flex-shrink-0" />
+                    <span className="relative text-left leading-tight">
+                      <span className="block text-[10px] font-medium opacity-75 mb-0.5 uppercase tracking-wider">Download free for</span>
+                      <span className="block text-[17px] font-black">Windows</span>
+                    </span>
+                    <span className="relative ml-auto flex items-center gap-1.5">
+                      <span className="text-[10px] font-black bg-white/25 px-2.5 py-0.5 rounded-full">FREE</span>
+                      <motion.svg className="w-4 h-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                        animate={{ y: [0, 3, 0] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </motion.svg>
+                    </span>
+                  </button>
+                </motion.div>
+                </Magnetic>
                 )}
 
                 {/* macOS button — primary when on Mac, secondary when on Windows */}
@@ -213,8 +318,8 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   className="group relative flex items-center gap-3 px-6 py-4 rounded-xl text-white font-bold overflow-hidden transition-all active:scale-[0.97] sm:flex-none"
                   style={
                     mounted && detectedOS === "mac"
-                      ? { background: "linear-gradient(135deg, #18181b 0%, #3f3f46 100%)", boxShadow: "0 8px 28px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.10)" }
-                      : { background: "linear-gradient(135deg, #18181b 0%, #27272a 100%)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.07)" }
+                      ? { background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 100%)", boxShadow: "0 8px 28px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.10)" }
+                      : { background: "linear-gradient(135deg, #1C7A3E 0%, #21924A 100%)", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.07)" }
                   }>
                   {mounted && detectedOS === "mac" && (
                     <motion.span className="absolute inset-0 pointer-events-none"
@@ -223,7 +328,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }} />
                   )}
                   <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: "linear-gradient(135deg, #27272a, #3f3f46)" }} />
+                    style={{ background: "linear-gradient(135deg, #21924A, #2E8B45)" }} />
                   <MacIcon className="w-5 h-5 relative flex-shrink-0 text-gray-300" />
                   <span className="relative text-left leading-tight">
                     <span className="block text-[9px] font-medium opacity-55 mb-0.5 uppercase tracking-wider">Download for</span>
@@ -269,20 +374,20 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               className="flex flex-col gap-2 mb-6">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                   <span className="text-[11px] text-gray-500">Free forever</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                   <span className="text-[11px] text-gray-500">No credit card</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                  <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                   <span className="text-[11px] text-gray-500">Zero audio stored</span>
                 </div>
                 <div className="w-px h-3 bg-gray-200" />
                 <button onClick={() => onNav("real-interview")}
-                  className="text-[12px] font-semibold text-violet-600 hover:text-violet-800 transition-colors flex items-center gap-1 group">
+                  className="text-[12px] font-semibold text-zinc-900 hover:text-zinc-950 transition-colors flex items-center gap-1 group">
                   Try in browser
                   <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -295,10 +400,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.42 }}
               className="flex items-center gap-6 mb-6 flex-wrap">
               {[
-                { value: "50K+",  label: "Sessions" },
-                { value: "1.8s",  label: "Response time" },
-                { value: "87%",   label: "Offer rate" },
-                { value: "4.9★",  label: "Rating" },
+                { value: "1.8s",  label: "Response" },
+                { value: "100%",  label: "Private" },
+                { value: "Any",   label: "Platform" },
+                { value: "Live",  label: "On-screen" },
               ].map((s, i) => (
                 <div key={s.value} className="flex items-center gap-5">
                   {i > 0 && <div className="w-px h-7 bg-gray-200" />}
@@ -310,32 +415,47 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               ))}
             </motion.div>
 
-            {/* Social proof */}
+            {/* Social proof — honest early-access framing */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-              className="flex items-center gap-3">
-              <div className="flex -space-x-1.5">
-                {["AM","PS","RK","SI","AN"].map((ini, i) => (
-                  <div key={i} className={`w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[9px] font-bold text-white bg-gradient-to-br ${["from-violet-500 to-purple-600","from-orange-400 to-orange-600","from-purple-500 to-violet-700","from-amber-500 to-orange-600","from-violet-400 to-orange-500"][i]}`}>{ini}</div>
-                ))}
-              </div>
+              className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 border border-gray-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Now in early access</span>
+              </span>
               <p className="text-[11px] text-gray-400">
-                <span className="text-gray-700 font-semibold">50,000+ professionals</span> · Google · Amazon · Microsoft
+                Built for candidates targeting <span className="text-gray-700 font-semibold">Google, Amazon &amp; Microsoft</span>
               </p>
             </motion.div>
-          </div>
 
-          {/* ── RIGHT: Product mockup ── */}
-          <motion.div style={{ y: mockY }}
-            initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
-            className="relative hidden lg:block">
+            {/* Works-on platform strip — adds real info + credibility */}
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.62, duration: 0.6 }}
+              className="mt-9 flex flex-col items-center gap-3">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Works seamlessly on</span>
+              <div className="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center max-w-xl">
+                {["Zoom", "Google Meet", "Microsoft Teams", "Webex", "HireVue", "Phone screens"].map((p) => (
+                  <motion.span key={p} whileHover={{ y: -3 }}
+                    className="text-[13.5px] font-semibold text-gray-500 hover:text-[#1C7A3E] cursor-default transition-colors">
+                    {p}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* ── Product mockup — large, centered showcase below ── */}
+          <motion.div style={{ y: mockY, scale: mockScale, rotateX: mockRotX, rotateY: mockRotY, transformPerspective: 1600, transformStyle: "preserve-3d" }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: 0.35, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-4xl mx-auto will-change-transform">
+          <motion.div animate={{ y: [0, -16, 0] }} transition={{ duration: 6.5, repeat: Infinity, ease: "easeInOut" }}
+            style={{ rotateX: tiltX, rotateY: tiltY, transformStyle: "preserve-3d" }}>
 
             {/* Glow behind window */}
             <div className="absolute inset-x-12 top-6 bottom-6 pointer-events-none"
-              style={{ background: "radial-gradient(ellipse, rgba(109,40,217,0.16) 0%, transparent 70%)", filter: "blur(24px)" }} />
+              style={{ background: "radial-gradient(ellipse, rgba(31,138,62,0.16) 0%, transparent 70%)", filter: "blur(24px)" }} />
 
-            <div className="relative rounded-2xl overflow-hidden"
-              style={{ border: "1px solid rgba(124,58,237,0.14)", boxShadow: "0 24px 80px rgba(109,40,217,0.12), 0 6px 20px rgba(0,0,0,0.06)" }}>
+            <div className="relative rounded-[20px] overflow-hidden"
+              style={{ border: "1px solid rgba(22,21,15,0.08)", boxShadow: "0 44px 100px -20px rgba(22,21,15,0.28), 0 18px 44px -24px rgba(22,21,15,0.20), 0 2px 8px rgba(22,21,15,0.04)" }}>
 
               {/* Window chrome bar */}
               <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100/80"
@@ -347,22 +467,22 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 </div>
                 <div className="flex items-center gap-2 ml-2 flex-1 min-w-0">
                   <div className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center font-black text-[9px] text-white"
-                    style={{ background: "linear-gradient(135deg, #6d28d9, #ea580c)" }}>CX</div>
+                    style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>CX</div>
                   <span className="text-[12px] font-semibold text-gray-700">Verchor</span>
                   <span className="text-gray-300 mx-1">·</span>
                   <span className="text-[11px] text-gray-400">Interview Assistant</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-400 font-mono">12:47</span>
-                  <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] text-emerald-600 font-bold tracking-wider">LIVE</span>
+                  <div className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-300 rounded-lg px-2.5 py-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-800 animate-pulse" />
+                    <span className="text-[10px] text-zinc-900 font-bold tracking-wider">LIVE</span>
                   </div>
                 </div>
               </div>
 
               {/* App body */}
-              <div className="p-5 space-y-4" style={{ background: "linear-gradient(160deg, #fdfcff 0%, #fffaf6 100%)" }}>
+              <div className="p-5 space-y-4" style={{ background: "linear-gradient(160deg, #ffffff 0%, #ffffff 100%)" }}>
 
                 {/* Interviewer bubble */}
                 <div className="flex items-start gap-3">
@@ -378,34 +498,34 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 {/* AI response bubble */}
                 <div className="flex items-start gap-3 pl-2">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-black text-white"
-                    style={{ background: "linear-gradient(135deg, #6d28d9, #ea580c)", boxShadow: "0 0 12px rgba(109,40,217,0.28)" }}>AI</div>
+                    style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 0 12px rgba(31,138,62,0.28)" }}>AI</div>
                   <div className="flex-1 rounded-2xl rounded-tl-sm overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(109,40,217,0.055) 0%, rgba(234,88,12,0.035) 100%)", border: "1px solid rgba(109,40,217,0.16)" }}>
-                    <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-violet-100/60">
+                    style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.055) 0%, rgba(31,138,62,0.035) 100%)", border: "1px solid rgba(31,138,62,0.16)" }}>
+                    <div className="flex items-center gap-2 px-4 pt-3 pb-2.5 border-b border-zinc-200/60">
                       <div className="flex items-end gap-[2.5px] h-4">
                         {[9,15,7,13,10,16,8,12].map((h, i) => (
                           <motion.div key={i}
                             animate={{ height: [4, h, 4] }}
                             transition={{ duration: 1.2 + i * 0.1, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
-                            style={{ width: "2px", borderRadius: "2px", background: "linear-gradient(to top, #6d28d9, #ea580c)" }}
+                            style={{ width: "2px", borderRadius: "2px", background: "linear-gradient(to top, #1C7A3E, #21924A)" }}
                           />
                         ))}
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider"
-                        style={{ background: "linear-gradient(135deg, #6d28d9, #ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                        style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                         Verchor · 1.8s
                       </span>
-                      <div className="ml-auto flex items-center gap-1 bg-orange-50 rounded-md px-2 py-0.5 border border-orange-100">
-                        <svg className="w-2.5 h-2.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="ml-auto flex items-center gap-1 bg-zinc-100 rounded-md px-2 py-0.5 border border-zinc-200">
+                        <svg className="w-2.5 h-2.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
-                        <span className="text-[9px] text-orange-600 font-semibold tracking-wide">STEALTH</span>
+                        <span className="text-[9px] text-zinc-900 font-semibold tracking-wide">STEALTH</span>
                       </div>
                     </div>
                     <p className="px-4 py-3.5 text-sm text-gray-700 leading-relaxed">
                       "In my previous role I led a 5-person cross-functional team delivering a critical API migration in 3 weeks, on time, with a{" "}
-                      <span className="font-semibold text-violet-700">40% latency reduction</span>."
+                      <span className="font-semibold text-zinc-900">40% latency reduction</span>."
                     </p>
                   </div>
                 </div>
@@ -414,7 +534,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 <div className="px-1 pt-1">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Response Confidence</span>
-                    <span className="text-[10px] font-black" style={{ background: "linear-gradient(135deg, #6d28d9, #ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>98%</span>
+                    <span className="text-[10px] font-black" style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>98%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <motion.div
@@ -422,7 +542,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       animate={{ width: "98%" }}
                       transition={{ delay: 1.2, duration: 1.2, ease: "easeOut" }}
                       className="h-full rounded-full"
-                      style={{ background: "linear-gradient(90deg, #6d28d9, #ea580c)" }}
+                      style={{ background: "linear-gradient(90deg, #1C7A3E, #21924A)" }}
                     />
                   </div>
                 </div>
@@ -434,10 +554,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1, duration: 0.5, type: "spring" }}
               className="absolute -bottom-4 -left-6 bg-white rounded-xl px-4 py-2.5 flex items-center gap-2.5"
-              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10)", border: "1px solid rgba(124,58,237,0.12)" }}>
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10)", border: "1px solid rgba(31,138,62,0.12)" }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, rgba(234,88,12,0.12), rgba(124,58,237,0.10))" }}>
-                <svg className="w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.12), rgba(31,138,62,0.10))" }}>
+                <svg className="w-3.5 h-3.5 text-zinc-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
@@ -453,10 +573,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.4, duration: 0.5, type: "spring" }}
               className="absolute -top-4 -right-4 bg-white rounded-xl px-4 py-2.5 flex items-center gap-2.5"
-              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10)", border: "1px solid rgba(124,58,237,0.12)" }}>
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10)", border: "1px solid rgba(31,138,62,0.12)" }}>
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(109,40,217,0.08))" }}>
-                <svg className="w-3.5 h-3.5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.12), rgba(31,138,62,0.08))" }}>
+                <svg className="w-3.5 h-3.5 text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
               </div>
@@ -465,6 +585,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 <div className="text-[9px] text-gray-400">Real-time answer</div>
               </div>
             </motion.div>
+          </motion.div>
           </motion.div>
 
         </div>

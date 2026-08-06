@@ -41,7 +41,7 @@ export default function MicButton({
           disabled:opacity-50 disabled:cursor-not-allowed
           ${isRecording
             ? "bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/40"
-            : "bg-gradient-to-br from-blue-600 to-purple-600 shadow-blue-500/40"
+            : "bg-gradient-to-br from-zinc-900 to-zinc-900 shadow-zinc-800/40"
           }
         `}
       >
@@ -92,7 +92,7 @@ export default function MicButton({
           disabled:opacity-50 disabled:cursor-not-allowed
           ${isRecording
             ? "bg-red-600 scale-105 shadow-red-500/50"
-            : "bg-blue-600 shadow-blue-500/40"
+            : "bg-zinc-900 shadow-zinc-800/40"
           }
         `}
       >

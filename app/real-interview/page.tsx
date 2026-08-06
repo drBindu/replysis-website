@@ -60,8 +60,8 @@ function CreditsDisplay({
   if (isPro) return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
       style={{ border: "1px solid rgba(251,191,36,0.35)", background: "rgba(251,191,36,0.09)" }}>
-      <Sparkles size={11} className="text-amber-500" />
-      <span className="text-[11px] font-black text-amber-600 uppercase tracking-[0.15em]">
+      <Sparkles size={11} className="text-zinc-800" />
+      <span className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.15em]">
         Pro · Unlimited
       </span>
     </div>
@@ -71,18 +71,18 @@ function CreditsDisplay({
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
         style={{
-          border: isEmpty ? "1px solid rgba(239,68,68,0.3)" : isLow ? "1px solid rgba(249,115,22,0.3)" : "1px solid #d4dae6",
-          background: isEmpty ? "rgba(239,68,68,0.07)" : isLow ? "rgba(249,115,22,0.07)" : "#edf0f6",
+          border: isEmpty ? "1px solid rgba(239,68,68,0.3)" : isLow ? "1px solid rgba(33,146,74,0.3)" : "1px solid #d4dae6",
+          background: isEmpty ? "rgba(239,68,68,0.07)" : isLow ? "rgba(33,146,74,0.07)" : "#edf0f6",
         }}>
-        <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#f97316" : "#94a3b8" }} />
-        <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#f97316" : "#475569" }}>
+        <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />
+        <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
           {credits.toLocaleString()}
           <span className="font-normal text-[10px] ml-1 opacity-60">credits</span>
         </span>
         {isLow && (
           <div className="flex items-center gap-1">
-            <Flame size={9} style={{ color: isEmpty ? "#ef4444" : "#f97316" }} />
-            <span className="text-[9px] font-black" style={{ color: isEmpty ? "#ef4444" : "#f97316" }}>
+            <Flame size={9} style={{ color: isEmpty ? "#ef4444" : "#2E8B45" }} />
+            <span className="text-[9px] font-black" style={{ color: isEmpty ? "#ef4444" : "#2E8B45" }}>
               {isEmpty ? "Empty" : "Low"}
             </span>
           </div>
@@ -91,7 +91,7 @@ function CreditsDisplay({
       {(isLow || isEmpty) && (
         <button onClick={onUpgrade}
           className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white transition-all shadow-sm"
-          style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+          style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
           Upgrade
         </button>
       )}
@@ -141,7 +141,7 @@ export default function RealInterviewPage() {
 
   if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      <Loader2 className="w-8 h-8 text-zinc-600 animate-spin" />
     </div>
   );
 
@@ -171,8 +171,8 @@ export default function RealInterviewPage() {
               </p>
             </div>
             <button onClick={() => setShowAuth(true)}
-              className="px-8 py-3 rounded-xl font-black text-white transition-all text-sm shadow-lg shadow-indigo-200"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+              className="px-8 py-3 rounded-xl font-black text-white transition-all text-sm shadow-lg shadow-zinc-300"
+              style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
               Sign In
             </button>
           </motion.div>
@@ -191,7 +191,7 @@ export default function RealInterviewPage() {
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[16px] font-black tracking-tight text-slate-800">Verchor</span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md"
-                    style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(234,88,12,0.10))", border: "1px solid rgba(124,58,237,0.2)", color: "#7c3aed" }}>
+                    style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.12), rgba(31,138,62,0.10))", border: "1px solid rgba(31,138,62,0.2)", color: "#21924A" }}>
                     AI
                   </span>
                 </div>
@@ -228,13 +228,13 @@ export default function RealInterviewPage() {
                   className="mb-2"
                 >
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4"
-                    style={{ border: "1px solid rgba(99,102,241,0.22)", background: "rgba(99,102,241,0.08)", color: "#4338ca" }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                    style={{ border: "1px solid rgba(31,138,62,0.22)", background: "rgba(31,138,62,0.08)", color: "#1C7A3E" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-pulse" />
                     Real-Time AI Interview Copilot
                   </div>
                   <h1 className="text-[2.4rem] font-black tracking-tight leading-[1.05] mb-3 text-slate-900">
                     Start your<br />
-                    <span style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    <span style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                       Interview Session
                     </span>
                   </h1>
@@ -275,19 +275,19 @@ export default function RealInterviewPage() {
                       {
                         step: "01", title: "Hit Start",
                         desc: "No resume needed. Add one for answers tailored to your experience.",
-                        accentBg: "rgba(99,102,241,0.09)", accentBorder: "rgba(99,102,241,0.2)", accentText: "#4338ca",
+                        accentBg: "rgba(31,138,62,0.09)", accentBorder: "rgba(31,138,62,0.2)", accentText: "#1C7A3E",
                         kbd: null,
                       },
                       {
                         step: "02", title: "SPACE: Start listening",
                         desc: "Mic turns on. Speak the question aloud or let the interviewer speak.",
-                        accentBg: "rgba(124,58,237,0.09)", accentBorder: "rgba(124,58,237,0.2)", accentText: "#6d28d9",
+                        accentBg: "rgba(31,138,62,0.09)", accentBorder: "rgba(31,138,62,0.2)", accentText: "#1C7A3E",
                         kbd: "SPACE",
                       },
                       {
                         step: "03", title: "SPACE: Get your answer",
                         desc: "AI generates a perfect, resume-backed response in under 2 seconds.",
-                        accentBg: "rgba(16,185,129,0.09)", accentBorder: "rgba(16,185,129,0.2)", accentText: "#059669",
+                        accentBg: "rgba(33,146,74,0.09)", accentBorder: "rgba(33,146,74,0.2)", accentText: "#21924A",
                         kbd: "SPACE",
                       },
                     ].map(({ step, title, desc, accentBg, accentBorder, accentText, kbd }) => (
@@ -318,8 +318,8 @@ export default function RealInterviewPage() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Credits</p>
                   <div className="space-y-2.5">
                     {[
-                      { label: "Interview session", cost: "2 credits", color: "#4f46e5" },
-                      { label: "Resume verification", cost: "Free",    color: "#059669" },
+                      { label: "Interview session", cost: "2 credits", color: "#1C7A3E" },
+                      { label: "Resume verification", cost: "Free",    color: "#21924A" },
                     ].map(({ label, cost, color }) => (
                       <div key={label} className="flex items-center justify-between py-1.5"
                         style={{ borderBottom: `1px solid ${BDR}` }}>
@@ -331,7 +331,7 @@ export default function RealInterviewPage() {
                   {plan !== "pro" && (
                     <button onClick={() => router.push("/pricing")}
                       className="w-full mt-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center justify-center gap-2 transition-all"
-                      style={{ border: "1px solid rgba(99,102,241,0.25)", background: "rgba(99,102,241,0.07)", color: "#4338ca" }}>
+                      style={{ border: "1px solid rgba(31,138,62,0.25)", background: "rgba(31,138,62,0.07)", color: "#1C7A3E" }}>
                       Upgrade to Pro for unlimited credits <ArrowRight size={13} />
                     </button>
                   )}

@@ -135,7 +135,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
               value={cfg[key]}
               onChange={e => update(key, e.target.value)}
               placeholder={placeholder}
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-300"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 transition-all placeholder:text-slate-300"
             />
           </div>
         ))}
@@ -151,7 +151,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
           onChange={e => update("jobDescription", e.target.value)}
           placeholder="Paste the job description for more tailored answers…"
           rows={3}
-          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none placeholder:text-slate-300"
+          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 transition-all resize-none placeholder:text-slate-300"
         />
       </div>
 
@@ -167,7 +167,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
             {(["paste", "upload"] as const).map(t => (
               <button key={t} onClick={() => { setTab(t); setUploadError(""); }}
                 className={`px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
-                  tab === t ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
+                  tab === t ? "bg-zinc-900 text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
                 }`}>
                 {t === "paste" ? "✏️ Paste" : "📎 Upload"}
               </button>
@@ -181,7 +181,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
             onChange={e => update("resume", e.target.value)}
             placeholder="Paste your full resume text here… (optional. AI gives more generic answers without it)"
             rows={8}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-mono leading-relaxed outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all resize-none placeholder:text-slate-300"
+            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-mono leading-relaxed outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 transition-all resize-none placeholder:text-slate-300"
           />
         )}
 
@@ -191,24 +191,24 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
               onClick={() => !uploading && fileRef.current?.click()}
               whileTap={{ scale: uploading ? 1 : 0.98 }}
               className={`border-2 border-dashed rounded-xl p-10 text-center transition-all min-h-[160px] flex flex-col items-center justify-center gap-3 cursor-pointer ${
-                uploading       ? "border-indigo-300 bg-indigo-50" :
+                uploading       ? "border-zinc-400 bg-zinc-100" :
                 uploadError     ? "border-red-300 bg-red-50 hover:border-red-400" :
-                cfg.resume && fileName ? "border-emerald-300 bg-emerald-50 hover:border-emerald-400" :
-                                  "border-slate-300 bg-white hover:border-indigo-400 hover:bg-indigo-50"
+                cfg.resume && fileName ? "border-zinc-400 bg-zinc-100 hover:border-zinc-600" :
+                                  "border-slate-300 bg-white hover:border-zinc-600 hover:bg-zinc-100"
               }`}
             >
               <input ref={fileRef} type="file" className="hidden" accept=".txt,.pdf" onChange={handleFile} />
               {uploading ? (
-                <><Loader2 size={28} className="text-indigo-500 animate-spin" />
-                  <p className="text-indigo-600 font-semibold text-sm">Reading PDF…</p></>
+                <><Loader2 size={28} className="text-zinc-800 animate-spin" />
+                  <p className="text-zinc-900 font-semibold text-sm">Reading PDF…</p></>
               ) : uploadError ? (
                 <><AlertCircle size={28} className="text-red-400" />
                   <p className="text-red-600 font-semibold text-sm text-center max-w-xs leading-relaxed">{uploadError}</p>
                   <p className="text-red-400 text-xs">Click to try again</p></>
               ) : cfg.resume && fileName ? (
-                <><CheckCircle2 size={28} className="text-emerald-500" />
-                  <p className="text-emerald-600 font-semibold text-sm">{fileName}</p>
-                  <p className="text-emerald-500 text-xs">{cfg.resume.length.toLocaleString()} characters extracted</p></>
+                <><CheckCircle2 size={28} className="text-zinc-800" />
+                  <p className="text-zinc-900 font-semibold text-sm">{fileName}</p>
+                  <p className="text-zinc-800 text-xs">{cfg.resume.length.toLocaleString()} characters extracted</p></>
               ) : (
                 <><UploadCloud size={28} className="text-slate-400" />
                   <div className="text-center">
@@ -224,15 +224,15 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
         {hasResume && (
           <div className="mt-4 pt-4 border-t border-slate-200">
             <button onClick={verifyResume} disabled={verifying}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-semibold transition-all disabled:opacity-50">
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-300 rounded-xl text-sm font-semibold transition-all disabled:opacity-50">
               {verifying ? <Loader2 size={14} className="animate-spin" /> : verified ? <CheckCircle2 size={14} /> : <Search size={14} />}
               {verifying ? "Verifying…" : verified ? "Resume verified ✓" : "Verify AI reads your resume correctly"}
             </button>
             {verifyResult && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                className="mt-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5">Resume Scan:</p>
-                <pre className="text-xs text-emerald-800 leading-relaxed whitespace-pre-wrap break-words font-mono">{verifyResult}</pre>
+                className="mt-3 p-4 bg-zinc-100 border border-zinc-300 rounded-xl">
+                <p className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest mb-1.5">Resume Scan:</p>
+                <pre className="text-xs text-zinc-950 leading-relaxed whitespace-pre-wrap break-words font-mono">{verifyResult}</pre>
               </motion.div>
             )}
           </div>
@@ -243,12 +243,12 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
       <motion.button
         whileTap={{ scale: 0.98 }} whileHover={{ scale: 1.01 }}
         onClick={() => onStart(cfg)}
-        className="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all text-white shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
-        style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+        className="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all text-white shadow-lg shadow-zinc-800/20 flex items-center justify-center gap-2"
+        style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}
       >
         <Zap size={18} />
         Start Interview Session
-        {!hasResume && <span className="text-indigo-200 text-sm font-normal ml-1">(no resume, generic mode)</span>}
+        {!hasResume && <span className="text-zinc-300 text-sm font-normal ml-1">(no resume, generic mode)</span>}
       </motion.button>
 
       {!hasResume && (

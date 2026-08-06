@@ -23,9 +23,9 @@ const TRUST = [
     ),
     title: "Zero Audio Storage",
     desc: "Audio is processed in real-time and never saved to any server. Not even us.",
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-    border: "border-violet-100",
+    color: "text-zinc-900",
+    bg: "bg-zinc-100",
+    border: "border-zinc-200",
   },
   {
     icon: (
@@ -35,9 +35,9 @@ const TRUST = [
     ),
     title: "Screen-Share Safe",
     desc: "The overlay is completely invisible on Zoom, Teams, Meet, and every recording tool.",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-100",
+    color: "text-zinc-900",
+    bg: "bg-zinc-100",
+    border: "border-zinc-200",
   },
   {
     icon: (
@@ -48,9 +48,9 @@ const TRUST = [
     ),
     title: "Completely Private",
     desc: "No conversation logs. No usage sold to third parties. Your data is yours alone.",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-100",
+    color: "text-zinc-900",
+    bg: "bg-zinc-100",
+    border: "border-zinc-200",
   },
   {
     icon: (
@@ -60,9 +60,9 @@ const TRUST = [
     ),
     title: "Sub-2s Response",
     desc: "Groq LPU inference runs roughly 10x faster than standard GPT, so your answer is on screen before you even hesitate.",
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    border: "border-orange-100",
+    color: "text-zinc-900",
+    bg: "bg-zinc-100",
+    border: "border-zinc-200",
   },
 ];
 
@@ -80,7 +80,7 @@ export default function EnterpriseSection() {
             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Enterprise Ready</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">
-            Works everywhere. <span style={{ background: "linear-gradient(135deg,#6d28d9,#ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Invisible always.</span>
+            Works everywhere. <span style={{ background: "linear-gradient(135deg,#1C7A3E,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Invisible always.</span>
           </h2>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
             Native integrations with every major interview platform. Zero setup. Zero footprint.

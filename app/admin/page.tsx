@@ -110,9 +110,9 @@ function StatCard({ icon, label, value, color = "text-white", gradient }: any) {
 // ── Plan Badge ────────────────────────────────────────────────────
 function PlanBadge({ plan }: { plan: string }) {
   const cfg: Record<string, string> = {
-    pro:      "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    lifetime: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-    teams:    "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    pro:      "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
+    lifetime: "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
+    teams:    "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
     free:     "bg-gray-800/50 text-gray-500 border-gray-700/50",
   };
   const key = (plan || "free").toLowerCase();
@@ -281,12 +281,12 @@ export default function AdminPage() {
   // ── Loading skeleton ─────────────────────────────────────────
   if (loading) return (
     <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center gap-4">
-      <div className="flex items-center gap-3 text-violet-400">
+      <div className="flex items-center gap-3 text-zinc-600">
         <Shield size={28} className="animate-pulse" />
         <span className="text-lg font-bold tracking-tight animate-pulse">Loading Admin Dashboard…</span>
       </div>
       <div className="w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
-        <div className="h-full bg-violet-600 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: "60%", animation: "pulse 1.5s ease-in-out infinite" }} />
+        <div className="h-full bg-zinc-900 rounded-full animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: "60%", animation: "pulse 1.5s ease-in-out infinite" }} />
       </div>
     </div>
   );
@@ -295,8 +295,8 @@ export default function AdminPage() {
   if (serverError) return (
     <div className="min-h-screen bg-[#050508] flex items-center justify-center">
       <div className="text-center max-w-sm mx-auto p-8 bg-[#0d0d14] rounded-3xl border border-gray-800">
-        <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Shield size={28} className="text-amber-500" />
+        <div className="w-16 h-16 bg-zinc-800/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Shield size={28} className="text-zinc-800" />
         </div>
         <h2 className="text-white font-bold text-xl mb-2">Server Error</h2>
         <p className="text-gray-500 text-sm mb-2 font-mono text-xs break-all">{serverError}</p>
@@ -305,7 +305,7 @@ export default function AdminPage() {
         </p>
         <button
           onClick={() => { setServerError(null); setLoading(true); fetchAll(); }}
-          className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+          className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold px-6 py-3 rounded-xl transition-all">
           <RefreshCw size={16} /> Retry
         </button>
       </div>
@@ -331,7 +331,7 @@ export default function AdminPage() {
             </p>
             <button
               onClick={async () => { await signOut(auth); window.location.href = "/?auth=required&next=/admin"; }}
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+              className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold px-6 py-3 rounded-xl transition-all">
               <LogIn size={16} /> Sign out &amp; switch account
             </button>
           </>
@@ -342,7 +342,7 @@ export default function AdminPage() {
                            : "Checking your session…"}
             </p>
             <a href="/?auth=required&next=/admin"
-               className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+               className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold px-6 py-3 rounded-xl transition-all">
               <LogIn size={16} /> Sign In as Admin
             </a>
           </>
@@ -369,13 +369,13 @@ export default function AdminPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-violet-500/10 rounded-xl border border-violet-500/20">
-                <Shield size={22} className="text-violet-400" />
+              <div className="p-2 bg-zinc-800/10 rounded-xl border border-zinc-800/20">
+                <Shield size={22} className="text-zinc-600" />
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white">Admin Dashboard</h1>
             </div>
             <p className="text-gray-500 text-sm ml-12">
-              {metrics.users} users · {liveCount > 0 && <span className="text-green-400 font-semibold">{liveCount} live now · </span>}
+              {metrics.users} users · {liveCount > 0 && <span className="text-zinc-600 font-semibold">{liveCount} live now · </span>}
               {lastRefreshed && <span>Last updated {timeAgo(lastRefreshed)}</span>}
             </p>
           </div>
@@ -400,11 +400,11 @@ export default function AdminPage() {
 
         {/* ── Stat Cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard icon={<Users size={16} className="text-blue-400" />}   label="Total Users"   value={metrics.users}        color="text-blue-400"   gradient="border-blue-500/20 hover:border-blue-500/40" />
-          <StatCard icon={<Activity size={16} className="text-green-400" />} label="Live Now"    value={liveCount}            color="text-green-400"  gradient="border-green-500/20 hover:border-green-500/40" />
-          <StatCard icon={<Crown size={16} className="text-amber-400" />}   label="Pro Members"  value={proCount}             color="text-amber-400"  gradient="border-amber-500/20 hover:border-amber-500/40" />
-          <StatCard icon={<Zap size={16} className="text-violet-400" />}    label="AI Usage"     value={formatTime(totalMins)} color="text-violet-400" gradient="border-violet-500/20 hover:border-violet-500/40" />
-          <StatCard icon={<Monitor size={16} className="text-cyan-400" />}  label="Win Downloads" value={winDls}              color="text-cyan-400"   gradient="border-cyan-500/20 hover:border-cyan-500/40" />
+          <StatCard icon={<Users size={16} className="text-zinc-600" />}   label="Total Users"   value={metrics.users}        color="text-zinc-600"   gradient="border-zinc-800/20 hover:border-zinc-800/40" />
+          <StatCard icon={<Activity size={16} className="text-zinc-600" />} label="Live Now"    value={liveCount}            color="text-zinc-600"  gradient="border-zinc-800/20 hover:border-zinc-800/40" />
+          <StatCard icon={<Crown size={16} className="text-zinc-600" />}   label="Pro Members"  value={proCount}             color="text-zinc-600"  gradient="border-zinc-800/20 hover:border-zinc-800/40" />
+          <StatCard icon={<Zap size={16} className="text-zinc-600" />}    label="AI Usage"     value={formatTime(totalMins)} color="text-zinc-600" gradient="border-zinc-800/20 hover:border-zinc-800/40" />
+          <StatCard icon={<Monitor size={16} className="text-zinc-600" />}  label="Win Downloads" value={winDls}              color="text-zinc-600"   gradient="border-zinc-800/20 hover:border-zinc-800/40" />
           <StatCard icon={<Apple size={16} className="text-gray-300" />}    label="Mac Downloads" value={macDls}              color="text-gray-200"   gradient="border-gray-600/30 hover:border-gray-500/50" />
         </div>
 
@@ -416,7 +416,7 @@ export default function AdminPage() {
             placeholder="Search users by email…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#0d0d14] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50 transition-colors"
+            className="w-full bg-[#0d0d14] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-zinc-800/50 transition-colors"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white">
@@ -445,14 +445,14 @@ export default function AdminPage() {
                     {/* User */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-[11px] font-bold flex-shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-900 flex items-center justify-center text-[11px] font-bold flex-shrink-0">
                           {(user.email || "?")[0].toUpperCase()}
                         </div>
                         <div>
                           <div className="text-sm font-semibold text-gray-200 leading-tight">{user.email}</div>
                           <div className="text-[10px] text-gray-700 font-mono mt-0.5 truncate max-w-[140px]">{user.id}</div>
                           {(user.loginCount || 0) > 0 && (
-                            <div className="text-[9px] text-indigo-500 mt-0.5">{user.loginCount} sessions</div>
+                            <div className="text-[9px] text-zinc-800 mt-0.5">{user.loginCount} sessions</div>
                           )}
                         </div>
                       </div>
@@ -488,9 +488,9 @@ export default function AdminPage() {
                         return (
                           <div>
                             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                              isOnline ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-gray-800/40 text-gray-600 border border-gray-700/30"
+                              isOnline ? "bg-zinc-800/10 text-zinc-600 border border-zinc-800/20" : "bg-gray-800/40 text-gray-600 border border-gray-700/30"
                             }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-zinc-600 animate-pulse" : "bg-gray-600"}`} />
                               {isOnline ? "Live" : "Offline"}
                             </span>
                             <div className="text-[10px] text-gray-600 mt-1.5">
@@ -507,12 +507,12 @@ export default function AdminPage() {
                         <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                           <input
                             type="number"
-                            className="w-16 bg-gray-900 border border-violet-500/50 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-violet-500"
+                            className="w-16 bg-gray-900 border border-zinc-800/50 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-zinc-800"
                             defaultValue={user.credits || 0}
                             onChange={e => setNewCreditValue(Number(e.target.value))}
                             autoFocus
                           />
-                          <button onClick={() => handleManualCredits(user.id)} className="p-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition">
+                          <button onClick={() => handleManualCredits(user.id)} className="p-1 bg-zinc-800/10 text-zinc-600 rounded-lg hover:bg-zinc-800/20 transition">
                             <Check size={12} />
                           </button>
                           <button onClick={() => setEditingCredits(null)} className="p-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition">
@@ -521,7 +521,7 @@ export default function AdminPage() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 group/c" onClick={e => e.stopPropagation()}>
-                          <span className="font-mono text-sm text-blue-400 font-bold">{user.credits ?? 0}</span>
+                          <span className="font-mono text-sm text-zinc-600 font-bold">{user.credits ?? 0}</span>
                           <button
                             onClick={() => { setEditingCredits(user.id); setNewCreditValue(user.credits || 0); }}
                             className="opacity-0 group-hover/c:opacity-100 p-1 rounded-lg hover:bg-white/5 transition-all"
@@ -544,7 +544,7 @@ export default function AdminPage() {
                             const credits = p === "teams" ? 10000 : (p === "pro" || p === "lifetime") ? 5000 : 100;
                             updatePlan(user.id, p, credits);
                           }}
-                          className="text-[10px] bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-gray-400 cursor-pointer focus:outline-none focus:border-violet-500/50 hover:border-gray-700 transition-colors"
+                          className="text-[10px] bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-gray-400 cursor-pointer focus:outline-none focus:border-zinc-800/50 hover:border-gray-700 transition-colors"
                         >
                           <option value="free">Free</option>
                           <option value="pro">Pro</option>
@@ -562,7 +562,7 @@ export default function AdminPage() {
                         const macDl = userDls.find((d: any) => d.os === "mac");
                         return (winDl || macDl) ? (
                           <div className="space-y-1">
-                            {winDl && <div className="flex items-center gap-1.5 text-[10px] text-cyan-400"><Monitor size={9} />Win · {fmtIso(winDl.at)}</div>}
+                            {winDl && <div className="flex items-center gap-1.5 text-[10px] text-zinc-600"><Monitor size={9} />Win · {fmtIso(winDl.at)}</div>}
                             {macDl && <div className="flex items-center gap-1.5 text-[10px] text-gray-400"><Apple size={9} />Mac · {fmtIso(macDl.at)}</div>}
                           </div>
                         ) : <span className="text-[10px] text-gray-800 italic">—</span>;
@@ -660,7 +660,7 @@ export default function AdminPage() {
                 <button
                   onClick={goToNextPage}
                   disabled={!nextCursor || refreshing}
-                  className="rounded-lg border border-violet-500/50 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-lg border border-zinc-800/50 bg-zinc-800/10 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:bg-zinc-800/20 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
                 </button>

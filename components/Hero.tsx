@@ -12,20 +12,20 @@ export default function Hero() {
   return (
     <section className="relative flex flex-col items-center justify-center text-center min-h-screen text-white overflow-hidden bg-gradient-to-b from-[#0b1120] via-[#0e1625] to-[#0b0f1a]">
       {/* 🌌 Background glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.25)_0%,rgba(10,15,25,1)_90%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(33,146,74,0.25)_0%,rgba(10,15,25,1)_90%)] pointer-events-none" />
 
       {/* ✨ Top and bottom gradient lines */}
-      <div className="absolute top-0 w-full h-[2px] bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-400 shadow-[0_0_25px_#06b6d4]" />
-      <div className="absolute bottom-0 w-full h-[2px] bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 shadow-[0_0_25px_#06b6d4]" />
+      <div className="absolute top-0 w-full h-[2px] bg-gradient-to-r from-zinc-600 via-zinc-800 to-zinc-600 shadow-[0_0_25px_#06b6d4]" />
+      <div className="absolute bottom-0 w-full h-[2px] bg-gradient-to-r from-zinc-600 via-zinc-400 to-zinc-600 shadow-[0_0_25px_#06b6d4]" />
 
       {/* 🌟 Title */}
       <motion.h1
         initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
-        className="text-6xl md:text-7xl font-extrabold mb-6 leading-tight drop-shadow-[0_0_25px_rgba(56,189,248,0.8)]"
+        className="text-6xl md:text-7xl font-extrabold mb-6 leading-tight drop-shadow-[0_0_25px_rgba(33,146,74,0.8)]"
       >
-        <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-zinc-400 via-zinc-600 to-zinc-600 bg-clip-text text-transparent">
           Welcome to CopilotX AI
         </span>
       </motion.h1>
@@ -49,15 +49,15 @@ export default function Hero() {
         transition={{ delay: 0.8, duration: 0.6 }}
         onClick={handleClick}
         className="relative inline-flex items-center justify-center px-10 py-4 text-lg font-semibold rounded-xl
-                   text-white bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500
-                   hover:from-purple-500 hover:to-cyan-400
+                   text-white bg-gradient-to-r from-zinc-600 via-zinc-800 to-zinc-800
+                   hover:from-zinc-800 hover:to-zinc-600
                    transition-all duration-300 ease-in-out
-                   shadow-[0_0_20px_rgba(56,189,248,0.8)]
-                   hover:shadow-[0_0_40px_rgba(56,189,248,1)]
+                   shadow-[0_0_20px_rgba(33,146,74,0.8)]
+                   hover:shadow-[0_0_40px_rgba(33,146,74,1)]
                    overflow-hidden group"
       >
         {/* Animated border */}
-        <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 opacity-70 blur-[15px] group-hover:opacity-100 transition duration-500"></span>
+        <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-zinc-600 via-zinc-800 to-zinc-800 opacity-70 blur-[15px] group-hover:opacity-100 transition duration-500"></span>
 
         {/* Inner content */}
         <span className="relative z-10 flex items-center gap-2">

@@ -35,8 +35,8 @@ function Robot({ isSpeaking }: { isSpeaking: boolean }) {
         roughness: 0.2,
       }),
       mouth: new THREE.MeshStandardMaterial({
-        color: new THREE.Color("#a78bfa"),
-        emissive: new THREE.Color("#a78bfa"),
+        color: new THREE.Color("#21924A"),
+        emissive: new THREE.Color("#21924A"),
         emissiveIntensity: 0.9,
         metalness: 0.2,
         roughness: 0.25,
@@ -112,7 +112,7 @@ function Robot({ isSpeaking }: { isSpeaking: boolean }) {
 
 export default function AiRobot3D({ isSpeaking }: AiRobot3DProps) {
   return (
-    <div className="w-full h-[360px] rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden shadow-[0_0_45px_rgba(99,102,241,0.18)]">
+    <div className="w-full h-[360px] rounded-2xl border border-slate-700/50 bg-slate-950/40 overflow-hidden shadow-[0_0_45px_rgba(31,138,62,0.18)]">
       <Canvas camera={{ position: [0, 0.15, 4.4], fov: 45 }} dpr={[1, 2]}>
         <ambientLight intensity={0.65} />
         <directionalLight position={[4, 4, 4]} intensity={1.25} />

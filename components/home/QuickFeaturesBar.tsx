@@ -10,10 +10,10 @@ const FEATURES = [
     desc: "Rewrites your resume to be ATS-perfect and role-specific in minutes.",
     cta: "Build my resume",
     path: "resume",
-    gradient: "from-indigo-600 to-violet-600",
-    bg: "from-indigo-600/10 to-violet-600/10",
-    border: "border-indigo-400/30",
-    badge: "bg-indigo-500/20 text-indigo-300 border border-indigo-400/30",
+    gradient: "from-zinc-900 to-zinc-900",
+    bg: "from-zinc-900/10 to-zinc-900/10",
+    border: "border-zinc-600/30",
+    badge: "bg-zinc-800/20 text-zinc-600 border border-zinc-600/30",
     stat: "3x callbacks",
   },
   {
@@ -23,12 +23,12 @@ const FEATURES = [
     desc: "200+ tailored questions for your exact role. Real-time scoring and instant coaching.",
     cta: "Start practicing",
     path: "mock-interview",
-    gradient: "from-violet-600 to-pink-600",
-    bg: "from-violet-600/10 to-pink-600/10",
-    border: "border-violet-400/30",
-    badge: "bg-violet-500/20 text-violet-300 border border-violet-400/30",
+    gradient: "from-zinc-900 to-zinc-900",
+    bg: "from-zinc-900/10 to-zinc-900/10",
+    border: "border-zinc-600/30",
+    badge: "bg-zinc-800/20 text-zinc-600 border border-zinc-600/30",
     hot: true,
-    stat: "87% offer rate",
+    stat: "200+ questions",
   },
   {
     icon: "⚡",
@@ -37,10 +37,10 @@ const FEATURES = [
     desc: "Streams perfect answers to your stealth overlay in under 2 seconds, invisible to your interviewer.",
     cta: "Try live copilot",
     path: "real-interview",
-    gradient: "from-cyan-500 to-blue-600",
-    bg: "from-cyan-500/10 to-blue-600/10",
-    border: "border-cyan-400/30",
-    badge: "bg-cyan-500/20 text-cyan-300 border border-cyan-400/30",
+    gradient: "from-zinc-800 to-zinc-900",
+    bg: "from-zinc-800/10 to-zinc-900/10",
+    border: "border-zinc-600/30",
+    badge: "bg-zinc-800/20 text-zinc-600 border border-zinc-600/30",
     stat: "< 2s live",
   },
 ];
@@ -51,23 +51,23 @@ export default function QuickFeaturesBar({ onNav }: { onNav: (p: string) => void
 
   return (
     <section className="py-24 px-6 relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0f0c29 0%, #1a1040 50%, #0f172a 100%)" }}>
+      style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAFAF9 50%, #FFFFFF 100%)" }}>
 
       {/* Ambient glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(31,138,62,0.2) 0%, transparent 70%)", filter: "blur(80px)" }} />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        style={{ background: "radial-gradient(circle, rgba(70,162,87,0.2) 0%, transparent 70%)", filter: "blur(80px)" }} />
 
       <div className="max-w-6xl mx-auto relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-14">
-          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-gray-400 bg-white/5 border border-white/10 uppercase tracking-widest mb-4">3 Ways Verchor Helps You</span>
-          <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-gray-500 bg-gray-100 border border-gray-200 uppercase tracking-widest mb-4">3 Ways Verchor Helps You</span>
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
             From zero to offer:{" "}
-            <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">all in one place.</span>
+            <span className="bg-gradient-to-r from-zinc-600 to-zinc-600 bg-clip-text text-transparent">all in one place.</span>
           </h2>
         </motion.div>
 
@@ -78,10 +78,10 @@ export default function QuickFeaturesBar({ onNav }: { onNav: (p: string) => void
               animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
               transition={{ duration: 0.65, delay: i * 0.13, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => onNav(f.path)}
-              className={`relative rounded-3xl border ${f.border} bg-gradient-to-br ${f.bg} backdrop-blur-sm p-8 cursor-pointer group hover:shadow-[0_0_60px_rgba(99,102,241,0.2)] hover:-translate-y-3 transition-all duration-300`}>
+              className={`relative rounded-3xl border ${f.border} bg-gradient-to-br ${f.bg} backdrop-blur-sm p-8 cursor-pointer group hover:shadow-[0_0_60px_rgba(31,138,62,0.2)] hover:-translate-y-3 transition-all duration-300`}>
 
               {f.hot && (
-                <span className="absolute top-5 right-5 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500 text-white shadow-lg">
+                <span className="absolute top-5 right-5 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-zinc-800 text-gray-900 shadow-lg">
                   Most Popular
                 </span>
               )}
@@ -98,8 +98,8 @@ export default function QuickFeaturesBar({ onNav }: { onNav: (p: string) => void
                 {f.label}
               </span>
 
-              <h3 className="text-xl font-black text-white mb-2 leading-snug">{f.headline}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed mb-6">{f.desc}</p>
+              <h3 className="text-xl font-black text-gray-900 mb-2 leading-snug">{f.headline}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">{f.desc}</p>
 
               <div className={`inline-flex items-center gap-2 text-sm font-bold bg-gradient-to-r ${f.gradient} bg-clip-text text-transparent group-hover:gap-3 transition-all duration-200`}>
                 {f.cta}

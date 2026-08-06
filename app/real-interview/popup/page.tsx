@@ -77,7 +77,7 @@ export default function PopupPage() {
 
   // ── Mic indicator color ──
   const micColor = isGenerating
-    ? "#f97316"  // orange  -  thinking
+    ? "#2E8B45"  // orange  -  thinking
     : isRecording
     ? "#22c55e"  // green   -  listening
     : "#ef4444"; // red     -  ready
@@ -150,7 +150,7 @@ export default function PopupPage() {
             ══════════════════════════════════════ */}
         <div className="shrink-0 mx-4 mb-2 bg-white/[0.04] border border-white/8 rounded-xl px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest shrink-0 bg-blue-500/10 px-1.5 py-0.5 rounded">
+            <span className="text-[8px] font-black text-zinc-800 uppercase tracking-widest shrink-0 bg-zinc-800/10 px-1.5 py-0.5 rounded">
               Interviewer
             </span>
             <p className="text-xs text-slate-400 truncate leading-none flex-1">
@@ -165,7 +165,7 @@ export default function PopupPage() {
                 <motion.span
                   animate={{ opacity: [1, 0.5, 1] }}
                   transition={{ repeat: Infinity, duration: 0.9 }}
-                  className="text-blue-400"
+                  className="text-zinc-600"
                 >
                   {transcript ? " " : ""}{partial}
                 </motion.span>

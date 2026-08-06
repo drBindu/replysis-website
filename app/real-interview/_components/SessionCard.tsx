@@ -52,8 +52,8 @@ export default function SessionCard({ session, formatDate, formatDuration }: Pro
         <div className="flex items-start gap-4">
           {/* Icon */}
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-            style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
-            <MessageSquare size={15} className="text-indigo-500" />
+            style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.2)" }}>
+            <MessageSquare size={15} className="text-zinc-800" />
           </div>
 
           {/* Info */}
@@ -86,7 +86,7 @@ export default function SessionCard({ session, formatDate, formatDuration }: Pro
                 <Clock size={10} />
                 {formatDuration(session.durationSecs)}
               </span>
-              <span className="text-[11px] font-black text-indigo-500">
+              <span className="text-[11px] font-black text-zinc-800">
                 {session.questionCount} Q{session.questionCount !== 1 ? "s" : ""}
               </span>
             </div>
@@ -123,7 +123,7 @@ export default function SessionCard({ session, formatDate, formatDuration }: Pro
                     {/* Exchange number */}
                     <div className="flex items-center gap-2 mb-2">
                       <div className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md"
-                        style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.18)", color: "#4338ca" }}>
+                        style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.18)", color: "#1C7A3E" }}>
                         Exchange {i + 1}
                       </div>
                     </div>
@@ -145,18 +145,18 @@ export default function SessionCard({ session, formatDate, formatDuration }: Pro
                     {pair.answer && (
                       <div className="flex gap-3 items-start ml-4">
                         <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                          style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                          <CheckCircle2 size={11} className="text-indigo-500" />
+                          style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.2)" }}>
+                          <CheckCircle2 size={11} className="text-zinc-800" />
                         </div>
                         <div className="flex-1 rounded-xl px-4 py-3"
-                          style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)" }}>
-                          <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Your Answer</p>
+                          style={{ background: "rgba(31,138,62,0.05)", border: "1px solid rgba(31,138,62,0.15)" }}>
+                          <p className="text-[10px] font-black text-zinc-800 uppercase tracking-widest mb-1">Your Answer</p>
                           {pair.answer.includes("•") ? (
                             <div className="space-y-1.5">
                               {pair.answer.split("\n").map(l => l.trim()).filter(Boolean).map((line, j) =>
                                 line.startsWith("•") ? (
                                   <div key={j} className="flex gap-2 items-start">
-                                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
+                                    <span className="text-zinc-600 shrink-0 mt-0.5">•</span>
                                     <p className="text-[13px] font-semibold text-slate-700 leading-relaxed">
                                       {line.slice(1).trim()}
                                     </p>

@@ -17,7 +17,7 @@ const T = {
   border:       "#e8e4df",
   textSecondary:"#6b6460",
   textTertiary: "#a09893",
-  success:      "#15803d",
+  success:      "#1C7A3E",
   successLight: "rgba(21,128,61,0.08)",
   shadow:       "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
   shadowMd:     "0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
@@ -496,7 +496,7 @@ function EditableZone({ sectionKey, hoveredKey, setHoveredKey, onSectionClick, c
         cursor: onSectionClick ? "pointer" : "default",
         borderRadius: 4,
         transition: "box-shadow 0.18s",
-        boxShadow: isHovered ? "0 0 0 2px #6366f1, 0 0 0 4px rgba(99,102,241,0.15)" : "none",
+        boxShadow: isHovered ? "0 0 0 2px #2E8B45, 0 0 0 4px rgba(31,138,62,0.15)" : "none",
       }}
     >
       {children}
@@ -504,10 +504,10 @@ function EditableZone({ sectionKey, hoveredKey, setHoveredKey, onSectionClick, c
         <div style={{
           position: "absolute", top: 4, right: 4, zIndex: 10,
           display: "flex", alignItems: "center", gap: 5,
-          background: "#6366f1", color: "#fff",
+          background: "#2E8B45", color: "#fff",
           borderRadius: 6, padding: "3px 8px 3px 6px",
           fontSize: 9.5, fontWeight: 700, letterSpacing: "0.03em",
-          boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+          boxShadow: "0 2px 8px rgba(31,138,62,0.35)",
           pointerEvents: "none",
           whiteSpace: "nowrap",
         }}>

@@ -32,7 +32,7 @@ export const TEMPLATE_LIST: { id: TemplateId; name: string; desc: string; ats: b
 /* ─────────────────────────────────────────────────────────────────
    THUMBNAIL SVG GENERATOR
 ───────────────────────────────────────────────────────────────── */
-export function getTemplateThumbnail(id: TemplateId, accent = "#2563eb"): string {
+export function getTemplateThumbnail(id: TemplateId, accent = "#1C7A3E"): string {
   const W = 100, H = 141;
   const g = "#e5e7eb", dg = "#d1d5db", mg = "#9ca3af", lg = "#f3f4f6";
   const ac = accent;
@@ -278,7 +278,7 @@ interface TemplatePickerProps {
   onSelect: (id: TemplateId) => void;
 }
 
-export function TemplatePicker({ selected, accentColor = "#2563eb", onSelect }: TemplatePickerProps) {
+export function TemplatePicker({ selected, accentColor = "#1C7A3E", onSelect }: TemplatePickerProps) {
   return (
     <div style={{ width: "100%" }}>
       <div style={{
@@ -326,7 +326,7 @@ export function TemplatePicker({ selected, accentColor = "#2563eb", onSelect }: 
                   {t.ats && (
                     <span style={{
                       fontSize: 9, fontWeight: 700,
-                      background: "#dcfce7", color: "#15803d",
+                      background: "#dcfce7", color: "#1C7A3E",
                       padding: "1px 5px", borderRadius: 4,
                       letterSpacing: "0.04em",
                     }}>ATS</span>

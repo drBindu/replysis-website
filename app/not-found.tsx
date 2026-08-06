@@ -7,7 +7,7 @@ export default function NotFound() {
     <div className="min-h-[70vh] flex items-center justify-center bg-[#050508] px-6">
       <div className="text-center max-w-md">
         <p className="text-[80px] leading-none font-black mb-2"
-          style={{ background: "linear-gradient(135deg,#a78bfa,#fb923c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+          style={{ background: "linear-gradient(135deg,#21924A,#A04E2C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
           404
         </p>
         <h1 className="text-white font-black text-2xl mb-2 tracking-tight">Page not found</h1>
@@ -16,7 +16,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="inline-flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+          className="inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold px-6 py-3 rounded-xl transition-all">
           Back to homepage
         </Link>
       </div>

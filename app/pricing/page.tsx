@@ -24,7 +24,7 @@ function FadeUp({ children, delay = 0, className = "" }: { children: React.React
 }
 
 function Check({ color = "violet" }: { color?: "violet" | "emerald" | "orange" | "blue" | "gray" }) {
-  const c = { violet: "text-violet-500", emerald: "text-emerald-500", orange: "text-orange-500", blue: "text-blue-500", gray: "text-gray-300" }[color];
+  const c = { violet: "text-zinc-800", emerald: "text-zinc-800", orange: "text-zinc-800", blue: "text-zinc-800", gray: "text-gray-300" }[color];
   return (
     <svg className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${c}`} viewBox="0 0 20 20" fill="currentColor">
       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15 3.293 9.879a1 1 0 111.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -215,7 +215,7 @@ const FAQS = [
 function Cell({ val, accent, orange }: { val: boolean | string; accent?: boolean; orange?: boolean }) {
   if (val === false) return <div className="flex justify-center"><Dash /></div>;
   if (val === true) return <div className="flex justify-center"><Check color={orange ? "orange" : accent ? "violet" : "emerald"} /></div>;
-  const c = orange ? "text-orange-700" : accent ? "text-violet-700" : "text-gray-600";
+  const c = orange ? "text-zinc-900" : accent ? "text-zinc-900" : "text-gray-600";
   return <p className={`text-center text-xs font-medium ${c}`}>{val}</p>;
 }
 
@@ -225,7 +225,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     <div className="border-b border-gray-100 last:border-0">
       <button onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-5 text-left gap-4 group">
-        <span className="font-semibold text-gray-800 text-sm group-hover:text-violet-700 transition-colors">{q}</span>
+        <span className="font-semibold text-gray-800 text-sm group-hover:text-zinc-900 transition-colors">{q}</span>
         <motion.svg animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}
           className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -246,27 +246,27 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ─── Plan card styles by type ─────────────────────────────────────────────────
 function getPlanStyle(plan: typeof ALL_PLANS[0]) {
   if (plan.popular) return {
-    card:    { background: "linear-gradient(160deg, #faf7ff 0%, #f0e9ff 60%, #fff5f0 100%)", border: "2px solid rgba(109,40,217,0.3)", boxShadow: "0 20px 60px rgba(109,40,217,0.15)" },
-    stripe:  "linear-gradient(90deg, #6d28d9, #9333ea, #ea580c)",
-    badge:   { background: "linear-gradient(135deg, #6d28d9, #ea580c)" },
-    btn:     { background: "linear-gradient(135deg, #6d28d9, #9333ea, #ea580c)", boxShadow: "0 4px 20px rgba(109,40,217,0.35)" },
-    pool:    { background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.15)", color: "#6d28d9" },
+    card:    { background: "linear-gradient(160deg, #faf7ff 0%, #f0e9ff 60%, #fff5f0 100%)", border: "2px solid rgba(31,138,62,0.3)", boxShadow: "0 20px 60px rgba(31,138,62,0.15)" },
+    stripe:  "linear-gradient(90deg, #1C7A3E, #2E8B45, #21924A)",
+    badge:   { background: "linear-gradient(135deg, #1C7A3E, #21924A)" },
+    btn:     { background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 4px 20px rgba(31,138,62,0.35)" },
+    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1C7A3E" },
     check:   "violet" as const,
   };
   if (plan.special === "lifetime") return {
-    card:    { background: "linear-gradient(145deg, #fff9f0 0%, #fff3e0 100%)", border: "1.5px solid rgba(234,88,12,0.22)" },
-    stripe:  "linear-gradient(90deg, #f97316, #ea580c)",
-    badge:   { background: "linear-gradient(135deg, #f97316, #ea580c)" },
-    btn:     { background: "linear-gradient(135deg, #f97316, #ea580c)", boxShadow: "0 4px 20px rgba(234,88,12,0.3)" },
-    pool:    { background: "rgba(234,88,12,0.08)", border: "1px solid rgba(234,88,12,0.15)", color: "#c2410c" },
+    card:    { background: "linear-gradient(145deg, #fff9f0 0%, #fff3e0 100%)", border: "1.5px solid rgba(31,138,62,0.22)" },
+    stripe:  "linear-gradient(90deg, #2E8B45, #21924A)",
+    badge:   { background: "linear-gradient(135deg, #2E8B45, #21924A)" },
+    btn:     { background: "linear-gradient(135deg, #2E8B45, #21924A)", boxShadow: "0 4px 20px rgba(31,138,62,0.3)" },
+    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1C7A3E" },
     check:   "orange" as const,
   };
   if (plan.special === "teams") return {
-    card:    { background: "linear-gradient(145deg, #f0f7ff 0%, #e8f4ff 100%)", border: "1.5px solid rgba(59,130,246,0.22)" },
-    stripe:  "linear-gradient(90deg, #3b82f6, #6366f1)",
-    badge:   { background: "linear-gradient(135deg, #3b82f6, #6366f1)" },
-    btn:     { background: "linear-gradient(135deg, #3b82f6, #6366f1)", boxShadow: "0 4px 20px rgba(59,130,246,0.3)" },
-    pool:    { background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", color: "#1d4ed8" },
+    card:    { background: "linear-gradient(145deg, #f0f7ff 0%, #e8f4ff 100%)", border: "1.5px solid rgba(31,138,62,0.22)" },
+    stripe:  "linear-gradient(90deg, #21924A, #2E8B45)",
+    badge:   { background: "linear-gradient(135deg, #21924A, #2E8B45)" },
+    btn:     { background: "linear-gradient(135deg, #21924A, #2E8B45)", boxShadow: "0 4px 20px rgba(31,138,62,0.3)" },
+    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1d4ed8" },
     check:   "blue" as const,
   };
   return {
@@ -274,7 +274,7 @@ function getPlanStyle(plan: typeof ALL_PLANS[0]) {
     stripe:  "#e5e7eb",
     badge:   { background: "#374151" },
     btn:     { background: "#111827" },
-    pool:    { background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)", color: "#4f46e5" },
+    pool:    { background: "rgba(31,138,62,0.06)", border: "1px solid rgba(31,138,62,0.12)", color: "#1C7A3E" },
     check:   "emerald" as const,
   };
 }
@@ -324,26 +324,26 @@ export default function PricingPage() {
   const visibleRows = showAll ? ROWS : ROWS.slice(0, 10);
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {showAuth && <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />}
       <PageHeader />
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
       <section className="relative pt-20 pb-20 px-6 text-center overflow-hidden"
-        style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 40%, #fff4ec 75%, #fdf8ff 100%)" }}>
+        style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 75%, #ffffff 100%)" }}>
         <div className="absolute pointer-events-none top-0 left-1/4 w-[500px] h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%)", filter: "blur(80px)", transform: "translateX(-50%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.12) 0%, transparent 65%)", filter: "blur(80px)", transform: "translateX(-50%)" }} />
         <div className="absolute pointer-events-none top-0 right-0 w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(234,88,12,0.10) 0%, transparent 65%)", filter: "blur(70px)" }} />
+          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.10) 0%, transparent 65%)", filter: "blur(70px)" }} />
         <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(124,58,237,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
         <div className="relative max-w-3xl mx-auto z-10">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-violet-200/70 shadow-sm backdrop-blur-sm mb-6">
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-zinc-300/70 shadow-sm backdrop-blur-sm mb-6">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-60" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-800 opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-800" />
             </span>
             <span className="text-[11px] font-semibold text-gray-600 tracking-wide">Simple pricing. No hidden fees. Cancel anytime.</span>
           </motion.div>
@@ -351,7 +351,7 @@ export default function PricingPage() {
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
             className="text-4xl md:text-[3.2rem] font-black tracking-tight leading-[1.08] text-gray-900 mb-5">
             The AI that gets you<br />
-            <span style={{ background: "linear-gradient(135deg, #6d28d9 0%, #9333ea 45%, #ea580c 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span style={{ background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               the job.
             </span>
           </motion.h1>
@@ -375,17 +375,17 @@ export default function PricingPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
             className="flex flex-col items-center gap-2.5">
             <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Billing period</p>
-            <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border-2 border-violet-200/70 rounded-full p-1.5 shadow-md gap-1">
+            <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border-2 border-zinc-300/70 rounded-full p-1.5 shadow-md gap-1">
               <button onClick={() => setAnnual(false)}
                 className={`px-6 py-2.5 rounded-full text-sm font-black transition-all ${!annual ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                 Monthly
               </button>
               <button onClick={() => setAnnual(true)}
-                className={`px-6 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 ${annual ? "text-white" : "text-violet-700 hover:text-violet-900"}`}
-                style={annual ? { background: "linear-gradient(135deg, #6d28d9, #9333ea, #ea580c)", boxShadow: "0 2px 12px rgba(109,40,217,0.3)" } : {}}>
+                className={`px-6 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 ${annual ? "text-white" : "text-zinc-900 hover:text-zinc-950"}`}
+                style={annual ? { background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 2px 12px rgba(31,138,62,0.3)" } : {}}>
                 Annual
                 <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full text-white"
-                  style={{ background: annual ? "rgba(255,255,255,0.2)" : "linear-gradient(135deg, #6d28d9, #ea580c)" }}>
+                  style={{ background: annual ? "rgba(255,255,255,0.2)" : "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                   Save 50%
                 </span>
               </button>
@@ -394,7 +394,7 @@ export default function PricingPage() {
               {!annual && (
                 <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2 }}
-                  className="text-xs font-semibold text-violet-600 cursor-pointer hover:text-violet-800 transition-colors"
+                  className="text-xs font-semibold text-zinc-900 cursor-pointer hover:text-zinc-950 transition-colors"
                   onClick={() => setAnnual(true)}>
                   Switch to annual. Pro drops to $12.42/mo. Teams drops to $33/mo.
                 </motion.p>
@@ -419,7 +419,7 @@ export default function PricingPage() {
 
       {/* ══ PLAN CARDS — all 4 side by side ════════════════════════════════════ */}
       <section className="relative px-6 pb-20"
-        style={{ background: "linear-gradient(180deg, #fdf8ff 0%, #ffffff 30%)" }}>
+        style={{ background: "linear-gradient(180deg, #ffffff 0%, #ffffff 30%)" }}>
         <div className="max-w-7xl mx-auto -mt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
             {ALL_PLANS.map((plan, i) => {
@@ -470,12 +470,12 @@ export default function PricingPage() {
                         )}
                       </div>
                       {annual && savings > 0 && (
-                        <p className="text-[11px] mt-0.5 font-semibold text-emerald-600">
+                        <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
                           ${Math.round(plan.annualPrice * 12)}/yr billed. Save ${savings}.
                         </p>
                       )}
                       {plan.oneTime && (
-                        <p className="text-[11px] mt-0.5 font-semibold text-emerald-600">
+                        <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
                           Pays for itself in under 12 months.
                         </p>
                       )}
@@ -539,7 +539,7 @@ export default function PricingPage() {
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
-                className="text-violet-600 font-bold hover:text-violet-800 underline underline-offset-2 transition-colors">
+                className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
                 Pay annually and save 50%. Pro drops to $12.42/mo. Teams drops to $33/mo.
               </button>
             </motion.p>
@@ -558,22 +558,22 @@ export default function PricingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
-                emoji: "🚀", name: "Starter", color: "rgba(99,102,241,0.07)", border: "rgba(99,102,241,0.16)", tc: "#4f46e5",
+                emoji: "🚀", name: "Starter", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#1C7A3E",
                 who: "Testing the waters",
                 items: ["Have interviews coming up soon", "Want to try it before committing", "Need a solid resume right now", "Casual job hunting, not urgent"],
               },
               {
-                emoji: "👑", name: "Pro", color: "rgba(109,40,217,0.07)", border: "rgba(109,40,217,0.18)", tc: "#6d28d9",
+                emoji: "👑", name: "Pro", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.18)", tc: "#1C7A3E",
                 who: "Serious job seekers",
                 items: ["Actively interviewing every week", "Targeting competitive companies", "Need screen share protection", "Want session recordings to review"],
               },
               {
-                emoji: "♾️", name: "Lifetime", color: "rgba(234,88,12,0.07)", border: "rgba(234,88,12,0.16)", tc: "#ea580c",
+                emoji: "♾️", name: "Lifetime", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
                 who: "Hate subscriptions",
                 items: ["Prefer paying once and being done", "Plan to interview across multiple years", "Want every future feature included", "Want protection from price increases"],
               },
               {
-                emoji: "🏢", name: "Teams", color: "rgba(59,130,246,0.07)", border: "rgba(59,130,246,0.16)", tc: "#1d4ed8",
+                emoji: "🏢", name: "Teams", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#1d4ed8",
                 who: "Groups and bootcamps",
                 items: ["Bootcamps prepping students together", "Recruiting firms building candidate pipelines", "Groups of friends interviewing at the same time", "Anyone managing multiple users under one bill"],
               },
@@ -615,13 +615,13 @@ export default function PricingPage() {
                   <div className="px-5 py-4" />
                   {[
                     { name: "Starter", price: "Free",                             style: "" },
-                    { name: "Pro",     price: annual ? "$12.42/mo" : "$24.99/mo", style: "bg-violet-50/60 text-violet-700" },
-                    { name: "Lifetime",price: "$299 once",                        style: "bg-orange-50/40 text-orange-700" },
+                    { name: "Pro",     price: annual ? "$12.42/mo" : "$24.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
+                    { name: "Lifetime",price: "$299 once",                        style: "bg-zinc-100/40 text-zinc-900" },
                     { name: "Teams",   price: annual ? "$33/mo" : "$49/mo",       style: "" },
                   ].map(({ name, price, style }, i) => (
                     <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
-                      <p className={`text-sm font-black ${style.includes("violet") ? "text-violet-700" : style.includes("orange") ? "text-orange-700" : "text-gray-900"}`}>{name}</p>
-                      <p className={`text-[11px] mt-0.5 font-medium ${style.includes("violet") ? "text-violet-400" : style.includes("orange") ? "text-orange-400" : "text-gray-400"}`}>{price}</p>
+                      <p className={`text-sm font-black ${style.includes("violet") ? "text-zinc-900" : style.includes("orange") ? "text-zinc-900" : "text-gray-900"}`}>{name}</p>
+                      <p className={`text-[11px] mt-0.5 font-medium ${style.includes("violet") ? "text-zinc-600" : style.includes("orange") ? "text-zinc-600" : "text-gray-400"}`}>{price}</p>
                     </div>
                   ))}
                 </div>
@@ -643,8 +643,8 @@ export default function PricingPage() {
                         <div className="grid grid-cols-5 border-b border-gray-50 hover:bg-gray-50/40 transition-colors">
                           <div className="px-5 py-3.5"><span className="text-xs text-gray-600">{row.label}</span></div>
                           <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.free} /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 bg-violet-50/10 flex items-center justify-center"><Cell val={row.pro} accent /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 bg-orange-50/10 flex items-center justify-center"><Cell val={row.lifetime} orange /></div>
+                          <div className="px-3 py-3.5 border-l border-gray-100 bg-zinc-100/10 flex items-center justify-center"><Cell val={row.pro} accent /></div>
+                          <div className="px-3 py-3.5 border-l border-gray-100 bg-zinc-100/10 flex items-center justify-center"><Cell val={row.lifetime} orange /></div>
                           <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.teams} /></div>
                         </div>
                       </div>
@@ -654,7 +654,7 @@ export default function PricingPage() {
 
                 <div className="border-t border-gray-100">
                   <button onClick={() => setShowAll(!showAll)}
-                    className="w-full py-4 text-sm font-semibold text-violet-600 hover:text-violet-800 hover:bg-violet-50/30 transition-colors flex items-center justify-center gap-2">
+                    className="w-full py-4 text-sm font-semibold text-zinc-900 hover:text-zinc-950 hover:bg-zinc-100/30 transition-colors flex items-center justify-center gap-2">
                     {showAll ? "Show less" : `Show all ${ROWS.length} features`}
                     <motion.svg animate={{ rotate: showAll ? 180 : 0 }} transition={{ duration: 0.2 }}
                       className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -673,9 +673,9 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto">
           <FadeUp>
             <div className="rounded-2xl px-8 py-7 flex flex-col sm:flex-row items-center gap-6 shadow-sm"
-              style={{ background: "linear-gradient(135deg, rgba(109,40,217,0.04), rgba(234,88,12,0.03))", border: "1px solid rgba(109,40,217,0.1)" }}>
+              style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.04), rgba(31,138,62,0.03))", border: "1px solid rgba(31,138,62,0.1)" }}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md"
-                style={{ background: "linear-gradient(135deg, #6d28d9, #ea580c)" }}>
+                style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                 <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
@@ -684,7 +684,7 @@ export default function PricingPage() {
                 <h3 className="text-lg font-black text-gray-900 mb-1">7-day money back guarantee</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
                   Not happy within 7 days of your first purchase? Email{" "}
-                  <a href="mailto:support@verchor.com" className="font-semibold text-violet-700 hover:underline">
+                  <a href="mailto:support@verchor.com" className="font-semibold text-zinc-900 hover:underline">
                     support@verchor.com
                   </a>{" "}
                   and we refund you in full. No forms, no questions, same day. Applies to Pro, Lifetime, and Teams.
@@ -708,7 +708,7 @@ export default function PricingPage() {
             </div>
             <p className="text-center text-sm text-gray-400 mt-6">
               Still have questions?{" "}
-              <a href="mailto:support@verchor.com" className="text-violet-600 font-semibold hover:underline">Email us</a>
+              <a href="mailto:support@verchor.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
               {" "}and we reply same day.
             </p>
           </FadeUp>
@@ -717,19 +717,19 @@ export default function PricingPage() {
 
       {/* ══ BOTTOM CTA ══════════════════════════════════════════════════════════ */}
       <section className="py-24 px-6 text-center relative overflow-hidden"
-        style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 40%, #fff4ec 75%, #fdf8ff 100%)" }}>
+        style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 75%, #ffffff 100%)" }}>
         <div className="absolute pointer-events-none inset-0 flex items-center justify-center">
           <div className="w-[600px] h-[300px] rounded-full"
-            style={{ background: "radial-gradient(ellipse, rgba(109,40,217,0.09) 0%, transparent 70%)", filter: "blur(60px)" }} />
+            style={{ background: "radial-gradient(ellipse, rgba(31,138,62,0.09) 0%, transparent 70%)", filter: "blur(60px)" }} />
         </div>
         <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(124,58,237,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
 
         <div className="relative max-w-xl mx-auto z-10">
           <FadeUp>
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight leading-tight">
               Your next interview is<br />
-              <span style={{ background: "linear-gradient(135deg, #6d28d9 0%, #9333ea 45%, #ea580c 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              <span style={{ background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 your best interview.
               </span>
             </h2>
@@ -740,18 +740,18 @@ export default function PricingPage() {
               <button
                 onClick={() => user ? window.location.href = "/real-interview" : setShowAuth(true)}
                 className="px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-all shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg, #6d28d9, #9333ea, #ea580c)", boxShadow: "0 6px 24px rgba(109,40,217,0.3)" }}>
+                style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.3)" }}>
                 {user ? "Go to dashboard →" : "Start for free"}
               </button>
               <Link href="/real-interview"
-                className="px-8 py-3.5 rounded-xl border border-gray-200 bg-white hover:border-violet-300 text-gray-700 hover:text-violet-700 font-semibold text-sm transition-all">
+                className="px-8 py-3.5 rounded-xl border border-gray-200 bg-white hover:border-zinc-400 text-gray-700 hover:text-zinc-900 font-semibold text-sm transition-all">
                 Try live copilot now
               </Link>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-5 mt-8 text-[11px] text-gray-400">
-              {["50,000+ interviews assisted", "87% offer rate", "1.8s answer speed", "100% private"].map((s, i) => (
+              {["1.8s answer speed", "100% private", "Works on any platform", "Free to start"].map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-violet-400" />
+                  <span className="w-1 h-1 rounded-full bg-zinc-600" />
                   {s}
                 </span>
               ))}

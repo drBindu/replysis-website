@@ -16,11 +16,11 @@ export default function PrivacyPage() {
       <PageHeader />
 
       {/* Hero */}
-      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #faf8ff 0%, #f4edff 50%, #fdf8ff 100%)" }}>
+      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 50%, #ffffff 100%)" }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-3">Legal</p>
+          <p className="text-xs font-bold text-zinc-900 uppercase tracking-widest mb-3">Legal</p>
           <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Privacy Policy</h1>
-          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-indigo-600 hover:underline">{CONTACT}</a></p>
+          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a></p>
         </div>
       </section>
 
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">1. Who we are</h2>
-            <p>Verchor ("we", "us", "our") operates verchor.com and the Verchor desktop apps for Windows and macOS. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-indigo-600 hover:underline">{CONTACT}</a>.</p>
+            <p>Verchor ("we", "us", "our") operates verchor.com and the Verchor desktop apps for Windows and macOS. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
           </div>
 
           <div>
@@ -62,8 +62,8 @@ export default function PrivacyPage() {
                 "We do not share your resume or interview content with employers.",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
-                  <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  <span className="mt-0.5 w-5 h-5 rounded-full bg-zinc-200 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-zinc-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   </span>
                   {item}
                 </li>
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">7. Your rights</h2>
-            <p className="text-sm mb-3">Depending on where you live, you may have the right to access, correct, or delete your data, restrict processing, or request portability. Email <a href={`mailto:${CONTACT}`} className="text-indigo-600 hover:underline">{CONTACT}</a> and we'll respond within 14 days.</p>
+            <p className="text-sm mb-3">Depending on where you live, you may have the right to access, correct, or delete your data, restrict processing, or request portability. Email <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a> and we'll respond within 14 days.</p>
           </div>
 
           <div>
@@ -121,9 +121,9 @@ export default function PrivacyPage() {
             <p className="text-sm">If we make material changes, we'll notify you by email or site notice at least 14 days before the change takes effect.</p>
           </div>
 
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-6">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-100 p-6">
             <h2 className="text-base font-black text-gray-900 mb-2">Questions?</h2>
-            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-indigo-600 font-semibold hover:underline">{CONTACT}</a>. We'll respond within 2 business days.</p>
+            <p className="text-sm text-gray-600">Email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 font-semibold hover:underline">{CONTACT}</a>. We'll respond within 2 business days.</p>
           </div>
 
         </div>

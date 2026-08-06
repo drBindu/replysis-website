@@ -116,14 +116,14 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
             className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
           >
             <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
-              style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.16), 0 8px 24px rgba(124,58,237,0.10)" }}>
+              style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.16), 0 8px 24px rgba(31,138,62,0.10)" }}>
 
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
                   <span className="text-[14px] font-extrabold text-gray-900">
                     Verchor{" "}
-                    <span style={{ background: "linear-gradient(135deg,#7c3aed,#ea580c)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
+                    <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
                   </span>
                 </div>
                 <button onClick={onClose}
@@ -182,14 +182,14 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                       <div>
                         <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Full name</label>
                         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required
-                          className="w-full border border-gray-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
+                          className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                       </div>
                     )}
 
                     <div>
                       <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
                       <input type="email" value={email} onChange={e => { setEmail(e.target.value); clear(); }} placeholder="you@example.com" required
-                        className="w-full border border-gray-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
+                        className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                     </div>
 
                     {mode !== "reset" && (
@@ -198,14 +198,14 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                           <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Password</label>
                           {mode === "signin" && (
                             <button type="button" onClick={() => switchMode("reset")}
-                              className="text-[11px] text-violet-600 hover:text-violet-800 font-medium transition-colors">Forgot?</button>
+                              className="text-[11px] text-zinc-900 hover:text-zinc-950 font-medium transition-colors">Forgot?</button>
                           )}
                         </div>
                         <div className="relative">
                           <input type={showPass ? "text" : "password"} value={password}
                             onChange={e => { setPassword(e.target.value); clear(); }}
                             placeholder={mode === "signup" ? "Min 6 characters" : "Your password"} required
-                            className="w-full border border-gray-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 rounded-xl px-3.5 py-2.5 pr-10 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
+                            className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 pr-10 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                           <button type="button" onClick={() => setShowPass(v => !v)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
                             {showPass
@@ -224,13 +224,13 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                       )}
                       {success && (
                         <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                          className="text-[12px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">{success}</motion.p>
+                          className="text-[12px] text-zinc-900 bg-zinc-100 border border-zinc-200 rounded-lg px-3 py-2">{success}</motion.p>
                       )}
                     </AnimatePresence>
 
                     <button type="submit" disabled={loading}
                       className="w-full py-2.5 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-1"
-                      style={{ background: "linear-gradient(135deg,#6d28d9,#ea580c)", boxShadow: "0 4px 16px rgba(109,40,217,0.28)" }}>
+                      style={{ background: "linear-gradient(135deg,#1C7A3E,#21924A)", boxShadow: "0 4px 16px rgba(31,138,62,0.28)" }}>
                       {loading ? (
                         <>
                           <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
@@ -249,13 +249,13 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                   {mode === "signin" && (
                     <p className="text-[12px] text-gray-400">
                       No account?{" "}
-                      <button onClick={() => switchMode("signup")} className="text-violet-600 hover:text-violet-800 font-semibold transition-colors">Sign up free</button>
+                      <button onClick={() => switchMode("signup")} className="text-zinc-900 hover:text-zinc-950 font-semibold transition-colors">Sign up free</button>
                     </p>
                   )}
                   {mode === "signup" && (
                     <p className="text-[12px] text-gray-400">
                       Already have an account?{" "}
-                      <button onClick={() => switchMode("signin")} className="text-violet-600 hover:text-violet-800 font-semibold transition-colors">Sign in</button>
+                      <button onClick={() => switchMode("signin")} className="text-zinc-900 hover:text-zinc-950 font-semibold transition-colors">Sign in</button>
                     </p>
                   )}
                   {mode === "reset" && (

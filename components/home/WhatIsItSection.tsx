@@ -61,7 +61,7 @@ function FeatureRow({
 
             {isPrimary ? (
               <button onClick={() => onNav(path)}
-                className="btn-shine relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 shadow-lg shadow-indigo-500/40 transition-all duration-200 group">
+                className="btn-shine relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 shadow-lg shadow-zinc-800/40 transition-all duration-200 group">
                 {cta}
                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -69,7 +69,7 @@ function FeatureRow({
               </button>
             ) : (
               <button onClick={() => onNav(path)}
-                className="btn-shine relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-500 active:bg-violet-700 shadow-lg shadow-violet-500/40 transition-all duration-200 group">
+                className="btn-shine relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-900 shadow-lg shadow-zinc-800/40 transition-all duration-200 group">
                 {cta}
                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -86,7 +86,7 @@ function FeatureRow({
               <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
                 <div className="w-3 h-3 rounded-full bg-red-500/70" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                <div className="w-3 h-3 rounded-full bg-green-500/70" />
+                <div className="w-3 h-3 rounded-full bg-zinc-800/70" />
                 <div className="ml-3 flex-1 bg-white/5 rounded-md h-5 flex items-center px-3">
                   <span className="text-[10px] text-gray-500">Verchor  -  {tag}</span>
                 </div>
@@ -101,10 +101,10 @@ function FeatureRow({
                     {line.icon && <span className="text-lg flex-shrink-0">{line.icon}</span>}
                     <div>
                       {line.label && <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">{line.label}</p>}
-                      <p className={`text-sm font-medium ${line.accent ? "text-green-400" : line.dim ? "text-gray-500" : "text-gray-200"}`}>{line.text}</p>
+                      <p className={`text-sm font-medium ${line.accent ? "text-zinc-600" : line.dim ? "text-gray-500" : "text-gray-200"}`}>{line.text}</p>
                     </div>
                     {line.badge && (
-                      <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 flex-shrink-0">{line.badge}</span>
+                      <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800/20 text-zinc-600 flex-shrink-0">{line.badge}</span>
                     )}
                   </motion.div>
                 ))}
@@ -127,13 +127,13 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         path="resume"
         isPrimary={true}
         tag="Resume Builder"
-        tagColor="text-indigo-400 bg-indigo-500/10 border-indigo-500/30"
+        tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Your resume,\nprofessionally rebuilt."}
         sub="Land 3x more interviews."
         desc="Paste your experience, choose your target role. Verchor rewrites every bullet point to be ATS-optimized and role-specific, in under 2 minutes."
         stats={[{ n: "3×", l: "more callbacks" }, { n: "2 min", l: "avg build time" }, { n: "ATS", l: "optimized" }]}
         cta="Build My Resume"
-        gradient="radial-gradient(circle, #6366f1, transparent)"
+        gradient="radial-gradient(circle, #2E8B45, transparent)"
         mockup={[
           { icon: "👤", label: "Input", text: "Pavan Sharma, Software Engineer, 3 years at startup" },
           { icon: "⚙️", label: "Processing", text: "Analyzing role: Senior SWE @ Google...", dim: true },
@@ -148,13 +148,13 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         path="mock-interview"
         isPrimary={false}
         tag="Mock Interview"
-        tagColor="text-violet-400 bg-violet-500/10 border-violet-500/30"
+        tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Practice until\nnerves are gone."}
-        sub="87% of users land offers after 5+ sessions."
+        sub="Rehearse the hard questions before they count."
         desc="Over 200 behavioral, technical, and role-specific questions. Every answer is scored instantly with coaching on exactly what to improve."
-        stats={[{ n: "87%", l: "offer rate" }, { n: "200+", l: "questions" }, { n: "Live", l: "scoring" }]}
+        stats={[{ n: "200+", l: "questions" }, { n: "Live", l: "scoring" }, { n: "Any", l: "role" }]}
         cta="Start Practicing Free"
-        gradient="radial-gradient(circle, #8b5cf6, transparent)"
+        gradient="radial-gradient(circle, #A04E2C, transparent)"
         mockup={[
           { icon: "🎯", label: "Question", text: '"Tell me about a time you led a project under pressure."' },
           { icon: "🎤", label: "Your Answer", text: "Recording... (1m 32s)", dim: true },
@@ -169,13 +169,13 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         path="real-interview"
         isPrimary={false}
         tag="Live Interview Copilot"
-        tagColor="text-cyan-400 bg-cyan-500/10 border-cyan-500/30"
+        tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Live answers,\ncompletely invisible."}
         sub="Perfect response streamed in under 2 seconds."
         desc="During your real interview, Verchor silently listens, reads your resume for context, and streams the ideal answer to your private stealth overlay. Screen-share safe. Zero lag."
         stats={[{ n: "<2s", l: "response time" }, { n: "100%", l: "stealth" }, { n: "98%", l: "accuracy" }]}
         cta="Try Live Copilot"
-        gradient="radial-gradient(circle, #0891b2, transparent)"
+        gradient="radial-gradient(circle, #21924A, transparent)"
         mockup={[
           { icon: "🎤", label: "Listening", text: "Interview audio detected, processing...", dim: true },
           { icon: "❓", label: "Question Detected", text: '"Why should we hire you over other candidates?"' },
