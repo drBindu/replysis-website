@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     await getAuth().verifyIdToken(idToken, true);
     const response = NextResponse.json({ ok: true });
-    response.cookies.set("coopilotx_session", idToken, cookieOptions);
+    response.cookies.set("replysis_session", idToken, cookieOptions);
     return response;
   } catch {
     return NextResponse.json({ error: "Invalid or expired session" }, { status: 401 });
@@ -63,6 +63,6 @@ export async function POST(req: Request) {
 
 export async function DELETE() {
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("coopilotx_session", "", { ...cookieOptions, maxAge: 0 });
+  response.cookies.set("replysis_session", "", { ...cookieOptions, maxAge: 0 });
   return response;
 }

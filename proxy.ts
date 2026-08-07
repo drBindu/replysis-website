@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   if (!isProtected) return NextResponse.next();
 
-  const sessionCookie = request.cookies.get("coopilotx_session");
+  const sessionCookie = request.cookies.get("replysis_session");
   if (!sessionCookie?.value) return redirectToAuth(request, pathname);
 
   try {
@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
     });
   } catch {
     const response = redirectToAuth(request, pathname);
-    response.cookies.delete("coopilotx_session");
+    response.cookies.delete("replysis_session");
     return response;
   }
 
