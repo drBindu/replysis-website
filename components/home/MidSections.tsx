@@ -135,7 +135,7 @@ export function HowItWorksSection() {
     },
     {
       n: "02", icon: "🎤", title: "Start Your Interview",
-      desc: "Open Verchor on desktop or web. It silently listens via mic, transcribes speech in real-time, and works invisibly on any platform.",
+      desc: "Open Replysis on desktop or web. It silently listens via mic, transcribes speech in real-time, and works invisibly on any platform.",
       time: "Zero setup",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
@@ -230,7 +230,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
                 </span>
               </h2>
               <p className="text-gray-600 text-lg max-w-xl mx-auto mb-3 leading-relaxed">
-                Verchor listens live, reads your resume, and streams the answer in under two seconds, so you walk in ready to clear the one barrier between you and the offer.
+                Replysis listens live, reads your resume, and streams the answer in under two seconds, so you walk in ready to clear the one barrier between you and the offer.
               </p>
               <p className="text-gray-400 text-sm mb-10">Average user lands their target offer within <strong className="text-gray-600">3 weeks</strong> of starting.</p>
 

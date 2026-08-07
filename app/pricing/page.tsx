@@ -179,7 +179,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
 const FAQS = [
   {
     q: "What is the live copilot?",
-    a: "During your real interview, Verchor listens through your microphone, reads your resume, and streams a tailored answer to your screen in under 2 seconds. The interviewer sees nothing. It works on Zoom, Google Meet, Teams, phone calls, and in-person interviews.",
+    a: "During your real interview, Replysis listens through your microphone, reads your resume, and streams a tailored answer to your screen in under 2 seconds. The interviewer sees nothing. It works on Zoom, Google Meet, Teams, phone calls, and in-person interviews.",
   },
   {
     q: "What are credits?",
@@ -207,7 +207,7 @@ const FAQS = [
   },
   {
     q: "What is the refund policy?",
-    a: "Full refund within 7 days of your first purchase, no questions asked. This applies to Pro, Lifetime, and Teams. Email support@verchor.com and we sort it out the same day.",
+    a: "Full refund within 7 days of your first purchase, no questions asked. This applies to Pro, Lifetime, and Teams. Email support@replysis.com and we sort it out the same day.",
   },
 ];
 
@@ -684,8 +684,8 @@ export default function PricingPage() {
                 <h3 className="text-lg font-black text-gray-900 mb-1">7-day money back guarantee</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
                   Not happy within 7 days of your first purchase? Email{" "}
-                  <a href="mailto:support@verchor.com" className="font-semibold text-zinc-900 hover:underline">
-                    support@verchor.com
+                  <a href="mailto:support@replysis.com" className="font-semibold text-zinc-900 hover:underline">
+                    support@replysis.com
                   </a>{" "}
                   and we refund you in full. No forms, no questions, same day. Applies to Pro, Lifetime, and Teams.
                 </p>
@@ -708,7 +708,7 @@ export default function PricingPage() {
             </div>
             <p className="text-center text-sm text-gray-400 mt-6">
               Still have questions?{" "}
-              <a href="mailto:support@verchor.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
+              <a href="mailto:support@replysis.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
               {" "}and we reply same day.
             </p>
           </FadeUp>

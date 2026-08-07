@@ -64,7 +64,7 @@ export default function QuickFeaturesBar({ onNav }: { onNav: (p: string) => void
           initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="text-center mb-14">
-          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-gray-500 bg-gray-100 border border-gray-200 uppercase tracking-widest mb-4">3 Ways Verchor Helps You</span>
+          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-gray-500 bg-gray-100 border border-gray-200 uppercase tracking-widest mb-4">3 Ways Replysis Helps You</span>
           <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">
             From zero to offer:{" "}
             <span className="bg-gradient-to-r from-zinc-600 to-zinc-600 bg-clip-text text-transparent">all in one place.</span>

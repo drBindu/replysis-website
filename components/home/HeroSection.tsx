@@ -468,7 +468,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 </div>
                 <div className="flex items-center gap-2 ml-2 flex-1 min-w-0">
                   <BrandIcon size={22} />
-                  <span className="text-[12px] font-semibold text-gray-700">Verchor</span>
+                  <span className="text-[12px] font-semibold text-gray-700">Replysis</span>
                   <span className="text-gray-300 mx-1">·</span>
                   <span className="text-[11px] text-gray-400">Interview Assistant</span>
                 </div>
@@ -513,7 +513,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider"
                         style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                        Verchor · 1.8s
+                        Replysis · 1.8s
                       </span>
                       <div className="ml-auto flex items-center gap-1 bg-zinc-100 rounded-md px-2 py-0.5 border border-zinc-200">
                         <svg className="w-2.5 h-2.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

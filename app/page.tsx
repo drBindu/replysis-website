@@ -173,7 +173,7 @@ export default function Home() {
             <BrandIcon size={32}
               className="group-hover:scale-105 transition-transform duration-200 drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
             <span className="text-[15px] font-extrabold tracking-tight text-gray-900">
-              Verchor{" "}
+              Replysis{" "}
               <span style={{ color: "#1C7A3E" }}>AI</span>
             </span>
           </button>

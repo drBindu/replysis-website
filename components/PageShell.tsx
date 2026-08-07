@@ -15,10 +15,10 @@ export function PageHeader() {
       <div className="max-w-6xl mx-auto px-6 py-0 h-16 flex items-center justify-between">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Verchor home">
+        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="Replysis home">
           <BrandIcon size={32} className="drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
           <span className="text-[15px] font-black text-gray-900 tracking-tight">
-            Verchor{" "}
+            Replysis{" "}
             <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               AI
             </span>
@@ -59,7 +59,7 @@ export function PageFooter() {
   return (
     <footer className="border-t border-gray-100 bg-white">
       <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
-        <span>&copy; {new Date().getFullYear()} Verchor. All rights reserved.</span>
+        <span>&copy; {new Date().getFullYear()} Replysis. All rights reserved.</span>
         <div className="flex items-center gap-5">
           {[
             { label: "Features",    href: "/features" },

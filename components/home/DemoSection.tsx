@@ -11,7 +11,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
       <div className="max-w-5xl mx-auto">
         <FadeUp className="text-center mb-14">
           <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-zinc-900 bg-zinc-100 border border-zinc-200 mb-4 uppercase tracking-widest">See It In Action</span>
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Watch Verchor work live</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Watch Replysis work live</h2>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">Click play. Real question. Perfect answer in under 2 seconds, invisible to the interviewer.</p>
         </FadeUp>
 
@@ -23,7 +23,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
               <div className="w-3 h-3 rounded-full bg-yellow-400" />
               <div className="w-3 h-3 rounded-full bg-zinc-800" />
               <div className="flex-1 mx-4 bg-gray-700 rounded h-5 flex items-center px-3">
-                <span className="text-[10px] text-gray-400 font-medium">Verchor  -  Stealth Overlay Active</span>
+                <span className="text-[10px] text-gray-400 font-medium">Replysis  -  Stealth Overlay Active</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-zinc-600 animate-pulse block" />
@@ -46,7 +46,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
                       </div>
                     </div>
                     <div className="flex items-start gap-3 pl-8 opacity-25">
-                      <span className="flex-shrink-0 mt-1 px-2.5 py-1 rounded-lg bg-zinc-900 text-[10px] font-bold text-white">Verchor</span>
+                      <span className="flex-shrink-0 mt-1 px-2.5 py-1 rounded-lg bg-zinc-900 text-[10px] font-bold text-white">Replysis</span>
                       <div className="bg-gray-800 border border-zinc-800/30 rounded-2xl px-5 py-3 text-sm text-gray-400 italic">
                         Waiting to respond...
                       </div>
@@ -74,7 +74,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
 
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6, duration: 0.5 }}
                       className="flex items-start gap-3 pl-8">
-                      <span className="flex-shrink-0 mt-1 px-2.5 py-1 rounded-lg bg-zinc-900 text-[10px] font-bold text-white">Verchor ⚡</span>
+                      <span className="flex-shrink-0 mt-1 px-2.5 py-1 rounded-lg bg-zinc-900 text-[10px] font-bold text-white">Replysis ⚡</span>
                       <div className="bg-gradient-to-br from-zinc-950/60 to-zinc-950/40 border border-zinc-800/40 rounded-2xl px-5 py-4 text-sm text-gray-200 leading-relaxed">
                         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}>
                           "At <span className="text-zinc-400 font-semibold">[Your Company]</span>, our recommendation engine started returning stale results after a Redis schema migration, affecting 12% of users. I traced it to a cache invalidation bug from a key-format change, hot-patched the invalidation logic, deployed a background flush job, and restored full accuracy within 90 minutes. Post-incident I added integration tests for cache consistency to prevent recurrence."

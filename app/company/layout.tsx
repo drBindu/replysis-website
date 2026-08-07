@@ -8,9 +8,9 @@ const brandFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Verchor | Focused software for meaningful work",
+  title: "Replysis | Focused software for meaningful work",
   description:
-    "Verchor is an independent software company building focused tools for high-stakes professional moments.",
+    "Replysis is an independent software company building focused tools for high-stakes professional moments.",
 };
 
 export default function CompanyLayout({ children }: { children: React.ReactNode }) {

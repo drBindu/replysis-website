@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: "Features  -  Verchor",
+  title: "Features  -  Replysis",
   description: "Every tool you need to prepare for interviews and land the offer.",
 };
 
@@ -33,7 +33,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Resume-Grounded Answers",
     tagline: "Every answer comes from your actual background.",
-    desc: "Upload your resume once. Verchor reads every project, role, skill, and achievement and uses that as context for every answer it generates. No generic filler. No answers that don't sound like you.",
+    desc: "Upload your resume once. Replysis reads every project, role, skill, and achievement and uses that as context for every answer it generates. No generic filler. No answers that don't sound like you.",
     points: ["Answers tied to your real experience", "References your specific projects and metrics", "Role and company-aware context", "Consistent voice across every question"],
   },
   {
@@ -47,7 +47,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Sub-2-Second Response",
     tagline: "Answer on screen before you even hesitate.",
-    desc: "Powered by Groq's LPU inference engine, the fastest LLM hardware available. From the moment the question ends, Verchor transcribes, processes, and streams a tailored answer to your screen in under 2 seconds.",
+    desc: "Powered by Groq's LPU inference engine, the fastest LLM hardware available. From the moment the question ends, Replysis transcribes, processes, and streams a tailored answer to your screen in under 2 seconds.",
     points: ["Groq LPU: fastest inference on the market", "Streams token-by-token as it generates", "1.8s average from question end to first word", "No perceptible lag during live conversation"],
   },
   {
@@ -60,8 +60,8 @@ const FEATURES = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Works on Any Platform",
-    tagline: "If it uses your mic, Verchor works.",
-    desc: "Verchor captures audio at the system level through the native desktop app, not through the browser. This means it works with every video platform: Zoom, Google Meet, Microsoft Teams, Webex, HireVue, and any other platform that uses your microphone.",
+    tagline: "If it uses your mic, Replysis works.",
+    desc: "Replysis captures audio at the system level through the native desktop app, not through the browser. This means it works with every video platform: Zoom, Google Meet, Microsoft Teams, Webex, HireVue, and any other platform that uses your microphone.",
     points: ["System-level audio capture (native app)", "No browser extension required", "Compatible with HireVue AI interviews", "Works even on one-way recorded interviews"],
   },
   {
@@ -89,7 +89,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Smart Resume Builder",
     tagline: "ATS-optimized and role-specific in under 2 minutes.",
-    desc: "Paste in your experience and choose your target role. Verchor rewrites every bullet point to pass ATS filters, include the right keywords for your target company, and lead with impact metrics. The same resume then powers your live interview answers.",
+    desc: "Paste in your experience and choose your target role. Replysis rewrites every bullet point to pass ATS filters, include the right keywords for your target company, and lead with impact metrics. The same resume then powers your live interview answers.",
     points: ["ATS keyword optimization for your target role", "Impact-first bullet rewrites with real metrics", "Role-specific language for SWE, PM, DS, Design", "Export to PDF or plain text instantly"],
   },
   {
@@ -131,7 +131,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Role-Specific Answers",
     tagline: "Tuned for your exact role and company.",
-    desc: "Answers aren't generic. Verchor knows the difference between what a Senior SWE at Google needs to say versus what a PM at a startup needs to say. Set your target role and company once, and every answer is calibrated for that specific context.",
+    desc: "Answers aren't generic. Replysis knows the difference between what a Senior SWE at Google needs to say versus what a PM at a startup needs to say. Set your target role and company once, and every answer is calibrated for that specific context.",
     points: ["Target role: SWE, PM, Data Science, Marketing, Design", "Company context: big tech, startup, FAANG, Indian tech", "Calibrated answer length and structure by role", "STAR format auto-applied for behavioral questions"],
   },
 ];

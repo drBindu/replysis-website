@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy  -  Verchor",
-  description: "How Verchor collects, uses, and protects your data.",
+  title: "Privacy Policy  -  Replysis",
+  description: "How Replysis collects, uses, and protects your data.",
 };
 
 const LAST_UPDATED = "May 1, 2026";
-const CONTACT = "support@verchor.com";
+const CONTACT = "support@replysis.com";
 
 export default function PrivacyPage() {
   return (
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">1. Who we are</h2>
-            <p>Verchor ("we", "us", "our") operates verchor.com and the Verchor desktop apps for Windows and macOS. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
+            <p>Replysis ("we", "us", "our") operates replysis.com and the Replysis desktop apps for Windows and macOS. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
           </div>
 
           <div>

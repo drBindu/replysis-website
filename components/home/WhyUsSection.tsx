@@ -48,7 +48,7 @@ const STRENGTHS = [
     metric: "8+",
     unit: "platforms supported",
     title: "Works wherever your interview is",
-    body: "Zoom, Google Meet, Teams, Webex, HireVue, Slack, phone screens, in-person with a laptop. If your interview has audio, Verchor is already there. You pick the platform and we show up.",
+    body: "Zoom, Google Meet, Teams, Webex, HireVue, Slack, phone screens, in-person with a laptop. If your interview has audio, Replysis is already there. You pick the platform and we show up.",
     tag: "All major platforms",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.09)",
@@ -84,7 +84,7 @@ export default function WhyUsSection() {
             transition={{ duration: 0.55 }}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-100 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Why Verchor</span>
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Why Replysis</span>
           </motion.div>
 
           <motion.h2
@@ -150,7 +150,7 @@ export default function WhyUsSection() {
             The goal was simple from day one.
           </p>
           <p className="text-gray-500 text-[15px] max-w-xl mx-auto leading-relaxed">
-            Walk into any interview, for any company, on any platform, and answer every question with the confidence of someone who has done it a hundred times. That is what Verchor gives you.
+            Walk into any interview, for any company, on any platform, and answer every question with the confidence of someone who has done it a hundred times. That is what Replysis gives you.
           </p>
         </motion.div>
 

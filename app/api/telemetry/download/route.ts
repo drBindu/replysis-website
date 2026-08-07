@@ -31,7 +31,7 @@ function isAllowedOrigin(req: Request) {
   const origin = req.headers.get("origin");
   if (!origin) return false;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://verchor.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
   return origin === siteUrl || (process.env.NODE_ENV !== "production" && /^http:\/\/localhost(:\d+)?$/.test(origin));
 }
 

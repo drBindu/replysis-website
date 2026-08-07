@@ -10,10 +10,10 @@ export default function BrandIcon({
   alt = "",
 }: BrandIconProps) {
   const source = size <= 32
-    ? "/brand/verchor-icon-64.png"
+    ? "/brand/replysis-icon-64.png"
     : size <= 64
-      ? "/brand/verchor-icon-128.png"
-      : "/brand/verchor-icon-256.png";
+      ? "/brand/replysis-icon-128.png"
+      : "/brand/replysis-icon-256.png";
 
   return (
     <img

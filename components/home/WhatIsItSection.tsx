@@ -88,7 +88,7 @@ function FeatureRow({
                 <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
                 <div className="w-3 h-3 rounded-full bg-zinc-800/70" />
                 <div className="ml-3 flex-1 bg-white/5 rounded-md h-5 flex items-center px-3">
-                  <span className="text-[10px] text-gray-500">Verchor  -  {tag}</span>
+                  <span className="text-[10px] text-gray-500">Replysis  -  {tag}</span>
                 </div>
               </div>
               <div className="bg-gray-900 p-6 min-h-[260px] space-y-3">
@@ -130,7 +130,7 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Your resume,\nprofessionally rebuilt."}
         sub="Land 3x more interviews."
-        desc="Paste your experience, choose your target role. Verchor rewrites every bullet point to be ATS-optimized and role-specific, in under 2 minutes."
+        desc="Paste your experience, choose your target role. Replysis rewrites every bullet point to be ATS-optimized and role-specific, in under 2 minutes."
         stats={[{ n: "3×", l: "more callbacks" }, { n: "2 min", l: "avg build time" }, { n: "ATS", l: "optimized" }]}
         cta="Build My Resume"
         gradient="radial-gradient(circle, #2E8B45, transparent)"
@@ -172,7 +172,7 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Live answers,\ncompletely invisible."}
         sub="Perfect response streamed in under 2 seconds."
-        desc="During your real interview, Verchor silently listens, reads your resume for context, and streams the ideal answer to your private stealth overlay. Screen-share safe. Zero lag."
+        desc="During your real interview, Replysis silently listens, reads your resume for context, and streams the ideal answer to your private stealth overlay. Screen-share safe. Zero lag."
         stats={[{ n: "<2s", l: "response time" }, { n: "100%", l: "stealth" }, { n: "98%", l: "accuracy" }]}
         cta="Try Live Copilot"
         gradient="radial-gradient(circle, #21924A, transparent)"

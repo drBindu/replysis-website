@@ -120,7 +120,7 @@ export async function POST(req: Request) {
     // SECURITY: completion URLs come from an allowlist, never the raw Origin
     // header — a crafted Origin could otherwise send the user to an attacker
     // page immediately after a real payment.
-    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://verchor.com";
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
     const ALLOWED_ORIGINS = new Set([SITE_URL, "http://localhost:3000"]);
     const requestOrigin = req.headers.get("origin") || "";
     const origin = ALLOWED_ORIGINS.has(requestOrigin) ? requestOrigin : SITE_URL;

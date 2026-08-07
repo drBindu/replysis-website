@@ -32,7 +32,7 @@ export default function Footer({ isDark = true }) {
     { name: "How it Works", href: "/#how-it-works",  Icon: FaLightbulb },
     { name: "Pricing",      href: "/pricing",       Icon: FaTag },
     { name: "Resume Builder", href: "/resume",      Icon: FaBuilding },
-    { name: "Contact",      href: "mailto:support@verchor.com", Icon: FaEnvelope },
+    { name: "Contact",      href: "mailto:support@replysis.com", Icon: FaEnvelope },
   ];
 
   return (
@@ -85,7 +85,7 @@ export default function Footer({ isDark = true }) {
             <div className="flex items-center space-x-3">
               <BrandIcon size={36} className="drop-shadow-[0_6px_16px_rgba(52,224,138,0.22)]" />
               <span className="text-[15px] font-bold tracking-tight">
-                Verchor <span className="text-zinc-600">AI</span>
+                Replysis <span className="text-zinc-600">AI</span>
               </span>
             </div>
             <p className="text-sm text-white/30 leading-relaxed max-w-xs">
@@ -219,7 +219,7 @@ export default function Footer({ isDark = true }) {
           <div className="flex items-center gap-2">
             <FaRegCopyright />
             <span>{currentYear}</span>
-            <motion.span whileHover={{ scale: 1.05 }} className="text-zinc-600/50 font-semibold">Verchor</motion.span>
+            <motion.span whileHover={{ scale: 1.05 }} className="text-zinc-600/50 font-semibold">Replysis</motion.span>
             <span>. All rights reserved.</span>
           </div>
           <div className="flex gap-6">

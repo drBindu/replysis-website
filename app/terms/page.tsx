@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: "Terms of Service  -  Verchor",
-  description: "Terms governing your use of Verchor.",
+  title: "Terms of Service  -  Replysis",
+  description: "Terms governing your use of Replysis.",
 };
 
 const LAST_UPDATED = "May 1, 2026";
-const CONTACT = "support@verchor.com";
+const CONTACT = "support@replysis.com";
 
 export default function TermsPage() {
   return (
@@ -29,17 +29,17 @@ export default function TermsPage() {
         <div className="max-w-3xl mx-auto space-y-12 text-gray-600 leading-relaxed">
 
           <p className="text-sm bg-gray-50 border border-gray-100 rounded-xl p-5">
-            By accessing or using Verchor at verchor.com or the Verchor desktop apps ("the Service"), you agree to these Terms. If you do not agree, do not use the Service.
+            By accessing or using Replysis at replysis.com or the Replysis desktop apps ("the Service"), you agree to these Terms. If you do not agree, do not use the Service.
           </p>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">1. The Service</h2>
-            <p className="text-sm">Verchor provides interview preparation tools including a resume builder, mock interview mode, and a live interview copilot. The Service is intended for personal, non-commercial job-search use.</p>
+            <p className="text-sm">Replysis provides interview preparation tools including a resume builder, mock interview mode, and a live interview copilot. The Service is intended for personal, non-commercial job-search use.</p>
           </div>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">2. Eligibility</h2>
-            <p className="text-sm">You must be at least 18 years old to use Verchor. By creating an account, you confirm the information you provide is accurate and that you have the legal capacity to enter this agreement.</p>
+            <p className="text-sm">You must be at least 18 years old to use Replysis. By creating an account, you confirm the information you provide is accurate and that you have the legal capacity to enter this agreement.</p>
           </div>
 
           <div>
@@ -89,7 +89,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">6. Intellectual property</h2>
-            <p className="text-sm">All code, design, trademarks, and content forming Verchor are owned by us or our licensors. Content you create using the Service (such as your resume text) remains yours.</p>
+            <p className="text-sm">All code, design, trademarks, and content forming Replysis are owned by us or our licensors. Content you create using the Service (such as your resume text) remains yours.</p>
           </div>
 
           <div>
@@ -99,7 +99,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">8. Disclaimer of warranties</h2>
-            <p className="text-sm">The Service is provided "as is" without warranties of any kind. We do not guarantee it will be uninterrupted or error-free. Use Verchor as a preparation aid, not a substitute for your own judgment.</p>
+            <p className="text-sm">The Service is provided "as is" without warranties of any kind. We do not guarantee it will be uninterrupted or error-free. Use Replysis as a preparation aid, not a substitute for your own judgment.</p>
           </div>
 
           <div>

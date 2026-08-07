@@ -1095,7 +1095,7 @@ export default function MockInterviewPage() {
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <BrandIcon size={30} />
-            <span style={{ fontSize: 15, fontWeight: 800, color: T.text, letterSpacing: "-0.02em" }}>Verchor</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: T.text, letterSpacing: "-0.02em" }}>Replysis</span>
             <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 7px", borderRadius: 6,
               background: T.accentBg, border: `1px solid ${T.accentBrd}`, color: T.accent,
               letterSpacing: "0.12em", textTransform: "uppercase" }}>AI</span>

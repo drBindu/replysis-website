@@ -119,7 +119,7 @@ export class SpeechmaticsClient {
             { content: "Microservices", sounds_like: ["micro-services"]    },
             { content: "GitOps",        sounds_like: ["git-ops"]           },
             { content: "CI/CD",         sounds_like: ["c-i-c-d", "ci cd"] },
-            { content: "Verchor",     sounds_like: ["co-pilot-x"]       },
+            { content: "Replysis",     sounds_like: ["co-pilot-x"]       },
             { content: "Roosevelt",     sounds_like: ["roo-se-velt"]       },
           ],
         },

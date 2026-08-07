@@ -32,7 +32,7 @@ const FRIENDLY: Record<string, string> = {
   "auth/invalid-credential":   "Invalid email or password.",
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
   "auth/popup-blocked":        "Your browser blocked the sign-in popup. Allow popups and try again.",
-  "auth/unauthorized-domain":  "This site isn't authorized for sign-in yet. (Add verchor.com to Firebase Authorized domains.)",
+  "auth/unauthorized-domain":  "This site isn't authorized for sign-in yet. (Add replysis.com to Firebase Authorized domains.)",
   "auth/network-request-failed": "Network error. Check your connection and try again.",
   "auth/operation-not-allowed": "This sign-in method isn't enabled in Firebase.",
   "auth/invalid-api-key":      "Sign-in isn't configured correctly (invalid API key).",
@@ -131,7 +131,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                 <div className="flex items-center gap-2.5">
                   <BrandIcon size={30} className="drop-shadow-[0_4px_10px_rgba(33,146,74,0.18)]" />
                   <span className="text-[14px] font-extrabold text-gray-900">
-                    Verchor{" "}
+                    Replysis{" "}
                     <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
                   </span>
                 </div>
@@ -152,7 +152,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                       {mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset password"}
                     </h2>
                     <p className="text-[13px] text-gray-400 mt-0.5">
-                      {mode === "signin" ? "Sign in to continue to Verchor"
+                      {mode === "signin" ? "Sign in to continue to Replysis"
                         : mode === "signup" ? "Start with 100 free AI credits. No card needed."
                         : "We'll send a reset link to your inbox"}
                     </p>

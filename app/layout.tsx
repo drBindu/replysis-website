@@ -11,14 +11,14 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://verchor.com'),
+  metadataBase: new URL('https://replysis.com'),
   alternates: { canonical: '/' },
-  title: 'Verchor - Master Every Interview',
-  description: 'Verchor listens to your interview in real time and streams tailored answers in under 2 seconds, grounded in your resume. Private by design, invisible on screen-share, and free to start.',
+  title: 'Replysis - Master Every Interview',
+  description: 'Replysis listens to your interview in real time and streams tailored answers in under 2 seconds, grounded in your resume. Private by design, invisible on screen-share, and free to start.',
   keywords: ['AI interview assistant', 'interview copilot', 'real-time interview help', 'mock interview AI', 'job interview preparation', 'AI coaching', 'career'],
-  authors: [{ name: 'Verchor' }],
+  authors: [{ name: 'Replysis' }],
   openGraph: {
-    title: 'Verchor - Master Every Interview',
+    title: 'Replysis - Master Every Interview',
     description: 'Real-time AI interview assistant that streams resume-grounded answers in under 2 seconds. Invisible to screen-share, private by design, free to start.',
     type: 'website',
   },

@@ -168,7 +168,7 @@ export default function RealInterviewPage() {
             <div>
               <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">Sign in to continue</h1>
               <p className="text-slate-500 text-sm max-w-xs mx-auto font-medium">
-                Access Verchor and start your session.
+                Access Replysis and start your session.
               </p>
             </div>
             <button onClick={() => setShowAuth(true)}
@@ -187,11 +187,11 @@ export default function RealInterviewPage() {
             style={{ background: PNL, borderColor: BDR }}>
             <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center justify-between">
 
-              {/* Logo  -  Verchor */}
+              {/* Logo  -  Replysis */}
               <div className="flex items-center gap-3">
                 <BrandIcon size={32} />
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-[16px] font-black tracking-tight text-slate-800">Verchor</span>
+                  <span className="text-[16px] font-black tracking-tight text-slate-800">Replysis</span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md"
                     style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.12), rgba(31,138,62,0.10))", border: "1px solid rgba(31,138,62,0.2)", color: "#21924A" }}>
                     AI

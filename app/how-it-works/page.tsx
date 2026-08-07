@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: "How It Works  -  Verchor",
+  title: "How It Works  -  Replysis",
   description: "Three steps: upload your resume, start your interview, get the answer.",
 };
 
@@ -15,25 +15,25 @@ const STEPS = [
     accent: "text-zinc-900",
     title: "Upload your resume",
     sub: "Takes 30 seconds. Works for every job you apply to.",
-    desc: "Paste your resume text or upload a PDF. Verchor reads every role, project, metric, and skill you've listed. This becomes the context engine behind every answer, so nothing it says will ever sound generic or disconnected from your actual background.",
+    desc: "Paste your resume text or upload a PDF. Replysis reads every role, project, metric, and skill you've listed. This becomes the context engine behind every answer, so nothing it says will ever sound generic or disconnected from your actual background.",
     detail: [
       { label: "What it reads", value: "Job titles, companies, dates, projects, technologies, achievements, metrics" },
       { label: "How it's stored", value: "Locally in your browser session. Not uploaded to any server permanently." },
       { label: "How often", value: "Once per job application. Update it whenever your resume changes." },
     ],
-    tip: "Include specific metrics in your resume (e.g. 'reduced latency by 40%'). Verchor will reference them directly in live answers.",
+    tip: "Include specific metrics in your resume (e.g. 'reduced latency by 40%'). Replysis will reference them directly in live answers.",
   },
   {
     n: "02",
     color: "bg-zinc-900",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "Open Verchor before your interview",
+    title: "Open Replysis before your interview",
     sub: "Desktop app for real interviews. Browser for practice.",
     desc: "Download the Windows or macOS app for live interviews. It captures audio at the system level, so no browser microphone permission prompts and no chance of the overlay appearing in screen-share. For mock practice, the browser version works perfectly.",
     detail: [
       { label: "For live interviews", value: "Use the Windows (.msix) or macOS (.pkg) desktop app. System audio capture, overlay fully hidden from screen-share." },
-      { label: "For practice", value: "Browser version at verchor.com/real-interview or /mock-interview. No install needed." },
+      { label: "For practice", value: "Browser version at replysis.com/real-interview or /mock-interview. No install needed." },
       { label: "Setup time", value: "Under 60 seconds from download to first answer." },
     ],
     tip: "Test the stealth overlay in a Zoom call with a friend before your real interview. It takes 2 minutes and confirms everything is working.",
@@ -45,7 +45,7 @@ const STEPS = [
     accent: "text-zinc-900",
     title: "Answer every question with confidence",
     sub: "1.8 seconds from question end to answer on screen.",
-    desc: "Your interviewer asks a question. Verchor picks it up via your microphone, transcribes it in real time, matches it against your resume context, and streams a tailored answer to your private overlay in under 2 seconds. You read it naturally, in your own words.",
+    desc: "Your interviewer asks a question. Replysis picks it up via your microphone, transcribes it in real time, matches it against your resume context, and streams a tailored answer to your private overlay in under 2 seconds. You read it naturally, in your own words.",
     detail: [
       { label: "What you see", value: "A private floating overlay showing the answer, streaming token-by-token." },
       { label: "What your interviewer sees", value: "Only you. The overlay is completely invisible to screen-share and recording." },
@@ -56,8 +56,8 @@ const STEPS = [
 ];
 
 const FAQS = [
-  { q: "Can the interviewer detect Verchor?", a: "No. The stealth overlay is built specifically to be invisible to screen-share on Zoom, Teams, Meet, and Webex. It doesn't appear in recordings either. We have tested this extensively." },
-  { q: "Does it work for HireVue and one-way video interviews?", a: "Yes. HireVue uses your microphone and webcam. Verchor works at the system audio level, so it captures the questions whether they're read aloud by the platform or by a human interviewer." },
+  { q: "Can the interviewer detect Replysis?", a: "No. The stealth overlay is built specifically to be invisible to screen-share on Zoom, Teams, Meet, and Webex. It doesn't appear in recordings either. We have tested this extensively." },
+  { q: "Does it work for HireVue and one-way video interviews?", a: "Yes. HireVue uses your microphone and webcam. Replysis works at the system audio level, so it captures the questions whether they're read aloud by the platform or by a human interviewer." },
   { q: "What if the answer isn't right?", a: "Every answer is grounded in your resume, so it will always reference your real experience. If a specific answer doesn't fit, ignore it and use your own words. Think of it as a live outline, not a script." },
   { q: "Do I need the desktop app, or can I use the browser?", a: "For mock practice, the browser is perfect. For real interviews, we strongly recommend the desktop app. It uses system audio capture which gives you true stealth. The browser version requires microphone access which can occasionally trigger platform warnings." },
   { q: "Is my data safe?", a: "Your audio never leaves your device. Raw audio is processed locally. Only the text transcript is sent to the LLM for answer generation, and that's discarded after each response. We don't store conversation history or sell your data." },

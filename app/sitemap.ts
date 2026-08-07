@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next'
 
-// Served at https://verchor.com/sitemap.xml — the list of pages we want Google to
+// Served at https://replysis.com/sitemap.xml — the list of pages we want Google to
 // index. Submit this URL in Google Search Console to speed up indexing.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://verchor.com'
+  const base = 'https://replysis.com'
   const now = new Date()
   const pages: { path: string; priority: number }[] = [
     { path: '', priority: 1.0 },

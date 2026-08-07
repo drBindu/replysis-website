@@ -3,15 +3,15 @@ import Link from "next/link";
 import styles from "../privacy/privacy.module.css";
 
 export const metadata: Metadata = {
-  title: "Terms of Use | Verchor",
-  description: "Terms for using the Verchor company website.",
+  title: "Terms of Use | Replysis",
+  description: "Terms for using the Replysis company website.",
 };
 
 const sections = [
   {
     title: "Scope",
     content:
-      "These terms apply to the Verchor website at varoxel.com. A Verchor product or service may provide separate terms that apply when you use that product or service.",
+      "These terms apply to the Replysis website at varoxel.com. A Replysis product or service may provide separate terms that apply when you use that product or service.",
   },
   {
     title: "Use of this website",
@@ -21,12 +21,12 @@ const sections = [
   {
     title: "Website content",
     content:
-      "The website and its content, including its design, text, graphics, and trademarks, are owned by Verchor or its licensors and are protected by applicable law. You may not copy, modify, or use that content beyond what applicable law permits without written permission.",
+      "The website and its content, including its design, text, graphics, and trademarks, are owned by Replysis or its licensors and are protected by applicable law. You may not copy, modify, or use that content beyond what applicable law permits without written permission.",
   },
   {
     title: "Third party services",
     content:
-      "This website may link to third party websites or services. Verchor does not control those services and is not responsible for their content, availability, or practices. Their own terms and privacy notices apply.",
+      "This website may link to third party websites or services. Replysis does not control those services and is not responsible for their content, availability, or practices. Their own terms and privacy notices apply.",
   },
   {
     title: "Availability and changes",
@@ -44,17 +44,17 @@ export default function CompanyTermsPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/company" aria-label="Verchor home">
+        <Link className={styles.brand} href="/company" aria-label="Replysis home">
           VAROXEL
         </Link>
         <Link className={styles.backLink} href="/company">Company site</Link>
       </header>
 
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>Verchor</p>
+        <p className={styles.eyebrow}>Replysis</p>
         <h1>Terms of use</h1>
         <p className={styles.summary}>
-          These terms explain the rules for using the Verchor company website.
+          These terms explain the rules for using the Replysis company website.
         </p>
         <p className={styles.updated}>Last updated: July 20, 2026</p>
       </section>
@@ -73,17 +73,17 @@ export default function CompanyTermsPage() {
         <section className={styles.contact}>
           <h2>Questions about these terms</h2>
           <p>
-            For a question about these terms, contact Verchor at{" "}
+            For a question about these terms, contact Replysis at{" "}
             <a href="mailto:admin@varoxel.com">admin@varoxel.com</a>.
           </p>
         </section>
       </article>
 
       <footer className={styles.footer}>
-        <span>(c) {new Date().getFullYear()} Verchor</span>
+        <span>(c) {new Date().getFullYear()} Replysis</span>
         <div className={styles.footerLinks}>
           <Link href="/company/privacy">Privacy</Link>
-          <Link href="/company">Verchor</Link>
+          <Link href="/company">Replysis</Link>
         </div>
       </footer>
     </main>

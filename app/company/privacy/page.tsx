@@ -3,15 +3,15 @@ import Link from "next/link";
 import styles from "./privacy.module.css";
 
 export const metadata: Metadata = {
-  title: "Privacy Notice | Verchor",
-  description: "How Verchor handles information collected through its company website.",
+  title: "Privacy Notice | Replysis",
+  description: "How Replysis handles information collected through its company website.",
 };
 
 const sections = [
   {
     title: "Scope",
     content:
-      "This notice applies to the Verchor website at varoxel.com. A Verchor product or service may provide a separate notice when it handles information for a particular purpose.",
+      "This notice applies to the Replysis website at varoxel.com. A Replysis product or service may provide a separate notice when it handles information for a particular purpose.",
   },
   {
     title: "Information we receive",
@@ -26,7 +26,7 @@ const sections = [
   {
     title: "Service providers",
     content:
-      "Verchor may use service providers to host, secure, and maintain the website. These providers may process information only as needed to provide their services to Verchor or to meet legal obligations.",
+      "Replysis may use service providers to host, secure, and maintain the website. These providers may process information only as needed to provide their services to Replysis or to meet legal obligations.",
   },
   {
     title: "Retention and security",
@@ -49,17 +49,17 @@ export default function CompanyPrivacyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.brand} href="/company" aria-label="Verchor home">
+        <Link className={styles.brand} href="/company" aria-label="Replysis home">
           VAROXEL
         </Link>
         <Link className={styles.backLink} href="/company">Company site</Link>
       </header>
 
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>Verchor</p>
+        <p className={styles.eyebrow}>Replysis</p>
         <h1>Privacy notice</h1>
         <p className={styles.summary}>
-          This notice explains how Verchor handles information collected through its company website.
+          This notice explains how Replysis handles information collected through its company website.
         </p>
         <p className={styles.updated}>Last updated: July 20, 2026</p>
       </section>
@@ -78,17 +78,17 @@ export default function CompanyPrivacyPage() {
         <section className={styles.contact}>
           <h2>Privacy questions</h2>
           <p>
-            For a privacy request or question about this notice, contact Verchor at{" "}
+            For a privacy request or question about this notice, contact Replysis at{" "}
             <a href="mailto:admin@varoxel.com">admin@varoxel.com</a>.
           </p>
         </section>
       </article>
 
       <footer className={styles.footer}>
-        <span>(c) {new Date().getFullYear()} Verchor</span>
+        <span>(c) {new Date().getFullYear()} Replysis</span>
         <div className={styles.footerLinks}>
           <Link href="/company/terms">Terms</Link>
-          <Link href="/company">Verchor</Link>
+          <Link href="/company">Replysis</Link>
         </div>
       </footer>
     </main>

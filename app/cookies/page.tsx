@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy  -  Verchor",
-  description: "What cookies Verchor sets and why.",
+  title: "Cookie Policy  -  Replysis",
+  description: "What cookies Replysis sets and why.",
 };
 
 const LAST_UPDATED = "May 1, 2026";
-const CONTACT = "support@verchor.com";
+const CONTACT = "support@replysis.com";
 
 const COOKIES = [
   { name: "__session",      type: "Essential",  duration: "Session",  purpose: "Keeps you signed in during your browser session. Set by Firebase Authentication." },
@@ -38,7 +38,7 @@ export default function CookiesPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">What is a cookie?</h2>
-            <p className="text-sm">A cookie is a small text file your browser stores when you visit a website. Verchor uses a small number of cookies to keep you signed in and remember your preferences. We do not use advertising or tracking cookies of any kind.</p>
+            <p className="text-sm">A cookie is a small text file your browser stores when you visit a website. Replysis uses a small number of cookies to keep you signed in and remember your preferences. We do not use advertising or tracking cookies of any kind.</p>
           </div>
 
           <div>
@@ -75,7 +75,7 @@ export default function CookiesPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">Local storage</h2>
-            <p className="text-sm">In addition to cookies, Verchor uses browser <code className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to store your resume draft and session preferences locally on your machine. This data never leaves your device unless you explicitly submit it through the app.</p>
+            <p className="text-sm">In addition to cookies, Replysis uses browser <code className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to store your resume draft and session preferences locally on your machine. This data never leaves your device unless you explicitly submit it through the app.</p>
           </div>
 
           <div>

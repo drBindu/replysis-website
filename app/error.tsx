@@ -15,7 +15,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Surface it for debugging without exposing internals to the user.
-    console.error("[Verchor] Unhandled UI error:", error);
+    console.error("[Replysis] Unhandled UI error:", error);
   }, [error]);
 
   return (

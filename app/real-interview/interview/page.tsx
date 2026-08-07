@@ -506,7 +506,7 @@ export default function InterviewPage() {
           {/* Brand */}
           <div className="flex items-center gap-2">
             <BrandIcon size={30} />
-            <span className="text-[14px] font-black text-slate-800 tracking-tight">Verchor</span>
+            <span className="text-[14px] font-black text-slate-800 tracking-tight">Replysis</span>
             <span className="text-[10px] font-bold text-zinc-800 px-1.5 py-0.5 rounded-md"
               style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.18)" }}>
               AI

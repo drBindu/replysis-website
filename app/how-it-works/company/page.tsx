@@ -41,7 +41,7 @@ const principles = [
 ];
 
 const introText =
-  "Verchor is a software company. We build focused products for people who need to make good decisions and move important work forward.";
+  "Replysis is a software company. We build focused products for people who need to make good decisions and move important work forward.";
 const introWords = introText.split(" ");
 
 function IntroWord({
@@ -203,7 +203,7 @@ export default function CompanyPage() {
       <div className={`${styles.ambient} ${styles.ambientTwo}`} aria-hidden="true" />
 
       <header className={styles.navbar}>
-        <a className={styles.brand} href="/company" aria-label="Verchor home">
+        <a className={styles.brand} href="/company" aria-label="Replysis home">
           VAROXEL
         </a>
 
@@ -215,7 +215,7 @@ export default function CompanyPage() {
         </nav>
 
         <a className={styles.productLink} href="/">
-          Explore Verchor <ArrowUpRight size={16} aria-hidden="true" />
+          Explore Replysis <ArrowUpRight size={16} aria-hidden="true" />
         </a>
       </header>
 
@@ -228,7 +228,7 @@ export default function CompanyPage() {
             transition={{ duration: 0.55, ease: "easeOut" }}
           >
             <span className={styles.statusDot} aria-hidden="true" />
-            Verchor
+            Replysis
           </motion.div>
 
           <motion.h1
@@ -245,7 +245,7 @@ export default function CompanyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.18, ease: "easeOut" }}
           >
-            Verchor creates practical software for professionals. Our first product, Verchor, helps people prepare for interviews with focus and confidence.
+            Replysis creates practical software for professionals. Our first product, Replysis, helps people prepare for interviews with focus and confidence.
           </motion.p>
 
           <motion.div
@@ -365,13 +365,13 @@ export default function CompanyPage() {
         >
           <motion.div className={styles.productGlow} style={{ scale: productGlowScale }} aria-hidden="true" />
           <motion.div className={styles.productCopy} style={{ y: productCopyY }}>
-            <div className={styles.productBadge}>Verchor</div>
+            <div className={styles.productBadge}>Replysis</div>
             <h3>Interview preparation and support in one focused workspace.</h3>
             <p>
-              Verchor brings preparation, relevant context, and real time interview tools together with straightforward settings.
+              Replysis brings preparation, relevant context, and real time interview tools together with straightforward settings.
             </p>
             <a className={styles.productCta} href="/">
-              Explore Verchor <ArrowUpRight size={17} aria-hidden="true" />
+              Explore Replysis <ArrowUpRight size={17} aria-hidden="true" />
             </a>
           </motion.div>
           <motion.div
@@ -454,23 +454,23 @@ export default function CompanyPage() {
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.65, ease: "easeOut" }}
         >
-          <p className={styles.sectionLabel}>Verchor</p>
+          <p className={styles.sectionLabel}>Replysis</p>
           <h2>Built with care.<br />Improved with intent.</h2>
           <MagneticButton href="/" className={styles.primaryButton}>
-            Explore Verchor <ArrowRight size={17} aria-hidden="true" />
+            Explore Replysis <ArrowRight size={17} aria-hidden="true" />
           </MagneticButton>
         </motion.div>
       </section>
 
       <footer className={styles.footer}>
-        <a className={styles.brand} href="/company" aria-label="Verchor home">
+        <a className={styles.brand} href="/company" aria-label="Replysis home">
           VAROXEL
         </a>
-        <p>(c) {currentYear} Verchor. All rights reserved.</p>
+        <p>(c) {currentYear} Replysis. All rights reserved.</p>
         <div className={styles.footerLinks}>
           <a href="/company/privacy">Privacy</a>
           <a href="/company/terms">Terms</a>
-          <a href="/">Verchor product</a>
+          <a href="/">Replysis product</a>
         </div>
       </footer>
     </main>

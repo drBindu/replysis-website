@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ── Verchor · Light + Terracotta ──
+        // ── Replysis · Light + Terracotta ──
         // The accent layer is `zinc-*`; redefine it to a terracotta ramp so
         // every accent (buttons, links, chips, gradients) turns terracotta.
         zinc: {

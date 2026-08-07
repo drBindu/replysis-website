@@ -671,7 +671,7 @@ export default function AdminPage() {
 
         {/* Footer */}
         <div className="text-center text-[10px] text-gray-800 pb-4">
-          Verchor Admin · {metrics.users} users · {metrics.winDownloads + metrics.macDownloads} downloads
+          Replysis Admin · {metrics.users} users · {metrics.winDownloads + metrics.macDownloads} downloads
         </div>
       </div>
     </div>
