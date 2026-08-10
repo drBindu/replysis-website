@@ -52,23 +52,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isProtectedRoute = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+
   // Effect 2: Route protection  -  watches pathname separately to avoid re-subscribing auth
   useEffect(() => {
     if (loading) return;
-    if (!user) {
-      const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-      if (isProtected) router.replace("/");
-    }
-  }, [user, loading, pathname, router]);
+    if (!user && isProtectedRoute) router.replace("/");
+  }, [user, loading, isProtectedRoute, router]);
 
-  if (loading) {
+  // Only a protected route waits for Firebase. Gating everything meant the
+  // marketing site shipped server-rendered HTML and then threw it away for a
+  // spinner on hydration, which cost both the first paint and what crawlers
+  // actually see. Public pages now render straight through.
+  if (loading && isProtectedRoute) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-zinc-800 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Loading...</p>
+      <AuthContext.Provider value={{ user, loading }}>
+        <div
+          role="status"
+          aria-live="polite"
+          className="min-h-screen bg-[#FDFCFA] flex items-center justify-center"
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 border-[#1C7A3E] border-t-transparent rounded-full animate-spin" />
+            <p className="text-[#4A4A41] text-sm">Checking your sign-in…</p>
+          </div>
         </div>
-      </div>
+      </AuthContext.Provider>
     );
   }
 

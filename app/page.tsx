@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -24,9 +24,24 @@ import {
 const WINDOWS_DOWNLOAD = "/app.msixbundle";
 const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
+/**
+ * Reading the query string opts a component out of static rendering, so it is
+ * isolated here behind its own Suspense boundary. Keeping it in the page body
+ * would have forced the entire marketing homepage to render on the client and
+ * ship empty HTML. Renders nothing.
+ */
+function AuthQueryWatcher({ onAuthRequired }: { onAuthRequired: () => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("auth") === "required") onAuthRequired();
+  }, [searchParams, onAuthRequired]);
+
+  return null;
+}
+
 export default function Home() {
   const router       = useRouter();
-  const searchParams = useSearchParams();
   const [user, setUser]               = useState<any>(null);
   const [showMenu, setShowMenu]       = useState(false);   // profile dropdown
   const [showMobile, setShowMobile]   = useState(false);   // mobile nav drawer
@@ -52,12 +67,16 @@ export default function Home() {
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
   useEffect(() => { const u = onAuthStateChanged(auth, setUser); return () => u(); }, []);
 
-  // Open auth modal automatically when middleware redirects here with ?auth=required
-  useEffect(() => {
-    if (searchParams.get("auth") === "required") {
-      setAuthModal({ open: true, mode: "signin" });
-    }
-  }, [searchParams]);
+  const openRequiredAuth = useCallback(() => {
+    setAuthModal((current) =>
+      current.open && current.mode === "signin"
+        ? current
+        : { open: true, mode: "signin" }
+    );
+  }, []);
+
+  // The ?auth=required redirect is handled by <AuthQueryWatcher/> below, which
+  // keeps the query-string read inside its own Suspense boundary.
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -120,6 +139,10 @@ export default function Home() {
 
   return (
     <main className="marketing bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      <Suspense fallback={null}>
+        <AuthQueryWatcher onAuthRequired={openRequiredAuth} />
+      </Suspense>
 
       {/* Premium film-grain texture over the whole page */}
       <div className="grain-overlay" aria-hidden />

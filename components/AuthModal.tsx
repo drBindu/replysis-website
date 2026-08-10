@@ -22,6 +22,9 @@ interface Props {
   onSuccess?: () => void;
 }
 
+// Shown for any sign-in failure the person in front of the screen cannot fix.
+const SIGN_IN_UNAVAILABLE = "Sign-in is unavailable right now. Please try again shortly.";
+
 const FRIENDLY: Record<string, string> = {
   "auth/email-already-in-use": "An account with this email already exists.",
   "auth/invalid-email":        "Please enter a valid email address.",
@@ -32,12 +35,15 @@ const FRIENDLY: Record<string, string> = {
   "auth/invalid-credential":   "Invalid email or password.",
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
   "auth/popup-blocked":        "Your browser blocked the sign-in popup. Allow popups and try again.",
-  "auth/unauthorized-domain":  "This site isn't authorized for sign-in yet. (Add replysis.com to Firebase Authorized domains.)",
-  "auth/network-request-failed": "Network error. Check your connection and try again.",
-  "auth/operation-not-allowed": "This sign-in method isn't enabled in Firebase.",
-  "auth/invalid-api-key":      "Sign-in isn't configured correctly (invalid API key).",
-  "auth/api-key-not-valid":    "Sign-in isn't configured correctly (invalid API key).",
-  "auth/configuration-not-found": "Sign-in provider isn't configured in Firebase.",
+  "auth/network-request-failed": "We could not reach Replysis. Check your connection and try again.",
+  // The four below are server-side misconfigurations. There is nothing the
+  // person signing in can do about them, so they get one calm message and the
+  // real cause is written to the console for whoever is on call.
+  "auth/unauthorized-domain":     SIGN_IN_UNAVAILABLE,
+  "auth/operation-not-allowed":   SIGN_IN_UNAVAILABLE,
+  "auth/invalid-api-key":         SIGN_IN_UNAVAILABLE,
+  "auth/api-key-not-valid":       SIGN_IN_UNAVAILABLE,
+  "auth/configuration-not-found": SIGN_IN_UNAVAILABLE,
 };
 
 export default function AuthModal({ open, initialMode = "signin", onClose, onSuccess }: Props) {
@@ -65,7 +71,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
       const result = await signInWithPopup(auth, provider);
       if (result.user) await saveUser(result.user);
       onSuccess?.(); onClose();
-    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
+    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err); setError(FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
     finally { setLoading(false); }
   };
 
@@ -88,7 +94,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
         if (result.user) await saveUser(result.user);
         onSuccess?.(); onClose();
       }
-    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
+    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err); setError(FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
     finally { setLoading(false); }
   };
 
@@ -97,7 +103,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess("Reset link sent! Check your inbox.");
-    } catch (err: any) { setError(FRIENDLY[err?.code] ?? `Something went wrong (${err?.code ?? "unknown error"}).`); }
+    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err); setError(FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
     finally { setLoading(false); }
   };
 

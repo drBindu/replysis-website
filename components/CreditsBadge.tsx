@@ -34,7 +34,7 @@ const PLAN_META: Record<PlanKey, {
       </svg>
     ),
     dropdownAccent: "#21924A",
-    barColor: "linear-gradient(90deg, #21924A, #a855f7)",
+    barColor: "linear-gradient(90deg, #21924A, #4DA35E)",
   },
   pro: {
     label: "Pro",
@@ -68,7 +68,7 @@ const PLAN_META: Record<PlanKey, {
       </svg>
     ),
     dropdownAccent: "#21924A",
-    barColor: "linear-gradient(90deg, #21924A, #06b6d4)",
+    barColor: "linear-gradient(90deg, #21924A, #3FC97E)",
   },
 };
 

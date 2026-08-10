@@ -3,17 +3,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import Footer from "../components/Footer";
-import { useEffect, useState } from "react";
+import OfflineBanner from "../components/feedback/OfflineBanner";
+import { ToastProvider } from "../components/feedback/Toast";
+import { useEffect } from "react";
 import { auth, db } from "./firebaseConfig";
 import { doc, updateDoc, serverTimestamp, arrayUnion, increment } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     let exitHandler: (() => void) | null = null;
     let heartbeat: ReturnType<typeof setInterval> | null = null;
     let visHandler: (() => void) | null = null;
@@ -93,31 +93,36 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  if (!mounted) return null;
-
   const isCompanyPage = pathname.startsWith("/company");
   const hideFooter = pathname.startsWith("/resume/editor") || isCompanyPage;
 
-  return (
-    <>
-      {isCompanyPage ? (
-        <main className="flex flex-col min-h-[80vh]">{children}</main>
-      ) : (
-        <AnimatePresence mode="wait">
-          <motion.main
-            key={pathname}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="flex flex-col min-h-[80vh]"
-          >
-            {children}
-          </motion.main>
-        </AnimatePresence>
-      )}
+  // `initial={false}` is what keeps the first paint visible: the entry
+  // animation is skipped for the page that is already on screen (server render
+  // and hydration alike), so nothing is hidden behind opacity:0 and the tree is
+  // never remounted. Navigating afterwards changes `key`, and from that point
+  // AnimatePresence runs the exit and entry transitions normally.
+  const content = isCompanyPage ? (
+    <main className="flex flex-col min-h-[80vh]">{children}</main>
+  ) : (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.main
+        key={pathname}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="flex flex-col min-h-[80vh]"
+      >
+        {children}
+      </motion.main>
+    </AnimatePresence>
+  );
 
+  return (
+    <ToastProvider>
+      <OfflineBanner />
+      {content}
       {!hideFooter && <Footer />}
-    </>
+    </ToastProvider>
   );
 }
