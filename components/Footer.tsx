@@ -62,7 +62,7 @@ export default function Footer({ isDark = true }) {
               ? "radial-gradient(circle, rgba(31,138,62,0.4) 0%, transparent 70%)"
               : i === 1
               ? "radial-gradient(circle, rgba(33,146,74,0.4) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(6,182,212,0.3) 0%, transparent 70%)",
+              : "radial-gradient(circle, rgba(46,139,69,0.3) 0%, transparent 70%)",
             left: `${i * 30}%`,
             top: "50%",
           }}
@@ -228,7 +228,7 @@ export default function Footer({ isDark = true }) {
               { label: "Terms of Service", href: "/terms" },
               { label: "Cookie Policy", href: "/cookies" },
             ].map((l, i) => (
-              <motion.a key={i} href={l.href} whileHover={{ color: "#818cf8", y: -2 }} className="hover:text-zinc-600 transition-all">
+              <motion.a key={i} href={l.href} whileHover={{ color: "#3FC97E", y: -2 }} className="transition-all">
                 {l.label}
               </motion.a>
             ))}

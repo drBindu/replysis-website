@@ -205,7 +205,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
           <div className="relative rounded-3xl overflow-hidden border border-zinc-300/60 p-12 md:p-16 text-center"
-            style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.06) 0%, rgba(31,138,62,0.08) 50%, rgba(6,182,212,0.05) 100%)", boxShadow: "0 32px 80px rgba(31,138,62,0.12), 0 8px 24px rgba(0,0,0,0.04)" }}>
+            style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.06) 0%, rgba(31,138,62,0.08) 50%, rgba(46,139,69,0.05) 100%)", boxShadow: "0 32px 80px rgba(31,138,62,0.12), 0 8px 24px rgba(0,0,0,0.04)" }}>
 
             {/* Background grid */}
             <div className="absolute inset-0 opacity-[0.03]"
