@@ -8,6 +8,7 @@ import { getUserProfile, type PlanId } from "../lib/credits";
 import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
+import { copyFor } from "../../components/feedback/messages";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -308,14 +309,22 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ plan: planId, annual: planId !== "lifetime" && annual, uid: user.uid, email: user.email }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setCheckoutError(data.error || "Could not start checkout. Please try again.");
+        // Never echo the server's own error text back to the buyer. The status
+        // picks the wording, and the detail stays in the console.
+        console.error("[Replysis] Checkout could not start:", res.status);
+        setCheckoutError(
+          res.status === 429
+            ? copyFor("rateLimited").body
+            : "We could not start checkout just now. You have not been charged. Please try again.",
+        );
       }
-    } catch {
-      setCheckoutError("Network error. Please check your connection and try again.");
+    } catch (err) {
+      console.error("[Replysis] Checkout request failed:", (err as Error)?.name ?? "Error");
+      setCheckoutError(copyFor("offline").body);
     }
     setLoading(null);
   };

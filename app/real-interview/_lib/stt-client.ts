@@ -1,4 +1,11 @@
 ﻿// app/real-interview/_lib/stt-client.ts
+//
+// Nothing upstream reaches the screen from here. Socket close codes, provider
+// reason strings and HTTP statuses go to the console; the interviewee sees one
+// of the two sentences below.
+
+const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Press Space to reconnect.";
+const OUT_OF_CREDITS = "You have used your available credits. Choose a plan to continue.";
 
 type StartOptions = {
   onStatus:        (s: string) => void;
@@ -33,17 +40,17 @@ export class SpeechmaticsClient {
     this.started = true;
 
     try {
-      opts.onStatus("Requesting token...");
+      opts.onStatus("Connecting");
 
       const tokenHeaders: Record<string, string> = {};
       if (opts.authToken) tokenHeaders["Authorization"] = `Bearer ${opts.authToken}`;
       const tr = await fetch("/api/stt/tokens", { cache: "no-store", headers: tokenHeaders });
-      if (!tr.ok) throw new Error(`Token API error (${tr.status})`);
+      if (!tr.ok) throw Object.assign(new Error("token_request_failed"), { status: tr.status });
 
       const data = await tr.json();
-      if (!data.token) throw new Error("No token in response");
+      if (!data.token) throw new Error("token_missing");
 
-      opts.onStatus("Connecting to Speechmatics...");
+      opts.onStatus("Connecting");
 
       // ── CORRECT URL: language goes in transcription_config NOT in URL ──
       this.ws = new WebSocket(
@@ -52,20 +59,22 @@ export class SpeechmaticsClient {
       this.ws.binaryType = "arraybuffer";
 
       this.ws.onopen    = async () => {
-        opts.onStatus("Connected. Starting mic...");
+        opts.onStatus("Starting microphone");
         await this.setupAudio(opts);
       };
       this.ws.onmessage = (evt) => this.handleMessage(evt, opts);
-      this.ws.onerror   = (e)   => {
-        console.error("WS error:", e);
-        opts.onError("Connection error. Please try again.");
+      this.ws.onerror   = ()   => {
+        console.error("[Replysis] Transcription socket error");
+        opts.onError(LISTENING_UNAVAILABLE);
         this.stop();
       };
       this.ws.onclose   = (e)   => {
         if (this.started) {
           // code 1000 = normal intentional close; anything else is unexpected
           if (e.code !== 1000) {
-            opts.onError(`Disconnected (${e.code}). Please try again.`);
+            // The close code is for the log, not for the person interviewing.
+            console.error(`[Replysis] Transcription socket closed unexpectedly code=${e.code}`);
+            opts.onError(LISTENING_UNAVAILABLE);
           } else {
             opts.onStatus("Disconnected");
           }
@@ -75,7 +84,9 @@ export class SpeechmaticsClient {
 
     } catch (err: any) {
       this.started = false;
-      opts.onError(err.message || "Failed to start");
+      console.error("[Replysis] Could not start listening:", err?.status ?? err?.message ?? "Error");
+      // 402 is the one case the person can act on themselves.
+      opts.onError(err?.status === 402 ? OUT_OF_CREDITS : LISTENING_UNAVAILABLE);
     }
   }
 
@@ -170,9 +181,15 @@ export class SpeechmaticsClient {
       else if (msg.message === "AddPartialTranscript" && msg.metadata?.transcript)
         opts.onPartial(msg.metadata.transcript);
       else if (msg.message === "Error") {
-        const reason = msg.reason || msg.type || "Speechmatics error";
-        console.error("Speechmatics error:", msg);
-        opts.onError(reason === "not_authorised" ? "Session expired. Press Space to reconnect." : reason);
+        // `reason` is upstream free text and is never shown; only its type is
+        // used to pick between the two messages that mean something here.
+        const reason = String(msg.reason ?? msg.type ?? "");
+        console.error(`[Replysis] Transcription error type=${msg.type ?? "unknown"}`);
+        opts.onError(
+          reason === "not_authorised"
+            ? "Listening timed out. Press Space to reconnect."
+            : LISTENING_UNAVAILABLE,
+        );
         this.stop();
       }
     } catch {}

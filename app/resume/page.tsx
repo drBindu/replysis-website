@@ -20,6 +20,8 @@ import {
   Crown, X, TrendingUp,
 } from "lucide-react";
 import { useCredits } from "../lib/use-credits";
+import { useToast } from "../../components/feedback/Toast";
+import { classifyFailure } from "../../components/feedback/messages";
 
 /* ── New isolated preview component ── */
 import ResumePreview from "./preview";
@@ -58,7 +60,7 @@ const SECTION_META: Record<SectionId, { label: string; Icon: any; color: string;
   experience:     { label: "Experience",     Icon: Briefcase,     color: "#1C7A3E", bg: "rgba(37,99,235,0.08)"   },
   projects:       { label: "Projects",       Icon: Code,          color: "#21924A", bg: "rgba(31,138,62,0.08)"  },
   education:      { label: "Education",      Icon: GraduationCap, color: "#21924A", bg: "rgba(31,138,62,0.08)"   },
-  certifications: { label: "Certifications", Icon: Award,         color: "#db2777", bg: "rgba(219,39,119,0.08)"  },
+  certifications: { label: "Certifications", Icon: Award,         color: "#21924A", bg: "rgba(31,138,62,0.08)"  },
 };
 
 const AI_PROVIDERS: {
@@ -625,6 +627,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
    MAIN COMPONENT
 ════════════════════════════════════════════════════════════════ */
 export default function ResumePage() {
+  const { notifyFailure, notify } = useToast();
   const [activeTab,      setActiveTab]      = useState<TabId>("edit");
   const [editSection,    setEditSection]    = useState<string>("personal");
   const [resumeData,     setResumeData]     = useState<any>(MASTER_RESUME);
@@ -856,7 +859,7 @@ export default function ResumePage() {
         const buf = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer: buf });
         if (result.value?.trim()) setResumeData({ ...MASTER_RESUME, summary: result.value });
-        else alert("Could not extract text. Try pasting directly.");
+        else notifyFailure("upload");
       } else if (ext==="pdf") {
         const buf = await file.arrayBuffer();
         const pdfjsLib = await loadPdfJs();
@@ -868,20 +871,26 @@ export default function ResumePage() {
           text += content.items.map((item:any) => item.str).join(" ") + "\n";
         }
         if (text.trim()) setResumeData({ ...MASTER_RESUME, summary: text });
-        else alert("Could not extract text from PDF.");
-      } else { alert("Upload .pdf, .docx, or .txt"); }
-    } catch { alert("File read failed. Try pasting directly."); }
+        else notifyFailure("upload");
+      } else { notifyFailure("upload"); }
+    } catch { notifyFailure("upload"); }
     e.target.value = "";
   };
 
   /* ── AI TAILOR ── */
   const handleTailor = async () => {
-    if (!jd || !jd.trim()) return alert("Paste a Job Description or keywords first!");
+    if (!jd || !jd.trim()) {
+      notify({ tone: "info", title: "Add a job description", body: "Paste the job description or a few keywords, then run the tailor again." });
+      return;
+    }
     if (!canAfford("resume_tailor")) return;
 
     let authToken = "";
     try { authToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch {}
-    if (!authToken) return alert("Please sign in before tailoring your resume.");
+    if (!authToken) {
+      notifyFailure("sessionExpired");
+      return;
+    }
 
     setLoading(true); setAiAction("tailoring");
     setPrevResume(JSON.parse(JSON.stringify(resumeData)));
@@ -895,18 +904,20 @@ export default function ResumePage() {
         body: JSON.stringify({ jd, masterResume: resumeData, provider: aiProvider }),
         signal: controller.signal,
       });
-      if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e?.error||`Backend error ${response.status}`); }
+      if (!response.ok) {
+        // Carry the status, not the body. The message is chosen from house copy
+        // below so no backend string or provider name reaches the screen.
+        const failure = new Error("tailor_failed") as Error & { status?: number };
+        failure.status = response.status;
+        throw failure;
+      }
       setResumeData(await response.json());
       setShowDiff(true); setActiveTab("edit");
       recordCreditUsage("AI Tailor Resume", "resume_tailor", 20);
     } catch (e: any) {
-      if (e.name === "AbortError") alert("Request timed out. Please try again in 30 seconds.");
-      else {
-        const msg = e.message || "AI Tailoring failed.";
-        if (msg.toLowerCase().includes("api key")||msg.toLowerCase().includes("invalid")||msg.toLowerCase().includes("expired"))
-          alert(`${AI_PROVIDERS.find(p=>p.id===aiProvider)?.label} API error. Try switching provider.`);
-        else alert(msg + "\n\nTip: Try switching the AI provider above.");
-      }
+      console.error("[Replysis] Resume tailoring failed:", e?.status ?? e?.name ?? "Error");
+      if (e?.name === "AbortError") notifyFailure("timeout", handleTailor);
+      else notifyFailure(classifyFailure(e?.status), handleTailor);
     } finally {
       if (timeout) clearTimeout(timeout);
       setLoading(false); setAiAction("");
@@ -932,7 +943,10 @@ export default function ResumePage() {
     try {
       const data = await fetchAi({ mode:"generate_summary", resume:JSON.stringify(resumeData), jd:jd||"N/A", provider:aiProvider });
       if (data?.summary) { set(d=>({...d,summary:data.summary})); recordCreditUsage("AI Generate Summary","mock_script",5); }
-    } catch { alert("Summary generation failed. Try switching AI provider."); }
+    } catch (err) {
+      console.error("[Replysis] Summary generation failed:", (err as Error)?.name ?? "Error");
+      notifyFailure("ai");
+    }
     finally { setLoading(false); setAiAction(""); }
   };
 
@@ -983,7 +997,7 @@ export default function ResumePage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert("PDF export failed. Please try again.");
+      notifyFailure("unknown", handleExportPDF);
       console.error(err);
     } finally {
       setIsPrinting(false);
@@ -1017,7 +1031,7 @@ export default function ResumePage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Word export failed. Please try again.");
+      notifyFailure("unknown", handleExportWord);
       console.error(err);
     } finally {
       setIsExportingWord(false);
@@ -1513,7 +1527,7 @@ export default function ResumePage() {
                                                 </div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addCertification} label="Add Certification" color="#db2777" />
+                                            <AddButton onClick={addCertification} label="Add Certification" color="#21924A" />
                                           </>
                                         )}
 

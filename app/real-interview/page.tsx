@@ -125,7 +125,7 @@ export default function RealInterviewPage() {
           setCredits(data.credits ?? 0);
           setPlan(data.plan ?? "free");
         }
-      } catch (err) { console.error("Credits load error:", err); }
+      } catch (err) { console.error("[Replysis] Could not load credits:", (err as Error)?.name ?? "Error"); }
       setCreditsLoading(false);
     });
     return unsub;

@@ -8,6 +8,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { auth } from "../../firebaseConfig";
+import { useToast } from "../../../components/feedback/Toast";
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -48,6 +49,7 @@ async function getAuthToken(): Promise<string> {
 // HOOK
 // ─────────────────────────────────────────────
 export function useSession(userEmail: string) {
+  const { notifyFailure } = useToast();
   const [sessions,  setSessions]  = useState<Session[]>([]);
   const [loading,   setLoading]   = useState(false);
   const [saving,    setSaving]    = useState(false);
@@ -90,10 +92,13 @@ export function useSession(userEmail: string) {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        console.error("[session] Save failed:", data.error);
+        // The interview is already on this device; only the cloud copy failed,
+        // so this is said plainly rather than swallowed.
+        console.error(`[Replysis] Session backup failed status=${res.status}`);
+        notifyFailure("backup");
         return;
       }
 
@@ -103,9 +108,13 @@ export function useSession(userEmail: string) {
         console.log("[session] Created →", data.sessionId);
       }
     } catch (err) {
-      console.error("[session] upsertSession error:", err);
+      // A dropped connection is the most likely way this fails, and it is
+      // exactly the case where staying silent would let someone believe the
+      // interview reached the cloud when it did not.
+      console.error("[Replysis] Session backup request failed:", (err as Error)?.name ?? "Error");
+      notifyFailure("backup");
     }
-  }, [userEmail]);
+  }, [userEmail, notifyFailure]);
 
   // ── SAVE SESSION (kept for endSession compat) ─────────────────────────────
   const saveSession = useCallback(async (payload: {
@@ -143,7 +152,7 @@ export function useSession(userEmail: string) {
           headers: { "Authorization": `Bearer ${token}` },
         }
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setLoadError(data.error || "Failed to load sessions.");

@@ -37,6 +37,17 @@ function sanitizeResume(text: string): string {
 // ─────────────────────────────────────────────
 // HOOK
 // ─────────────────────────────────────────────
+/**
+ * Wording for a failed answer. The refund sentence is only added when the API
+ * actually reported `creditsRefunded`, because a request that never completed
+ * tells us nothing about whether the charge stood.
+ */
+function failedAnswerMessage(creditsRefunded: boolean): string {
+  return creditsRefunded
+    ? "We could not generate an answer this time. No credits were used. Press Space to try again."
+    : "We could not generate an answer this time. Press Space to try again.";
+}
+
 export function useInterview(config: {
   resume:          string;
   jobDescription:  string;
@@ -176,7 +187,7 @@ export function useInterview(config: {
     try {
       // Get Firebase ID token for authenticated API call
       let authToken = "";
-      try { authToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch (e) { console.warn("getIdToken failed:", e); }
+      try { authToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch (e) { console.warn("[Replysis] Could not read sign-in token:", (e as Error)?.name ?? "Error"); }
 
       // Pass history WITHOUT the just-added interviewer turn  - 
       // buildMessages() receives it separately as `currentQuestion`.
@@ -204,18 +215,32 @@ export function useInterview(config: {
         signal: AbortSignal.timeout(35000),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({} as any));
 
-      // BUG FIX: reset isGeneratingRef BEFORE any early returns so the
-      // guard is never left stuck at `true` after partial-error paths.
-      if (res.status === 402 || data.error === "insufficient_credits") {
-        isGeneratingRef.current = false;
-        setIsGenerating(false);
-        setAnswer("⚠️ You've used all your credits. Please upgrade your plan at /pricing.");
+      // Out of credits is the one failure the user can act on.
+      if (res.status === 402 || data?.error === "insufficient_credits") {
+        setAnswer("You have used your available credits. Choose a plan to continue.");
         return;
       }
 
-      const cleaned = formatForReading(cleanAnswer(data?.answer || "No response."));
+      // Anything else non-2xx is a failure, not an answer. Falling through here
+      // used to turn an HTTP 500 into the literal answer "No response." and
+      // commit it to history as something the candidate had said.
+      if (!res.ok) {
+        console.error(`[Replysis] Answer request failed status=${res.status}`);
+        setAnswer(failedAnswerMessage(data?.creditsRefunded === true));
+        return;
+      }
+
+      // A 200 with no usable answer is still a failure; do not invent one.
+      const rawAnswer = typeof data?.answer === "string" ? data.answer.trim() : "";
+      if (!rawAnswer) {
+        console.error("[Replysis] Answer request returned no answer text");
+        setAnswer(failedAnswerMessage(data?.creditsRefunded === true));
+        return;
+      }
+
+      const cleaned = formatForReading(cleanAnswer(rawAnswer));
       setAnswer(cleaned);
 
       // Lock facts from this Q&A so conflict detection works on next question
@@ -229,13 +254,16 @@ export function useInterview(config: {
       historyRef.current = withAnswer;
 
     } catch (err) {
-      console.error("Answer generation error:", err);
-      setAnswer("Error generating answer. Please try again.");
+      // The request never completed, so nothing is known about the charge.
+      console.error("[Replysis] Answer generation failed:", (err as Error)?.name ?? "Error");
+      setAnswer(failedAnswerMessage(false));
+    } finally {
+      // In `finally` on purpose: the failure paths above return early, and a
+      // missed reset here leaves the generating guard stuck on, which silently
+      // blocks every later question for the rest of the interview.
+      isGeneratingRef.current = false;
+      setIsGenerating(false);
     }
-
-    // Always reached unless the function already returned above
-    isGeneratingRef.current = false;
-    setIsGenerating(false);
   }, [config]);
 
   // ── START MIC ──────────────────────────────────────────────────
