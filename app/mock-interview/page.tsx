@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebaseConfig";
-import AiRobot3D from "../../components/AiRobot3D";
+import AiRobot3D from "../../components/AiRobot3DSafe";
 import BrandIcon from "../../components/BrandIcon";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -16,9 +16,17 @@ import {
   Clock, Award, Sparkles, ArrowRight, BarChart3, Cpu,
   Coins, ChevronDown, Bolt, Flame, Gauge, LogIn,
 } from "lucide-react";
+import { useToast } from "../../components/feedback/Toast";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
+
+// The only two sentences this screen shows when listening fails. Statuses,
+// close codes, provider replies and exception names go to the console instead:
+// none of them mean anything to someone part-way through a mock interview, and
+// several of them describe account configuration they cannot reach.
+const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Please try again.";
+const MIC_BLOCKED = "Microphone access is blocked. Allow microphone access and try again.";
 
 async function fetchCredits() {
   const token = await auth.currentUser?.getIdToken();
@@ -617,6 +625,7 @@ function DifficultyBadge({ diff, category }: { diff?: Exclude<Difficulty, "mixed
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function MockInterviewPage() {
+  const { notifyFailure } = useToast();
 
   // ── Auth state ──────────────────────────────────────────────
   const [user, setUser]           = useState<unknown>(null);
@@ -803,17 +812,20 @@ export default function MockInterviewPage() {
     try {
       const tokenRes = await fetch(`/api/stt/tokens?email=${encodeURIComponent(getEmail())}`, { method: "GET" });
       if (!tokenRes.ok) {
-        setRecordingError("Speech token request failed (HTTP " + tokenRes.status + "). Check your Speechmatics API key in .env.local");
+        console.error(`[Replysis] Mock interview token request failed status=${tokenRes.status}`);
+        setRecordingError(LISTENING_UNAVAILABLE);
         return;
       }
       const tokenData = await tokenRes.json();
       if (tokenData.error) {
-        setRecordingError("Speechmatics: " + tokenData.error + ". Your API key may be expired or missing.");
+        console.error("[Replysis] Mock interview token rejected");
+        setRecordingError(LISTENING_UNAVAILABLE);
         return;
       }
       const token = tokenData.token ?? tokenData.key ?? tokenData.jwt;
       if (!token) {
-        setRecordingError("No speech token returned. Check SPEECHMATICS_API_KEY in your .env.local file.");
+        console.error("[Replysis] Mock interview token response contained no credential");
+        setRecordingError(LISTENING_UNAVAILABLE);
         return;
       }
 
@@ -828,7 +840,8 @@ export default function MockInterviewPage() {
         if (!smStartedRef.current) {
           wsClosedPrematurely = true;
           ws.close();
-          setRecordingError("Speechmatics rejected the token. Your API key quota may be exhausted or the key is revoked. Go to speechmatics.com and generate a new one.");
+          console.error("[Replysis] Mock interview transcription refused the credential");
+          setRecordingError(LISTENING_UNAVAILABLE);
           isRecordingRef.current = false; setIsRecording(false); wsRef.current = null;
         }
       }, 5000);
@@ -857,7 +870,7 @@ export default function MockInterviewPage() {
             };
             recorder.start(250);
           } catch (mediaErr) {
-            setRecordingError("Microphone access denied. Please allow microphone in your browser.");
+            setRecordingError(MIC_BLOCKED);
             wsRef.current?.close(); wsRef.current = null;
             isRecordingRef.current = false; setIsRecording(false); smStartedRef.current = false;
           }
@@ -871,24 +884,32 @@ export default function MockInterviewPage() {
         }
         if (msg.message === "Error") {
           window.clearTimeout(connectTimeout);
-          setRecordingError("Speechmatics error: " + (msg.reason || "unknown") + ". Your key may be expired.");
+          console.error(`[Replysis] Mock interview transcription error type=${msg.type ?? "unknown"}`);
+          setRecordingError(LISTENING_UNAVAILABLE);
           stopRecording();
         }
       };
       ws.onerror = () => {
         window.clearTimeout(connectTimeout);
-        if (!wsClosedPrematurely) setRecordingError("WebSocket connection failed. Check your internet and Speechmatics key.");
+        console.error("[Replysis] Mock interview transcription socket error");
+        if (!wsClosedPrematurely) setRecordingError(LISTENING_UNAVAILABLE);
         stopRecording();
       };
       ws.onclose = (ev) => {
         window.clearTimeout(connectTimeout);
         if (!smStartedRef.current && !wsClosedPrematurely) {
-          setRecordingError(`Speechmatics closed before starting (code ${ev.code}). Your API key is likely expired or quota is exhausted.`);
+          console.error(`[Replysis] Mock interview transcription closed before start code=${ev.code}`);
+          setRecordingError(LISTENING_UNAVAILABLE);
         }
         isRecordingRef.current = false; setIsRecording(false); smStartedRef.current = false; wsRef.current = null;
       };
     } catch (err) {
-      setRecordingError("Failed to start recording: " + String(err));
+      console.error("[Replysis] Mock interview recording failed to start:", (err as Error)?.name ?? "Error");
+      setRecordingError(
+        (err as Error)?.name === "NotAllowedError"
+          ? MIC_BLOCKED
+          : LISTENING_UNAVAILABLE,
+      );
       isRecordingRef.current = false; setIsRecording(false);
     }
   }, [stopRecording, resetSilenceTimer]);
@@ -984,7 +1005,7 @@ export default function MockInterviewPage() {
       });
       const qs = normalizeQuestions(res);
       if (qs.length === 0) {
-        alert("The AI returned no questions. Add more detail to your resume and try again.");
+        notifyFailure("ai", handleGenerate);
         setIsGenerating(false); return;
       }
       const deduped  = Array.from(new Set(qs.map(q => q.trim()))).filter(Boolean);
@@ -995,7 +1016,7 @@ export default function MockInterviewPage() {
       setPhase("ready");
     } catch (err) {
       if (String(err) !== "Error: insufficient_credits")
-        alert("Failed to generate questions. Check your credits and try again.");
+        notifyFailure("ai", handleGenerate);
     }
     setIsGenerating(false);
   };
@@ -1032,7 +1053,7 @@ export default function MockInterviewPage() {
         const buf = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer: buf });
         if (result.value?.trim()) setResumeText(result.value);
-        else alert("Could not extract text. Please paste your resume directly.");
+        else notifyFailure("upload");
       } else if (ext === "pdf") {
         const buf  = await file.arrayBuffer();
         const task = pdfjsLib.getDocument({ data: buf, useSystemFonts: true, disableFontFace: true });
@@ -1044,11 +1065,11 @@ export default function MockInterviewPage() {
           fullText += content.items.map((it: unknown) => (it as { str: string }).str).join(" ") + "\n";
         }
         if (fullText.trim()) setResumeText(fullText);
-        else alert("Could not extract text from this PDF (may be a scan).");
+        else notifyFailure("upload");
       } else {
-        alert("Unsupported file. Please upload a .pdf, .txt or .docx file.");
+        notifyFailure("upload");
       }
-    } catch { alert("Failed to read the file. Please paste your resume text directly."); }
+    } catch { notifyFailure("upload"); }
     e.target.value = "";
   };
 
@@ -1690,20 +1711,6 @@ export default function MockInterviewPage() {
                         <p style={{ fontSize: 12, color: T.danger, fontWeight: 600, lineHeight: 1.5 }}>
                           {recordingError}
                         </p>
-                        {recordingError.includes("expired") || recordingError.includes("quota") || recordingError.includes("revoked") ? (
-                          <p style={{ fontSize: 11, color: T.textMid, marginTop: 4 }}>
-                            → Go to{" "}
-                            <a href="https://app.speechmatics.com/api-keys" target="_blank" rel="noreferrer"
-                              style={{ color: T.accent, fontWeight: 700, textDecoration: "underline" }}>
-                              speechmatics.com/api-keys
-                            </a>
-                            {" "}to generate a new key, then update{" "}
-                            <code style={{ fontSize: 10, background: T.card, padding: "1px 5px", borderRadius: 4, border: `1px solid ${T.border}` }}>
-                              SPEECHMATICS_API_KEY
-                            </code>
-                            {" "}in your <code style={{ fontSize: 10, background: T.card, padding: "1px 5px", borderRadius: 4, border: `1px solid ${T.border}` }}>.env.local</code>
-                          </p>
-                        ) : null}
                       </div>
                       <button onClick={() => setRecordingError(null)}
                         style={{ fontSize: 16, color: T.textFaint, background: "none", border: "none",
