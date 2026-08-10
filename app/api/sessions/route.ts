@@ -155,8 +155,12 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ sessions });
   } catch (err: any) {
-    console.error("[sessions] GET error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    // Exception type only: the message can carry document paths and field data.
+    console.error(`[sessions] GET failed type=${err?.name ?? "Error"}`);
+    return NextResponse.json(
+      { error: "We could not load your interviews just now. Please try again." },
+      { status: 500 },
+    );
   }
 }
 
@@ -260,7 +264,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, sessionId: docRef.id });
     }
   } catch (err: any) {
-    console.error("[sessions] POST error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error(`[sessions] POST failed type=${err?.name ?? "Error"}`);
+    return NextResponse.json(
+      { error: "We could not save this interview just now. It is still on your device." },
+      { status: 500 },
+    );
   }
 }

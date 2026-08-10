@@ -6,6 +6,15 @@ import { rateLimit, clientIp } from "../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Short id shared between a server log line and the response body. It lets
+ * someone match a user's report to the exact failure without the response ever
+ * carrying the underlying cause.
+ */
+function correlationId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
 // ============================================================================
 // 1) FIREBASE ADMIN
 // ============================================================================
@@ -174,7 +183,9 @@ async function callOpenAICompatible(
   const data = await res.json();
   console.log(`📡 ${baseUrl} status: ${res.status}`);
   if (!res.ok || data.error) {
-    console.error(`❌ API error:`, JSON.stringify(data.error || data).slice(0, 300));
+    // Type and status only. The provider echoes the prompt on some errors, and
+    // the prompt holds the resume and transcript.
+    console.error(`[stt] model API error status=${res.status} type=${data?.error?.type ?? "unknown"}`);
     throw new Error(`API error: ${JSON.stringify(data.error?.message || data)}`);
   }
   return data.choices?.[0]?.message?.content || "";
@@ -241,8 +252,11 @@ async function callLLM(
       { role: "user",   content: userPrompt   },
     ], opts);
   } catch (err: any) {
-    const msg = err?.message || String(err);
-    throw new Error(`[${provider}/${apiModel}] ${msg}`);
+    // Tag which model failed, but do not carry the upstream text: it can echo
+    // the prompt, and the prompt contains the resume and transcript.
+    throw Object.assign(new Error(`llm_call_failed:${provider}/${apiModel}`), {
+      cause: err?.name ?? "Error",
+    });
   }
 }
 
@@ -717,23 +731,36 @@ export async function GET(req: Request) {
     if (!response.ok) {
       await refundCredits(tokenCreditEmail, "stt_token");
       tokenCreditCharged = false;
-      const errBody = await response.text().catch(() => "");
-      console.error("Speechmatics token error:", response.status, errBody);
-      const detail = response.status === 401
-        ? "Speechmatics API key is invalid or expired"
-        : response.status === 403
-          ? "Speechmatics key has no permissions for real-time"
-          : response.status === 429
-            ? "Speechmatics quota exhausted, upgrade your plan at speechmatics.com"
-            : `Speechmatics returned ${response.status}`;
-      return NextResponse.json({ error: detail }, { status: response.status });
+
+      // Status only. The upstream body can echo the request (including the
+      // Authorization header on some providers), so it is never logged.
+      const ref = correlationId();
+      console.error(`[stt GET] transcription token mint failed ref=${ref} status=${response.status}`);
+
+      // A key or permission problem is ours, not the caller's, so it is reported
+      // as a service outage rather than handing back the provider's diagnosis.
+      const isQuota = response.status === 429;
+      return NextResponse.json(
+        {
+          error: isQuota
+            ? "Listening is busy right now. Please wait a moment and try again."
+            : "Listening is temporarily unavailable. Please try again shortly.",
+          ref,
+        },
+        { status: isQuota ? 429 : 503 },
+      );
     }
     const data = await response.json();
     await logUsageAndIncrement(verifiedEmail, "Speechmatics", { action: "Token Requested" });
     return NextResponse.json({ token: data.key_value });
   } catch (error: any) {
     if (tokenCreditCharged) await refundCredits(tokenCreditEmail, "stt_token");
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const ref = correlationId();
+    console.error(`[stt GET] unexpected failure ref=${ref} type=${error?.name ?? "Error"}`);
+    return NextResponse.json(
+      { error: "Listening is temporarily unavailable. Please try again shortly.", ref },
+      { status: 503 },
+    );
   }
 }
 
@@ -857,11 +884,16 @@ export async function POST(req: Request) {
     chargedEmail = userEmail;
     chargedMode = mode;
     const refundAndRespond = async (payload: Record<string, unknown>, status = 503) => {
+      // Report whether the charge was actually returned. The client uses this to
+      // decide if it may tell the user no credits were spent, instead of
+      // promising a refund it cannot see.
+      let creditsRefunded = false;
       if (creditCharged) {
         await refundCredits(chargedEmail, chargedMode);
         creditCharged = false;
+        creditsRefunded = true;
       }
-      return NextResponse.json(payload, { status });
+      return NextResponse.json({ ...payload, creditsRefunded }, { status });
     };
 
     // ════════════════════════════════════════════════════
@@ -887,7 +919,7 @@ export async function POST(req: Request) {
         await logUsageAndIncrement(userEmail || "Unknown", `Questions-${provider}`, { mode: "generate_questions", transcript: "", duration: duration || 0 });
         return NextResponse.json({ questions });
       } catch (err: any) {
-        console.error("generate_questions error:", err.message);
+        console.error(`[stt] generate_questions failed type=${err?.name ?? "Error"}`);
         return await refundAndRespond({ questions: [], error: "Failed to generate questions. Please try again." });
       }
     }
@@ -915,7 +947,7 @@ export async function POST(req: Request) {
         await logUsageAndIncrement(userEmail || "Unknown", `Script-${provider}`, { mode: "generate_script", transcript: safeQ, duration: duration || 0 });
         return NextResponse.json({ betterAnswerExample: out?.betterAnswerExample || "", resume_proof: out?.resume_proof || "" });
       } catch (err: any) {
-        console.error("generate_script error:", err.message);
+        console.error(`[stt] generate_script failed type=${err?.name ?? "Error"}`);
         return await refundAndRespond({ betterAnswerExample: "", resume_proof: "", error: "Failed to generate script" });
       }
     }
@@ -977,7 +1009,7 @@ export async function POST(req: Request) {
           { temperature: 0.3, max_tokens: 600 }
         );
       } catch (err: any) {
-        console.error("callLLMWithMessages error:", err.message);
+        console.error(`[stt] model call failed type=${err?.name ?? "Error"}`);
         return await refundAndRespond({ error: "AI service unavailable. Please try again." });
       }
 
