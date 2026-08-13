@@ -112,11 +112,12 @@ const MAX_QUESTIONS_PRO      = 50;
 const SILENCE_DELAY_MS       = 3500;
 
 const PLAN_MAX_QUESTIONS: Record<string, number> = {
-  free: MAX_QUESTIONS_FREE, pro: MAX_QUESTIONS_PRO, lifetime: MAX_QUESTIONS_PRO, teams: MAX_QUESTIONS_PRO,
+  free: MAX_QUESTIONS_FREE, pro: MAX_QUESTIONS_PRO, max: MAX_QUESTIONS_PRO, lifetime: MAX_QUESTIONS_PRO, teams: MAX_QUESTIONS_PRO,
 };
 const PLAN_DIFFICULTY_ACCESS: Record<string, Difficulty[]> = {
   free:     ["easy", "behavioral", "mixed"],
   pro:      ["easy", "medium", "hard", "behavioral", "mixed"],
+  max:      ["easy", "medium", "hard", "behavioral", "mixed"],
   lifetime: ["easy", "medium", "hard", "behavioral", "mixed"],
   teams:    ["easy", "medium", "hard", "behavioral", "mixed"],
 };
@@ -1358,7 +1359,7 @@ export default function MockInterviewPage() {
                         <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6,
                           maxHeight: 380, overflowY: "auto" }} className="light-scrollbar">
                           {DIFFICULTY_OPTIONS.map(opt => {
-                            const planOrder: Record<string, number> = { free: 0, pro: 1, lifetime: 1, teams: 1 };
+                            const planOrder: Record<string, number> = { free: 0, pro: 1, max: 1, lifetime: 1, teams: 1 };
                             const locked = (planOrder[userPlan] ?? 0) < (planOrder[opt.planRequired] ?? 0);
                             return (
                               <DifficultyCard key={opt.id} opt={opt} selected={difficulty === opt.id} locked={locked}

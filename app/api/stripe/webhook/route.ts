@@ -45,9 +45,12 @@ const db = getApps().length ? getFirestore() : null;
 // Must match PLAN_MONTHLY_CREDITS in app/api/stt/tokens/route.ts and
 // PLAN_CONFIG in app/lib/credits.ts.
 const PLAN_CREDITS: Record<string, number> = {
-  pro:      5000,  // 5000/month ≈ 40 hrs live
-  lifetime: 5000,  // 5000/month, pay once
-  teams:    10000, // 10000/month ≈ 83 hrs live
+  pro:      2000,  // 2000/month ≈ 16 hrs live
+  max:      5000,  // 5000/month ≈ 41 hrs live
+  // Retired plans, no longer sold. Kept so a renewal on an existing
+  // subscription still refills at the cap that customer signed up for.
+  lifetime: 5000,
+  teams:    10000,
 };
 
 // ── Stripe signature verification ───────────────────────────────
@@ -223,7 +226,7 @@ export async function POST(req: Request) {
       const customerId   = session.customer;
       const subscriptionId = session.subscription;
 
-      if (uid && plan && ["pro", "lifetime", "teams"].includes(plan)) {
+      if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
         console.log(`✅ PAYMENT: ${uid} → ${plan} | Customer: ${customerId}`);
         const credits = PLAN_CREDITS[plan] ?? 1000;
         await applyUserUpdate(uid, eventCreated, {
@@ -270,7 +273,7 @@ export async function POST(req: Request) {
         const uid  = sub.metadata?.uid;
         const plan = sub.metadata?.plan;
 
-        if (uid && plan && ["pro", "teams"].includes(plan)) { // lifetime is one-time, no renewal
+        if (uid && plan && ["pro", "max", "teams"].includes(plan)) { // lifetime is one-time, no renewal
           const credits = PLAN_CREDITS[plan] ?? 1000;
           await applyUserUpdate(uid, eventCreated, {
             credits,

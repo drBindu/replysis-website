@@ -10,12 +10,14 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const PLAN_MAX: Record<string, number> = {
   free:     100,
-  pro:      5000,
+  pro:      2000,
+  max:      5000,
+  // Retired plans, kept so an existing account still shows the right bar.
   lifetime: 5000,
   teams:    10000,
 };
 
-type PlanKey = "free" | "pro" | "lifetime" | "teams";
+type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
 const PLAN_META: Record<PlanKey, {
   label: string;
@@ -47,6 +49,18 @@ const PLAN_META: Record<PlanKey, {
     ),
     dropdownAccent: "#1C7A3E",
     barColor: "linear-gradient(90deg, #1C7A3E, #21924A)",
+  },
+  max: {
+    label: "Max",
+    pillClass: "text-white border-transparent shadow-md",
+    pillStyle: { background: "linear-gradient(135deg, #14532d, #1C7A3E)", boxShadow: "0 2px 10px rgba(20,83,45,0.32)" },
+    icon: (
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    ),
+    dropdownAccent: "#14532d",
+    barColor: "linear-gradient(90deg, #14532d, #1C7A3E)",
   },
   lifetime: {
     label: "Lifetime",

@@ -69,7 +69,8 @@ const CREDIT_COSTS: Record<string, number> = {
 // Monthly caps — must match PLAN_MONTHLY_CREDITS (stt/tokens), PLAN_CONFIG
 // (credits.ts) and PLAN_CREDITS (webhook).
 const PLAN_MONTHLY_CREDITS: Record<string, number> = {
-  free: 100, pro: 5000, lifetime: 5000, teams: 10000,
+  // Retired plans (lifetime, teams) are kept so existing accounts still resolve.
+  free: 100, pro: 2000, max: 5000, lifetime: 5000, teams: 10000,
 };
 const OWNER_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const MAX_REQUEST_BYTES = 32 * 1024;

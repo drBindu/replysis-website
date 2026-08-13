@@ -49,7 +49,7 @@ function CreditsDisplay({
   credits: number; plan: string;
   loading: boolean; onUpgrade: () => void;
 }) {
-  const isPro   = ["pro", "lifetime", "teams"].includes(plan);
+  const isPro   = ["pro", "max", "lifetime", "teams"].includes(plan);
   const isLow   = !isPro && credits <= 10;
   const isEmpty = !isPro && credits <= 0;
 

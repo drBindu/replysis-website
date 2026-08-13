@@ -40,9 +40,8 @@ function ensureAdminInit() {
 const PRICE_IDS: Record<string, string> = {
   pro_monthly:    process.env.STRIPE_PRO_MONTHLY_PRICE    || "price_REPLACE_ME",
   pro_annual:     process.env.STRIPE_PRO_ANNUAL_PRICE     || "price_REPLACE_ME",
-  lifetime:       process.env.STRIPE_LIFETIME_PRICE       || "price_REPLACE_ME",
-  teams_monthly:  process.env.STRIPE_TEAMS_MONTHLY_PRICE  || "price_REPLACE_ME",
-  teams_annual:   process.env.STRIPE_TEAMS_ANNUAL_PRICE   || "price_REPLACE_ME",
+  max_monthly:    process.env.STRIPE_MAX_MONTHLY_PRICE    || "price_REPLACE_ME",
+  max_annual:     process.env.STRIPE_MAX_ANNUAL_PRICE     || "price_REPLACE_ME",
 };
 
 export async function POST(req: Request) {
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
 
     // Reject unknown plans  -  prevents crafted requests from creating
     // checkout sessions with arbitrary metadata values.
-    if (typeof plan !== "string" || !["pro", "lifetime", "teams"].includes(plan)) {
+    if (typeof plan !== "string" || !["pro", "max"].includes(plan)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
@@ -99,11 +98,11 @@ export async function POST(req: Request) {
     // Always use server-verified email, not client-supplied value
     const email = verifiedEmail ?? "";
 
-    const isLifetime = plan === "lifetime";
     if (annual !== undefined && typeof annual !== "boolean") {
       return NextResponse.json({ error: "Invalid billing interval" }, { status: 400 });
     }
-    const priceKey = isLifetime ? "lifetime" : `${plan}_${annual ? "annual" : "monthly"}`;
+    // Pro and Max are both recurring, so every plan resolves to a billing period.
+    const priceKey = `${plan}_${annual ? "annual" : "monthly"}`;
     const priceId = PRICE_IDS[priceKey];
 
     if (!priceId || priceId === "price_REPLACE_ME") {
@@ -126,8 +125,9 @@ export async function POST(req: Request) {
     const origin = ALLOWED_ORIGINS.has(requestOrigin) ? requestOrigin : SITE_URL;
 
     const params = new URLSearchParams();
-    // Lifetime is a one-time payment; everything else is a subscription
-    params.append("mode", isLifetime ? "payment" : "subscription");
+    // Pro and Max are both recurring. The one-time payment path went away with
+    // the Lifetime plan, which was retired.
+    params.append("mode", "subscription");
     params.append("payment_method_types[0]", "card");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
@@ -136,13 +136,8 @@ export async function POST(req: Request) {
     params.append("customer_email", email || "");
     params.append("metadata[uid]", uid);
     params.append("metadata[plan]", plan);
-    if (isLifetime) {
-      params.append("payment_intent_data[metadata][uid]", uid);
-      params.append("payment_intent_data[metadata][plan]", plan);
-    } else {
-      params.append("subscription_data[metadata][uid]", uid);
-      params.append("subscription_data[metadata][plan]", plan);
-    }
+    params.append("subscription_data[metadata][uid]", uid);
+    params.append("subscription_data[metadata][plan]", plan);
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

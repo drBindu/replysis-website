@@ -677,7 +677,7 @@ export default function ResumePage() {
   const [showCreditDrawer, setShowCreditDrawer] = useState(false);
   const [creditToast,      setCreditToast]      = useState<{ action:string; cost:number; remaining:number; isUnlimited:boolean; }|null>(null);
 
-  const planMax = (plan === "pro" || plan === "teams") ? 99999 : plan === "lifetime" ? 2000 : 100;
+  const planMax = (plan === "pro" || plan === "max" || plan === "teams") ? 99999 : plan === "lifetime" ? 2000 : 100;
 
   const recordCreditUsage = useCallback((label: string, action: string, cost: number) => {
     setCreditHistory(prev => [...prev, { action, label, cost, timestamp: new Date() }]);

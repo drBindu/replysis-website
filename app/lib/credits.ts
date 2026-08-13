@@ -40,9 +40,26 @@ export const PLAN_CONFIG = {
   },
   pro: {
     label: "Pro",
-    totalCredits: 5000, // 5000/month ≈ 40 hrs live or 300+ mock sessions
+    totalCredits: 2000, // 2000/month ≈ 16 hrs live or 100 mock sessions
     monthlyReset: true,
     price: 24.99,
+    stripePriceId: "",
+    allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
+    features: {
+      resumeBuilder: true,
+      aiTailor: true,
+      mockInterview: true,
+      realTimeInterview: true,
+      desktopApp: true,
+      cameraMode: true,
+      sessionRecordings: true,
+    },
+  },
+  max: {
+    label: "Max",
+    totalCredits: 5000, // 5000/month ≈ 41 hrs live or 250 mock sessions
+    monthlyReset: true,
+    price: 49.99,
     stripePriceId: "",
     allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
     features: {

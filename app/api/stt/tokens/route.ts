@@ -314,7 +314,10 @@ const CREDIT_COSTS: Record<string, number> = {
 // Refills every month via the lazy reset below.
 const PLAN_MONTHLY_CREDITS: Record<string, number> = {
   free:     100,
-  pro:      5000,
+  pro:      2000,
+  max:      5000,
+  // Retired plans, no longer sold. Kept so an existing account on one still
+  // resolves to its original cap instead of silently dropping to free.
   lifetime: 5000,
   teams:    10000,
 };

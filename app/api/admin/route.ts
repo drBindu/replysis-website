@@ -18,7 +18,7 @@ const MAX_REQUEST_BYTES = 32 * 1024;
 const DEFAULT_PAGE_SIZE = 100;
 const MAX_PAGE_SIZE = 100;
 const ONLINE_WINDOW_MS = 150_000;
-const VALID_PLANS = new Set(["free", "pro", "lifetime", "teams"]);
+const VALID_PLANS = new Set(["free", "pro", "max", "lifetime", "teams"]);
 const BACKEND_INTERNAL_URL = (process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 const ACCOUNT_DELETION_TOKEN = process.env.ACCOUNT_DELETION_TOKEN || "";
 
@@ -247,7 +247,7 @@ export async function GET(req: Request) {
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
-      users.where("plan", "in", ["pro", "lifetime", "teams"]).count().get(),
+      users.where("plan", "in", ["pro", "max", "lifetime", "teams"]).count().get(),
       users.aggregate({ totalDurationSeconds: AggregateField.sum("totalDurationSeconds") }).get(),
       users.where("lastActive", ">=", activeSince).count().get(),
       downloads.where("os", "==", "win").count().get(),

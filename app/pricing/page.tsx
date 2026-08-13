@@ -49,7 +49,7 @@ const ALL_PLANS: {
   ctaNote: string;
   badge: string | null;
   popular: boolean;
-  special: "lifetime" | "teams" | null;
+  special: string | null;
   usagePool: string;
   features: string[];
   notIncluded: string[];
@@ -85,95 +85,70 @@ const ALL_PLANS: {
     id: "pro",
     name: "Pro",
     emoji: "👑",
-    tagline: "No limits. Full power.",
+    tagline: "Everything you need for a job search.",
     monthlyPrice: 24.99,
-    annualPrice: 12.42,
+    annualPrice: 20.75,
     oneTime: false,
     cta: "Get Pro",
     ctaNote: "7-day money back guarantee",
     badge: "Most popular",
     popular: true,
     special: null,
-    usagePool: "5,000 credits / month",
+    usagePool: "2,000 credits / month",
     features: [
-      "5,000 credits refresh every month",
-      "~40 hours live interviews or 300+ mock sessions",
-      "Desktop app, completely invisible on screen share",
+      "2,000 credits refresh every month",
+      "~16 hours live interviews or 100 mock sessions",
+      "Desktop app, kept out of screen shares and recordings",
       "Every interview saved and reviewable",
       "AI rewrites your resume for any job posting",
     ],
     notIncluded: [],
   },
   {
-    id: "lifetime",
-    name: "Lifetime",
-    emoji: "♾️",
-    tagline: "Pay once. Own forever.",
-    monthlyPrice: 299,
-    annualPrice: 299,
-    oneTime: true,
-    cta: "Get Lifetime",
-    ctaNote: "One payment, yours forever",
-    badge: "Best deal",
-    popular: false,
-    special: "lifetime",
-    usagePool: "5,000 credits every month, forever",
-    features: [
-      "5,000 credits every month, forever, with nothing to renew",
-      "~40 hours live interviews or 300+ mock sessions",
-      "Every Pro feature included, forever",
-      "Protected from future price increases",
-      "Pays for itself in under 12 months",
-    ],
-    notIncluded: [],
-  },
-  {
-    id: "teams",
-    name: "Teams",
-    emoji: "🏢",
-    tagline: "Five seats. One invoice.",
-    monthlyPrice: 49,
-    annualPrice: 33,
+    id: "max",
+    name: "Max",
+    emoji: "👑",
+    tagline: "For back-to-back interview weeks.",
+    monthlyPrice: 49.99,
+    annualPrice: 41.58,
     oneTime: false,
-    cta: "Get Teams",
-    ctaNote: "5 seats included",
-    badge: null,
+    cta: "Get Max",
+    ctaNote: "7-day money back guarantee",
+    badge: "Best value",
     popular: false,
-    special: "teams",
-    usagePool: "10,000 credits every month across 5 seats",
+    special: null,
+    usagePool: "5,000 credits / month",
     features: [
-      "10,000 credits per month across 5 seats",
-      "~80 hours live interviews or 650+ mock sessions",
-      "5 full Pro seats at $9.80 per user each month",
-      "One invoice, one account for all 5",
-      "All Pro features across every seat",
+      "5,000 credits refresh every month",
+      "~41 hours live interviews or 250 mock sessions",
+      "Two and a half times the credits for twice the price",
+      "Everything in Pro, nothing held back",
+      "Priority support",
     ],
     notIncluded: [],
   },
 ];
 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
-const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; lifetime: boolean | string; teams: boolean | string }[] = [
-  { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Live Copilot",  label: "Answer speed",                         free: "Under 2 sec",  pro: "Under 2 sec", lifetime: "Under 2 sec",teams: "Under 2 sec" },
-  { cat: "Live Copilot",  label: "Monthly allowance",                    free: "50 min/mo",    pro: "~40 hrs/mo",  lifetime: "~40 hrs/mo", teams: "~80 hrs/mo" },
-  { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Live Copilot",  label: "Excluded from screen share",           free: "Browser only", pro: "Desktop app", lifetime: "Desktop app",teams: "Desktop app"},
-  { cat: "Live Copilot",  label: "Camera stealth mode",                  free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "Mock Practice", label: "Mock interview sessions",              free: "6/month",      pro: "300+/month",  lifetime: "300+/month", teams: "650+/month" },
-  { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Mock Practice", label: "Session recordings",                   free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Resume",        label: "Verify AI reads your resume",          free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Resume",        label: "AI rewrite for any job posting",       free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "Apps",          label: "Web app, no install needed",           free: true,           pro: true,          lifetime: true,         teams: true         },
-  { cat: "Apps",          label: "Windows desktop app",                  free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "Apps",          label: "macOS desktop app",                    free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "AI",            label: "AI model",                             free: "Standard",     pro: "Best",        lifetime: "Best",       teams: "Best"       },
-  { cat: "Billing",       label: "Monthly credits",                      free: "100/mo",       pro: "5,000/mo",    lifetime: "5,000/mo",   teams: "10,000/mo"  },
-  { cat: "Billing",       label: "Future features included",             free: false,          pro: true,          lifetime: true,         teams: true         },
-  { cat: "Teams",         label: "Seats",                                free: "1",            pro: "1",           lifetime: "1",          teams: "5"          },
-  { cat: "Teams",         label: "Centralized billing",                  free: false,          pro: false,         lifetime: false,        teams: true         },
+const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
+  { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
+  { cat: "Live Copilot",  label: "Answer speed",                         free: "Under 2 sec",  pro: "Under 2 sec", max: "Under 2 sec"},
+  { cat: "Live Copilot",  label: "Monthly allowance",                    free: "50 min/mo",    pro: "~16 hrs/mo",  max: "~41 hrs/mo"},
+  { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
+  { cat: "Live Copilot",  label: "Excluded from screen share",           free: "Browser only", pro: "Desktop app", max: "Desktop app"},
+  { cat: "Live Copilot",  label: "Camera stealth mode",                  free: false,          pro: true,          max: true},
+  { cat: "Mock Practice", label: "Mock interview sessions",              free: "6/month",      pro: "100/month",   max: "250/month"},
+  { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
+  { cat: "Mock Practice", label: "Session recordings",                   free: false,          pro: true,          max: true},
+  { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
+  { cat: "Resume",        label: "Verify AI reads your resume",          free: true,           pro: true,          max: true},
+  { cat: "Resume",        label: "AI rewrite for any job posting",       free: false,          pro: true,          max: true},
+  { cat: "Apps",          label: "Web app, no install needed",           free: true,           pro: true,          max: true},
+  { cat: "Apps",          label: "Windows desktop app",                  free: false,          pro: true,          max: true},
+  { cat: "Apps",          label: "macOS desktop app",                    free: false,          pro: true,          max: true},
+  { cat: "AI",            label: "AI model",                             free: "Standard",     pro: "Best",        max: "Best"},
+  { cat: "Billing",       label: "Monthly credits",                      free: "100/mo",       pro: "2,000/mo",    max: "5,000/mo"},
+  { cat: "Billing",       label: "Future features included",             free: false,          pro: true,          max: true},
 ];
 
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
@@ -184,23 +159,23 @@ const FAQS = [
   },
   {
     q: "What are credits?",
-    a: "Credits are a simple usage meter. Live copilot costs 2 credits per minute. A mock session costs 15 credits. Starter gets 100 credits/month (~50 min live or 6 mock sessions). Pro and Lifetime get 5,000 credits/month (~40 hrs live or 300+ mock sessions). Teams gets 10,000/month across 5 seats. Credits reset on the 1st of every month.",
+    a: "Credits are a simple usage meter. Live copilot costs 2 credits per minute. A mock session costs 15 credits. Starter gets 100 credits/month (~50 min live or 6 mock sessions). Pro gets 2,000/month (~16 hrs live or 100 mock sessions). Max gets 5,000/month (~41 hrs live or 250 mock sessions). Credits reset on the 1st of every month.",
   },
   {
     q: "Why do I need the desktop app for full stealth?",
-    a: "Browsers cannot reliably exclude windows from screen share. The desktop app uses OS-level window exclusion that works 100% of the time on Zoom, Teams, Meet, and Webex. Camera stealth on Pro and Lifetime goes further and hides the overlay even if someone looks at your physical screen.",
+    a: "Browsers cannot reliably exclude windows from screen share. The desktop app marks its window for OS-level exclusion from screen capture, which covers screen shares and recordings on Zoom, Teams, Meet and Webex that use the standard Windows capture path. Camera stealth on Pro and Max hides the overlay as well.",
   },
   {
     q: "What does AI resume tailoring do?",
-    a: "You paste a job description and your resume. The AI rewrites your resume to match the exact keywords, skills, and language in that posting. The kind an ATS scans for before a human reads it. Available on Pro, Lifetime, and Teams.",
+    a: "You paste a job description and your resume. The AI rewrites your resume to match the exact keywords, skills, and language in that posting. The kind an ATS scans for before a human reads it. Available on Pro and Max.",
   },
   {
-    q: "How does Teams work?",
-    a: "Each of the 5 seats gets its own full unlimited Pro access. There are no shared credits. One invoice covers all 5 users. At $49 per month total, that works out to $9.80 per user versus $24.99 each bought individually.",
+    q: "What is the difference between Pro and Max?",
+    a: "Every feature is the same. The only difference is how much you can use. Pro gives you 2,000 credits a month, which is around 16 hours of live interviews. Max gives you 5,000, which is around 41 hours. Pro suits most job searches. Choose Max if you are interviewing several times a week or running mock sessions daily.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your account settings in one click. You keep full access until the end of your billing period. Upgrades take effect immediately. Downgrades take effect at the next billing cycle. Lifetime has no subscription to cancel.",
+    a: "Yes. Cancel from your account settings in one click. You keep full access until the end of your billing period. Upgrades take effect immediately. Downgrades take effect at the next billing cycle.",
   },
   {
     q: "Is my data private?",
@@ -208,7 +183,7 @@ const FAQS = [
   },
   {
     q: "What is the refund policy?",
-    a: "Full refund within 7 days of your first purchase, no questions asked. This applies to Pro, Lifetime, and Teams. Email support@replysis.com and we sort it out the same day.",
+    a: "Full refund within 7 days of your first purchase, no questions asked. This applies to Pro and Max. Email support@replysis.com and we sort it out the same day.",
   },
 ];
 
@@ -254,22 +229,6 @@ function getPlanStyle(plan: typeof ALL_PLANS[0]) {
     pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1C7A3E" },
     check:   "violet" as const,
   };
-  if (plan.special === "lifetime") return {
-    card:    { background: "linear-gradient(145deg, #fff9f0 0%, #fff3e0 100%)", border: "1.5px solid rgba(31,138,62,0.22)" },
-    stripe:  "linear-gradient(90deg, #2E8B45, #21924A)",
-    badge:   { background: "linear-gradient(135deg, #2E8B45, #21924A)" },
-    btn:     { background: "linear-gradient(135deg, #2E8B45, #21924A)", boxShadow: "0 4px 20px rgba(31,138,62,0.3)" },
-    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1C7A3E" },
-    check:   "orange" as const,
-  };
-  if (plan.special === "teams") return {
-    card:    { background: "linear-gradient(145deg, #f0f7ff 0%, #e8f4ff 100%)", border: "1.5px solid rgba(31,138,62,0.22)" },
-    stripe:  "linear-gradient(90deg, #21924A, #2E8B45)",
-    badge:   { background: "linear-gradient(135deg, #21924A, #2E8B45)" },
-    btn:     { background: "linear-gradient(135deg, #21924A, #2E8B45)", boxShadow: "0 4px 20px rgba(31,138,62,0.3)" },
-    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1d4ed8" },
-    check:   "blue" as const,
-  };
   return {
     card:    { background: "#ffffff", border: "1px solid #e5e7eb" },
     stripe:  "#e5e7eb",
@@ -298,7 +257,7 @@ export default function PricingPage() {
     return () => unsub();
   }, []);
 
-  const handleCheckout = async (planId: "pro" | "lifetime" | "teams") => {
+  const handleCheckout = async (planId: "pro" | "max") => {
     if (!user) { setShowAuth(true); return; }
     setLoading(planId);
     setCheckoutError(null);
@@ -307,7 +266,7 @@ export default function PricingPage() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ plan: planId, annual: planId !== "lifetime" && annual, uid: user.uid, email: user.email }),
+        body: JSON.stringify({ plan: planId, annual, uid: user.uid, email: user.email }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -405,7 +364,7 @@ export default function PricingPage() {
                   transition={{ duration: 0.2 }}
                   className="text-xs font-semibold text-zinc-900 cursor-pointer hover:text-zinc-950 transition-colors"
                   onClick={() => setAnnual(true)}>
-                  Switch to annual. Pro drops to $12.42/mo. Teams drops to $33/mo.
+                  Switch to annual. Pro drops to $20.75/mo. Max drops to $41.58/mo.
                 </motion.p>
               )}
             </AnimatePresence>
@@ -430,7 +389,7 @@ export default function PricingPage() {
       <section className="relative px-6 pb-20"
         style={{ background: "linear-gradient(180deg, #ffffff 0%, #ffffff 30%)" }}>
         <div className="max-w-7xl mx-auto -mt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
             {ALL_PLANS.map((plan, i) => {
               const s = getPlanStyle(plan);
               const price = plan.oneTime ? plan.monthlyPrice : (annual ? plan.annualPrice : plan.monthlyPrice);
@@ -505,7 +464,7 @@ export default function PricingPage() {
                         {isCurrent ? "Current plan" : user ? "You're on Starter" : plan.cta}
                       </button>
                     ) : (
-                      <button onClick={() => handleCheckout(plan.id as "pro" | "lifetime" | "teams")}
+                      <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading || isCurrent}
                         className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ ...(isCurrent ? { background: "#d1d5db" } : s.btn) }}>
@@ -549,7 +508,7 @@ export default function PricingPage() {
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
                 className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
-                Pay annually and save 50%. Pro drops to $12.42/mo. Teams drops to $33/mo.
+                Pay annually and save 2 months. Pro drops to $20.75/mo. Max drops to $41.58/mo.
               </button>
             </motion.p>
           )}
@@ -564,7 +523,7 @@ export default function PricingPage() {
             <p className="text-gray-400 text-sm">Pick the one that matches where you are right now.</p>
           </FadeUp>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               {
                 emoji: "🚀", name: "Starter", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#1C7A3E",
@@ -577,14 +536,9 @@ export default function PricingPage() {
                 items: ["Actively interviewing every week", "Targeting competitive companies", "Need screen share protection", "Want session recordings to review"],
               },
               {
-                emoji: "♾️", name: "Lifetime", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
-                who: "Hate subscriptions",
-                items: ["Prefer paying once and being done", "Plan to interview across multiple years", "Want every future feature included", "Want protection from price increases"],
-              },
-              {
-                emoji: "🏢", name: "Teams", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#1d4ed8",
-                who: "Groups and bootcamps",
-                items: ["Bootcamps prepping students together", "Recruiting firms building candidate pipelines", "Groups of friends interviewing at the same time", "Anyone managing multiple users under one bill"],
+                emoji: "👑", name: "Max", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
+                who: "Interviewing constantly",
+                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Do not want to think about credits"],
               },
             ].map((col, ci) => (
               <FadeUp key={ci} delay={ci * 0.08}>
@@ -620,13 +574,12 @@ export default function PricingPage() {
           <FadeUp delay={0.1}>
             <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white overflow-x-auto">
               <div className="min-w-[660px]">
-                <div className="grid grid-cols-5 bg-gray-50/80 border-b border-gray-200">
+                <div className="grid grid-cols-4 bg-gray-50/80 border-b border-gray-200">
                   <div className="px-5 py-4" />
                   {[
                     { name: "Starter", price: "Free",                             style: "" },
-                    { name: "Pro",     price: annual ? "$12.42/mo" : "$24.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
-                    { name: "Lifetime",price: "$299 once",                        style: "bg-zinc-100/40 text-zinc-900" },
-                    { name: "Teams",   price: annual ? "$33/mo" : "$49/mo",       style: "" },
+                    { name: "Pro",     price: annual ? "$20.75/mo" : "$24.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
+                    { name: "Max",     price: annual ? "$41.58/mo" : "$49.99/mo", style: "" },
                   ].map(({ name, price, style }, i) => (
                     <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
                       <p className={`text-sm font-black ${style.includes("violet") ? "text-zinc-900" : style.includes("orange") ? "text-zinc-900" : "text-gray-900"}`}>{name}</p>
@@ -643,18 +596,17 @@ export default function PricingPage() {
                     return (
                       <div key={i}>
                         {showCat && (
-                          <div className="grid grid-cols-5 bg-gray-50/40 border-b border-gray-100">
-                            <div className="px-5 py-2 col-span-5">
+                          <div className="grid grid-cols-4 bg-gray-50/40 border-b border-gray-100">
+                            <div className="px-5 py-2 col-span-4">
                               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{row.cat}</span>
                             </div>
                           </div>
                         )}
-                        <div className="grid grid-cols-5 border-b border-gray-50 hover:bg-gray-50/40 transition-colors">
+                        <div className="grid grid-cols-4 border-b border-gray-50 hover:bg-gray-50/40 transition-colors">
                           <div className="px-5 py-3.5"><span className="text-xs text-gray-600">{row.label}</span></div>
                           <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.free} /></div>
                           <div className="px-3 py-3.5 border-l border-gray-100 bg-zinc-100/10 flex items-center justify-center"><Cell val={row.pro} accent /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 bg-zinc-100/10 flex items-center justify-center"><Cell val={row.lifetime} orange /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.teams} /></div>
+                          <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.max} /></div>
                         </div>
                       </div>
                     );
@@ -696,7 +648,7 @@ export default function PricingPage() {
                   <a href="mailto:support@replysis.com" className="font-semibold text-zinc-900 hover:underline">
                     support@replysis.com
                   </a>{" "}
-                  and we refund you in full. No forms, no questions, same day. Applies to Pro, Lifetime, and Teams.
+                  and we refund you in full. No forms, no questions, same day. Applies to Pro and Max.
                 </p>
               </div>
             </div>

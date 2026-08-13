@@ -111,12 +111,13 @@ function StatCard({ icon, label, value, color = "text-white", gradient }: any) {
 function PlanBadge({ plan }: { plan: string }) {
   const cfg: Record<string, string> = {
     pro:      "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
+    max:      "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
     lifetime: "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
     teams:    "bg-zinc-800/20 text-zinc-600 border-zinc-800/30",
     free:     "bg-gray-800/50 text-gray-500 border-gray-700/50",
   };
   const key = (plan || "free").toLowerCase();
-  const emoji = { pro: "👑 ", lifetime: "♾️ ", teams: "🏢 " }[key] || "";
+  const emoji = { pro: "👑 ", max: "👑 ", lifetime: "♾️ ", teams: "🏢 " }[key] || "";
   return (
     <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${cfg[key] || cfg.free}`}>
       {emoji}{plan || "Free"}
@@ -541,13 +542,14 @@ export default function AdminPage() {
                           onChange={e => {
                             const p = e.target.value;
                             // Monthly caps — must match PLAN_MONTHLY_CREDITS / PLAN_CONFIG / webhook.
-                            const credits = p === "teams" ? 10000 : (p === "pro" || p === "lifetime") ? 5000 : 100;
+                            const credits = p === "teams" ? 10000 : (p === "max" || p === "lifetime") ? 5000 : p === "pro" ? 2000 : 100;
                             updatePlan(user.id, p, credits);
                           }}
                           className="text-[10px] bg-gray-900 border border-gray-800 rounded-lg px-2 py-1 text-gray-400 cursor-pointer focus:outline-none focus:border-zinc-800/50 hover:border-gray-700 transition-colors"
                         >
                           <option value="free">Free</option>
                           <option value="pro">Pro</option>
+                          <option value="max">Max</option>
                           <option value="lifetime">Lifetime</option>
                           <option value="teams">Teams</option>
                         </select>
