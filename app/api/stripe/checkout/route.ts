@@ -1,6 +1,6 @@
 ﻿// frontend/app/api/stripe/checkout/route.ts
 // ═══════════════════════════════════════════════════════════════
-// Creates Stripe Checkout session for Pro ($24.99/mo), Lifetime ($299 one-time), Teams ($49/mo)
+// Creates Stripe Checkout session for Pro ($29.99/mo) and Max ($49.99/mo)
 // After payment, Stripe redirects to /pricing?success=true
 // Stripe webhook updates Firestore plan + credits
 // ═══════════════════════════════════════════════════════════════
@@ -32,11 +32,10 @@ function ensureAdminInit() {
 
 // ── STRIPE PRICE IDS  -  create these in Stripe Dashboard ──
 // Go to: dashboard.stripe.com → Products → Create Product
-// Pro Monthly   → $24.99/mo  → copy price ID → STRIPE_PRO_MONTHLY_PRICE
-// Pro Annual    → $149/yr    → copy price ID → STRIPE_PRO_ANNUAL_PRICE
-// Lifetime      → $299 once  → one-time price → STRIPE_LIFETIME_PRICE
-// Teams Monthly → $49/mo     → copy price ID → STRIPE_TEAMS_MONTHLY_PRICE
-// Teams Annual  → $396/yr    → copy price ID → STRIPE_TEAMS_ANNUAL_PRICE
+// Pro Monthly   → $29.99/mo  → copy price ID → STRIPE_PRO_MONTHLY_PRICE
+// Pro Annual    → $299.88/yr → copy price ID → STRIPE_PRO_ANNUAL_PRICE
+// Max Monthly   → $49.99/mo  → copy price ID → STRIPE_MAX_MONTHLY_PRICE
+// Max Annual    → $499/yr    → copy price ID → STRIPE_MAX_ANNUAL_PRICE
 const PRICE_IDS: Record<string, string> = {
   pro_monthly:    process.env.STRIPE_PRO_MONTHLY_PRICE    || "price_REPLACE_ME",
   pro_annual:     process.env.STRIPE_PRO_ANNUAL_PRICE     || "price_REPLACE_ME",

@@ -75,7 +75,7 @@ export default function TermsPage() {
               {[
                 { label: "Free tier", body: "A free tier with limited usage is available. No credit card required to start." },
                 { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice." },
-                { label: "Refunds", body: "If you're unsatisfied within 7 days of your first paid subscription, contact us for a full refund. After 7 days, refunds are at our discretion." },
+                { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact support@replysis.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
                 { label: "Cancellations", body: "Cancel any time. Your access continues until the end of the current billing period." },
                 { label: "Credits", body: "Unused credits do not roll over between billing periods and have no cash value." },
               ].map((c, i) => (

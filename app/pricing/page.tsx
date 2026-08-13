@@ -86,11 +86,11 @@ const ALL_PLANS: {
     name: "Pro",
     emoji: "👑",
     tagline: "Everything you need for a job search.",
-    monthlyPrice: 24.99,
-    annualPrice: 20.75,
+    monthlyPrice: 29.99,
+    annualPrice: 24.99,
     oneTime: false,
     cta: "Get Pro",
-    ctaNote: "7-day money back guarantee",
+    ctaNote: "Cancel anytime",
     badge: "Most popular",
     popular: true,
     special: null,
@@ -113,7 +113,7 @@ const ALL_PLANS: {
     annualPrice: 41.58,
     oneTime: false,
     cta: "Get Max",
-    ctaNote: "7-day money back guarantee",
+    ctaNote: "Cancel anytime",
     badge: "Best value",
     popular: false,
     special: null,
@@ -128,6 +128,14 @@ const ALL_PLANS: {
     notIncluded: [],
   },
 ];
+
+// Derived from the Pro prices above rather than hardcoded, so the badge can
+// never claim a discount the plans do not actually give.
+const ANNUAL_SAVING_PCT = (() => {
+  const pro = ALL_PLANS.find((p) => p.id === "pro");
+  if (!pro || !pro.monthlyPrice) return 0;
+  return Math.round((1 - pro.annualPrice / pro.monthlyPrice) * 100);
+})();
 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
@@ -182,8 +190,8 @@ const FAQS = [
     a: "Yes. Resume text is only used during your session. Interview audio is processed on your device. Raw audio is never sent to our servers. We do not sell your data or use it to train AI models.",
   },
   {
-    q: "What is the refund policy?",
-    a: "Full refund within 7 days of your first purchase, no questions asked. This applies to Pro and Max. Email support@replysis.com and we sort it out the same day.",
+    q: "What if I want to stop paying?",
+    a: "Cancel from your account settings at any time and you will not be billed again. You keep full access until the end of the period you already paid for. If something goes wrong with a charge, email support@replysis.com and we will look into it."
   },
 ];
 
@@ -331,7 +339,7 @@ export default function PricingPage() {
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
             className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400 mb-10">
-            {["Secure checkout via Stripe", "Cancel anytime", "7-day money back", "Audio never stored"].map((t, i) => (
+            {["Secure checkout via Stripe", "Cancel anytime", "No hidden fees", "Audio never stored"].map((t, i) => (
               <span key={i} className="flex items-center gap-1.5">
                 <Check color="emerald" />
                 {t}
@@ -354,7 +362,7 @@ export default function PricingPage() {
                 Annual
                 <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full text-white"
                   style={{ background: annual ? "rgba(255,255,255,0.2)" : "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
-                  Save 50%
+                  Save {ANNUAL_SAVING_PCT}%
                 </span>
               </button>
             </div>
@@ -364,7 +372,7 @@ export default function PricingPage() {
                   transition={{ duration: 0.2 }}
                   className="text-xs font-semibold text-zinc-900 cursor-pointer hover:text-zinc-950 transition-colors"
                   onClick={() => setAnnual(true)}>
-                  Switch to annual. Pro drops to $20.75/mo. Max drops to $41.58/mo.
+                  Switch to annual. Pro drops to $24.99/mo. Max drops to $41.58/mo.
                 </motion.p>
               )}
             </AnimatePresence>
@@ -508,7 +516,7 @@ export default function PricingPage() {
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
                 className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
-                Pay annually and save 2 months. Pro drops to $20.75/mo. Max drops to $41.58/mo.
+                Pay annually and save 2 months. Pro drops to $24.99/mo. Max drops to $41.58/mo.
               </button>
             </motion.p>
           )}
@@ -578,7 +586,7 @@ export default function PricingPage() {
                   <div className="px-5 py-4" />
                   {[
                     { name: "Starter", price: "Free",                             style: "" },
-                    { name: "Pro",     price: annual ? "$20.75/mo" : "$24.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
+                    { name: "Pro",     price: annual ? "$24.99/mo" : "$29.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
                     { name: "Max",     price: annual ? "$41.58/mo" : "$49.99/mo", style: "" },
                   ].map(({ name, price, style }, i) => (
                     <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
@@ -629,32 +637,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ══ GUARANTEE ══════════════════════════════════════════════════════════ */}
-      <section className="py-14 px-6 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-3xl mx-auto">
-          <FadeUp>
-            <div className="rounded-2xl px-8 py-7 flex flex-col sm:flex-row items-center gap-6 shadow-sm"
-              style={{ background: "linear-gradient(135deg, rgba(31,138,62,0.04), rgba(31,138,62,0.03))", border: "1px solid rgba(31,138,62,0.1)" }}>
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md"
-                style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
-                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-gray-900 mb-1">7-day money back guarantee</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  Not happy within 7 days of your first purchase? Email{" "}
-                  <a href="mailto:support@replysis.com" className="font-semibold text-zinc-900 hover:underline">
-                    support@replysis.com
-                  </a>{" "}
-                  and we refund you in full. No forms, no questions, same day. Applies to Pro and Max.
-                </p>
-              </div>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
 
       {/* ══ FAQ ════════════════════════════════════════════════════════════════ */}
       <section className="py-20 px-6 bg-white border-t border-gray-100">

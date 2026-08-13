@@ -52,7 +52,7 @@ export default function PaywallModal({ onClose, creditsRemaining, action, credit
               <div>
                 <div className="text-sm font-bold text-white flex items-center gap-2">
                   Pro <Crown size={13} className="text-zinc-600" />
-                  <span className="text-zinc-600 font-black">$24.99/mo</span>
+                  <span className="text-zinc-600 font-black">$29.99/mo</span>
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">5,000 credits/month — ~40 hrs live or 300+ mock sessions.</div>
               </div>

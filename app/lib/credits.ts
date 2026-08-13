@@ -42,7 +42,7 @@ export const PLAN_CONFIG = {
     label: "Pro",
     totalCredits: 2000, // 2000/month ≈ 16 hrs live or 100 mock sessions
     monthlyReset: true,
-    price: 24.99,
+    price: 29.99,
     stripePriceId: "",
     allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
     features: {
