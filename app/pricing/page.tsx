@@ -67,13 +67,12 @@ const ALL_PLANS: {
     badge: null,
     popular: false,
     special: null,
-    usagePool: "100 credits / month",
+    usagePool: "~50 min live interviews / month",
     features: [
       "Live AI answers in under 2 seconds",
       "Works on Zoom, Meet, Teams and phone calls",
-      "~50 min live interview or 6 mock sessions",
       "Resume builder with free PDF download",
-      "100 credits refresh every month",
+      "Allowance refreshes every month",
     ],
     notIncluded: [
       "Screen share exclusion (desktop app)",
@@ -87,17 +86,19 @@ const ALL_PLANS: {
     emoji: "👑",
     tagline: "Everything you need for a job search.",
     monthlyPrice: 29.99,
-    annualPrice: 24.99,
+    // Annual is anchored to a clean yearly total ($299) and shown per month,
+    // so the "billed" figure on the card matches the Stripe price exactly.
+    annualPrice: 24.92,
     oneTime: false,
     cta: "Get Pro",
     ctaNote: "Cancel anytime",
     badge: "Most popular",
     popular: true,
     special: null,
-    usagePool: "2,000 credits / month",
+    usagePool: "~16 hours live interviews / month",
     features: [
-      "2,000 credits refresh every month",
-      "~16 hours live interviews or 100 mock sessions",
+      "~16 hours of live interviews, or 100 mock sessions",
+      "Allowance refreshes every month",
       "Desktop app, kept out of screen shares and recordings",
       "Every interview saved and reviewable",
       "AI rewrites your resume for any job posting",
@@ -117,11 +118,11 @@ const ALL_PLANS: {
     badge: "Best value",
     popular: false,
     special: null,
-    usagePool: "5,000 credits / month",
+    usagePool: "~41 hours live interviews / month",
     features: [
-      "5,000 credits refresh every month",
-      "~41 hours live interviews or 250 mock sessions",
-      "Two and a half times the credits for twice the price",
+      "~41 hours of live interviews, or 250 mock sessions",
+      "Allowance refreshes every month",
+      "Two and a half times the usage for twice the price",
       "Everything in Pro, nothing held back",
       "Priority support",
     ],
@@ -129,13 +130,17 @@ const ALL_PLANS: {
   },
 ];
 
-// Derived from the Pro prices above rather than hardcoded, so the badge can
-// never claim a discount the plans do not actually give.
-const ANNUAL_SAVING_PCT = (() => {
-  const pro = ALL_PLANS.find((p) => p.id === "pro");
-  if (!pro || !pro.monthlyPrice) return 0;
-  return Math.round((1 - pro.annualPrice / pro.monthlyPrice) * 100);
-})();
+// Everything below is derived from ALL_PLANS rather than hardcoded, so a price
+// change in one place cannot leave a stale figure somewhere else on the page.
+const PRO_PLAN = ALL_PLANS.find((p) => p.id === "pro")!;
+const MAX_PLAN = ALL_PLANS.find((p) => p.id === "max")!;
+
+const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
+  ? Math.round((1 - PRO_PLAN.annualPrice / PRO_PLAN.monthlyPrice) * 100)
+  : 0;
+
+const perMonth = (plan: typeof PRO_PLAN, annual: boolean) =>
+  `$${(annual ? plan.annualPrice : plan.monthlyPrice).toFixed(2)}/mo`;
 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
@@ -155,7 +160,6 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Apps",          label: "Windows desktop app",                  free: false,          pro: true,          max: true},
   { cat: "Apps",          label: "macOS desktop app",                    free: false,          pro: true,          max: true},
   { cat: "AI",            label: "AI model",                             free: "Standard",     pro: "Best",        max: "Best"},
-  { cat: "Billing",       label: "Monthly credits",                      free: "100/mo",       pro: "2,000/mo",    max: "5,000/mo"},
   { cat: "Billing",       label: "Future features included",             free: false,          pro: true,          max: true},
 ];
 
@@ -166,8 +170,8 @@ const FAQS = [
     a: "During your real interview, Replysis listens through your microphone, reads your resume, and streams a tailored answer to your screen in under 2 seconds. The interviewer sees nothing. It works on Zoom, Google Meet, Teams, phone calls, and in-person interviews.",
   },
   {
-    q: "What are credits?",
-    a: "Credits are a simple usage meter. Live copilot costs 2 credits per minute. A mock session costs 15 credits. Starter gets 100 credits/month (~50 min live or 6 mock sessions). Pro gets 2,000/month (~16 hrs live or 100 mock sessions). Max gets 5,000/month (~41 hrs live or 250 mock sessions). Credits reset on the 1st of every month.",
+    q: "How much can I actually use?",
+    a: "Starter covers about 50 minutes of live interviews a month, Pro about 16 hours, and Max about 41 hours. Mock sessions and resume rewrites draw from the same monthly allowance, so 16 hours of live time is roughly 100 mock sessions instead. Your allowance resets on the 1st of every month."
   },
   {
     q: "Why do I need the desktop app for full stealth?",
@@ -179,7 +183,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between Pro and Max?",
-    a: "Every feature is the same. The only difference is how much you can use. Pro gives you 2,000 credits a month, which is around 16 hours of live interviews. Max gives you 5,000, which is around 41 hours. Pro suits most job searches. Choose Max if you are interviewing several times a week or running mock sessions daily.",
+    a: "Every feature is the same. The only difference is how much you can use. Pro covers around 16 hours of live interviews a month, Max around 41 hours. Pro suits most job searches. Choose Max if you are interviewing several times a week or running mock sessions daily.",
   },
   {
     q: "Can I cancel anytime?",
@@ -372,7 +376,7 @@ export default function PricingPage() {
                   transition={{ duration: 0.2 }}
                   className="text-xs font-semibold text-zinc-900 cursor-pointer hover:text-zinc-950 transition-colors"
                   onClick={() => setAnnual(true)}>
-                  Switch to annual. Pro drops to $24.99/mo. Max drops to $41.58/mo.
+                  Switch to annual. Pro drops to {perMonth(PRO_PLAN, true)}. Max drops to {perMonth(MAX_PLAN, true)}.
                 </motion.p>
               )}
             </AnimatePresence>
@@ -516,7 +520,7 @@ export default function PricingPage() {
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
                 className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
-                Pay annually and save 2 months. Pro drops to $24.99/mo. Max drops to $41.58/mo.
+                Pay annually and save 2 months. Pro drops to {perMonth(PRO_PLAN, true)}. Max drops to {perMonth(MAX_PLAN, true)}.
               </button>
             </motion.p>
           )}
@@ -546,7 +550,7 @@ export default function PricingPage() {
               {
                 emoji: "👑", name: "Max", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
                 who: "Interviewing constantly",
-                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Do not want to think about credits"],
+                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Do not want to think about running out"],
               },
             ].map((col, ci) => (
               <FadeUp key={ci} delay={ci * 0.08}>
@@ -586,8 +590,8 @@ export default function PricingPage() {
                   <div className="px-5 py-4" />
                   {[
                     { name: "Starter", price: "Free",                             style: "" },
-                    { name: "Pro",     price: annual ? "$24.99/mo" : "$29.99/mo", style: "bg-zinc-100/60 text-zinc-900" },
-                    { name: "Max",     price: annual ? "$41.58/mo" : "$49.99/mo", style: "" },
+                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual), style: "bg-zinc-100/60 text-zinc-900" },
+                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual), style: "" },
                   ].map(({ name, price, style }, i) => (
                     <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
                       <p className={`text-sm font-black ${style.includes("violet") ? "text-zinc-900" : style.includes("orange") ? "text-zinc-900" : "text-gray-900"}`}>{name}</p>
