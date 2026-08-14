@@ -24,7 +24,7 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
   const heading =
     mounted && detectedOS === "win" ? "Made for Windows. Ready now." :
     mounted && detectedOS === "mac" ? "Made for Mac. Ready now." :
-    "Native app. Zero compromise.";
+    "Native controls for live interviews.";
 
   return (
     <section id="download-section" className="py-28 px-6 bg-gray-50">

@@ -36,22 +36,22 @@ const STEPS = [
       { label: "For practice", value: "Browser version at replysis.com/real-interview or /mock-interview. No install needed." },
       { label: "Setup time", value: "Under 60 seconds from download to first answer." },
     ],
-    tip: "Test the stealth overlay in a Zoom call with a friend before your real interview. It takes 2 minutes and confirms everything is working.",
+    tip: "Test the desktop overlay, microphone, system audio, and capture behavior in a practice call before your real interview.",
   },
   {
     n: "03",
     color: "bg-zinc-800",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "Answer every question with confidence",
-    sub: "Answer suggestions designed to begin streaming in under 2 seconds.",
+    title: "Review a suggestion for each question",
+    sub: "Designed around a sub-two-second response-start target.",
     desc: "Replysis transcribes the question, matches it against the context you provide, and streams a tailored answer suggestion to the overlay. Treat it as an outline, verify the facts, and respond in your own words.",
     detail: [
       { label: "What you see", value: "A focused floating overlay showing the suggestion, streaming token-by-token." },
       { label: "Capture behavior", value: "The desktop app targets standard screen-share paths. Coverage depends on the operating system and capture tool." },
       { label: "Speed", value: "Designed for a sub-two-second response start; network and provider conditions can affect timing." },
     ],
-    tip: "Don't read the answer word-for-word. Use it as a structured outline and speak naturally. It will sound completely authentic.",
+    tip: "Do not read the answer word-for-word. Use it as a structured outline, verify the facts, and respond naturally in your own words.",
   },
 ];
 
@@ -61,7 +61,7 @@ const FAQS = [
   { q: "What if the answer isn't right?", a: "AI suggestions can be incomplete or wrong. Ignore anything that does not fit, verify every fact, and use your own words. Replysis is an outline and coaching tool, not a source of guaranteed answers." },
   { q: "Do I need the desktop app, or can I use the browser?", a: "The browser is suitable for practice. The desktop app adds system audio and operating-system capture controls for live workflows. Always test microphone, audio, and capture behavior before an important call." },
   { q: "How is my data handled?", a: "Live audio streams to our speech-to-text provider and is not stored by Replysis. Transcripts and resume context are processed to generate answers. If you use saved history, session content is stored in your account until deletion. See the Trust Center and Privacy Policy for details." },
-  { q: "How is this different from just Googling answers?", a: "Every answer is generated in real time from your actual resume. You're not reading a generic answer. You're getting a response that references your specific projects, metrics, and experience, which sounds authentic and avoids the obvious 'I Googled this' tells." },
+  { q: "How is this different from just Googling answers?", a: "Replysis can use the resume, role, company, and job description you provide as context for a live suggestion. AI output may still be incomplete or wrong, so verify the facts and adapt the wording to your real experience." },
 ];
 
 export default function HowItWorksPage() {

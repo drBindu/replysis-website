@@ -4,7 +4,7 @@ import { PageHeader } from "../../components/PageShell";
 
 export const metadata: Metadata = {
   title: "Features  -  Replysis",
-  description: "Every tool you need to prepare for interviews and land the offer.",
+  description: "A connected toolkit for resume preparation, interview practice, and live guidance.",
 };
 
 const FEATURES = [
@@ -32,9 +32,9 @@ const FEATURES = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Resume-Grounded Answers",
-    tagline: "Every answer comes from your actual background.",
-    desc: "Upload your resume once. Replysis reads every project, role, skill, and achievement and uses that as context for every answer it generates. No generic filler. No answers that don't sound like you.",
-    points: ["Answers tied to your real experience", "References your specific projects and metrics", "Role and company-aware context", "Consistent voice across every question"],
+    tagline: "Suggestions use the background you provide.",
+    desc: "Upload your resume and Replysis uses its roles, projects, skills, and achievements as context. AI output can still be incomplete or inaccurate, so review every suggestion and keep only wording that reflects your real experience.",
+    points: ["Resume-grounded context", "Can reference supplied projects and metrics", "Role and company-aware prompts", "Answer style you can review and adapt"],
   },
   {
     icon: (
@@ -89,7 +89,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Smart Resume Builder",
     tagline: "Role-aware resume drafting with keyword and structure guidance.",
-    desc: "Paste in your experience and choose your target role. Replysis rewrites every bullet point to pass ATS filters, include the right keywords for your target company, and lead with impact metrics. The same resume then powers your live interview answers.",
+    desc: "Paste in your experience and choose your target role. Replysis suggests clearer bullet points, relevant keywords, and impact-focused phrasing. No tool can guarantee an ATS result, so review accuracy before exporting. The same resume can then provide context for live answer suggestions.",
     points: ["ATS keyword optimization for your target role", "Impact-first bullet rewrites with real metrics", "Role-specific language for SWE, PM, DS, Design", "Export to PDF or plain text instantly"],
   },
   {

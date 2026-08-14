@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FadeUp, FadeIn, BlurFade } from "./shared";
 
-/* ── TRUSTED BY ─────────────────────────────────────────────── */
+/* ── VERIFIABLE PRODUCT FACTS ───────────────────────────────── */
 export function TrustedBySection() {
   const proof = [
     { value: "100", label: "free monthly credits", detail: "Explore all three workflows before paying." },
@@ -105,14 +105,14 @@ export function HowItWorksSection() {
   const steps = [
     {
       n: "01", icon: "📄", title: "Upload Your Resume",
-      desc: "Paste your resume once. The system reads every project, skill, and achievement so every answer comes from your real background.",
+      desc: "Paste your resume once. Replysis uses the projects, skills, and achievements you provide as context for more relevant answer suggestions.",
       time: "30 seconds",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
     },
     {
       n: "02", icon: "🎤", title: "Start Your Interview",
-      desc: "Open Replysis on desktop or web. It uses the microphone you approve, transcribes speech in real time, and works alongside major meeting platforms.",
+      desc: "Open Replysis on desktop or web. It uses the microphone you approve and transcribes speech in real time. Meeting-platform compatibility depends on your device and permissions.",
       time: "Guided setup",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
@@ -207,7 +207,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
                 </span>
               </h2>
               <p className="text-gray-600 text-lg max-w-xl mx-auto mb-3 leading-relaxed">
-                Replysis listens live, reads your resume, and streams the answer in under two seconds, so you walk in ready to clear the one barrier between you and the offer.
+                Replysis listens live, uses your resume as context, and is designed around a sub-two-second response-start target. Network and provider conditions can affect timing.
               </p>
               <p className="text-gray-400 text-sm mb-10">Start with 100 monthly credits. No payment details are required to explore the product.</p>
 

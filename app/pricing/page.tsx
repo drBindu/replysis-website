@@ -73,7 +73,7 @@ const ALL_PLANS: {
     features: [
       "Live AI answers with a sub-two-second response target",
       "Answers tailored to your resume and role",
-      "Works on Zoom, Meet, Teams and phone calls",
+      "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
       "100 credits refresh automatically each month",
     ],
@@ -153,7 +153,7 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean) =>
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
-  { cat: "Live Copilot",  label: "Answer response target",               free: "Under 2 sec",  pro: "Under 2 sec", max: "Under 2 sec"},
+  { cat: "Live Copilot",  label: "Answer response target",               free: "<2 sec target", pro: "<2 sec target", max: "<2 sec target"},
   { cat: "Live Copilot",  label: "Monthly credits",                      free: "100",          pro: "2,000",        max: "5,000"},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: false,          pro: "Included",     max: "Included"},
