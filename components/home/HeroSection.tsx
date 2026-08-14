@@ -431,7 +431,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             {/* Works-on platform strip — adds real info + credibility */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.62, duration: 0.6 }}
               className="mt-9 flex flex-col items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Works seamlessly on</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.25em]">Works on</span>
               <div className="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center max-w-xl">
                 {["Zoom", "Google Meet", "Microsoft Teams", "Webex", "HireVue", "Phone screens"].map((p) => (
                   <motion.span key={p} whileHover={{ y: -3 }}
