@@ -275,9 +275,16 @@ export default function CreditsBadge() {
                 </button>
               ) : (
                 <button
-                  onClick={() => { router.push("/pricing"); setOpen(false); }}
+                  onClick={() => { router.push("/account"); setOpen(false); }}
                   className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-100/60 transition-all">
-                  View plan details
+                  Manage account &amp; billing
+                </button>
+              )}
+              {!isPaid && (
+                <button
+                  onClick={() => { router.push("/account"); setOpen(false); }}
+                  className="mt-2 w-full py-2 text-[12px] font-semibold text-gray-500 hover:text-zinc-900 transition-colors">
+                  Account &amp; billing
                 </button>
               )}
             </div>

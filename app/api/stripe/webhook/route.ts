@@ -56,6 +56,38 @@ const PLAN_CREDITS: Record<string, number> = {
   teams:    PLAN_MONTHLY_CREDITS.teams,
 };
 
+const PLAN_BY_PRICE_ID = new Map<string, "pro" | "max">(
+  [
+    [process.env.STRIPE_PRO_MONTHLY_PRICE, "pro"],
+    [process.env.STRIPE_PRO_ANNUAL_PRICE, "pro"],
+    [process.env.STRIPE_MAX_MONTHLY_PRICE, "max"],
+    [process.env.STRIPE_MAX_ANNUAL_PRICE, "max"],
+  ].filter((entry): entry is [string, "pro" | "max"] => Boolean(entry[0])),
+);
+
+function subscriptionPlan(subscription: any): string | null {
+  const priceId = subscription?.items?.data?.[0]?.price?.id;
+  const fromPrice = typeof priceId === "string" ? PLAN_BY_PRICE_ID.get(priceId) : undefined;
+  if (fromPrice) return fromPrice;
+  const fromMetadata = subscription?.metadata?.plan;
+  return typeof fromMetadata === "string" && ["pro", "max", "teams"].includes(fromMetadata)
+    ? fromMetadata
+    : null;
+}
+
+function subscriptionPeriodEnd(subscription: any): number | null {
+  if (typeof subscription?.current_period_end === "number") return subscription.current_period_end;
+  const itemEnds = Array.isArray(subscription?.items?.data)
+    ? subscription.items.data.map((item: any) => item?.current_period_end).filter((value: unknown) => typeof value === "number")
+    : [];
+  return itemEnds.length ? Math.max(...itemEnds) : null;
+}
+
+function subscriptionInterval(subscription: any): string | null {
+  const interval = subscription?.items?.data?.[0]?.price?.recurring?.interval;
+  return interval === "month" ? "monthly" : interval === "year" ? "annual" : null;
+}
+
 // ── Stripe signature verification ───────────────────────────────
 // Implements https://stripe.com/docs/webhooks/signatures manually
 // using HMAC-SHA256  -  no Stripe SDK needed.
@@ -182,6 +214,41 @@ async function applyUserUpdate(uid: string, eventCreated: number, updates: Recor
   });
 }
 
+async function applyActiveSubscription(uid: string, eventCreated: number, plan: string, subscription: any) {
+  const userRef = db!.collection("users").doc(uid);
+  await db!.runTransaction(async (transaction) => {
+    const current = await transaction.get(userRef);
+    const currentData = current.data() ?? {};
+    const lastEventCreated = Number(currentData.stripeLastEventCreated ?? 0);
+    if (lastEventCreated > eventCreated) return;
+
+    const previousPlan = typeof currentData.plan === "string" && currentData.plan in PLAN_MONTHLY_CREDITS
+      ? currentData.plan
+      : "free";
+    const previousCap = PLAN_MONTHLY_CREDITS[previousPlan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
+    const nextCap = PLAN_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+    const currentCredits = Math.max(0, Number(currentData.credits ?? 0));
+    const adjustedCredits = plan === previousPlan
+      ? Math.min(currentCredits, nextCap)
+      : nextCap > previousCap
+        ? Math.min(nextCap, currentCredits + (nextCap - previousCap))
+        : Math.min(currentCredits, nextCap);
+
+    transaction.set(userRef, {
+      plan,
+      credits: adjustedCredits,
+      stripeCustomerId: subscription.customer ?? currentData.stripeCustomerId ?? null,
+      stripeSubscriptionId: subscription.id ?? currentData.stripeSubscriptionId ?? null,
+      stripeSubscriptionStatus: subscription.status ?? "active",
+      stripeCancelAtPeriodEnd: subscription.cancel_at_period_end === true,
+      stripeCurrentPeriodEnd: subscriptionPeriodEnd(subscription),
+      stripeBillingInterval: subscriptionInterval(subscription) ?? currentData.stripeBillingInterval ?? null,
+      stripeLastEventCreated: eventCreated,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+}
+
 // ── POST /api/stripe/webhook ─────────────────────────────────────
 export async function POST(req: Request) {
   // Must read raw body BEFORE any JSON parsing  -  Stripe verifies against raw bytes
@@ -251,6 +318,10 @@ export async function POST(req: Request) {
           creditsResetDate: getNextResetDate(),
           stripeCustomerId: customerId ?? null,
           stripeSubscriptionId: subscriptionId ?? null,
+          stripeSubscriptionStatus: "active",
+          stripeCancelAtPeriodEnd: false,
+          stripeBillingInterval: session.metadata?.interval ?? null,
+          lastPaymentFailedAt: null,
         });
       } else {
         console.error("[webhook] Missing or invalid checkout metadata");
@@ -269,6 +340,9 @@ export async function POST(req: Request) {
           credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
+          stripeSubscriptionStatus: "canceled",
+          stripeCancelAtPeriodEnd: false,
+          stripeCurrentPeriodEnd: null,
         });
       }
     }
@@ -286,7 +360,7 @@ export async function POST(req: Request) {
         if (!subRes.ok) throw new Error(`Stripe subscription lookup failed: ${subRes.status}`);
         const sub = await subRes.json();
         const uid  = sub.metadata?.uid;
-        const plan = sub.metadata?.plan;
+        const plan = subscriptionPlan(sub);
 
         if (uid && plan && ["pro", "max", "teams"].includes(plan)) { // lifetime is one-time, no renewal
           const credits = PLAN_CREDITS[plan] ?? 1000;
@@ -297,6 +371,10 @@ export async function POST(req: Request) {
             creditsResetDate: getNextResetDate(),
             stripeCustomerId: sub.customer ?? null,
             stripeSubscriptionId: subscriptionId,
+            stripeSubscriptionStatus: sub.status ?? "active",
+            stripeCancelAtPeriodEnd: sub.cancel_at_period_end === true,
+            stripeCurrentPeriodEnd: subscriptionPeriodEnd(sub),
+            stripeBillingInterval: subscriptionInterval(sub),
             lastPaymentFailedAt: null,
           });
           console.log(`🔄 RENEWED: ${uid} → ${credits} credits`);
@@ -304,15 +382,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── SUBSCRIPTION UPDATED  -  safety-net downgrade on terminal status ──
-    // Stripe sends this on plan changes and status transitions. We ONLY act on
-    // clearly-dead statuses (downgrade to free), as a backstop in case a clean
-    // customer.subscription.deleted never arrives. Active renewals are handled
-    // by invoice.paid, so we never re-assign a plan here — that avoids ever
-    // wrongly downgrading a paying user mid-cycle.
+    // ── SUBSCRIPTION UPDATED  -  sync portal plan/status changes ─────────────
+    // The Stripe portal can change Pro ↔ Max or monthly ↔ annual. Resolve the
+    // plan from the actual price ID rather than stale Checkout metadata.
     if (event.type === "customer.subscription.updated") {
       const sub  = event.data.object;
       const uid  = sub.metadata?.uid;
+      const plan = subscriptionPlan(sub);
       const dead = ["canceled", "unpaid", "incomplete_expired"];
       if (uid && dead.includes(sub.status)) {
         console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
@@ -321,7 +397,13 @@ export async function POST(req: Request) {
           credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
+          stripeSubscriptionStatus: sub.status,
+          stripeCancelAtPeriodEnd: false,
+          stripeCurrentPeriodEnd: null,
         });
+      } else if (uid && plan && ["pro", "max", "teams"].includes(plan)) {
+        await applyActiveSubscription(uid, eventCreated, plan, sub);
+        console.log(`🔁 SUBSCRIPTION UPDATED: ${uid} → ${plan} (${String(sub.status)})`);
       }
     }
 
@@ -344,7 +426,10 @@ export async function POST(req: Request) {
           const uid = sub.metadata?.uid;
           if (uid) {
             console.warn(`⚠️ PAYMENT FAILED (renewal): ${uid} — Stripe will retry`);
-            await applyUserUpdate(uid, eventCreated, { lastPaymentFailedAt: new Date().toISOString() });
+            await applyUserUpdate(uid, eventCreated, {
+              lastPaymentFailedAt: new Date().toISOString(),
+              stripeSubscriptionStatus: sub.status ?? "past_due",
+            });
           }
         } catch (e) {
           console.error("[webhook] payment_failed lookup error:", e);

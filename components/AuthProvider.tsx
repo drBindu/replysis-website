@@ -15,7 +15,7 @@ const AuthContext = createContext<AuthContextType>({ user: null, loading: true }
 export const useAuth = () => useContext(AuthContext);
 
 // Routes that require a logged-in user
-const PROTECTED_PREFIXES = ["/real-interview", "/mock-interview", "/resume", "/admin"];
+const PROTECTED_PREFIXES = ["/real-interview", "/mock-interview", "/resume", "/account", "/admin"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

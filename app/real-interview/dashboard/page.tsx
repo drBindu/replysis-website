@@ -9,7 +9,7 @@ import {
   ArrowLeft, Loader2, Plus,
   BarChart2, Calendar, Clock,
   MessageSquare, AlertCircle, RefreshCw,
-  BrainCircuit,
+  BrainCircuit, FileText, Mic2, ChevronRight,
 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
@@ -148,22 +148,37 @@ export default function DashboardPage() {
           </div>
 
         ) : sessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-5 text-center">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: C.cardBg, border: `1.5px dashed ${C.border}` }}>
-              <MessageSquare size={26} className="text-slate-300" />
-            </div>
-            <div>
-              <p className="text-[17px] font-black text-slate-700 mb-1.5 tracking-tight">No sessions yet</p>
-              <p className="text-[13px] font-medium text-slate-400 max-w-xs leading-relaxed">
-                Start an interview session and your Q&A history will appear here automatically.
+          <div className="py-10">
+            <div className="mx-auto max-w-lg text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl"
+                style={{ background: C.cardBg, border: `1.5px dashed ${C.border}` }}>
+                <MessageSquare size={26} className="text-slate-300" />
+              </div>
+              <p className="mt-5 text-[19px] font-black text-slate-700 tracking-tight">Your interview history starts here</p>
+              <p className="mx-auto mt-2 max-w-md text-[13px] font-medium leading-relaxed text-slate-400">
+                Prepare your resume, practice once, then open the live copilot. Your saved Q&amp;A sessions will appear here automatically.
               </p>
             </div>
-            <button onClick={() => router.push("/real-interview")}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-[13px] font-black text-white shadow-sm"
-              style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
-              <Plus size={14} /> Start First Session
-            </button>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              {[
+                { step: "1", title: "Prepare resume", body: "Add your experience", path: "/resume", icon: FileText },
+                { step: "2", title: "Practice", body: "Try a mock interview", path: "/mock-interview", icon: BrainCircuit },
+                { step: "3", title: "Go live", body: "Start your first session", path: "/real-interview", icon: Mic2 },
+              ].map(({ step, title, body, path, icon: Icon }) => (
+                <button key={step} onClick={() => router.push(path)}
+                  className="group rounded-2xl p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ background: C.panelBg, border: `1px solid ${C.border}` }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step {step}</span>
+                    <Icon size={16} className="text-zinc-700" />
+                  </div>
+                  <p className="mt-4 text-[13px] font-black text-slate-700">{title}</p>
+                  <p className="mt-1 text-[11px] font-medium text-slate-400">{body}</p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-black text-zinc-800">Open <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" /></span>
+                </button>
+              ))}
+            </div>
           </div>
 
         ) : (

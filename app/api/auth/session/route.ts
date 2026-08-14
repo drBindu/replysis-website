@@ -67,6 +67,10 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       creditsResetDate: nextResetDate(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
+      stripeSubscriptionStatus: null,
+      stripeCancelAtPeriodEnd: false,
+      stripeCurrentPeriodEnd: null,
+      stripeBillingInterval: null,
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
     });

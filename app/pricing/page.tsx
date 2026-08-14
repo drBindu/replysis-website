@@ -195,7 +195,7 @@ const FAQS = [
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Email support@replysis.com from your account email to request cancellation. You keep paid access through the end of the billing period and will not be charged for the next renewal. Self-service subscription management is being added.",
+    a: "Yes. Open Account & Billing and use the secure Stripe portal to cancel. You keep paid access through the end of the billing period and will not be charged for the next renewal.",
   },
   {
     q: "Is my data private?",
@@ -295,7 +295,7 @@ export default function PricingPage() {
 
   const handleCheckout = async (planId: "pro" | "max", checkoutUser: User | null = user) => {
     if (currentPlan && currentPlan !== "free") {
-      setCheckoutError("You already have an active plan. Contact support@replysis.com to change it without creating a second subscription.");
+      setCheckoutError("You already have an active plan. Open Account & Billing to change it securely without creating a second subscription.");
       return;
     }
     if (!checkoutUser) {
@@ -323,7 +323,7 @@ export default function PricingPage() {
           res.status === 429
             ? copyFor("rateLimited").body
             : res.status === 409
-              ? "You already have an active plan. Contact support@replysis.com to change it without creating a second subscription."
+              ? "You already have an active plan. Open Account & Billing to change it securely without creating a second subscription."
             : "We could not start checkout just now. You have not been charged. Please try again.",
         );
       }
@@ -547,12 +547,20 @@ export default function PricingPage() {
                         {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
                       </button>
                     ) : (
-                      <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
-                        disabled={!!loading || isCurrent || hasPaidPlan}
-                        className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ ...(isCurrent ? { background: "#d1d5db" } : s.btn) }}>
-                        {isCurrent ? "Current plan" : hasPaidPlan ? "Contact support to change plan" : loading === plan.id ? "Redirecting..." : plan.cta}
-                      </button>
+                      hasPaidPlan ? (
+                        <Link href="/account"
+                          className="block w-full py-3 rounded-xl font-bold text-sm text-white text-center transition-all hover:brightness-105"
+                          style={s.btn}>
+                          {isCurrent ? "Manage current plan" : "Change plan securely"}
+                        </Link>
+                      ) : (
+                        <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
+                          disabled={!!loading}
+                          className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={s.btn}>
+                          {loading === plan.id ? "Redirecting..." : plan.cta}
+                        </button>
+                      )
                     )}
                     <p className="text-center text-[10px] text-gray-400 mt-1.5">{plan.ctaNote}</p>
                   </div>

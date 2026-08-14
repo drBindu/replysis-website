@@ -160,12 +160,14 @@ export async function POST(req: Request) {
     params.append("submit_type", "subscribe");
     params.append(
       "custom_text[submit][message]",
-      "Instant access after payment. To cancel, email support@replysis.com from your Replysis account email."
+      "Instant access after payment. Manage your plan, payment method, invoices, or cancellation anytime from Account & Billing."
     );
     params.append("metadata[uid]", uid);
     params.append("metadata[plan]", plan);
+    params.append("metadata[interval]", annual ? "annual" : "monthly");
     params.append("subscription_data[metadata][uid]", uid);
     params.append("subscription_data[metadata][plan]", plan);
+    params.append("subscription_data[metadata][interval]", annual ? "annual" : "monthly");
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

@@ -113,6 +113,12 @@ export type UserProfile = {
   creditsResetDate: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  stripeSubscriptionStatus?: string | null;
+  stripeCancelAtPeriodEnd?: boolean;
+  stripeCurrentPeriodEnd?: number | null;
+  stripeBillingInterval?: "monthly" | "annual" | null;
+  lastPaymentFailedAt?: string | null;
+  onboardingSeenAt?: unknown;
   createdAt: any;
   lastLogin: any;
 };
@@ -150,6 +156,10 @@ export async function initializeUserCredits(uid: string, email: string, displayN
       creditsResetDate: getNextResetDate(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
+      stripeSubscriptionStatus: null,
+      stripeCancelAtPeriodEnd: false,
+      stripeCurrentPeriodEnd: null,
+      stripeBillingInterval: null,
       createdAt:  serverTimestamp(),
       lastLogin:  serverTimestamp(),
     });
@@ -253,6 +263,9 @@ export async function cancelPlan(uid: string) {
     credits: PLAN_CONFIG.free.totalCredits,
     creditsResetDate: getNextResetDate(),
     stripeSubscriptionId: null,
+    stripeSubscriptionStatus: "canceled",
+    stripeCancelAtPeriodEnd: false,
+    stripeCurrentPeriodEnd: null,
   });
 }
 

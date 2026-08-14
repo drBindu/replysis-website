@@ -5,6 +5,7 @@ const PROTECTED_PREFIXES = [
   "/real-interview",
   "/mock-interview",
   "/resume",
+  "/account",
   "/admin",
 ];
 

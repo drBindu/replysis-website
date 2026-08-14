@@ -10,6 +10,7 @@ import { useAuth } from "./AuthProvider";
 type Notice = {
   credits: number;
   tier: "low" | "empty";
+  resetLabel: string;
 };
 
 function cycleKey(value: unknown): string {
@@ -19,6 +20,20 @@ function cycleKey(value: unknown): string {
     if (typeof toDate === "function") return toDate().toISOString().slice(0, 10);
   }
   return new Date().toISOString().slice(0, 7);
+}
+
+function resetLabel(value: unknown): string {
+  let date: Date | null = null;
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) date = parsed;
+  } else if (value && typeof value === "object" && "toDate" in value) {
+    const toDate = (value as { toDate?: () => Date }).toDate;
+    if (typeof toDate === "function") date = toDate();
+  }
+  return date
+    ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date)
+    : "your next monthly refill";
 }
 
 export default function CreditUpgradeNotice() {
@@ -50,7 +65,7 @@ export default function CreditUpgradeNotice() {
       // stronger tier, so it still appears even if the low-credit warning was
       // already dismissed earlier in the month.
       localStorage.setItem(storageKey, "shown");
-      setNotice({ credits, tier });
+      setNotice({ credits, tier, resetLabel: resetLabel(data.creditsResetDate) });
     }, () => {
       // A warning is optional UI. If Firestore is temporarily unavailable,
       // credit enforcement remains server-side and the page keeps working.
@@ -87,8 +102,8 @@ export default function CreditUpgradeNotice() {
                 </h2>
                 <p className="mt-1 text-[13px] leading-5 text-slate-600">
                   {empty
-                    ? "Upgrade to Pro to keep using Replysis without waiting for your next free credit refill."
-                    : `You have ${notice.credits} free credits remaining. Upgrade now to avoid an interruption.`}
+                    ? `Upgrade to Pro to continue now, or wait until your free credits refresh on ${notice.resetLabel}.`
+                    : `You have ${notice.credits} free credits remaining. They refresh on ${notice.resetLabel}. Upgrade now to avoid an interruption.`}
                 </p>
               </div>
               <button
