@@ -5,6 +5,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS } from "../../../../data/productFacts";
 
 function getDb() {
   if (getApps().length) return getFirestore();
@@ -55,23 +56,8 @@ function getDb() {
   }
 }
 
-const CREDIT_COSTS: Record<string, number> = {
-  resume_analysis:        10,
-  resume_tailor:          20,
-  mock_interview_session: 15,
-  mock_feedback:           5,
-  mock_script:             5,
-  realtime_per_minute:     2,
-  question_generation:     5,
-  verify_resume:           0,
-};
-
-// Monthly caps — must match PLAN_MONTHLY_CREDITS (stt/tokens), PLAN_CONFIG
-// (credits.ts) and PLAN_CREDITS (webhook).
-const PLAN_MONTHLY_CREDITS: Record<string, number> = {
-  // Retired plans (lifetime, teams) are kept so existing accounts still resolve.
-  free: 100, pro: 2000, max: 5000, lifetime: 5000, teams: 10000,
-};
+const CREDIT_COSTS: Record<string, number> = CREDIT_ACTION_COSTS;
+const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
 const OWNER_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const MAX_REQUEST_BYTES = 32 * 1024;
 

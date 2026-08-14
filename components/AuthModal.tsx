@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   createUserWithEmailAndPassword,
@@ -8,9 +8,12 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail,
   sendEmailVerification,
+  signOut,
+  updateProfile,
+  type User,
 } from "firebase/auth";
 import { auth } from "../app/firebaseConfig";
-import { initializeUserCredits } from "../app/lib/credits";
+import { establishBrowserSession } from "../app/lib/auth-session";
 import BrandIcon from "./BrandIcon";
 
 type Mode = "signin" | "signup" | "reset";
@@ -19,7 +22,7 @@ interface Props {
   open: boolean;
   initialMode?: Mode;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user: User) => void;
 }
 
 // Shown for any sign-in failure the person in front of the screen cannot fix.
@@ -55,12 +58,73 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
   const [success, setSuccess]   = useState("");
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const titleId = useId();
+  const emailId = useId();
+  const nameId = useId();
+  const passwordId = useId();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    setMode(initialMode);
+    setError("");
+    setSuccess("");
+    setEmail("");
+    setName("");
+    setPassword("");
+    setShowPass(false);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => emailRef.current?.focus(), 80);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, [initialMode, open]);
 
   const switchMode = (m: Mode) => { setMode(m); setError(""); setSuccess(""); setPassword(""); };
   const clear = () => { setError(""); setSuccess(""); };
 
-  const saveUser = async (user: any) => {
-    try { await initializeUserCredits(user.uid, user.email || "", user.displayName || name || "User"); } catch {}
+  const finishAuthentication = async (user: User) => {
+    try {
+      await establishBrowserSession(user);
+    } catch {
+      await signOut(auth).catch(() => undefined);
+      throw new Error("secure_session_unavailable");
+    }
+    if (onSuccess) onSuccess(user);
+    else onClose();
   };
 
   const handleGoogle = async () => {
@@ -69,9 +133,8 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       const result = await signInWithPopup(auth, provider);
-      if (result.user) await saveUser(result.user);
-      onSuccess?.(); onClose();
-    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err); setError(FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
+      await finishAuthentication(result.user);
+    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err?.message ?? err); setError(err?.message === "secure_session_unavailable" ? SIGN_IN_UNAVAILABLE : FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
     finally { setLoading(false); }
   };
 
@@ -82,19 +145,17 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
       if (mode === "signup") {
         result = await createUserWithEmailAndPassword(auth, email, password);
         if (result.user) {
-          // Send verification email  -  ignore errors so signup still completes
+          if (name.trim()) await updateProfile(result.user, { displayName: name.trim() });
+          // Email verification is important, but delivery must not strand a
+          // person who has already created and authenticated their account.
           try { await sendEmailVerification(result.user); } catch {}
-          await saveUser(result.user);
-          setSuccess("Account created! Please check your inbox to verify your email.");
-          setLoading(false);
-          return; // stay on modal so user sees the message; they sign in after verifying
+          await finishAuthentication(result.user);
         }
       } else {
         result = await signInWithEmailAndPassword(auth, email, password);
-        if (result.user) await saveUser(result.user);
-        onSuccess?.(); onClose();
+        await finishAuthentication(result.user);
       }
-    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err); setError(FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
+    } catch (err: any) { console.error("[Replysis] Auth failure:", err?.code ?? err?.message ?? err); setError(err?.message === "secure_session_unavailable" ? SIGN_IN_UNAVAILABLE : FRIENDLY[err?.code] ?? "We could not complete that just now. Please try again."); }
     finally { setLoading(false); }
   };
 
@@ -117,6 +178,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
+            aria-hidden="true"
             className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm"
           />
 
@@ -129,7 +191,12 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
           >
-            <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+            <div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              className="w-full max-w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
               style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.16), 0 8px 24px rgba(31,138,62,0.10)" }}>
 
               {/* Header */}
@@ -141,7 +208,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                     <span style={{ background: "linear-gradient(135deg,#21924A,#21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>AI</span>
                   </span>
                 </div>
-                <button onClick={onClose}
+                <button onClick={onClose} aria-label="Close sign-in dialog"
                   className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -154,7 +221,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                 <AnimatePresence mode="wait">
                   <motion.div key={mode} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }} className="mb-5">
-                    <h2 className="text-[20px] font-black text-gray-900 tracking-tight">
+                    <h2 id={titleId} className="text-[20px] font-black text-gray-900 tracking-tight">
                       {mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset password"}
                     </h2>
                     <p className="text-[13px] text-gray-400 mt-0.5">
@@ -191,37 +258,40 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                   <motion.form key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     transition={{ duration: 0.12 }}
                     onSubmit={mode === "reset" ? handleReset : handleEmail}
+                    aria-busy={loading}
                     className="flex flex-col gap-3">
 
                     {mode === "signup" && (
                       <div>
-                        <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Full name</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required
+                        <label htmlFor={nameId} className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Full name</label>
+                        <input id={nameId} name="name" autoComplete="name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required
                           className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                       </div>
                     )}
 
                     <div>
-                      <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
-                      <input type="email" value={email} onChange={e => { setEmail(e.target.value); clear(); }} placeholder="you@example.com" required
+                      <label htmlFor={emailId} className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Email</label>
+                      <input ref={emailRef} id={emailId} name="email" autoComplete="email" type="email" value={email} onChange={e => { setEmail(e.target.value); clear(); }} placeholder="you@example.com" required
                         className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                     </div>
 
                     {mode !== "reset" && (
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Password</label>
+                          <label htmlFor={passwordId} className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Password</label>
                           {mode === "signin" && (
                             <button type="button" onClick={() => switchMode("reset")}
                               className="text-[11px] text-zinc-900 hover:text-zinc-950 font-medium transition-colors">Forgot?</button>
                           )}
                         </div>
                         <div className="relative">
-                          <input type={showPass ? "text" : "password"} value={password}
+                          <input id={passwordId} name="password" autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                            minLength={6} type={showPass ? "text" : "password"} value={password}
                             onChange={e => { setPassword(e.target.value); clear(); }}
                             placeholder={mode === "signup" ? "Min 6 characters" : "Your password"} required
                             className="w-full border border-gray-200 focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 rounded-xl px-3.5 py-2.5 pr-10 text-[13px] text-gray-900 placeholder:text-gray-300 outline-none transition-all" />
                           <button type="button" onClick={() => setShowPass(v => !v)}
+                            aria-label={showPass ? "Hide password" : "Show password"}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
                             {showPass
                               ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
@@ -234,11 +304,11 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
 
                     <AnimatePresence>
                       {error && (
-                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                        <motion.p role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                           className="text-[12px] text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</motion.p>
                       )}
                       {success && (
-                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                        <motion.p role="status" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                           className="text-[12px] text-zinc-900 bg-zinc-100 border border-zinc-200 rounded-lg px-3 py-2">{success}</motion.p>
                       )}
                     </AnimatePresence>

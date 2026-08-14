@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
@@ -92,6 +93,20 @@ export async function POST(req: Request) {
     // Verify the requested uid matches the authenticated user
     if (typeof uid !== "string" || uid !== verifiedUid) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // One Replysis account must never accidentally buy two concurrent
+    // subscriptions. Plan changes remain a support-assisted operation until
+    // the self-service billing portal ships.
+    try {
+      const profile = await getFirestore().collection("users").doc(verifiedUid).get();
+      const activeSubscriptionId = profile.data()?.stripeSubscriptionId;
+      if (typeof activeSubscriptionId === "string" && activeSubscriptionId.length > 0) {
+        return NextResponse.json({ error: "An active subscription already exists" }, { status: 409 });
+      }
+    } catch (error) {
+      console.error("[checkout] Unable to verify subscription state", (error as Error)?.name ?? "Error");
+      return NextResponse.json({ error: "Billing account unavailable" }, { status: 503 });
     }
 
     // Always use server-verified email, not client-supplied value

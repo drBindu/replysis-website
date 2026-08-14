@@ -1,21 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../app/firebaseConfig";
 import { CREDIT_COSTS } from "../app/lib/credits";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-
-const PLAN_MAX: Record<string, number> = {
-  free:     100,
-  pro:      2000,
-  max:      5000,
-  // Retired plans, kept so an existing account still shows the right bar.
-  lifetime: 5000,
-  teams:    10000,
-};
+import { PLAN_MONTHLY_CREDITS } from "../data/productFacts";
 
 type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
@@ -86,7 +78,7 @@ const PLAN_META: Record<PlanKey, {
   },
 };
 
-function CreditArc({ pct, color }: { pct: number; color: string }) {
+function CreditArc({ pct, color, gradientId }: { pct: number; color: string; gradientId: string }) {
   const r = 20;
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
@@ -94,12 +86,12 @@ function CreditArc({ pct, color }: { pct: number; color: string }) {
     <svg width="52" height="52" viewBox="0 0 52 52">
       <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="5" />
       <circle cx="26" cy="26" r={r} fill="none"
-        stroke="url(#arcGrad)" strokeWidth="5"
+        stroke={`url(#${gradientId})`} strokeWidth="5"
         strokeDasharray={`${dash} ${circ}`}
         strokeLinecap="round"
         transform="rotate(-90 26 26)" />
       <defs>
-        <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stopColor={color} />
           <stop offset="100%" stopColor={color} stopOpacity="0.5" />
         </linearGradient>
@@ -115,6 +107,8 @@ export default function CreditsBadge() {
   const [open, setOpen]       = useState(false);
   const ref                   = useRef<HTMLDivElement>(null);
   const router                = useRouter();
+  const panelId               = useId();
+  const gradientId            = useId().replace(/:/g, "");
 
   useEffect(() => {
     const u = onAuthStateChanged(auth, (user) => setUid(user?.uid || null));
@@ -137,14 +131,21 @@ export default function CreditsBadge() {
     const h = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    if (open) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    if (open) {
+      document.addEventListener("mousedown", h);
+      document.addEventListener("keydown", k);
+    }
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", k);
+    };
   }, [open]);
 
   if (!uid || credits === null) return null;
 
   const meta           = PLAN_META[plan] ?? PLAN_META.free;
-  const max            = PLAN_MAX[plan] ?? 100;
+  const max            = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const displayCredits = Math.min(credits, max);
   const pct            = Math.max(0, Math.min(100, Math.round((displayCredits / max) * 100)));
   const isLow          = plan === "free" && credits < 20;
@@ -158,6 +159,9 @@ export default function CreditsBadge() {
       {/* ── Pill badge ── */}
       <button
         onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls={panelId}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all duration-150 ${meta.pillClass} ${isCrit ? "animate-pulse" : ""}`}
         style={meta.pillStyle}
         title="View your credits and plan">
@@ -178,6 +182,9 @@ export default function CreditsBadge() {
       <AnimatePresence>
         {open && (
           <motion.div
+            id={panelId}
+            role="dialog"
+            aria-label="Plan and credit usage"
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
@@ -208,7 +215,7 @@ export default function CreditsBadge() {
               <div className="flex items-center gap-4 mb-4">
                 {/* Arc ring */}
                 <div className="relative flex-shrink-0">
-                  <CreditArc pct={pct} color={barColor} />
+                  <CreditArc pct={pct} color={barColor} gradientId={gradientId} />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-[11px] font-black text-gray-800">{pct}%</span>
                   </div>
@@ -263,14 +270,14 @@ export default function CreditsBadge() {
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.32)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)" }} />
-                  Upgrade for 50x more credits
+                  Upgrade to Pro · 2,000 monthly credits
                   <span className="ml-1.5 opacity-80">→</span>
                 </button>
               ) : (
                 <button
                   onClick={() => { router.push("/pricing"); setOpen(false); }}
                   className="w-full py-2.5 rounded-xl text-[13px] font-semibold text-gray-600 bg-gray-50 border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-100/60 transition-all">
-                  Manage plan
+                  View plan details
                 </button>
               )}
             </div>

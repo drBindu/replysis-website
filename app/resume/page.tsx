@@ -327,9 +327,9 @@ function AiProviderSelector({ value, onChange }: { value: AiProvider; onChange: 
    CREDIT USAGE TOAST
 ════════════════════════════════════════════════════════════════ */
 interface CreditToastProps {
-  action: string; cost: number; remaining: number; isUnlimited: boolean; onDone: () => void;
+  action: string; cost: number; remaining: number; max: number; isUnlimited: boolean; onDone: () => void;
 }
-function CreditUsageToast({ action, cost, remaining, isUnlimited, onDone }: CreditToastProps) {
+function CreditUsageToast({ action, cost, remaining, max, isUnlimited, onDone }: CreditToastProps) {
   useEffect(() => { const t = setTimeout(onDone, 3500); return () => clearTimeout(t); }, []);
   return (
     <motion.div
@@ -345,15 +345,15 @@ function CreditUsageToast({ action, cost, remaining, isUnlimited, onDone }: Cred
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:12, fontWeight:700, color:T.textPrimary, marginBottom:2 }}>
-          {isUnlimited ? "Pro: Credits unlimited" : `-${cost} credits used`}
+          {isUnlimited ? "Plan credits active" : `-${cost} credits used`}
         </div>
         <div style={{ fontSize:11, color:T.textSecondary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
           {action} {isUnlimited ? "✓" : `· ${remaining} remaining`}
         </div>
         {!isUnlimited && (
           <div style={{ marginTop:5, height:3, borderRadius:3, background:T.border, overflow:"hidden" }}>
-            <motion.div initial={{ width:0 }} animate={{ width:`${Math.min(100,(remaining/100)*100)}%` }} transition={{ duration:0.6 }}
-              style={{ height:"100%", borderRadius:3, background:remaining<20?T.danger:remaining<50?T.warning:T.success }} />
+            <motion.div initial={{ width:0 }} animate={{ width:`${Math.min(100,(remaining/max)*100)}%` }} transition={{ duration:0.6 }}
+              style={{ height:"100%", borderRadius:3, background:remaining<max*0.1?T.danger:remaining<max*0.25?T.warning:T.success }} />
           </div>
         )}
       </div>
@@ -676,14 +676,14 @@ export default function ResumePage() {
 
   const [creditHistory,    setCreditHistory]    = useState<CreditHistoryEntry[]>([]);
   const [showCreditDrawer, setShowCreditDrawer] = useState(false);
-  const [creditToast,      setCreditToast]      = useState<{ action:string; cost:number; remaining:number; isUnlimited:boolean; }|null>(null);
+  const [creditToast,      setCreditToast]      = useState<{ action:string; cost:number; remaining:number; max:number; isUnlimited:boolean; }|null>(null);
 
   const planMax = PLAN_CONFIG[plan]?.totalCredits ?? PLAN_CONFIG.free.totalCredits;
 
   const recordCreditUsage = useCallback((label: string, action: string, cost: number) => {
     setCreditHistory(prev => [...prev, { action, label, cost, timestamp: new Date() }]);
-    setCreditToast({ action: label, cost, remaining: isUnlimited ? 9999 : Math.max(0, credits - cost), isUnlimited });
-  }, [credits, isUnlimited]);
+    setCreditToast({ action: label, cost, remaining: isUnlimited ? planMax : Math.max(0, credits - cost), max: planMax, isUnlimited });
+  }, [credits, isUnlimited, planMax]);
 
   /* ── Draggable split pane ── */
   const DEFAULT_SIDEBAR_WIDTH = 300;
@@ -1993,7 +1993,7 @@ export default function ResumePage() {
       <AnimatePresence>
         {creditToast && (
           <CreditUsageToast action={creditToast.action} cost={creditToast.cost} remaining={creditToast.remaining}
-            isUnlimited={creditToast.isUnlimited} onDone={() => setCreditToast(null)} />
+            max={creditToast.max} isUnlimited={creditToast.isUnlimited} onDone={() => setCreditToast(null)} />
         )}
       </AnimatePresence>
 

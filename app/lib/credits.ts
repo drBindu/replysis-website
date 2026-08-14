@@ -6,18 +6,10 @@
 
 import { doc, getDoc, updateDoc, setDoc, increment, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, type PlanId } from "../../data/productFacts";
 
 // ── CREDIT COSTS PER ACTION ──
-export const CREDIT_COSTS = {
-  resume_analysis: 10,
-  resume_tailor: 20,
-  mock_interview_session: 15,
-  mock_feedback: 5,
-  mock_script: 5,
-  realtime_per_minute: 2,
-  question_generation: 5,
-  verify_resume: 0, // free
-} as const;
+export const CREDIT_COSTS = CREDIT_ACTION_COSTS;
 
 export type CreditAction = keyof typeof CREDIT_COSTS;
 
@@ -25,7 +17,7 @@ export type CreditAction = keyof typeof CREDIT_COSTS;
 export const PLAN_CONFIG = {
   free: {
     label: "Free",
-    totalCredits: 100,
+    totalCredits: PLAN_MONTHLY_CREDITS.free,
     monthlyReset: true,
     allowedModels: ["llama-3.1-8b-instant"],
     features: {
@@ -40,7 +32,7 @@ export const PLAN_CONFIG = {
   },
   pro: {
     label: "Pro",
-    totalCredits: 2000, // 2000/month ≈ 16 hrs live or 100 mock sessions
+    totalCredits: PLAN_MONTHLY_CREDITS.pro,
     monthlyReset: true,
     price: 29.99,
     stripePriceId: "",
@@ -57,7 +49,7 @@ export const PLAN_CONFIG = {
   },
   max: {
     label: "Max",
-    totalCredits: 5000, // 5000/month ≈ 41 hrs live or 250 mock sessions
+    totalCredits: PLAN_MONTHLY_CREDITS.max,
     monthlyReset: true,
     price: 49.99,
     stripePriceId: "",
@@ -74,7 +66,7 @@ export const PLAN_CONFIG = {
   },
   lifetime: {
     label: "Lifetime",
-    totalCredits: 5000, // 5000/month — pay once, refills monthly forever
+    totalCredits: PLAN_MONTHLY_CREDITS.lifetime,
     monthlyReset: true,
     price: 299,
     stripePriceId: "",
@@ -91,7 +83,7 @@ export const PLAN_CONFIG = {
   },
   teams: {
     label: "Teams",
-    totalCredits: 10000, // 10000/month ≈ 83 hrs live or 650+ mock sessions
+    totalCredits: PLAN_MONTHLY_CREDITS.teams,
     monthlyReset: true,
     price: 49,
     stripePriceId: "",
@@ -108,7 +100,7 @@ export const PLAN_CONFIG = {
   },
 } as const;
 
-export type PlanId = keyof typeof PLAN_CONFIG;
+export type { PlanId };
 
 // ── USER PROFILE TYPE ──
 export type UserProfile = {

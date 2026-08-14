@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebaseConfig";
-import { getUserProfile, type PlanId } from "../lib/credits";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../firebaseConfig";
+import { type PlanId, type UserProfile } from "../lib/credits";
 import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
@@ -260,32 +261,56 @@ function getPlanStyle(plan: typeof ALL_PLANS[0]) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PricingPage() {
-  const [user,     setUser]     = useState<any>(null);
-  const [profile,  setProfile]  = useState<any>(null);
+  const [user,     setUser]     = useState<User | null>(null);
+  const [profile,  setProfile]  = useState<UserProfile | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
   const [annual,   setAnnual]   = useState(false);
   const [showAll,  setShowAll]  = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutReturn, setCheckoutReturn] = useState<"success" | "canceled" | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    let stopProfile = () => undefined;
+    const unsub = onAuthStateChanged(auth, (u) => {
+      stopProfile();
       setUser(u);
-      if (u) { const p = await getUserProfile(u.uid); setProfile(p); }
+      if (!u) {
+        setProfile(null);
+        return;
+      }
+      stopProfile = onSnapshot(doc(db, "users", u.uid), (snapshot) => {
+        setProfile(snapshot.exists() ? ({ uid: u.uid, ...snapshot.data() } as UserProfile) : null);
+      }, () => setProfile(null));
     });
-    return () => unsub();
+    return () => { unsub(); stopProfile(); };
   }, []);
 
-  const handleCheckout = async (planId: "pro" | "max") => {
-    if (!user) { setShowAuth(true); return; }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") setCheckoutReturn("success");
+    else if (params.get("canceled") === "true") setCheckoutReturn("canceled");
+  }, []);
+
+  const handleCheckout = async (planId: "pro" | "max", checkoutUser: User | null = user) => {
+    if (currentPlan && currentPlan !== "free") {
+      setCheckoutError("You already have an active plan. Contact support@replysis.com to change it without creating a second subscription.");
+      return;
+    }
+    if (!checkoutUser) {
+      setPendingPlan(planId);
+      setShowAuth(true);
+      return;
+    }
     setLoading(planId);
     setCheckoutError(null);
     try {
-      const token = await user.getIdToken();
+      const token = await checkoutUser.getIdToken();
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ plan: planId, annual, uid: user.uid, email: user.email }),
+        body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -297,6 +322,8 @@ export default function PricingPage() {
         setCheckoutError(
           res.status === 429
             ? copyFor("rateLimited").body
+            : res.status === 409
+              ? "You already have an active plan. Contact support@replysis.com to change it without creating a second subscription."
             : "We could not start checkout just now. You have not been charged. Please try again.",
         );
       }
@@ -307,12 +334,35 @@ export default function PricingPage() {
     setLoading(null);
   };
 
+  const openFreeAccount = () => {
+    setPendingPlan(null);
+    setShowAuth(true);
+  };
+
+  const handleAuthSuccess = (signedInUser: User) => {
+    setUser(signedInUser);
+    setShowAuth(false);
+    const planToBuy = pendingPlan;
+    setPendingPlan(null);
+    if (planToBuy) void handleCheckout(planToBuy, signedInUser);
+    else window.location.href = "/real-interview";
+  };
+
+  const clearCheckoutReturn = () => {
+    setCheckoutReturn(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("success");
+    url.searchParams.delete("canceled");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  };
+
   const currentPlan = profile?.plan as PlanId | undefined;
+  const hasPaidPlan = Boolean(currentPlan && currentPlan !== "free");
   const visibleRows = showAll ? ROWS : ROWS.slice(0, 10);
 
   return (
     <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      {showAuth && <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />}
+      {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); }} onSuccess={handleAuthSuccess} />}
       <PageHeader />
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
@@ -379,12 +429,39 @@ export default function PricingPage() {
       </section>
 
       {/* ══ CHECKOUT ERROR BANNER ════════════════════════════════════════════════ */}
+      {/* Return messages are verified against the live profile. A success
+          query by itself never unlocks a paid plan. */}
+      <AnimatePresence>
+        {checkoutReturn && (
+          <motion.div
+            role="status"
+            aria-live="polite"
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className={`fixed top-4 left-1/2 z-[80] -translate-x-1/2 flex items-center gap-3 text-sm font-semibold px-5 py-3 rounded-xl shadow-2xl max-w-lg w-[92vw] border ${
+              checkoutReturn === "canceled"
+                ? "bg-amber-50 text-amber-950 border-amber-200"
+                : "bg-emerald-700 text-white border-emerald-600"
+            }`}>
+            <span className="flex-1">
+              {checkoutReturn === "canceled"
+                ? "Checkout canceled. You were not charged."
+                : currentPlan === "pro" || currentPlan === "max"
+                  ? `Your ${currentPlan === "pro" ? "Pro" : "Max"} plan is active. Your monthly credits are ready.`
+                  : "We’re confirming your checkout and activating your plan. This usually takes only a few seconds."}
+            </span>
+            <button onClick={clearCheckoutReturn} aria-label="Dismiss checkout message" className="opacity-70 hover:opacity-100 transition-opacity ml-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {checkoutError && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
             className="fixed top-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 bg-red-600 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-2xl max-w-md w-[90vw]">
             <span className="flex-1">{checkoutError}</span>
-            <button onClick={() => setCheckoutError(null)} className="text-white/70 hover:text-white transition-colors ml-2">
+            <button onClick={() => setCheckoutError(null)} aria-label="Dismiss checkout error" className="text-white/70 hover:text-white transition-colors ml-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </motion.div>
@@ -463,18 +540,18 @@ export default function PricingPage() {
 
                     {/* CTA */}
                     {plan.id === "free" ? (
-                      <button onClick={() => !user && setShowAuth(true)}
+                      <button onClick={() => !user && openFreeAccount()}
                         className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
                           isCurrent || user ? "bg-gray-100 text-gray-400 cursor-default" : "bg-gray-900 hover:bg-gray-700 text-white"
                         }`}>
-                        {isCurrent ? "Current plan" : user ? "You're on Starter" : plan.cta}
+                        {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
                       </button>
                     ) : (
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
-                        disabled={!!loading || isCurrent}
+                        disabled={!!loading || isCurrent || hasPaidPlan}
                         className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ ...(isCurrent ? { background: "#d1d5db" } : s.btn) }}>
-                        {isCurrent ? "Current plan" : loading === plan.id ? "Redirecting..." : plan.cta}
+                        {isCurrent ? "Current plan" : hasPaidPlan ? "Contact support to change plan" : loading === plan.id ? "Redirecting..." : plan.cta}
                       </button>
                     )}
                     <p className="text-center text-[10px] text-gray-400 mt-1.5">{plan.ctaNote}</p>
@@ -764,7 +841,7 @@ export default function PricingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => user ? window.location.href = "/real-interview" : setShowAuth(true)}
+                onClick={() => user ? window.location.href = "/real-interview" : openFreeAccount()}
                 className="px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-all shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
                 style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.3)" }}>
                 {user ? "Go to dashboard →" : "Start for free"}

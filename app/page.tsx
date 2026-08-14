@@ -8,6 +8,7 @@ import { auth } from "./firebaseConfig";
 import CreditsBadge from "../components/CreditsBadge";
 import AuthModal from "../components/AuthModal";
 import BrandIcon from "../components/BrandIcon";
+import { establishBrowserSession } from "./lib/auth-session";
 
 import HeroSection from "../components/home/HeroSection";
 import DownloadSection from "../components/home/DownloadSection";
@@ -30,12 +31,21 @@ const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/rele
  * would have forced the entire marketing homepage to render on the client and
  * ship empty HTML. Renders nothing.
  */
-function AuthQueryWatcher({ onAuthRequired }: { onAuthRequired: () => void }) {
+type AuthEntryMode = "signin" | "signup";
+
+function safeInternalPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/real-interview";
+}
+
+function AuthQueryWatcher({ onAuthRequest }: { onAuthRequest: (mode: AuthEntryMode, nextPath: string) => void }) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams.get("auth") === "required") onAuthRequired();
-  }, [searchParams, onAuthRequired]);
+    const authRequest = searchParams.get("auth");
+    if (authRequest === "required" || authRequest === "signin" || authRequest === "signup") {
+      onAuthRequest(authRequest === "signup" ? "signup" : "signin", safeInternalPath(searchParams.get("next")));
+    }
+  }, [searchParams, onAuthRequest]);
 
   return null;
 }
@@ -45,7 +55,12 @@ export default function Home() {
   const [user, setUser]               = useState<any>(null);
   const [showMenu, setShowMenu]       = useState(false);   // profile dropdown
   const [showMobile, setShowMobile]   = useState(false);   // mobile nav drawer
-  const [authModal, setAuthModal]     = useState<{ open: boolean; mode: "signin" | "signup" }>({ open: false, mode: "signin" });
+  const [authModal, setAuthModal]     = useState<{
+    open: boolean;
+    mode: AuthEntryMode;
+    nextPath: string | null;
+    fromQuery: boolean;
+  }>({ open: false, mode: "signin", nextPath: null, fromQuery: false });
   const [mounted, setMounted]         = useState(false);
   const [scrolled, setScrolled]       = useState(false);
   const [detectedOS, setDetectedOS]   = useState<"win" | "mac" | "other">("other");
@@ -67,13 +82,19 @@ export default function Home() {
   useMotionValueEvent(scrollY, "change", (v) => setScrolled(v > 24));
   useEffect(() => { const u = onAuthStateChanged(auth, setUser); return () => u(); }, []);
 
-  const openRequiredAuth = useCallback(() => {
-    setAuthModal((current) =>
-      current.open && current.mode === "signin"
-        ? current
-        : { open: true, mode: "signin" }
-    );
-  }, []);
+  const openAuthFromQuery = useCallback((mode: AuthEntryMode, nextPath: string) => {
+    if (user) {
+      void establishBrowserSession(user)
+        .then(() => router.replace(nextPath))
+        .catch(async () => {
+          await signOut(auth).catch(() => undefined);
+          setUser(null);
+          setAuthModal({ open: true, mode, nextPath, fromQuery: true });
+        });
+      return;
+    }
+    setAuthModal({ open: true, mode, nextPath, fromQuery: true });
+  }, [router, user]);
 
   // The ?auth=required redirect is handled by <AuthQueryWatcher/> below, which
   // keeps the query-string read inside its own Suspense boundary.
@@ -104,10 +125,26 @@ export default function Home() {
     }
   }, []);
 
+  const openAuth = (mode: AuthEntryMode, nextPath = "/real-interview") => {
+    setAuthModal({ open: true, mode, nextPath: safeInternalPath(nextPath), fromQuery: false });
+  };
+
+  const closeAuth = () => {
+    const shouldCleanQuery = authModal.fromQuery;
+    setAuthModal((current) => ({ ...current, open: false, fromQuery: false }));
+    if (shouldCleanQuery) router.replace("/", { scroll: false });
+  };
+
+  const completeAuth = () => {
+    const destination = authModal.nextPath ?? "/real-interview";
+    setAuthModal((current) => ({ ...current, open: false, fromQuery: false }));
+    router.push(destination);
+  };
+
   const go = (path: string) => {
     // Only pricing is public  -  everything else requires sign-in
     if (!user && path !== "pricing") {
-      setAuthModal({ open: true, mode: "signin" }); return;
+      openAuth("signin", `/${path}`); return;
     }
     router.push("/" + path);
   };
@@ -141,7 +178,7 @@ export default function Home() {
     <main className="marketing bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       <Suspense fallback={null}>
-        <AuthQueryWatcher onAuthRequired={openRequiredAuth} />
+        <AuthQueryWatcher onAuthRequest={openAuthFromQuery} />
       </Suspense>
 
       {/* Premium film-grain texture over the whole page */}
@@ -265,13 +302,13 @@ export default function Home() {
             {!user ? (
               <>
                 {/* Log in  -  clearly outlined so it reads as "secondary" */}
-                <button onClick={() => setAuthModal({ open: true, mode: "signin" })}
+                <button onClick={() => openAuth("signin")}
                   className="px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
                   Log in
                 </button>
 
                 {/* Get started  -  unmissable primary CTA */}
-                <button onClick={() => setAuthModal({ open: true, mode: "signup" })}
+                <button onClick={() => openAuth("signup")}
                   className="group flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap relative overflow-hidden"
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.38), 0 1px 3px rgba(31,138,62,0.20)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
@@ -422,11 +459,11 @@ export default function Home() {
             {/* Auth row */}
             {!user && (
               <div className="px-4 pb-4 border-t border-gray-100 pt-3 flex gap-2">
-                <button onClick={() => { setAuthModal({ open: true, mode: "signin" }); setShowMobile(false); }}
+                <button onClick={() => { openAuth("signin"); setShowMobile(false); }}
                   className="flex-1 py-2.5 text-[13px] font-semibold text-gray-700 border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 rounded-xl transition-all">
                   Log in
                 </button>
-                <button onClick={() => { setAuthModal({ open: true, mode: "signup" }); setShowMobile(false); }}
+                <button onClick={() => { openAuth("signup"); setShowMobile(false); }}
                   className="flex-1 py-2.5 text-[13px] font-bold text-white rounded-xl transition-all"
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                   Get started free
@@ -453,8 +490,8 @@ export default function Home() {
       <AuthModal
         open={authModal.open}
         initialMode={authModal.mode}
-        onClose={() => setAuthModal(v => ({ ...v, open: false }))}
-        onSuccess={() => setAuthModal(v => ({ ...v, open: false }))}
+        onClose={closeAuth}
+        onSuccess={completeAuth}
       />
     </main>
   );

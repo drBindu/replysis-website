@@ -1,39 +1,63 @@
 /**
  * Public product facts used across pricing, trust, and in-product usage UI.
  *
- * Keep marketing copy derived from this file. The enforcement values live in
- * app/lib/credits.ts and the server credit routes; changing a plan requires
- * updating both enforcement and these customer-facing facts in the same PR.
+ * This file is safe to import from client and server code. Plan caps and credit
+ * costs live here so enforcement, account UI, pricing, and support copy cannot
+ * silently drift apart.
  */
+export const PLAN_MONTHLY_CREDITS = {
+  free: 100,
+  pro: 2_000,
+  max: 5_000,
+  // Retired plans remain resolvable for existing accounts and renewals.
+  lifetime: 5_000,
+  teams: 10_000,
+} as const;
+
+export type PlanId = keyof typeof PLAN_MONTHLY_CREDITS;
+export type ActivePlanId = "free" | "pro" | "max";
+
+export const CREDIT_ACTION_COSTS = {
+  live_transcription_start: 1,
+  resume_analysis: 10,
+  resume_tailor: 20,
+  mock_interview_session: 15,
+  mock_feedback: 5,
+  mock_script: 5,
+  realtime_per_minute: 2,
+  question_generation: 5,
+  verify_resume: 0,
+} as const;
+
 export const PUBLIC_PLAN_CAPACITY = {
   free: {
     label: "Starter",
-    credits: 100,
+    credits: PLAN_MONTHLY_CREDITS.free,
     summary: "100 credits each month",
     example: "Enough to explore live answers, mock practice, and resume tools.",
   },
   pro: {
     label: "Pro",
-    credits: 2_000,
+    credits: PLAN_MONTHLY_CREDITS.pro,
     summary: "2,000 credits each month",
     example: "Up to 100 guided mock sessions when used only for mock practice.",
   },
   max: {
     label: "Max",
-    credits: 5_000,
+    credits: PLAN_MONTHLY_CREDITS.max,
     summary: "5,000 credits each month",
     example: "2.5x Pro capacity, or up to 250 guided mock sessions.",
   },
 } as const;
 
 export const PUBLIC_CREDIT_COSTS = [
-  { action: "Start live transcription", cost: 1 },
-  { action: "Generate a live answer", cost: 2 },
-  { action: "Start a mock session", cost: 15 },
-  { action: "Generate mock feedback", cost: 5 },
-  { action: "Generate a question set", cost: 5 },
-  { action: "Analyze a resume", cost: 10 },
-  { action: "Tailor a resume", cost: 20 },
+  { action: "Start live transcription", cost: CREDIT_ACTION_COSTS.live_transcription_start },
+  { action: "Generate a live answer", cost: CREDIT_ACTION_COSTS.realtime_per_minute },
+  { action: "Start a mock session", cost: CREDIT_ACTION_COSTS.mock_interview_session },
+  { action: "Generate mock feedback", cost: CREDIT_ACTION_COSTS.mock_feedback },
+  { action: "Generate a question set", cost: CREDIT_ACTION_COSTS.question_generation },
+  { action: "Analyze a resume", cost: CREDIT_ACTION_COSTS.resume_analysis },
+  { action: "Tailor a resume", cost: CREDIT_ACTION_COSTS.resume_tailor },
 ] as const;
 
 export const TRUST_FACTS = {

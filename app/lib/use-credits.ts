@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
-import { CREDIT_COSTS, PLAN_CONFIG, type CreditAction, type PlanId } from "./credits";
+import { CREDIT_COSTS, type CreditAction, type PlanId } from "./credits";
 
 export function useCredits() {
   const [uid, setUid] = useState<string | null>(null);
@@ -58,7 +58,6 @@ export function useCredits() {
   // If false, opens paywall modal
   const canAfford = useCallback((action: CreditAction): boolean => {
     const cost = CREDIT_COSTS[action];
-    const planConfig = PLAN_CONFIG[plan];
 
     // No longer used (sentinel removed — all plans now have finite credit caps)
 
@@ -69,7 +68,7 @@ export function useCredits() {
       return false;
     }
     return true;
-  }, [credits, plan]);
+  }, [credits]);
 
   // Server-side deduction  -  call your API route which deducts in Firestore
   const deductOnServer = useCallback(async (action: CreditAction): Promise<boolean> => {

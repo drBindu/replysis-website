@@ -16,6 +16,7 @@ import { NextResponse }  from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
+import { PLAN_MONTHLY_CREDITS } from "../../../../data/productFacts";
 
 const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY    || "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -47,12 +48,12 @@ const db = getApps().length ? getFirestore() : null;
 // Must match PLAN_MONTHLY_CREDITS in app/api/stt/tokens/route.ts and
 // PLAN_CONFIG in app/lib/credits.ts.
 const PLAN_CREDITS: Record<string, number> = {
-  pro:      2000,  // 2000/month ≈ 16 hrs live
-  max:      5000,  // 5000/month ≈ 41 hrs live
+  pro:      PLAN_MONTHLY_CREDITS.pro,
+  max:      PLAN_MONTHLY_CREDITS.max,
   // Retired plans, no longer sold. Kept so a renewal on an existing
   // subscription still refills at the cap that customer signed up for.
-  lifetime: 5000,
-  teams:    10000,
+  lifetime: PLAN_MONTHLY_CREDITS.lifetime,
+  teams:    PLAN_MONTHLY_CREDITS.teams,
 };
 
 // ── Stripe signature verification ───────────────────────────────
@@ -265,7 +266,7 @@ export async function POST(req: Request) {
         console.log(`⚠️ CANCELED: ${uid}`);
         await applyUserUpdate(uid, eventCreated, {
           plan:                 "free",
-          credits:              100,
+          credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
         });
@@ -290,9 +291,13 @@ export async function POST(req: Request) {
         if (uid && plan && ["pro", "max", "teams"].includes(plan)) { // lifetime is one-time, no renewal
           const credits = PLAN_CREDITS[plan] ?? 1000;
           await applyUserUpdate(uid, eventCreated, {
+            plan,
             credits,
             creditsUsed:      0,
             creditsResetDate: getNextResetDate(),
+            stripeCustomerId: sub.customer ?? null,
+            stripeSubscriptionId: subscriptionId,
+            lastPaymentFailedAt: null,
           });
           console.log(`🔄 RENEWED: ${uid} → ${credits} credits`);
         }
@@ -313,7 +318,7 @@ export async function POST(req: Request) {
         console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
         await applyUserUpdate(uid, eventCreated, {
           plan:                 "free",
-          credits:              100,
+          credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
         });

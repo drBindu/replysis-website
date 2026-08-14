@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS } from "../../../../data/productFacts";
 
 export const dynamic = "force-dynamic";
 
@@ -302,25 +303,13 @@ async function callLLMWithMessages(
 // ============================================================================
 const CREDIT_COSTS: Record<string, number> = {
   verify_resume:      0,
-  generate_script:    5,
-  generate_feedback:  5,
-  generate_questions: 5,
-  realtime:           2,
-  stt_token:          1,
+  generate_script:    CREDIT_ACTION_COSTS.mock_script,
+  generate_feedback:  CREDIT_ACTION_COSTS.mock_feedback,
+  generate_questions: CREDIT_ACTION_COSTS.question_generation,
+  realtime:           CREDIT_ACTION_COSTS.realtime_per_minute,
+  stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
-
-// ── Monthly credit caps per plan (single source of truth for enforcement) ──
-// Sized so worst-case API cost stays under plan revenue → always profitable.
-// Refills every month via the lazy reset below.
-const PLAN_MONTHLY_CREDITS: Record<string, number> = {
-  free:     100,
-  pro:      2000,
-  max:      5000,
-  // Retired plans, no longer sold. Kept so an existing account on one still
-  // resolves to its original cap instead of silently dropping to free.
-  lifetime: 5000,
-  teams:    10000,
-};
+const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
 
 // Owner/internal accounts are never charged (so testing isn't capped).
 const UNLIMITED_EMAILS = new Set(
@@ -340,6 +329,7 @@ function nextResetISO(): string {
 }
 
 async function checkAndDeductCredits(
+  uid: string,
   email: string,
   mode:  string
 ): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean }> {
@@ -350,28 +340,26 @@ async function checkAndDeductCredits(
   // than silently becoming free for everyone. `unavailable` lets the caller
   // return 503 (temporary outage) instead of 402 (out of credits).
   if (!db)    return { allowed: false, remaining: 0, unavailable: true };
-  if (!email) return { allowed: false, remaining: 0 };
+  if (!uid) return { allowed: false, remaining: 0 };
 
   // Owner/internal accounts: unlimited, just track usage.
   if (UNLIMITED_EMAILS.has(email.toLowerCase())) {
     try {
-      const q = await db.collection("users").where("email", "==", email).limit(1).get();
-      if (!q.empty) await q.docs[0].ref.update({ creditsUsed: FieldValue.increment(cost) });
+      await db.collection("users").doc(uid).update({ creditsUsed: FieldValue.increment(cost) });
     } catch {}
     return { allowed: true, remaining: -1 };
   }
 
   try {
-    const userQuery = await db.collection("users").where("email", "==", email).limit(1).get();
-    // No account document = nothing to charge = no service. (Signed-up users
-    // always have a doc; failing open here let unknown callers ride free.)
-    if (userQuery.empty) return { allowed: false, remaining: 0 };
-    const userRef = userQuery.docs[0].ref;
+    // The token's immutable uid is the billing identity. Email lookups can be
+    // ambiguous after an address change and must never decide who is charged.
+    const userRef = db.collection("users").doc(uid);
 
     // Read + reset + charge inside ONE transaction so parallel requests can
     // never both pass the balance check and double-spend the same credits.
     return await db.runTransaction(async (tx) => {
       const snap     = await tx.get(userRef);
+      if (!snap.exists) return { allowed: false, remaining: 0 };
       const userData = snap.data() ?? {};
       const plan     = userData.plan || "free";
       const cap      = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
@@ -412,16 +400,16 @@ async function checkAndDeductCredits(
   }
 }
 
-async function refundCredits(email: string, mode: string): Promise<void> {
+async function refundCredits(uid: string, email: string, mode: string): Promise<void> {
   const cost = CREDIT_COSTS[mode] ?? 2;
-  if (!db || !email || cost === 0 || UNLIMITED_EMAILS.has(email.toLowerCase())) return;
+  if (!db || !uid || cost === 0 || UNLIMITED_EMAILS.has(email.toLowerCase())) return;
 
   try {
-    const userQuery = await db.collection("users").where("email", "==", email).limit(1).get();
-    if (userQuery.empty) return;
-    const userRef = userQuery.docs[0].ref;
+    const userRef = db.collection("users").doc(uid);
     await db.runTransaction(async (tx) => {
-      const data = (await tx.get(userRef)).data() ?? {};
+      const snapshot = await tx.get(userRef);
+      if (!snapshot.exists) return;
+      const data = snapshot.data() ?? {};
       const plan = typeof data.plan === "string" ? data.plan : "free";
       const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       const credits = typeof data.credits === "number" ? data.credits : cap;
@@ -675,6 +663,7 @@ function verifyResumeDeterministic(resumeRaw: string): {
 // ============================================================================
 export async function GET(req: Request) {
   let tokenCreditCharged = false;
+  let tokenCreditUid = "";
   let tokenCreditEmail = "";
   try {
     // FAIL CLOSED: if Firebase Admin never initialized we cannot verify anyone,
@@ -691,8 +680,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     let verifiedEmail = "Unknown User";
+    let verifiedUid = "";
     try {
       const decoded = await getAuth().verifyIdToken(idToken);
+      verifiedUid = decoded.uid;
       verifiedEmail = decoded.email ?? "Unknown User";
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -710,7 +701,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const creditResult = await checkAndDeductCredits(verifiedEmail, "stt_token");
+    const creditResult = await checkAndDeductCredits(verifiedUid, verifiedEmail, "stt_token");
     if (!creditResult.allowed) {
       return NextResponse.json(
         { error: creditResult.unavailable ? "Credit service unavailable" : "Insufficient credits" },
@@ -718,11 +709,12 @@ export async function GET(req: Request) {
       );
     }
     tokenCreditCharged = true;
+    tokenCreditUid = verifiedUid;
     tokenCreditEmail = verifiedEmail;
 
     const apiKey = process.env.SPEECHMATICS_API_KEY;
     if (!apiKey) {
-      await refundCredits(tokenCreditEmail, "stt_token");
+      await refundCredits(tokenCreditUid, tokenCreditEmail, "stt_token");
       tokenCreditCharged = false;
       return NextResponse.json({ error: "Key missing" }, { status: 500 });
     }
@@ -732,7 +724,7 @@ export async function GET(req: Request) {
       body:    JSON.stringify({ ttl: 120 }),   // 120s gives more headroom before expiry
     });
     if (!response.ok) {
-      await refundCredits(tokenCreditEmail, "stt_token");
+      await refundCredits(tokenCreditUid, tokenCreditEmail, "stt_token");
       tokenCreditCharged = false;
 
       // Status only. The upstream body can echo the request (including the
@@ -757,7 +749,7 @@ export async function GET(req: Request) {
     await logUsageAndIncrement(verifiedEmail, "Speechmatics", { action: "Token Requested" });
     return NextResponse.json({ token: data.key_value });
   } catch (error: any) {
-    if (tokenCreditCharged) await refundCredits(tokenCreditEmail, "stt_token");
+    if (tokenCreditCharged) await refundCredits(tokenCreditUid, tokenCreditEmail, "stt_token");
     const ref = correlationId();
     console.error(`[stt GET] unexpected failure ref=${ref} type=${error?.name ?? "Error"}`);
     return NextResponse.json(
@@ -772,6 +764,7 @@ export async function GET(req: Request) {
 // ============================================================================
 export async function POST(req: Request) {
   let creditCharged = false;
+  let chargedUid = "";
   let chargedEmail = "";
   let chargedMode = "";
   try {
@@ -788,8 +781,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     let verifiedEmail: string | undefined;
+    let verifiedUid = "";
     try {
       const decoded = await getAuth().verifyIdToken(idToken);
+      verifiedUid = decoded.uid;
       verifiedEmail = decoded.email ?? undefined;
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -813,13 +808,13 @@ export async function POST(req: Request) {
     }
     const {
       transcript, resume, jd,
-      userEmail: bodyEmail, duration,
+      duration,
       mode, question, answer,
       model, messages, context,
     } = body;
 
     // Always use the server-verified email, never trust the body
-    const userEmail = verifiedEmail ?? bodyEmail ?? "";
+    const userEmail = verifiedEmail ?? "";
     if (typeof mode !== "string" || !VALID_MODES.has(mode)) {
       return NextResponse.json({ error: "Unsupported request mode." }, { status: 400 });
     }
@@ -836,9 +831,9 @@ export async function POST(req: Request) {
 
     if (db && userEmail) {
       try {
-        const userQuery = await db.collection("users").where("email", "==", userEmail).limit(1).get();
-        if (!userQuery.empty) {
-          const plan = userQuery.docs[0].data().plan || "free";
+        const userSnapshot = await db.collection("users").doc(verifiedUid).get();
+        if (userSnapshot.exists) {
+          const plan = userSnapshot.data()?.plan || "free";
           if (plan === "free" && !FREE_MODELS.includes(selectedModel)) {
             console.warn(`[model-guard] free user "${userEmail}" tried "${selectedModel}" → clamped to llama`);
             selectedModel = "llama-3.1-8b-instant";
@@ -866,7 +861,7 @@ export async function POST(req: Request) {
     }
 
     // ── CREDIT CHECK ──
-    const creditResult = await checkAndDeductCredits(userEmail || "", mode || "realtime");
+    const creditResult = await checkAndDeductCredits(verifiedUid, userEmail, mode || "realtime");
     if (!creditResult.allowed) {
       // Store outage ≠ out of credits: surface a retryable 503 instead of
       // telling a paying user to upgrade.
@@ -884,6 +879,7 @@ export async function POST(req: Request) {
     }
 
     creditCharged = (CREDIT_COSTS[mode] ?? 2) > 0;
+    chargedUid = verifiedUid;
     chargedEmail = userEmail;
     chargedMode = mode;
     const refundAndRespond = async (payload: Record<string, unknown>, status = 503) => {
@@ -892,7 +888,7 @@ export async function POST(req: Request) {
       // promising a refund it cannot see.
       let creditsRefunded = false;
       if (creditCharged) {
-        await refundCredits(chargedEmail, chargedMode);
+        await refundCredits(chargedUid, chargedEmail, chargedMode);
         creditCharged = false;
         creditsRefunded = true;
       }
@@ -1075,7 +1071,7 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("API Error", error);
-    if (creditCharged) await refundCredits(chargedEmail, chargedMode);
+    if (creditCharged) await refundCredits(chargedUid, chargedEmail, chargedMode);
     return NextResponse.json({ error: "Request could not be completed. Please try again." }, { status: 503 });
   }
 }

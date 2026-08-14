@@ -15,6 +15,7 @@ import { auth, db } from "../firebaseConfig";
 import AuthModal from "../../components/AuthModal";
 import BrandIcon from "../../components/BrandIcon";
 import SetupForm from "./_components/SetupForm";
+import { PLAN_MONTHLY_CREDITS } from "../../data/productFacts";
 
 export type InterviewConfig = {
   resume:         string;
@@ -49,23 +50,15 @@ function CreditsDisplay({
   credits: number; plan: string;
   loading: boolean; onUpgrade: () => void;
 }) {
-  const isPro   = ["pro", "max", "lifetime", "teams"].includes(plan);
-  const isLow   = !isPro && credits <= 10;
-  const isEmpty = !isPro && credits <= 0;
+  const cap = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
+  const isPaid = plan !== "free";
+  const isLow = credits <= Math.max(10, Math.round(cap * 0.05));
+  const isEmpty = credits <= 0;
+  const planLabel = ({ free: "Starter", pro: "Pro", max: "Max", lifetime: "Lifetime", teams: "Teams" } as Record<string, string>)[plan] ?? "Starter";
 
   if (loading) return (
     <div className="h-7 w-28 rounded-lg animate-pulse"
       style={{ background: "#e4e8f2", border: "1px solid #d4dae6" }} />
-  );
-
-  if (isPro) return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-      style={{ border: "1px solid rgba(251,191,36,0.35)", background: "rgba(251,191,36,0.09)" }}>
-      <Sparkles size={11} className="text-zinc-800" />
-      <span className="text-[11px] font-black text-zinc-900 uppercase tracking-[0.15em]">
-        Pro · Unlimited
-      </span>
-    </div>
   );
 
   return (
@@ -75,10 +68,12 @@ function CreditsDisplay({
           border: isEmpty ? "1px solid rgba(239,68,68,0.3)" : isLow ? "1px solid rgba(33,146,74,0.3)" : "1px solid #d4dae6",
           background: isEmpty ? "rgba(239,68,68,0.07)" : isLow ? "rgba(33,146,74,0.07)" : "#edf0f6",
         }}>
-        <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />
+        {isPaid
+          ? <Sparkles size={10} style={{ color: isEmpty ? "#ef4444" : "#1C7A3E" }} />
+          : <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />}
         <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
-          {credits.toLocaleString()}
-          <span className="font-normal text-[10px] ml-1 opacity-60">credits</span>
+          {planLabel} · {credits.toLocaleString()}
+          <span className="font-normal text-[10px] ml-1 opacity-60">credits left</span>
         </span>
         {isLow && (
           <div className="flex items-center gap-1">
@@ -89,7 +84,7 @@ function CreditsDisplay({
           </div>
         )}
       </div>
-      {(isLow || isEmpty) && (
+      {(isLow || isEmpty) && plan !== "max" && (
         <button onClick={onUpgrade}
           className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white transition-all shadow-sm"
           style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>

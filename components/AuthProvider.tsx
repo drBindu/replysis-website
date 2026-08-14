@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { onIdTokenChanged, User } from "firebase/auth";
 import { auth } from "../app/firebaseConfig";
+import { establishBrowserSession } from "../app/lib/auth-session";
 import { useRouter, usePathname } from "next/navigation";
 
 interface AuthContextType {
@@ -34,14 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
 
       if (firebaseUser) {
-        const token = await firebaseUser.getIdToken();
-        const response = await fetch("/api/auth/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ idToken: token }),
-        });
-        if (!response.ok) {
+        try {
+          await establishBrowserSession(firebaseUser);
+        } catch {
           console.error("Unable to establish the secure browser session.");
         }
       } else {
