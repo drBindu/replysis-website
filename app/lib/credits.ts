@@ -110,6 +110,7 @@ export type UserProfile = {
   plan: PlanId;
   credits: number;
   creditsUsed: number;
+  purchasedCredits?: number;
   creditsResetDate: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
@@ -153,6 +154,7 @@ export async function initializeUserCredits(uid: string, email: string, displayN
       plan: "free",
       credits: PLAN_CONFIG.free.totalCredits,
       creditsUsed: 0,
+      purchasedCredits: 0,
       creditsResetDate: getNextResetDate(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
@@ -196,13 +198,16 @@ export async function deductCredits(uid: string, action: CreditAction): Promise<
       const planKey = (data.plan as PlanId) in PLAN_CONFIG ? (data.plan as PlanId) : "free";
       const plan    = PLAN_CONFIG[planKey];
       let   credits = (data.credits as number) || 0;
+      let   purchasedCredits = Math.max(0, Number(data.purchasedCredits ?? 0));
+      let   used = Math.max(0, Number(data.creditsUsed ?? 0));
 
       // Lazy monthly reset: once the reset date passes, refill to the plan
       // cap before charging. Without this a capped user who hit 0 is stuck.
       const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
       let didReset = false;
       if (resetAt && Date.now() >= resetAt) {
-        credits  = plan.totalCredits;
+        credits  = plan.totalCredits + purchasedCredits;
+        used = 0;
         didReset = true;
       }
 
@@ -212,16 +217,20 @@ export async function deductCredits(uid: string, action: CreditAction): Promise<
         return { success: false, remaining: credits };
       }
 
+      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - plan.totalCredits));
+      purchasedCredits = Math.max(0, purchasedCredits - purchasedSpend);
       if (didReset) {
         transaction.update(ref, {
           credits:          credits - cost,
           creditsUsed:      cost,
+          purchasedCredits,
           creditsResetDate: getNextResetDate(),
         });
       } else {
         transaction.update(ref, {
           credits:     increment(-cost),
           creditsUsed: increment(cost),
+          purchasedCredits,
         });
       }
 

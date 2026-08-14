@@ -64,6 +64,7 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       plan: "free",
       credits: PLAN_MONTHLY_CREDITS.free,
       creditsUsed: 0,
+      purchasedCredits: 0,
       creditsResetDate: nextResetDate(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,

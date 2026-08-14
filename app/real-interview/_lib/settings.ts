@@ -6,13 +6,27 @@ export type AppSettings = {
   maxDelay:       number;
   operatingPoint: "enhanced" | "standard";
   temperature:    number;
+  answerStyle:    AnswerStyle;
+  customInstructions: string;
 };
+
+export type AnswerStyle = "concise" | "balanced" | "detailed" | "star" | "executive";
+
+export const ANSWER_STYLES: Array<{ id: AnswerStyle; label: string; description: string }> = [
+  { id: "concise", label: "Concise", description: "Direct answer in 2–3 points" },
+  { id: "balanced", label: "Balanced", description: "Natural detail without over-answering" },
+  { id: "detailed", label: "Detailed", description: "More reasoning, examples, and context" },
+  { id: "star", label: "STAR", description: "Situation, task, action, and result" },
+  { id: "executive", label: "Executive", description: "Decision, impact, and trade-off first" },
+];
 
 export const DEFAULT_SETTINGS: AppSettings = {
   model:          "llama-3.1-8b-instant",
   maxDelay:       0.7,
   operatingPoint: "enhanced",
   temperature:    0.3,
+  answerStyle:    "balanced",
+  customInstructions: "",
 };
 
 export const MODELS = [

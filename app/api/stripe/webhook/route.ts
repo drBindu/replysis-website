@@ -206,8 +206,12 @@ async function applyUserUpdate(uid: string, eventCreated: number, updates: Recor
     const lastEventCreated = Number(current.data()?.stripeLastEventCreated ?? 0);
     if (lastEventCreated > eventCreated) return;
 
+    const nextUpdates = { ...updates };
+    if (typeof updates.credits === "number") {
+      nextUpdates.credits = updates.credits + Math.max(0, Number(current.data()?.purchasedCredits ?? 0));
+    }
     transaction.set(userRef, {
-      ...updates,
+      ...nextUpdates,
       stripeLastEventCreated: eventCreated,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
@@ -227,7 +231,8 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
       : "free";
     const previousCap = PLAN_MONTHLY_CREDITS[previousPlan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
     const nextCap = PLAN_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
-    const currentCredits = Math.max(0, Number(currentData.credits ?? 0));
+    const purchasedCredits = Math.max(0, Number(currentData.purchasedCredits ?? 0));
+    const currentCredits = Math.max(0, Number(currentData.credits ?? 0) - purchasedCredits);
     const adjustedCredits = plan === previousPlan
       ? Math.min(currentCredits, nextCap)
       : nextCap > previousCap
@@ -236,7 +241,7 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
 
     transaction.set(userRef, {
       plan,
-      credits: adjustedCredits,
+      credits: adjustedCredits + purchasedCredits,
       stripeCustomerId: subscription.customer ?? currentData.stripeCustomerId ?? null,
       stripeSubscriptionId: subscription.id ?? currentData.stripeSubscriptionId ?? null,
       stripeSubscriptionStatus: subscription.status ?? "active",
@@ -308,7 +313,24 @@ export async function POST(req: Request) {
       const customerId   = session.customer;
       const subscriptionId = session.subscription;
 
-      if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
+      if (uid && session.metadata?.purchaseType === "credit_pack") {
+        const purchased = Number(session.metadata?.credits);
+        if (![500, 1500, 5000].includes(purchased)) throw new Error("Invalid credit pack metadata");
+        const userRef = db.collection("users").doc(uid);
+        await db.runTransaction(async transaction => {
+          const current = await transaction.get(userRef);
+          if (!current.exists) throw new Error("Credit purchaser not found");
+          transaction.set(userRef, {
+            credits: FieldValue.increment(purchased),
+            purchasedCredits: FieldValue.increment(purchased),
+            creditPurchasesCount: FieldValue.increment(1),
+            stripeCustomerId: customerId ?? current.data()?.stripeCustomerId ?? null,
+            lastCreditPurchaseAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+        });
+        console.log(`CREDIT PACK: ${uid} +${purchased}`);
+      } else if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
         console.log(`✅ PAYMENT: ${uid} → ${plan} | Customer: ${customerId}`);
         const credits = PLAN_CREDITS[plan] ?? 1000;
         await applyUserUpdate(uid, eventCreated, {

@@ -10,6 +10,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
+import { creditPackById } from "../../../../data/creditPacks";
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -42,6 +43,12 @@ const PRICE_IDS: Record<string, string> = {
   pro_annual:     process.env.STRIPE_PRO_ANNUAL_PRICE     || "price_REPLACE_ME",
   max_monthly:    process.env.STRIPE_MAX_MONTHLY_PRICE    || "price_REPLACE_ME",
   max_annual:     process.env.STRIPE_MAX_ANNUAL_PRICE     || "price_REPLACE_ME",
+};
+
+const CREDIT_PRICE_IDS: Record<string, string> = {
+  "500": process.env.STRIPE_CREDITS_500_PRICE || "price_REPLACE_ME",
+  "1500": process.env.STRIPE_CREDITS_1500_PRICE || "price_REPLACE_ME",
+  "5000": process.env.STRIPE_CREDITS_5000_PRICE || "price_REPLACE_ME",
 };
 
 export async function POST(req: Request) {
@@ -78,7 +85,9 @@ export async function POST(req: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    const { plan, annual, uid } = body;
+    const { plan, annual, uid, creditPack } = body;
+    const selectedPack = creditPackById(creditPack);
+    const isCreditPack = Boolean(selectedPack);
 
     if (!STRIPE_SECRET || STRIPE_SECRET.length < 10) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
@@ -86,7 +95,7 @@ export async function POST(req: Request) {
 
     // Reject unknown plans  -  prevents crafted requests from creating
     // checkout sessions with arbitrary metadata values.
-    if (typeof plan !== "string" || !["pro", "max"].includes(plan)) {
+    if (!isCreditPack && (typeof plan !== "string" || !["pro", "max"].includes(plan))) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
@@ -101,7 +110,7 @@ export async function POST(req: Request) {
     try {
       const profile = await getFirestore().collection("users").doc(verifiedUid).get();
       const activeSubscriptionId = profile.data()?.stripeSubscriptionId;
-      if (typeof activeSubscriptionId === "string" && activeSubscriptionId.length > 0) {
+      if (!isCreditPack && typeof activeSubscriptionId === "string" && activeSubscriptionId.length > 0) {
         return NextResponse.json({ error: "An active subscription already exists" }, { status: 409 });
       }
     } catch (error) {
@@ -112,12 +121,12 @@ export async function POST(req: Request) {
     // Always use server-verified email, not client-supplied value
     const email = verifiedEmail ?? "";
 
-    if (annual !== undefined && typeof annual !== "boolean") {
+    if (!isCreditPack && annual !== undefined && typeof annual !== "boolean") {
       return NextResponse.json({ error: "Invalid billing interval" }, { status: 400 });
     }
     // Pro and Max are both recurring, so every plan resolves to a billing period.
-    const priceKey = `${plan}_${annual ? "annual" : "monthly"}`;
-    const priceId = PRICE_IDS[priceKey];
+    const priceKey = isCreditPack ? `credits_${selectedPack!.id}` : `${plan}_${annual ? "annual" : "monthly"}`;
+    const priceId = isCreditPack ? CREDIT_PRICE_IDS[selectedPack!.id] : PRICE_IDS[priceKey];
 
     if (!priceId || priceId === "price_REPLACE_ME") {
       // Price not configured yet. Don't leak the internal env-key name to the
@@ -141,11 +150,11 @@ export async function POST(req: Request) {
     const params = new URLSearchParams();
     // Pro and Max are both recurring. The one-time payment path went away with
     // the Lifetime plan, which was retired.
-    params.append("mode", "subscription");
+    params.append("mode", isCreditPack ? "payment" : "subscription");
     params.append("payment_method_types[0]", "card");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
-    params.append("success_url", `${origin}/pricing?success=true`);
+    params.append("success_url", `${origin}/pricing?${isCreditPack ? "credits=success" : "success=true"}`);
     params.append("cancel_url", `${origin}/pricing?canceled=true`);
     params.append("customer_email", email || "");
     // Keep Checkout Stripe-hosted for speed and buyer trust, while giving it
@@ -157,17 +166,25 @@ export async function POST(req: Request) {
     params.append("branding_settings[border_style]", "rounded");
     params.append("branding_settings[icon][type]", "url");
     params.append("branding_settings[icon][url]", `${SITE_URL}/icon.png`);
-    params.append("submit_type", "subscribe");
+    params.append("submit_type", isCreditPack ? "pay" : "subscribe");
     params.append(
       "custom_text[submit][message]",
       "Instant access after payment. Manage your plan, payment method, invoices, or cancellation anytime from Account & Billing."
     );
     params.append("metadata[uid]", uid);
-    params.append("metadata[plan]", plan);
-    params.append("metadata[interval]", annual ? "annual" : "monthly");
-    params.append("subscription_data[metadata][uid]", uid);
-    params.append("subscription_data[metadata][plan]", plan);
-    params.append("subscription_data[metadata][interval]", annual ? "annual" : "monthly");
+    if (isCreditPack) {
+      params.append("metadata[purchaseType]", "credit_pack");
+      params.append("metadata[credits]", String(selectedPack!.credits));
+      params.append("metadata[pack]", selectedPack!.id);
+      params.append("payment_intent_data[metadata][uid]", uid);
+      params.append("payment_intent_data[metadata][credits]", String(selectedPack!.credits));
+    } else {
+      params.append("metadata[plan]", plan);
+      params.append("metadata[interval]", annual ? "annual" : "monthly");
+      params.append("subscription_data[metadata][uid]", uid);
+      params.append("subscription_data[metadata][plan]", plan);
+      params.append("subscription_data[metadata][interval]", annual ? "annual" : "monthly");
+    }
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

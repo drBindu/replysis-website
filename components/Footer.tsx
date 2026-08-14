@@ -11,12 +11,14 @@ const GROUPS = [
       { label: "How it works", href: "/how-it-works" },
       { label: "Pricing", href: "/pricing" },
       { label: "Mock interview", href: "/mock-interview" },
+      { label: "Question bank", href: "/question-bank" },
     ],
   },
   {
     title: "Trust",
     links: [
       { label: "Trust Center", href: "/trust" },
+      { label: "Proof Center", href: "/proof" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
       { label: "Cookie Policy", href: "/cookies" },

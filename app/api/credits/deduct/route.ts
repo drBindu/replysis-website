@@ -135,6 +135,8 @@ export async function POST(req: Request) {
       const plan    = userData.plan || "free";
       const cap     = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       let   credits = typeof userData.credits === "number" ? userData.credits : cap;
+      let   purchasedCredits = Math.max(0, Number(userData.purchasedCredits ?? 0));
+      let   used = Math.max(0, Number(userData.creditsUsed ?? 0));
 
       // Owner/internal account: never charged.
       if (email === OWNER_EMAIL) {
@@ -145,23 +147,27 @@ export async function POST(req: Request) {
       // Lazy monthly reset: refill to the plan cap once the reset date passes.
       const resetAt = userData.creditsResetDate ? Date.parse(userData.creditsResetDate) : 0;
       let didReset = false;
-      if (resetAt && Date.now() >= resetAt) { credits = cap; didReset = true; }
+      if (resetAt && Date.now() >= resetAt) { credits = cap + purchasedCredits; used = 0; didReset = true; }
 
       if (credits < cost) {
         if (didReset) transaction.update(userRef, { credits, creditsUsed: 0, creditsResetDate: nextResetISO() });
         throw Object.assign(new Error("Insufficient credits"), { status: 402, remaining: credits, needed: cost, plan });
       }
 
+      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - cap));
+      purchasedCredits = Math.max(0, purchasedCredits - purchasedSpend);
       if (didReset) {
         transaction.update(userRef, {
           credits:          credits - cost,
           creditsUsed:      cost,
+          purchasedCredits,
           creditsResetDate: nextResetISO(),
         });
       } else {
         transaction.update(userRef, {
           credits:     FieldValue.increment(-cost),
           creditsUsed: FieldValue.increment(cost),
+          purchasedCredits,
         });
       }
 

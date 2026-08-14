@@ -19,7 +19,7 @@ import BrandIcon                     from "../../../components/BrandIcon";
 import { parseAnswer, isMicroAnswer } from "../_lib/formatAnswer";
 import type { AppSettings }           from "../_lib/settings";
 import {
-  MODELS, loadSettings, saveSettings, DEFAULT_SETTINGS,
+  MODELS, ANSWER_STYLES, loadSettings, saveSettings, DEFAULT_SETTINGS,
 } from "../_lib/settings";
 import { clearSessionState } from "../_lib/promptBuilder";
 import { INTERVIEW_MODES, isInterviewMode, type InterviewMode } from "../_lib/interviewMode";
@@ -147,6 +147,28 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                     ))}
                   </div>
                 </div>
+              </section>
+
+              {/* Temperature */}
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare size={12} className="text-zinc-800" />
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Answer Style</p>
+                </div>
+                <div className="space-y-2">
+                  {ANSWER_STYLES.map(style => (
+                    <button key={style.id} onClick={() => set("answerStyle", style.id)}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-left transition-all ${s.answerStyle === style.id ? "border-zinc-300 bg-zinc-100" : "border-slate-200 hover:border-slate-300"}`}>
+                      <p className="text-[12px] font-black text-slate-700">{style.label}</p>
+                      <p className="mt-0.5 text-[10px] font-medium text-slate-400">{style.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <textarea value={s.customInstructions}
+                  onChange={e => set("customInstructions", e.target.value.slice(0, 400))}
+                  rows={3} maxLength={400}
+                  placeholder="Optional style preference, e.g. use Java examples or keep answers under 60 seconds"
+                  className="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[11px] font-medium text-slate-700 outline-none focus:border-zinc-400" />
               </section>
 
               {/* Temperature */}
@@ -381,6 +403,8 @@ export default function InterviewPage() {
     model:          settings.model,
     maxDelay:       settings.maxDelay,
     operatingPoint: settings.operatingPoint,
+    answerStyle:     settings.answerStyle,
+    customInstructions: settings.customInstructions,
   });
 
   const { upsertSession, saving, formatDuration } = useSession(userEmail);

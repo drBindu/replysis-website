@@ -6,6 +6,7 @@ import { auth }                from "../../firebaseConfig";
 import { buildMessages }       from "../_lib/promptBuilder";
 import { cleanAnswer, formatForReading } from "../_lib/formatAnswer";
 import type { InterviewMode } from "../_lib/interviewMode";
+import type { AnswerStyle } from "../_lib/settings";
 import {
   isGreeting, isSmallTalk, isGreetingPlusSmallTalk,
   isNoisyGreeting, isCompanyPitch,
@@ -59,6 +60,8 @@ export function useInterview(config: {
   companyName:     string;
   role:            string;
   interviewMode:   InterviewMode;
+  answerStyle?:     AnswerStyle;
+  customInstructions?: string;
   userEmail:       string;
   model?:          string;
   maxDelay?:       number;
@@ -202,6 +205,8 @@ export function useInterview(config: {
         fullText,
         historyRef.current.slice(0, -1),
         config.interviewMode,
+        config.answerStyle ?? "balanced",
+        config.customInstructions ?? "",
       );
 
       const requestBody = JSON.stringify({
@@ -212,7 +217,7 @@ export function useInterview(config: {
           jd:         cleanJd,
           userEmail:  config.userEmail,
           model:      config.model || "llama-3.1-8b-instant",
-          context:    `Interview mode: ${config.interviewMode} | Role: ${config.role} | Company: ${config.companyName}`,
+          context:    `Interview mode: ${config.interviewMode} | Answer style: ${config.answerStyle ?? "balanced"} | Role: ${config.role} | Company: ${config.companyName}`,
       });
       const sendRequest = async () => {
         const response = await fetch("/api/stt/tokens", {

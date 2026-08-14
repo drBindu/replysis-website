@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Loader2, Zap, BarChart2, Sparkles,
-  ArrowRight, Coins, Flame,
+  ArrowRight, Coins, Flame, BookOpen,
 } from "lucide-react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -208,6 +208,11 @@ export default function RealInterviewPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:text-slate-800 transition-all"
                   style={{ border: `1px solid ${BDR}`, background: CRD }}>
                   <BarChart2 size={12} /> Sessions
+                </button>
+                <button onClick={() => router.push("/question-bank")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:text-slate-800 transition-all"
+                  style={{ border: `1px solid ${BDR}`, background: CRD }}>
+                  <BookOpen size={12} /> Question Bank
                 </button>
               </div>
             </div>

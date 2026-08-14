@@ -365,6 +365,7 @@ async function checkAndDeductCredits(
       const cap      = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       let   credits  = typeof userData.credits === "number" ? userData.credits : cap;
       let   used     = typeof userData.creditsUsed === "number" ? userData.creditsUsed : 0;
+      let   purchasedCredits = Math.max(0, Number(userData.purchasedCredits ?? 0));
 
       const updates: Record<string, unknown> = {};
 
@@ -374,7 +375,7 @@ async function checkAndDeductCredits(
       // it a user who hit 0 would be stuck forever.
       const resetAt = userData.creditsResetDate ? Date.parse(userData.creditsResetDate) : 0;
       if (resetAt && Date.now() >= resetAt) {
-        credits = cap;
+        credits = cap + purchasedCredits;
         used    = 0;
         updates.creditsUsed      = 0;
         updates.creditsResetDate = nextResetISO();
@@ -390,6 +391,8 @@ async function checkAndDeductCredits(
 
       updates.credits     = credits - cost;
       updates.creditsUsed = used + cost;
+      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - cap));
+      updates.purchasedCredits = Math.max(0, purchasedCredits - purchasedSpend);
       tx.update(userRef, updates);
       return { allowed: true, remaining: credits - cost };
     });
@@ -414,9 +417,12 @@ async function refundCredits(uid: string, email: string, mode: string): Promise<
       const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       const credits = typeof data.credits === "number" ? data.credits : cap;
       const used = typeof data.creditsUsed === "number" ? data.creditsUsed : 0;
+      const purchasedCredits = Math.max(0, Number(data.purchasedCredits ?? 0));
+      const purchasedRefund = Math.min(cost, Math.max(0, used - cap));
       tx.update(userRef, {
-        credits: Math.min(cap, Math.max(0, credits) + cost),
+        credits: Math.min(cap + purchasedCredits + purchasedRefund, Math.max(0, credits) + cost),
         creditsUsed: Math.max(0, used - cost),
+        purchasedCredits: purchasedCredits + purchasedRefund,
       });
     });
   } catch (error) {

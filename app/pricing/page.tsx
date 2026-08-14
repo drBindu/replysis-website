@@ -11,6 +11,7 @@ import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
 import { copyFor } from "../../components/feedback/messages";
 import { PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY } from "../../data/productFacts";
+import { CREDIT_PACKS, type CreditPackId } from "../../data/creditPacks";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -265,11 +266,12 @@ export default function PricingPage() {
   const [profile,  setProfile]  = useState<UserProfile | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
+  const [pendingCreditPack, setPendingCreditPack] = useState<CreditPackId | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
   const [annual,   setAnnual]   = useState(false);
   const [showAll,  setShowAll]  = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [checkoutReturn, setCheckoutReturn] = useState<"success" | "canceled" | null>(null);
+  const [checkoutReturn, setCheckoutReturn] = useState<"success" | "credits" | "canceled" | null>(null);
 
   useEffect(() => {
     let stopProfile = () => undefined;
@@ -290,6 +292,7 @@ export default function PricingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") setCheckoutReturn("success");
+    else if (params.get("credits") === "success") setCheckoutReturn("credits");
     else if (params.get("canceled") === "true") setCheckoutReturn("canceled");
   }, []);
 
@@ -334,8 +337,38 @@ export default function PricingPage() {
     setLoading(null);
   };
 
+  const handleCreditCheckout = async (creditPack: CreditPackId, checkoutUser: User | null = user) => {
+    if (!checkoutUser) {
+      setPendingCreditPack(creditPack);
+      setPendingPlan(null);
+      setShowAuth(true);
+      return;
+    }
+    setLoading(`credits_${creditPack}`);
+    setCheckoutError(null);
+    try {
+      const token = await checkoutUser.getIdToken();
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ creditPack, uid: checkoutUser.uid }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (data.url) window.location.href = data.url;
+      else {
+        console.error("[Replysis] Credit checkout could not start:", response.status);
+        setCheckoutError(response.status === 429 ? copyFor("rateLimited").body : "We could not start checkout. You have not been charged. Please try again.");
+      }
+    } catch (error) {
+      console.error("[Replysis] Credit checkout request failed:", (error as Error)?.name ?? "Error");
+      setCheckoutError(copyFor("offline").body);
+    }
+    setLoading(null);
+  };
+
   const openFreeAccount = () => {
     setPendingPlan(null);
+    setPendingCreditPack(null);
     setShowAuth(true);
   };
 
@@ -343,8 +376,11 @@ export default function PricingPage() {
     setUser(signedInUser);
     setShowAuth(false);
     const planToBuy = pendingPlan;
+    const packToBuy = pendingCreditPack;
     setPendingPlan(null);
-    if (planToBuy) void handleCheckout(planToBuy, signedInUser);
+    setPendingCreditPack(null);
+    if (packToBuy) void handleCreditCheckout(packToBuy, signedInUser);
+    else if (planToBuy) void handleCheckout(planToBuy, signedInUser);
     else window.location.href = "/real-interview";
   };
 
@@ -353,6 +389,7 @@ export default function PricingPage() {
     const url = new URL(window.location.href);
     url.searchParams.delete("success");
     url.searchParams.delete("canceled");
+    url.searchParams.delete("credits");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   };
 
@@ -362,7 +399,7 @@ export default function PricingPage() {
 
   return (
     <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); }} onSuccess={handleAuthSuccess} />}
+      {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); setPendingCreditPack(null); }} onSuccess={handleAuthSuccess} />}
       <PageHeader />
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
@@ -445,6 +482,8 @@ export default function PricingPage() {
             <span className="flex-1">
               {checkoutReturn === "canceled"
                 ? "Checkout canceled. You were not charged."
+                : checkoutReturn === "credits"
+                  ? "Payment received. Your one-time credits are being added to your balance now."
                 : currentPlan === "pro" || currentPlan === "max"
                   ? `Your ${currentPlan === "pro" ? "Pro" : "Max"} plan is active. Your monthly credits are ready.`
                   : "We’re confirming your checkout and activating your plan. This usually takes only a few seconds."}
@@ -618,6 +657,26 @@ export default function PricingPage() {
                 <div key={item.action} className="rounded-xl bg-[#f5f8f5] px-3.5 py-3">
                   <p className="text-[11px] font-semibold text-gray-600">{item.action}</p>
                   <p className="mt-1 text-sm font-black text-gray-900">{item.cost} {item.cost === 1 ? "credit" : "credits"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[26px] border border-slate-200 bg-[#111b14] p-6 text-white shadow-[0_18px_55px_rgba(13,28,18,0.16)]">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">Optional one-time top-ups</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight">Need extra capacity without changing plans?</h3>
+                <p className="mt-2 max-w-2xl text-xs font-medium leading-relaxed text-white/60">Purchased credits are added to your current balance, survive monthly plan refreshes, and are used after your monthly credits. No subscription is created.</p>
+              </div>
+              <Link href="/proof" className="text-xs font-black text-emerald-300 hover:text-emerald-200">See compatibility proof →</Link>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {CREDIT_PACKS.map(pack => (
+                <div key={pack.id} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">{pack.label}</p><p className="mt-2 text-2xl font-black">{pack.credits.toLocaleString()} credits</p></div><p className="text-lg font-black">${pack.price}</p></div>
+                  <p className="mt-2 text-[11px] font-semibold text-white/45">One payment · added after Stripe confirms payment</p>
+                  <button onClick={() => handleCreditCheckout(pack.id)} disabled={Boolean(loading)} className="mt-4 w-full rounded-xl bg-white py-2.5 text-xs font-black text-[#142018] transition hover:bg-emerald-50 disabled:opacity-50">{loading === `credits_${pack.id}` ? "Redirecting…" : "Buy one-time credits"}</button>
                 </div>
               ))}
             </div>
