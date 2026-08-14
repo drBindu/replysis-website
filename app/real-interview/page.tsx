@@ -16,12 +16,14 @@ import AuthModal from "../../components/AuthModal";
 import BrandIcon from "../../components/BrandIcon";
 import SetupForm from "./_components/SetupForm";
 import { PLAN_MONTHLY_CREDITS } from "../../data/productFacts";
+import type { InterviewMode } from "./_lib/interviewMode";
 
 export type InterviewConfig = {
   resume:         string;
   jobDescription: string;
   companyName:    string;
   role:           string;
+  interviewMode:  InterviewMode;
 };
 
 // ─────────────────────────────────────────────

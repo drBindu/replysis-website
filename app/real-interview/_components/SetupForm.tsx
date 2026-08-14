@@ -4,16 +4,18 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   UploadCloud, Search, Loader2,
-  CheckCircle2, AlertCircle, FileText, Zap,
+  CheckCircle2, AlertCircle, FileText, Zap, MessageSquareText, Code2, Network,
 } from "lucide-react";
 import PreflightPanel from "./PreflightPanel";
 import { auth } from "../../firebaseConfig";
+import { INTERVIEW_MODES, type InterviewMode } from "../_lib/interviewMode";
 
 type Config = {
   resume:         string;
   jobDescription: string;
   companyName:    string;
   role:           string;
+  interviewMode:  InterviewMode;
 };
 
 type Props = {
@@ -51,7 +53,9 @@ function cleanText(text: string): string {
 }
 
 export default function SetupForm({ onStart, onDashboard }: Props) {
-  const [cfg, setCfg] = useState<Config>({ resume: "", jobDescription: "", companyName: "", role: "" });
+  const [cfg, setCfg] = useState<Config>({
+    resume: "", jobDescription: "", companyName: "", role: "", interviewMode: "general",
+  });
   const [tab, setTab] = useState<"paste" | "upload">("paste");
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -128,6 +132,44 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
 
   return (
     <div className="space-y-5">
+
+      {/* Dedicated interview modes keep the AI output predictable and scannable. */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
+          Interview Mode
+        </label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {INTERVIEW_MODES.map((mode, index) => {
+            const Icon = index === 0 ? MessageSquareText : index === 1 ? Code2 : Network;
+            const active = cfg.interviewMode === mode.id;
+            return (
+              <button
+                type="button"
+                key={mode.id}
+                onClick={() => setCfg(current => ({ ...current, interviewMode: mode.id }))}
+                className={`rounded-2xl border p-4 text-left transition-all ${
+                  active
+                    ? "border-zinc-400 bg-zinc-100 shadow-sm ring-2 ring-zinc-200"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                }`}
+                aria-pressed={active}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${active ? "bg-zinc-900 text-white" : "bg-slate-100 text-slate-500"}`}>
+                    <Icon size={16} />
+                  </span>
+                  {active && <CheckCircle2 size={16} className="text-zinc-800" />}
+                </div>
+                <p className="text-sm font-black text-slate-800">{mode.shortLabel}</p>
+                <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-500">{mode.description}</p>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] font-semibold text-slate-500">
+          {INTERVIEW_MODES.find(mode => mode.id === cfg.interviewMode)?.output}
+        </p>
+      </div>
 
       {/* Company + Role */}
       <div className="grid grid-cols-2 gap-4">

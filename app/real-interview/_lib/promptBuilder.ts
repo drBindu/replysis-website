@@ -2,6 +2,7 @@
 // Synced with PromptBuilder.cs (Windows native app)  -  enterprise grade
 
 export type Turn = { role: "interviewer" | "candidate"; text: string };
+import type { InterviewMode } from "./interviewMode";
 
 // ═══════════════════════════════════════════════════════════════
 // MODULE-LEVEL SESSION STATE
@@ -728,21 +729,32 @@ PERMANENTLY BANNED
 export function buildMessages(
   resume:          string,
   currentQuestion: string,
-  history:         Turn[]
+  history:         Turn[],
+  interviewMode:   InterviewMode = "general",
 ): Array<{ role: string; content: string }> {
 
   const q         = currentQuestion.trim();
   const type      = detectType(q);
   const drillDown = isDrillDown(q, history);
   const hasResume = resume.trim().length > 20;
-  const reminder  = buildFormatReminder(type, q, drillDown, hasResume);
+  const reminder  = interviewMode === "coding"
+    ? "[FORMAT: CODING MODE — PROBLEM, CLARIFY, APPROACH, CODE, COMPLEXITY, TESTS, EXPLANATION. Complete code; explicit assumptions; no invented requirements.]"
+    : interviewMode === "system-design"
+    ? "[FORMAT: SYSTEM DESIGN MODE — REQUIREMENTS, ESTIMATES, API AND DATA MODEL, COMPONENTS, DATA FLOW, SCALE AND BOTTLENECKS, TRADE-OFFS, RELIABILITY, SAY THIS. Label assumptions.]"
+    : buildFormatReminder(type, q, drillDown, hasResume);
 
   const messages: Array<{ role: string; content: string }> = [];
+
+  const modeBlock = interviewMode === "coding"
+    ? `\n\nDEDICATED CODING INTERVIEW MODE:\n- Treat the transcript as a coding, debugging, data-structure, algorithm, or code-review prompt.\n- Return these clearly labeled sections in this order: PROBLEM, CLARIFY, APPROACH, CODE, COMPLEXITY, TESTS, EXPLANATION.\n- CODE must be complete and executable in the language requested; default to Python only when no language is given.\n- COMPLEXITY must state time and space. TESTS must include normal, edge, and failure cases.\n- EXPLANATION must give concise lines the candidate can naturally say while solving.\n- Never invent requirements that were not spoken. State assumptions explicitly.\n`
+    : interviewMode === "system-design"
+    ? `\n\nDEDICATED SYSTEM DESIGN MODE:\n- Treat the transcript as an architecture or system-design prompt.\n- Return these clearly labeled sections in this order: REQUIREMENTS, ESTIMATES, API AND DATA MODEL, COMPONENTS, DATA FLOW, SCALE AND BOTTLENECKS, TRADE-OFFS, RELIABILITY, SAY THIS.\n- Separate functional from non-functional requirements. Use defensible back-of-envelope estimates and label assumptions.\n- Cover storage, caching, queues, failure handling, observability, security, and the most important trade-off without over-designing.\n- SAY THIS must be a short, natural narration sequence the candidate can use with the interviewer.\n- Never claim a number is known when it is only an estimate.\n`
+    : "";
 
   // 1. System prompt (resume-conditional)
   messages.push({
     role:    "system",
-    content: buildSystemPrompt(resume),
+    content: buildSystemPrompt(resume) + modeBlock,
   });
 
   // 2. Full conversation history = per-session memory

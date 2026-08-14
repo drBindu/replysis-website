@@ -49,6 +49,7 @@ export default function PopupPage() {
     jobDescription: stored.jobDescription ?? params.get("jd")      ?? "",
     companyName:    stored.companyName    ?? params.get("company") ?? "",
     role:           stored.role           ?? params.get("role")    ?? "",
+    interviewMode:  "general" as const,
     userEmail,
   };
 

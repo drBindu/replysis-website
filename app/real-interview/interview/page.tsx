@@ -22,6 +22,7 @@ import {
   MODELS, loadSettings, saveSettings, DEFAULT_SETTINGS,
 } from "../_lib/settings";
 import { clearSessionState } from "../_lib/promptBuilder";
+import { INTERVIEW_MODES, isInterviewMode, type InterviewMode } from "../_lib/interviewMode";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -192,8 +193,8 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
 // ANSWER RENDERER
 // ─────────────────────────────────────────────
 function AnswerRenderer({
-  answer, isGenerating, isRecording,
-}: { answer: string; isGenerating: boolean; isRecording: boolean }) {
+  answer, isGenerating, isRecording, interviewMode,
+}: { answer: string; isGenerating: boolean; isRecording: boolean; interviewMode: InterviewMode }) {
 
   if (isGenerating) return (
     <div className="flex flex-col items-center justify-center h-full gap-6 py-16">
@@ -270,8 +271,9 @@ function AnswerRenderer({
     </div>
   );
 
-  // Short MICRO answer  -  big teleprompter style
-  if (isMicroAnswer(answer)) return (
+  // General mode keeps the teleprompter treatment; technical modes preserve
+  // structured sections even when a response contains no bullets.
+  if (interviewMode === "general" && isMicroAnswer(answer)) return (
     <motion.div key={answer}
       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
       className="flex items-center justify-center min-h-[220px] px-8 py-10">
@@ -311,7 +313,8 @@ function AnswerRenderer({
         ) : (
           <motion.p key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ delay: i * 0.06 }}
-            className="text-slate-500 text-[12px] font-medium leading-relaxed px-2">
+            className={`${/^([A-Z][A-Z &/-]{2,}):?$/.test(line.text) ? "mt-5 rounded-lg border px-3 py-2 text-[11px] font-black uppercase tracking-widest text-zinc-900" : interviewMode === "general" ? "px-2 text-[12px] font-medium leading-relaxed text-slate-500" : "rounded-xl border px-4 py-3 font-mono text-[13px] font-semibold leading-relaxed text-slate-800 whitespace-pre-wrap"}`}
+            style={/^([A-Z][A-Z &/-]{2,}):?$/.test(line.text) ? { background: "rgba(31,138,62,0.08)", borderColor: "rgba(31,138,62,0.2)" } : interviewMode === "general" ? undefined : { background: C.panelBg, borderColor: C.border }}>
             {line.text}
           </motion.p>
         )
@@ -351,9 +354,14 @@ export default function InterviewPage() {
 
   const raw = typeof window !== "undefined"
     ? sessionStorage.getItem("interviewConfig") : null;
-  let config = { resume: "", jobDescription: "", companyName: "", role: "" };
+  let config: { resume: string; jobDescription: string; companyName: string; role: string; interviewMode: InterviewMode } = {
+    resume: "", jobDescription: "", companyName: "", role: "", interviewMode: "general",
+  };
   try {
-    if (raw) config = { ...config, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      config = { ...config, ...parsed, interviewMode: isInterviewMode(parsed?.interviewMode) ? parsed.interviewMode : "general" };
+    }
   } catch {
     // corrupted sessionStorage  -  use safe defaults, redirect effect above will fire
   }
@@ -476,6 +484,7 @@ export default function InterviewPage() {
   const qCount        = history.filter(t => t.role === "interviewer").length;
   const aCount        = history.filter(t => t.role === "candidate").length;
   const activeModel   = MODELS.find(m => m.id === settings.model) || MODELS[0];
+  const activeMode    = INTERVIEW_MODES.find(m => m.id === config.interviewMode) || INTERVIEW_MODES[0];
 
   // State pill config
   const stateConfig = isGenerating
@@ -528,6 +537,11 @@ export default function InterviewPage() {
               />
             )}
             {stateConfig.label}
+          </div>
+
+          <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1.5">
+            <BrainCircuit size={11} className="text-zinc-800" />
+            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-900">{activeMode.shortLabel}</span>
           </div>
 
           {(config.role || config.companyName) && (
@@ -805,6 +819,7 @@ export default function InterviewPage() {
                   answer={answer}
                   isGenerating={isGenerating}
                   isRecording={isRecording}
+                  interviewMode={config.interviewMode}
                 />
               ) : (
                 <div className="space-y-3 py-3">
