@@ -48,6 +48,10 @@ function failedAnswerMessage(creditsRefunded: boolean): string {
     : "We could not generate an answer this time. Press Space to try again.";
 }
 
+function wait(ms: number) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
 export function useInterview(config: {
   resume:          string;
   jobDescription:  string;
@@ -197,13 +201,8 @@ export function useInterview(config: {
         historyRef.current.slice(0, -1)
       );
 
-      const res = await fetch("/api/stt/tokens", {
-        method:  "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify({
+      const requestBody = JSON.stringify({
+          mode:       "realtime",
           messages,
           transcript: fullText,
           resume:     cleanResume,
@@ -211,11 +210,33 @@ export function useInterview(config: {
           userEmail:  config.userEmail,
           model:      config.model || "llama-3.1-8b-instant",
           context:    `Role: ${config.role} | Company: ${config.companyName}`,
-        }),
-        signal: AbortSignal.timeout(35000),
       });
+      const sendRequest = async () => {
+        const response = await fetch("/api/stt/tokens", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: requestBody,
+          signal: AbortSignal.timeout(35000),
+        });
+        const body = await response.json().catch(() => ({} as any));
+        return { response, body };
+      };
 
-      const data = await res.json().catch(() => ({} as any));
+      let { response: res, body: data } = await sendRequest();
+
+      // Retry only when the server confirms no credit was retained, or when
+      // rate limiting happened before charging. Never retry an ambiguous
+      // network failure, because that could duplicate a paid request.
+      const safelyRetryable = res.status === 429 || (res.status >= 500 && data?.creditsRefunded === true);
+      if (safelyRetryable) {
+        const retryAfter = Number(res.headers.get("Retry-After") || "1");
+        setAnswer("Connection hiccup — retrying once…");
+        await wait(Math.min(3000, Math.max(500, retryAfter * 1000)));
+        ({ response: res, body: data } = await sendRequest());
+      }
 
       // Out of credits is the one failure the user can act on.
       if (res.status === 402 || data?.error === "insufficient_credits") {
@@ -256,7 +277,9 @@ export function useInterview(config: {
     } catch (err) {
       // The request never completed, so nothing is known about the charge.
       console.error("[Replysis] Answer generation failed:", (err as Error)?.name ?? "Error");
-      setAnswer(failedAnswerMessage(false));
+      setAnswer(!navigator.onLine
+        ? "Your internet connection dropped. Reconnect, then press Space to try again."
+        : failedAnswerMessage(false));
     } finally {
       // In `finally` on purpose: the failure paths above return early, and a
       // missed reset here leaves the generating guard stuck on, which silently
@@ -280,7 +303,7 @@ export function useInterview(config: {
     partialRef.current    = "";
 
     sttClient.current = new SpeechmaticsClient();
-    sttClient.current.start({
+    await sttClient.current.start({
       authToken,
       maxDelay:       config.maxDelay       ?? 0.3,
       operatingPoint: config.operatingPoint || "enhanced",
@@ -308,6 +331,13 @@ export function useInterview(config: {
       },
     });
   }, [config.language, config.maxDelay, config.operatingPoint]);
+
+  // Always release the microphone, worklet and socket when the interview view
+  // is closed or refreshed.
+  useEffect(() => () => {
+    sttClient.current?.stop();
+    sttClient.current = null;
+  }, []);
 
   // ── STOP MIC ───────────────────────────────────────────────────
   const stopMic = useCallback(() => {

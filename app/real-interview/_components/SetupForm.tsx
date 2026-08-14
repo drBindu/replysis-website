@@ -6,6 +6,8 @@ import {
   UploadCloud, Search, Loader2,
   CheckCircle2, AlertCircle, FileText, Zap,
 } from "lucide-react";
+import PreflightPanel from "./PreflightPanel";
+import { auth } from "../../firebaseConfig";
 
 type Config = {
   resume:         string;
@@ -57,6 +59,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [verifyResult, setVerifyResult] = useState("");
+  const [preflightReady, setPreflightReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const update = (key: keyof Config, val: string) => {
@@ -104,12 +107,17 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
     if (!cfg.resume || cfg.resume.length < 50) return;
     setVerifying(true); setVerifyResult("");
     try {
+      const authToken = (await auth.currentUser?.getIdToken()) ?? "";
       const res = await fetch("/api/stt/tokens", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ mode: "verify_resume", resume: cfg.resume }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error("verify_failed");
       setVerifyResult(data.summary || "Verified.");
       setVerified(true);
     } catch { setVerifyResult("Verification failed. Please try again."); }
@@ -239,15 +247,18 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
         )}
       </div>
 
-      {/* Start button  -  always enabled */}
+      <PreflightPanel onReady={setPreflightReady} />
+
+      {/* Start is available only after the real device and network check. */}
       <motion.button
         whileTap={{ scale: 0.98 }} whileHover={{ scale: 1.01 }}
         onClick={() => onStart(cfg)}
-        className="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all text-white shadow-lg shadow-zinc-800/20 flex items-center justify-center gap-2"
-        style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}
+        disabled={!preflightReady}
+        className="w-full py-4 rounded-2xl font-bold text-base tracking-wide transition-all text-white shadow-lg shadow-zinc-800/20 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
+        style={{ background: preflightReady ? "linear-gradient(135deg, #1C7A3E, #21924A)" : "#64748b" }}
       >
         <Zap size={18} />
-        Start Interview Session
+        {preflightReady ? "Start Interview Session" : "Run setup check to continue"}
         {!hasResume && <span className="text-zinc-300 text-sm font-normal ml-1">(no resume, generic mode)</span>}
       </motion.button>
 
