@@ -9,6 +9,7 @@ import {
   MessageSquare, Building2, Briefcase, CheckCircle2,
 } from "lucide-react";
 import type { Session } from "../_hooks/useSession";
+import SessionReport from "./SessionReport";
 
 // Design tokens  -  matches the rest of the app
 const C = {
@@ -111,6 +112,8 @@ export default function SessionCard({ session, formatDate, formatDuration }: Pro
           >
             <div className="px-5 pb-5 pt-4 space-y-4"
               style={{ borderTop: `1px solid ${C.border}`, background: C.cardBg }}>
+
+              {pairs.length > 0 && <SessionReport turns={turns} />}
 
               {pairs.length === 0 ? (
                 <p className="text-[13px] font-medium text-slate-400 italic py-4 text-center">

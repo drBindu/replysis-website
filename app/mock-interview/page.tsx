@@ -17,6 +17,7 @@ import {
   Coins, ChevronDown, Bolt, Flame, Gauge, LogIn,
 } from "lucide-react";
 import { useToast } from "../../components/feedback/Toast";
+import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -665,6 +666,7 @@ export default function MockInterviewPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [scores,       setScores]       = useState<number[]>([]);
   const [history,      setHistory]      = useState<InterviewTurn[]>([]);
+  const [responseDurations, setResponseDurations] = useState<number[]>([]);
 
   // ── UI State ─────────────────────────────────────────────────
   const [isGenerating, setIsGenerating]  = useState(false);
@@ -695,6 +697,7 @@ export default function MockInterviewPage() {
   const silenceTimerRef    = useRef<number | null>(null);
   const sessionTimerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const submitAnswerRef    = useRef<(ans?: string) => Promise<void>>();
+  const recordingStartedAtRef = useRef<number>(0);
 
   // ── Derived ──────────────────────────────────────────────────
   const activeModel       = AI_MODELS.find(m => m.id === selectedModel) ?? AI_MODELS[0];
@@ -708,6 +711,7 @@ export default function MockInterviewPage() {
   const avgScore          = scores.length > 0
     ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
     : " - ";
+  const sessionReport     = analyzeInterviewTurns(history, responseDurations);
 
   // ── Sync refs ────────────────────────────────────────────────
   useEffect(() => { isRecordingRef.current  = isRecording;  }, [isRecording]);
@@ -861,6 +865,7 @@ export default function MockInterviewPage() {
         if (msg.message === "RecognitionStarted") {
           window.clearTimeout(connectTimeout);
           smStartedRef.current = true; isRecordingRef.current = true; setIsRecording(true);
+          recordingStartedAtRef.current = Date.now();
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
@@ -919,6 +924,11 @@ export default function MockInterviewPage() {
   const submitAnswer = useCallback(async (finalAns?: string) => {
     const ans = (finalAns ?? answerRef.current ?? "").trim();
     if (ans.length < 5 || isAnalyzingRef.current) return;
+    const measuredResponseSecs = recordingStartedAtRef.current
+      ? Math.max(1, Math.round((Date.now() - recordingStartedAtRef.current) / 1000))
+      : 0;
+    recordingStartedAtRef.current = 0;
+    if (measuredResponseSecs > 0) setResponseDurations(previous => [...previous, measuredResponseSecs]);
     stopRecording();
     window.speechSynthesis.cancel();
     isAnalyzingRef.current = true;
@@ -1037,7 +1047,7 @@ export default function MockInterviewPage() {
   const startInterview = () => {
     setPhase("interview"); setIndex(0);
     setAnswer(""); answerRef.current = "";
-    setScores([]); setHistory([]);
+    setScores([]); setHistory([]); setResponseDurations([]);
     setFeedback(null); setShowFeedback(false); setSessionTime(0);
     setTimeout(() => speakQuestion(questions[0] ?? "Tell me about yourself."), 500);
   };
@@ -2037,11 +2047,73 @@ export default function MockInterviewPage() {
                 </div>
               </div>
 
+              {/* Complete delivery and STAR report */}
+              <div style={{ borderRadius: 16, border: `1px solid ${T.border}`, background: T.panel,
+                padding: "22px 24px", marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Award size={16} style={{ color: T.accent }}/>
+                      <h3 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>Complete Interview Report</h3>
+                    </div>
+                    <p style={{ fontSize: 11, color: T.textFaint, marginTop: 5 }}>
+                      Based on your recorded answers in this practice session.
+                    </p>
+                  </div>
+                  <div style={{ borderRadius: 999, padding: "7px 11px", background: T.successBg,
+                    border: `1px solid ${T.success}30`, color: T.success, fontSize: 10, fontWeight: 900,
+                    textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {sessionReport.overallScore}% coaching quality
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}
+                  className="summary-stats">
+                  {[
+                    { label: "STAR Structure", value: `${sessionReport.starScore}%`, sub: "Context to measurable result" },
+                    { label: "Speaking Pace", value: sessionReport.paceWpm ? `${sessionReport.paceWpm} wpm` : "Not measured", sub: sessionReport.paceLabel },
+                    { label: "Filler Phrases", value: String(sessionReport.fillerTotal), sub: sessionReport.fillers[0] ? `Most used: ${sessionReport.fillers[0].phrase}` : "Clean delivery" },
+                  ].map(item => (
+                    <div key={item.label} style={{ borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, padding: 14 }}>
+                      <p style={{ fontSize: 9, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 800 }}>{item.label}</p>
+                      <p style={{ fontSize: 20, fontWeight: 900, color: T.text, marginTop: 5 }}>{item.value}</p>
+                      <p style={{ fontSize: 10, color: T.textFaint, marginTop: 3 }}>{item.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="summary-detail">
+                  <div style={{ borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, padding: 16 }}>
+                    <p style={{ fontSize: 10, color: T.textMid, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>STAR breakdown</p>
+                    {Object.entries(sessionReport.star).map(([label, value]) => (
+                      <div key={label} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMid, fontWeight: 700, textTransform: "capitalize", marginBottom: 5 }}>
+                          <span>{label}</span><span>{value}/25</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 5, background: T.border, overflow: "hidden" }}>
+                          <div style={{ width: `${value * 4}%`, height: "100%", borderRadius: 5, background: T.success }}/>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, padding: 16 }}>
+                    <p style={{ fontSize: 10, color: T.textMid, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Your next practice plan</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {sessionReport.improvementPlan.map((item, itemIndex) => (
+                        <div key={item} style={{ display: "flex", gap: 9, fontSize: 11, lineHeight: 1.55, color: T.textMid, fontWeight: 600 }}>
+                          <span style={{ color: T.success, fontWeight: 900 }}>{itemIndex + 1}.</span><span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Actions */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
                 paddingTop: 20, borderTop: `1px solid ${T.border}` }}>
                 <button
-                  onClick={() => { setPhase("setup"); setQuestions([]); setTaggedQuestions([]); setScores([]); setIndex(0); setSessionTime(0); setHistory([]); }}
+                  onClick={() => { setPhase("setup"); setQuestions([]); setTaggedQuestions([]); setScores([]); setIndex(0); setSessionTime(0); setHistory([]); setResponseDurations([]); }}
                   style={{ display: "flex", alignItems: "center", gap: 7, padding: "12px 22px",
                     borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer",
                     border: `1.5px solid ${T.border}`, background: T.panel, color: T.textMid,
