@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://replysis.com'),
   alternates: { canonical: '/' },
   title: 'Replysis - Master Every Interview',
-  description: 'Replysis listens to your interview in real time and streams tailored answers in under 2 seconds, grounded in your resume. Private by design, invisible on screen-share, and free to start.',
+  description: 'Prepare your resume, practice realistic interviews, and stream resume-grounded answer suggestions in real time. Free to start with clear monthly limits.',
   keywords: ['AI interview assistant', 'interview copilot', 'real-time interview help', 'mock interview AI', 'job interview preparation', 'AI coaching', 'career'],
   authors: [{ name: 'Replysis' }],
   openGraph: {
     title: 'Replysis - Master Every Interview',
-    description: 'Real-time AI interview assistant that streams resume-grounded answers in under 2 seconds. Invisible to screen-share, private by design, free to start.',
+    description: 'AI interview workspace for resume preparation, mock practice, and fast resume-grounded answer suggestions. Free to start.',
     type: 'website',
   },
 }

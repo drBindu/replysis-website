@@ -5,10 +5,10 @@ import { BlurFade } from "./shared";
 
 const STRENGTHS = [
   {
-    metric: "1.8s",
-    unit: "avg response",
+    metric: "<2s",
+    unit: "response target",
     title: "Faster than your next thought",
-    body: "We built on Groq's LPU hardware because speed is not a nice-to-have in a live interview. Your answer appears before the interviewer finishes the question. Not close to real-time. Actually real-time.",
+    body: "Live answer suggestions begin streaming as they are generated. Network quality, question length, and provider load can affect the exact response time.",
     tag: "Groq LPU inference",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.12)",
@@ -25,10 +25,10 @@ const STRENGTHS = [
     border: "rgba(26,102,48,0.18)",
   },
   {
-    metric: "100%",
-    unit: "answers from your resume",
+    metric: "Context",
+    unit: "from your resume",
     title: "Your story. Not a template.",
-    body: "Before your interview starts, we read your entire background. The projects you shipped. The numbers you drove. The roles you held. Every answer we surface comes directly from your real experience, not from a generic script.",
+    body: "Replysis uses the resume, role, and job description you provide to make answer suggestions more specific. Review every suggestion and never claim experience you do not have.",
     tag: "Resume-grounded context",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.10)",
@@ -48,7 +48,7 @@ const STRENGTHS = [
     metric: "8+",
     unit: "platforms supported",
     title: "Works wherever your interview is",
-    body: "Zoom, Google Meet, Teams, Webex, HireVue, Slack, phone screens, in-person with a laptop. If your interview has audio, Replysis is already there. You pick the platform and we show up.",
+    body: "Replysis is designed to work alongside Zoom, Google Meet, Teams, Webex, HireVue, and other audio-based interview workflows. Compatibility can vary by device and permissions.",
     tag: "All major platforms",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.09)",
@@ -56,9 +56,9 @@ const STRENGTHS = [
   },
   {
     metric: "STAR",
-    unit: "format, every answer",
+    unit: "when it fits",
     title: "Answers that interviewers actually want",
-    body: "We do not give you bullet points to read aloud. Every answer is structured, specific, and ready to deliver. Situation, task, action, result. Experienced interviewers know the difference between a coached answer and a confident one. Yours will sound like the latter.",
+    body: "Behavioral suggestions can use situation, task, action, and result structure. Use them as a concise outline, check the facts, and answer naturally in your own words.",
     tag: "Structured answers",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.09)",
@@ -100,7 +100,7 @@ export default function WhyUsSection() {
             animate={headIn ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, delay: 0.14 }}
             className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            We built the fastest, most accurate interview co-pilot that actually knows who you are. Speed, precision, and your own voice, delivered in under two seconds.
+            We built one connected workspace for resume preparation, realistic practice, and fast live guidance grounded in the context you provide.
           </motion.p>
         </div>
 
@@ -150,7 +150,7 @@ export default function WhyUsSection() {
             The goal was simple from day one.
           </p>
           <p className="text-gray-500 text-[15px] max-w-xl mx-auto leading-relaxed">
-            Walk into any interview, for any company, on any platform, and answer every question with the confidence of someone who has done it a hundred times. That is what Replysis gives you.
+            Prepare your story, practice the hard questions, and enter each interview with a clear structure you can adapt in your own words.
           </p>
         </motion.div>
 

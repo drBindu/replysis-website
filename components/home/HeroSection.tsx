@@ -198,20 +198,20 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             <span className="w-8 h-8 rounded-xl bg-[#EEF7EF] flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-[#1C7A3E]" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </span>
-            <div><p className="text-[13px] font-black text-gray-900 leading-tight">1.8s</p><p className="text-[9px] text-gray-400">Answer on screen</p></div>
+            <div><p className="text-[13px] font-black text-gray-900 leading-tight">&lt;2s</p><p className="text-[9px] text-gray-400">Response target</p></div>
           </motion.div>
         </motion.div>
 
-        {/* RIGHT · Stealth */}
+        {/* RIGHT · Capture controls */}
         <motion.div initial={{ opacity: 0, x: 30, rotate: -5 }} animate={{ opacity: 1, x: 0, rotate: -4 }} transition={{ delay: 0.9, duration: 0.8, ease: [0.16,1,0.3,1] }}
           className="absolute right-[3.5%] bottom-[20%] w-[180px]">
           <motion.div animate={{ y: [0, -13, 0] }} transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
             className="rounded-2xl bg-white/85 backdrop-blur-md border border-[#16150F]/[0.07] p-3.5" style={{ boxShadow: "0 20px 44px -18px rgba(22,21,15,0.28)" }}>
             <div className="flex items-center gap-2 mb-1.5">
               <svg className="w-3.5 h-3.5 text-[#1C7A3E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-              <span className="text-[10px] font-black text-gray-800">Stealth Active</span>
+              <span className="text-[10px] font-black text-gray-800">Capture controls</span>
             </div>
-            <p className="text-[9px] text-gray-400 leading-snug">Invisible on screen-share &amp; recordings</p>
+            <p className="text-[9px] text-gray-400 leading-snug">Designed for standard share paths</p>
           </motion.div>
         </motion.div>
       </div>
@@ -239,7 +239,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-800" />
                 </span>
                 <span className="text-[11px] font-semibold text-gray-600 tracking-wide">
-                  Real-Time &nbsp;·&nbsp; Stealth Mode &nbsp;·&nbsp; Sub-2s Response
+                  Real-Time &nbsp;·&nbsp; Desktop Mode &nbsp;·&nbsp; Fast Streaming
                 </span>
               </div>
             </motion.div>
@@ -259,9 +259,9 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             {/* Sub-headline  -  concise */}
             <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.7 }}
               className="text-[1.05rem] text-[#4A4A41] leading-[1.7] mb-6 max-w-[440px]">
-              Listens live, reads your resume, and delivers the{" "}
-              <span className="text-[#1C7A3E] font-semibold">perfect answer in 1.8s</span>
-              {" "}completely undetectable.
+              Transcribes live, uses your resume as context, and streams{" "}
+              <span className="text-[#1C7A3E] font-semibold">fast answer suggestions</span>
+              {" "}to a focused desktop overlay.
             </motion.p>
 
             {/* ── PRIMARY: Download buttons ── */}
@@ -376,7 +376,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                  <span className="text-[11px] text-gray-500">Free forever</span>
+                  <span className="text-[11px] text-gray-500">100 credits monthly</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -384,7 +384,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                  <span className="text-[11px] text-gray-500">Zero audio stored</span>
+                  <span className="text-[11px] text-gray-500">Raw audio not stored</span>
                 </div>
                 <div className="w-px h-3 bg-gray-200" />
                 <button onClick={() => onNav("real-interview")}
@@ -401,9 +401,9 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.42 }}
               className="flex items-center gap-6 mb-6 flex-wrap">
               {[
-                { value: "1.8s",  label: "Response" },
-                { value: "100%",  label: "Private" },
-                { value: "Any",   label: "Platform" },
+                { value: "<2s",   label: "Target" },
+                { value: "Clear", label: "Data use" },
+                { value: "Major", label: "Platforms" },
                 { value: "Live",  label: "On-screen" },
               ].map((s, i) => (
                 <div key={s.value} className="flex items-center gap-5">
@@ -424,7 +424,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Now in early access</span>
               </span>
               <p className="text-[11px] text-gray-400">
-                Built for candidates targeting <span className="text-gray-700 font-semibold">Google, Amazon &amp; Microsoft</span>
+                Built for <span className="text-gray-700 font-semibold">competitive interview loops</span>
               </p>
             </motion.div>
 
@@ -513,14 +513,14 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider"
                         style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                        Replysis · 1.8s
+                        Replysis · streaming
                       </span>
                       <div className="ml-auto flex items-center gap-1 bg-zinc-100 rounded-md px-2 py-0.5 border border-zinc-200">
                         <svg className="w-2.5 h-2.5 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
-                        <span className="text-[9px] text-zinc-900 font-semibold tracking-wide">STEALTH</span>
+                        <span className="text-[9px] text-zinc-900 font-semibold tracking-wide">CAPTURE</span>
                       </div>
                     </div>
                     <p className="px-4 py-3.5 text-sm text-gray-700 leading-relaxed">
@@ -533,13 +533,13 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 {/* Confidence bar */}
                 <div className="px-1 pt-1">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Response Confidence</span>
-                    <span className="text-[10px] font-black" style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>98%</span>
+                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Context status</span>
+                    <span className="text-[10px] font-black" style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>RESUME + ROLE</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <motion.div
                       initial={{ width: "0%" }}
-                      animate={{ width: "98%" }}
+                      animate={{ width: "100%" }}
                       transition={{ delay: 1.2, duration: 1.2, ease: "easeOut" }}
                       className="h-full rounded-full"
                       style={{ background: "linear-gradient(90deg, #1C7A3E, #21924A)" }}
@@ -549,7 +549,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               </div>
             </div>
 
-            {/* Floating badge  -  stealth */}
+            {/* Floating badge  -  capture controls */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1, duration: 0.5, type: "spring" }}
@@ -563,8 +563,8 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 </svg>
               </div>
               <div>
-                <div className="text-[10px] font-black text-gray-800">Stealth Active</div>
-                <div className="text-[9px] text-gray-400">Invisible to interviewer</div>
+                <div className="text-[10px] font-black text-gray-800">Capture controls</div>
+                <div className="text-[9px] text-gray-400">Test before screen sharing</div>
               </div>
             </motion.div>
 
@@ -581,7 +581,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 </svg>
               </div>
               <div>
-                <div className="text-[10px] font-black text-gray-800">1.8s Response</div>
+                <div className="text-[10px] font-black text-gray-800">Fast response target</div>
                 <div className="text-[9px] text-gray-400">Real-time answer</div>
               </div>
             </motion.div>

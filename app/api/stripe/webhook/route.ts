@@ -6,7 +6,9 @@
 // 1. Go to dashboard.stripe.com → Developers → Webhooks
 // 2. Add endpoint: https://yoursite.com/api/stripe/webhook
 // 3. Select events: checkout.session.completed,
-//                   customer.subscription.deleted, invoice.paid
+//                   customer.subscription.deleted,
+//                   customer.subscription.updated,
+//                   invoice.paid, invoice.payment_failed
 // 4. Copy webhook signing secret → add to .env as STRIPE_WEBHOOK_SECRET
 // ═══════════════════════════════════════════════════════════════
 
@@ -109,6 +111,18 @@ function getNextResetDate(): string {
   d.setDate(1);
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+// Stripe API versions from 2025-03-31.basil onward moved an invoice's
+// subscription reference from invoice.subscription to
+// invoice.parent.subscription_details.subscription. Keep the legacy fallback
+// so test events and older pinned webhook versions continue to work too.
+function getInvoiceSubscriptionId(invoice: any): string | null {
+  const subscription = invoice?.parent?.subscription_details?.subscription
+    ?? invoice?.subscription;
+  if (typeof subscription === "string") return subscription;
+  if (subscription && typeof subscription.id === "string") return subscription.id;
+  return null;
 }
 
 const EVENT_COLLECTION = "stripe_webhook_events";
@@ -261,7 +275,7 @@ export async function POST(req: Request) {
     // ── INVOICE PAID  -  monthly credit renewal ────────────────────
     if (event.type === "invoice.paid") {
       const invoice        = event.data.object;
-      const subscriptionId = invoice.subscription;
+      const subscriptionId = getInvoiceSubscriptionId(invoice);
 
       if (subscriptionId) {
         const subRes = await fetch(
@@ -313,7 +327,7 @@ export async function POST(req: Request) {
     // failure timestamp so it's visible (admin/support).
     if (event.type === "invoice.payment_failed" && STRIPE_SECRET) {
       const invoice        = event.data.object;
-      const subscriptionId = invoice.subscription;
+      const subscriptionId = getInvoiceSubscriptionId(invoice);
       if (subscriptionId) {
         try {
           const subRes = await fetch(

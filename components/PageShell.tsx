@@ -64,6 +64,7 @@ export function PageFooter() {
           {[
             { label: "Features",    href: "/features" },
             { label: "Pricing",     href: "/pricing" },
+            { label: "Trust",       href: "/trust" },
             { label: "Privacy",     href: "/privacy" },
             { label: "Terms",       href: "/terms" },
           ].map(l => (

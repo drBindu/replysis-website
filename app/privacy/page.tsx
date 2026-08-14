@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "How Replysis collects, uses, and protects your data.",
 };
 
-const LAST_UPDATED = "May 1, 2026";
+const LAST_UPDATED = "August 13, 2026";
 const CONTACT = "support@replysis.com";
 
 export default function PrivacyPage() {
@@ -38,10 +38,10 @@ export default function PrivacyPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               {[
                 { title: "Account information", body: "Your email address. If you use Google Sign-In, your Google profile name and photo. Managed securely via Firebase Authentication." },
-                { title: "Resume content", body: "Text you paste into the resume builder is processed to generate suggestions. It is not stored permanently. It exists only for the duration of your session." },
-                { title: "Interview audio", body: "Processed entirely on your device. Raw audio is never sent to our servers. Only the text transcript is used, and it's discarded after the response." },
+                { title: "Resume and job content", body: "Drafts may be stored in your browser. When you request AI output, resume and job-description text is sent through Replysis to the selected AI provider. Saved interview sessions can include a short resume snippet." },
+                { title: "Interview audio and transcripts", body: "Live audio streams from your device to our speech-to-text provider. Replysis does not store raw audio on its application servers. Transcripts are processed to generate output and may be stored when you use saved session history." },
                 { title: "Payment information", body: "Handled entirely by Stripe. We never see or store your card number, CVV, or bank details. Only your subscription status reaches our servers." },
-                { title: "Usage data", body: "Basic usage events (e.g. feature used, session count) using a hashed user ID. No personal identifiers in these logs." },
+                { title: "Usage and service data", body: "We record account-linked service metadata such as feature used, request count, transcript character count, duration, timestamps, credit balance, and error diagnostics. Usage logs are not intended to contain transcript text." },
               ].map((c, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-5">
                   <h3 className="font-bold text-gray-900 mb-1.5 text-sm">{c.title}</h3>
@@ -55,10 +55,10 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-black text-gray-900 mb-4">3. What we never do</h2>
             <ul className="space-y-2">
               {[
-                "We do not record or permanently store interview audio.",
-                "We do not store conversation transcripts after a session ends.",
+                "Replysis does not store raw interview audio on its application servers.",
+                "Saved session history can contain interview questions, answers, company, role, duration, and a short resume snippet.",
                 "We do not sell your data to third parties.",
-                "We do not use your data to train language models.",
+                "We do not use your content to train a Replysis-owned model; subprocessors handle content under their own service terms.",
                 "We do not share your resume or interview content with employers.",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
@@ -90,8 +90,10 @@ export default function PrivacyPage() {
               {[
                 { name: "Firebase (Google)", purpose: "Authentication and account management" },
                 { name: "Stripe", purpose: "Payment processing and subscription management" },
-                { name: "Groq", purpose: "LLM inference  -  text only, no audio ever sent" },
-                { name: "Speechmatics", purpose: "Real-time speech-to-text (audio stays on device)" },
+                { name: "Groq", purpose: "Language-model inference for text prompts" },
+                { name: "OpenAI", purpose: "Language-model inference when an OpenAI model is selected" },
+                { name: "Google Gemini", purpose: "Language-model inference when a Gemini model is selected" },
+                { name: "Speechmatics", purpose: "Real-time speech-to-text; live audio streams directly to this provider" },
               ].map((s, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                   <p className="font-bold text-gray-900 text-xs mb-1">{s.name}</p>
@@ -103,17 +105,17 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">6. Data retention</h2>
-            <p className="text-sm">Account data is retained while your account is active. Deleting your account removes all associated data within 30 days. Session transcripts are discarded immediately after the session ends.</p>
+            <p className="text-sm">Account, subscription, credit, and saved-session data is retained while your account is active or as needed for legal, fraud-prevention, and billing obligations. Saved session history remains until it is deleted. We aim to complete verified account-deletion requests within 30 days unless retention is legally required.</p>
           </div>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">7. Your rights</h2>
-            <p className="text-sm mb-3">Depending on where you live, you may have the right to access, correct, or delete your data, restrict processing, or request portability. Email <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a> and we'll respond within 14 days.</p>
+            <p className="text-sm mb-3">Depending on where you live, you may have the right to access, correct, or delete your data, restrict processing, or request portability. Email <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a> and we will respond within the timeframe required by applicable law.</p>
           </div>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">8. Security</h2>
-            <p className="text-sm">All data in transit is encrypted via HTTPS. Passwords are never stored. Authentication is handled by Firebase and Google OAuth. Payment data is handled exclusively by Stripe and never touches our servers.</p>
+            <p className="text-sm">Web traffic uses HTTPS. Authentication credentials are handled by Firebase Authentication and supported identity providers; Replysis does not store plaintext passwords. Card details are collected by Stripe and do not pass through Replysis application servers. We also use server-side authorization checks, request limits, input-size limits, and account-ownership checks. No internet service can promise absolute security.</p>
           </div>
 
           <div>

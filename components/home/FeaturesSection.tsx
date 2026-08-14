@@ -10,15 +10,15 @@ import {
 type FeatureIcon = typeof EyeOff;
 
 const FEATURES: { Icon: FeatureIcon; title: string; desc: string; color: string; iconBg: string; iconColor: string; badge?: string }[] = [
-  { Icon: EyeOff,        title: "Stealth Overlay",        desc: "Invisible to screen-share on Zoom, Teams, Meet. Your secret weapon during real interviews.",                    color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white", badge: "Most Popular" },
-  { Icon: FileText,      title: "Resume-Grounded Answers", desc: "Every answer uses your actual experience and projects. Zero generic filler, ever.",                             color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
-  { Icon: Zap,           title: "Sub-2-Second Speed",      desc: "Groq LPU inference streams the perfect answer before you even finish thinking about it.",                      color: "bg-zinc-100 border-zinc-200",     iconBg: "bg-zinc-800",    iconColor: "text-white", badge: "10× Faster" },
-  { Icon: Monitor,       title: "Any Platform",            desc: "Works with Zoom, Google Meet, Teams, Webex, HireVue, anything that uses your microphone.",                     color: "bg-zinc-100 border-zinc-200",         iconBg: "bg-zinc-800",      iconColor: "text-white" },
-  { Icon: MessageSquare, title: "Mock Interview Mode",     desc: "200+ tailored questions for your exact role. Practice until every answer is pitch-perfect.",                   color: "bg-zinc-100 border-zinc-200", iconBg: "bg-zinc-800",  iconColor: "text-white" },
+  { Icon: EyeOff,        title: "Desktop Capture Controls", desc: "OS-level controls are designed to exclude the overlay from standard capture paths on supported setups.",     color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white", badge: "Desktop" },
+  { Icon: FileText,      title: "Resume-Grounded Answers", desc: "Answers use the resume, role, and job context you provide so suggestions are specific to your background.",      color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
+  { Icon: Zap,           title: "Fast Streaming",          desc: "Answer suggestions begin streaming as they generate, with a sub-two-second response target for live use.",    color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white", badge: "Live" },
+  { Icon: Monitor,       title: "Major Platform Support",  desc: "Designed to work alongside Zoom, Google Meet, Teams, Webex, HireVue, and other audio-based workflows.",       color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
+  { Icon: MessageSquare, title: "Mock Interview Mode",     desc: "Generate role-aware questions, practice your delivery, and receive structured feedback after each answer.",    color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
   { Icon: FilePen,       title: "Smart Resume Builder",    desc: "Build an ATS-optimized resume in minutes, then use it to power your live interview answers.",                  color: "bg-zinc-100 border-zinc-200",       iconBg: "bg-zinc-800",     iconColor: "text-white" },
-  { Icon: ShieldCheck,   title: "100% Private",            desc: "Audio never stored. Text-only prompts sent for processing. Zero conversation logs. Your data stays yours.",   color: "bg-zinc-100 border-zinc-200",       iconBg: "bg-zinc-800",     iconColor: "text-white" },
-  { Icon: AppWindow,     title: "Native Desktop App",      desc: "Windows + Mac native apps. System audio capture for true stealth. Zero browser limitations.",                 color: "bg-zinc-100 border-zinc-200",       iconBg: "bg-zinc-800",     iconColor: "text-white" },
-  { Icon: Target,        title: "Role-Specific Answers",   desc: "SWE, PM, Data Science, Marketing. Answers precision-tuned for your exact target role.",                       color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
+  { Icon: ShieldCheck,   title: "Privacy Controls",        desc: "Replysis does not store raw audio. The Trust Center explains AI processing and saved session data clearly.",  color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
+  { Icon: AppWindow,     title: "Native Desktop App",      desc: "Windows and macOS apps provide system audio and capture controls unavailable in a normal browser tab.",      color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
+  { Icon: Target,        title: "Role-Specific Context",   desc: "Tune suggestions for software, product, data, marketing, and other roles using your target job context.",    color: "bg-zinc-100 border-zinc-200",   iconBg: "bg-zinc-800",   iconColor: "text-white" },
 ];
 
 export default function FeaturesSection() {
@@ -36,7 +36,7 @@ export default function FeaturesSection() {
               <span className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">AI-Powered Features</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Everything you need to win.</h2>
-            <p className="text-gray-500 text-lg max-w-lg mx-auto">Every feature was built because a real user needed it to land their dream job.</p>
+            <p className="text-gray-500 text-lg max-w-lg mx-auto">One connected workspace to prepare your materials, practice your delivery, and get live answer support.</p>
           </BlurFade>
 
           <div ref={ref} className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">

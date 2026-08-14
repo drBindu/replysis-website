@@ -17,10 +17,10 @@ const FEATURES = [
     color: "bg-zinc-900",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "Stealth Overlay",
-    tagline: "Invisible during screen-share.",
-    desc: "The stealth overlay sits on top of your screen but stays completely hidden from Zoom, Google Meet, Teams, and Webex screen-share. Your interviewer sees only you, not the assistant. Works on any video platform that uses your microphone.",
-    points: ["Undetectable in Zoom, Teams, Meet, Webex", "Works on Windows and macOS native apps", "Screen-share safe, zero detection risk", "Toggle on/off instantly with a hotkey"],
+    title: "Desktop Capture Controls",
+    tagline: "Designed for standard screen-share paths.",
+    desc: "The desktop overlay uses operating-system capture controls unavailable in a normal browser tab. Coverage depends on the operating system, meeting tool, recorder, and proctoring environment, so test your exact setup first.",
+    points: ["OS-level capture controls", "Windows and macOS desktop apps", "Setup-dependent coverage", "Instant hotkey hide/show"],
   },
   {
     icon: (
@@ -45,10 +45,10 @@ const FEATURES = [
     color: "bg-zinc-800",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "Sub-2-Second Response",
-    tagline: "Answer on screen before you even hesitate.",
-    desc: "Powered by Groq's LPU inference engine, the fastest LLM hardware available. From the moment the question ends, Replysis transcribes, processes, and streams a tailored answer to your screen in under 2 seconds.",
-    points: ["Groq LPU: fastest inference on the market", "Streams token-by-token as it generates", "1.8s average from question end to first word", "No perceptible lag during live conversation"],
+    title: "Fast Streaming Responses",
+    tagline: "Suggestions stream as they generate.",
+    desc: "Replysis is designed around a sub-two-second response target for live use. Exact timing depends on the network, transcription, question length, model, and provider availability.",
+    points: ["Token-by-token answer streaming", "Low-latency transcription", "Sub-two-second response target", "Clear service-state feedback"],
   },
   {
     icon: (
@@ -59,10 +59,10 @@ const FEATURES = [
     color: "bg-zinc-900",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "Works on Any Platform",
-    tagline: "If it uses your mic, Replysis works.",
-    desc: "Replysis captures audio at the system level through the native desktop app, not through the browser. This means it works with every video platform: Zoom, Google Meet, Microsoft Teams, Webex, HireVue, and any other platform that uses your microphone.",
-    points: ["System-level audio capture (native app)", "No browser extension required", "Compatible with HireVue AI interviews", "Works even on one-way recorded interviews"],
+    title: "Major Platform Support",
+    tagline: "Built for common interview workflows.",
+    desc: "The native desktop app supports system audio workflows alongside major meeting and interview tools. Compatibility can vary by device, permissions, and platform configuration.",
+    points: ["System-level audio capture", "No browser extension required", "Zoom, Meet, Teams, and Webex workflows", "One-way interview support where compatible"],
   },
   {
     icon: (
@@ -74,9 +74,9 @@ const FEATURES = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Mock Interview Mode",
-    tagline: "Practice until the nerves are completely gone.",
-    desc: "Over 200 behavioral, technical, and role-specific questions curated by category: STAR method, system design, product sense, coding concepts, leadership, and more. Every answer you give is scored instantly with specific coaching on exactly what to improve.",
-    points: ["200+ questions by role (SWE, PM, DS, Marketing)", "Instant scoring on structure, clarity, and specificity", "Coaching tips on what to add or improve", "Session history so you can track progress over time"],
+    tagline: "Practice realistic questions before they count.",
+    desc: "Generate a role-aware question set, answer aloud, and receive structured feedback on clarity, relevance, and delivery. AI scoring is coaching guidance, not an employer assessment.",
+    points: ["Role-aware generated questions", "Feedback on structure and clarity", "Suggestions for a stronger answer", "Session history to review progress"],
   },
   {
     icon: (
@@ -88,7 +88,7 @@ const FEATURES = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Smart Resume Builder",
-    tagline: "ATS-optimized and role-specific in under 2 minutes.",
+    tagline: "Role-aware resume drafting with keyword and structure guidance.",
     desc: "Paste in your experience and choose your target role. Replysis rewrites every bullet point to pass ATS filters, include the right keywords for your target company, and lead with impact metrics. The same resume then powers your live interview answers.",
     points: ["ATS keyword optimization for your target role", "Impact-first bullet rewrites with real metrics", "Role-specific language for SWE, PM, DS, Design", "Export to PDF or plain text instantly"],
   },
@@ -101,10 +101,10 @@ const FEATURES = [
     color: "bg-zinc-900",
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
-    title: "100% Private",
-    tagline: "Your audio never leaves your device.",
-    desc: "Audio processing happens locally. Raw audio is never sent to any server. Only text prompts (no personal identifiers) are sent to the LLM for answer generation, and those are discarded immediately. No conversation logs are ever stored.",
-    points: ["Audio stays on your device, always", "No conversation history stored server-side", "Text prompts discarded after each response", "No data sold to third parties, ever"],
+    title: "Transparent Privacy Controls",
+    tagline: "Know where interview data goes.",
+    desc: "Live audio streams to our speech-to-text provider and is not stored by Replysis. Transcripts and resume context are processed to generate output; saved session history is stored in your account until deletion.",
+    points: ["Raw audio not stored by Replysis", "Provider processing explained", "Saved history controlled through your account", "Payment details handled by Stripe"],
   },
   {
     icon: (
@@ -116,9 +116,9 @@ const FEATURES = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Native Desktop App",
-    tagline: "Windows and macOS apps built for real stealth.",
-    desc: "The browser version is great for practice. The desktop app is what you need for real interviews. System audio capture means no browser limitations, no microphone permission popups, and no risk of the overlay appearing in a screen-share.",
-    points: ["Windows 10/11 MSIX installer, auto-updates", "macOS universal app (.pkg, Apple notarized)", "System audio, no browser mic required", "Sub-20ms hotkey toggle for instant hide/show"],
+    tagline: "Windows and macOS controls for live workflows.",
+    desc: "The browser is suitable for practice. The desktop app adds system audio and capture controls that browser tabs cannot provide. Test device permissions and capture behavior before live use.",
+    points: ["Windows and macOS installers", "System audio support", "Standard capture-path controls", "Quick hotkey hide/show"],
   },
   {
     icon: (
@@ -131,7 +131,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Role-Specific Answers",
     tagline: "Tuned for your exact role and company.",
-    desc: "Answers aren't generic. Replysis knows the difference between what a Senior SWE at Google needs to say versus what a PM at a startup needs to say. Set your target role and company once, and every answer is calibrated for that specific context.",
+    desc: "Set the target role, company, and job description so Replysis can adapt its suggestions to the context you provide. Always review the facts and choose wording that reflects your real experience.",
     points: ["Target role: SWE, PM, Data Science, Marketing, Design", "Company context: big tech, startup, FAANG, Indian tech", "Calibrated answer length and structure by role", "STAR format auto-applied for behavioral questions"],
   },
 ];
@@ -151,7 +151,7 @@ export default function FeaturesPage() {
             </span>
           </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto mb-8 leading-relaxed">
-            Every feature was built because a real user needed it to land their dream job. No filler, no fluff.
+            A connected toolkit for resume preparation, structured practice, and fast live guidance—with clear limits and no inflated promises.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/mock-interview"

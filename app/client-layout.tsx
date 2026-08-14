@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import Footer from "../components/Footer";
 import OfflineBanner from "../components/feedback/OfflineBanner";
+import CreditUpgradeNotice from "../components/CreditUpgradeNotice";
 import { ToastProvider } from "../components/feedback/Toast";
 import { useEffect } from "react";
 import { auth, db } from "./firebaseConfig";
@@ -121,6 +122,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <ToastProvider>
       <OfflineBanner />
+      <CreditUpgradeNotice />
       {content}
       {!hideFooter && <Footer />}
     </ToastProvider>

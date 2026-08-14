@@ -33,7 +33,7 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
           <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-gray-500 bg-white border border-gray-200 mb-4 uppercase tracking-widest">Desktop App</span>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">{heading}</h2>
           <p className="text-gray-500 text-lg max-w-lg mx-auto">
-            The stealth overlay needs the native app, completely hidden from Zoom, Teams, and Meet screen-share.
+            The native app provides operating-system capture controls for standard screen-share paths. Test your exact setup before an interview.
           </p>
         </FadeUp>
 
@@ -77,7 +77,7 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
             )}
 
             <div ref={badgesRef} className="flex flex-wrap justify-center gap-5 text-[12px] border-t border-gray-100 pt-6">
-              {["Free to start", "No credit card", "Audio stays on device", "Invisible to screen-share", "Auto-updates"].map((t, i) => (
+              {["Free to start", "No credit card", "Raw audio not stored", "Desktop capture controls", "Auto-updates"].map((t, i) => (
                 <motion.span key={i}
                   initial={{ opacity: 0, y: 14 }}
                   animate={badgesInView ? { opacity: 1, y: 0 } : {}}

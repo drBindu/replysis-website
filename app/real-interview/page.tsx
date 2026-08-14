@@ -241,7 +241,7 @@ export default function RealInterviewPage() {
                     </span>
                   </h1>
                   <p className="text-slate-500 text-[15px] font-medium leading-relaxed max-w-md">
-                    AI listens live and generates tailored answers in under 2s.
+                    AI listens live and generates tailored suggestions with a sub-two-second response target.
                     No resume required to start.
                   </p>
                 </motion.div>
@@ -288,7 +288,7 @@ export default function RealInterviewPage() {
                       },
                       {
                         step: "03", title: "SPACE: Get your answer",
-                        desc: "AI generates a perfect, resume-backed response in under 2 seconds.",
+                        desc: "AI streams a resume-grounded suggestion with a sub-two-second response target.",
                         accentBg: "rgba(33,146,74,0.09)", accentBorder: "rgba(33,146,74,0.2)", accentText: "#21924A",
                         kbd: "SPACE",
                       },
@@ -320,7 +320,8 @@ export default function RealInterviewPage() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Credits</p>
                   <div className="space-y-2.5">
                     {[
-                      { label: "Interview session", cost: "2 credits", color: "#1C7A3E" },
+                      { label: "Start transcription", cost: "1 credit", color: "#1C7A3E" },
+                      { label: "Generate live answer", cost: "2 credits", color: "#1C7A3E" },
                       { label: "Resume verification", cost: "Free",    color: "#21924A" },
                     ].map(({ label, cost, color }) => (
                       <div key={label} className="flex items-center justify-between py-1.5"
@@ -334,7 +335,7 @@ export default function RealInterviewPage() {
                     <button onClick={() => router.push("/pricing")}
                       className="w-full mt-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center justify-center gap-2 transition-all"
                       style={{ border: "1px solid rgba(31,138,62,0.25)", background: "rgba(31,138,62,0.07)", color: "#1C7A3E" }}>
-                      Upgrade to Pro for unlimited credits <ArrowRight size={13} />
+                      Upgrade to Pro for 2,000 monthly credits <ArrowRight size={13} />
                     </button>
                   )}
                 </div>
@@ -359,7 +360,7 @@ export default function RealInterviewPage() {
                 </div>
 
                 <p className="text-center text-[10px] font-semibold text-slate-400">
-                  Enterprise-grade · Your data stays private
+                  Raw audio is not stored · AI suggestions require review
                 </p>
               </motion.div>
             </div>

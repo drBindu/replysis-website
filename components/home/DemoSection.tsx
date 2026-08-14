@@ -12,7 +12,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
         <FadeUp className="text-center mb-14">
           <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold text-zinc-900 bg-zinc-100 border border-zinc-200 mb-4 uppercase tracking-widest">See It In Action</span>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Watch Replysis work live</h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">Click play. Real question. Perfect answer in under 2 seconds, invisible to the interviewer.</p>
+          <p className="text-gray-500 text-lg max-w-xl mx-auto">Click play to see how a question becomes a resume-grounded answer suggestion in the live overlay.</p>
         </FadeUp>
 
         <FadeUp delay={0.15}>
@@ -23,7 +23,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
               <div className="w-3 h-3 rounded-full bg-yellow-400" />
               <div className="w-3 h-3 rounded-full bg-zinc-800" />
               <div className="flex-1 mx-4 bg-gray-700 rounded h-5 flex items-center px-3">
-                <span className="text-[10px] text-gray-400 font-medium">Replysis  -  Stealth Overlay Active</span>
+                <span className="text-[10px] text-gray-400 font-medium">Replysis  -  Live Answer Overlay</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-zinc-600 animate-pulse block" />
@@ -81,7 +81,7 @@ export default function DemoSection({ onNav }: { onNav: (p: string) => void }) {
                         </motion.p>
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }}
                           className="flex items-center gap-4 mt-3 text-[11px] text-zinc-600/80">
-                          <span>⚡ 1.9s response</span><span>📄 Resume-grounded</span><span>👁 Stealth on</span>
+                          <span>⚡ Fast streaming</span><span>📄 Resume-grounded</span><span>👁 Capture controls</span>
                         </motion.div>
                       </div>
                     </motion.div>

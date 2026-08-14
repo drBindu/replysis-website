@@ -1,65 +1,42 @@
 "use client";
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { FadeUp, FadeIn, BlurFade, Counter, COMPANIES_ROW1, COMPANIES_ROW2 } from "./shared";
+import { FadeUp, FadeIn, BlurFade } from "./shared";
 
 /* ── TRUSTED BY ─────────────────────────────────────────────── */
 export function TrustedBySection() {
-  const row1 = [...COMPANIES_ROW1, ...COMPANIES_ROW1, ...COMPANIES_ROW1];
-  const row2 = [...COMPANIES_ROW2, ...COMPANIES_ROW2, ...COMPANIES_ROW2];
+  const proof = [
+    { value: "100", label: "free monthly credits", detail: "Explore all three workflows before paying." },
+    { value: "2", label: "desktop platforms", detail: "Native apps for Windows and macOS." },
+    { value: "3-in-1", label: "interview workspace", detail: "Resume, practice, and live support together." },
+    { value: "Stripe", label: "secure checkout", detail: "Card details never touch Replysis servers." },
+  ];
   return (
     <section className="py-16 bg-white border-y border-gray-100 overflow-hidden">
-      <style>{`
-        @keyframes tickerLeft {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes tickerRight {
-          0%   { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-        .ticker-left  { animation: tickerLeft  28s linear infinite; }
-        .ticker-right { animation: tickerRight 36s linear infinite; }
-        .ticker-left:hover,
-        .ticker-right:hover { animation-play-state: paused; }
-      `}</style>
-
-      <div className="max-w-6xl mx-auto px-6 mb-10">
+      <div className="max-w-6xl mx-auto px-6">
         <FadeIn>
           <div className="flex flex-col items-center gap-3">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">Now in early access</span>
+              <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">What you can verify today</span>
             </span>
-            <p className="text-center text-[11px] font-bold text-gray-400 uppercase tracking-[0.3em]">
-              Built to help you interview at
+            <p className="max-w-xl text-center text-sm leading-relaxed text-gray-500">
+              Clear product facts instead of employer logos, anonymous claims, or inflated success statistics.
             </p>
           </div>
         </FadeIn>
-      </div>
-
-      <FadeUp delay={0.1}>
-        <div className="relative space-y-3">
-          <div className="flex ticker-left gap-3 w-max">
-            {row1.map((c, i) => (
-              <span key={i} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-500 whitespace-nowrap flex-shrink-0 hover:border-zinc-300 hover:text-zinc-900 hover:shadow-sm transition-all cursor-default select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 flex-shrink-0" />
-                {c}
-              </span>
-            ))}
-          </div>
-          <div className="flex ticker-right gap-3 w-max">
-            {row2.map((c, i) => (
-              <span key={i} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-500 whitespace-nowrap flex-shrink-0 hover:border-zinc-300 hover:text-zinc-900 hover:shadow-sm transition-all cursor-default select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 flex-shrink-0" />
-                {c}
-              </span>
-            ))}
-          </div>
-          <div className="absolute inset-y-0 left-0 w-28 pointer-events-none" style={{ background: "linear-gradient(to right, #ffffff, transparent)" }} />
-          <div className="absolute inset-y-0 right-0 w-28 pointer-events-none" style={{ background: "linear-gradient(to left, #ffffff, transparent)" }} />
+        <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {proof.map((item, i) => (
+            <FadeUp key={item.label} delay={i * 0.06}>
+              <div className="h-full rounded-2xl border border-[#1f6f3d]/10 bg-[#f8fbf8] p-5">
+                <div className="text-2xl font-black tracking-tight text-[#1C7A3E]">{item.value}</div>
+                <div className="mt-1 text-xs font-black uppercase tracking-[0.1em] text-gray-800">{item.label}</div>
+                <p className="mt-2 text-xs leading-relaxed text-gray-500">{item.detail}</p>
+              </div>
+            </FadeUp>
+          ))}
         </div>
-      </FadeUp>
+      </div>
     </section>
   );
 }
@@ -69,10 +46,10 @@ export function StatsSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const stats = [
-    { to: 2,   suf: "s",  pre: "<", label: "Answer Speed",     sub: "streamed live to your screen", accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
-    { to: 100, suf: "%",  pre: "",  label: "Private",          sub: "zero audio ever stored",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
-    { to: 10,  suf: "x",  pre: "",  label: "Faster Inference", sub: "Groq LPU vs typical GPT",      accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
-    { to: 24,  suf: "/7", pre: "",  label: "Always Ready",     sub: "whenever your interview is",   accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(33,146,74,0.12)" },
+    { to: 2,    suf: "s", pre: "<", label: "Response target", sub: "answers begin streaming",      accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
+    { to: 3,    suf: "",  pre: "",  label: "Core workflows",  sub: "resume, mock, and live",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
+    { to: 2000, suf: "",  pre: "",  label: "Pro credits",     sub: "refreshed every month",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
+    { to: 5000, suf: "",  pre: "",  label: "Max credits",     sub: "2.5x Pro monthly capacity",   accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(33,146,74,0.12)" },
   ];
   return (
     <section className="py-28 px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)" }}>
@@ -83,7 +60,7 @@ export function StatsSection() {
             <span className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Why It Works</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Engineered for the moment that matters.</h2>
-          <p className="text-gray-500 text-lg max-w-lg mx-auto">Fast, private, and grounded in your real resume. No stored audio, no lag, no tells.</p>
+          <p className="text-gray-500 text-lg max-w-lg mx-auto">Built for fast preparation, clear limits, and answers grounded in the experience you provide.</p>
         </BlurFade>
         <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((s, i) => (
@@ -94,7 +71,7 @@ export function StatsSection() {
               className={`rounded-2xl border-2 ${s.border} ${s.bg} p-7 text-center relative overflow-hidden group hover:-translate-y-1 transition-all duration-300`}
               style={{ boxShadow: `0 4px 24px ${s.glow}` }}>
               <div className={`text-4xl font-black ${s.accent} mb-1.5`}>
-                <Counter to={s.to} suffix={s.suf} prefix={s.pre} />
+                {s.pre}{s.to.toLocaleString()}{s.suf}
               </div>
               <div className="text-sm font-black text-gray-800 mb-1">{s.label}</div>
               <div className="text-[11px] text-gray-500 font-medium">{s.sub}</div>
@@ -106,9 +83,9 @@ export function StatsSection() {
         <FadeUp delay={0.5} className="mt-10 flex flex-wrap items-center justify-center gap-8 text-center">
           {[
             { icon: "🎯", text: "Tailored to your role" },
-            { icon: "⚡", text: "Groq LPU runs 10x faster than GPT" },
-            { icon: "🔒", text: "Zero data stored" },
-            { icon: "🌍", text: "Works in 40+ countries" },
+            { icon: "⚡", text: "Answers stream as they generate" },
+            { icon: "🔒", text: "Raw audio not stored by Replysis" },
+            { icon: "🌍", text: "Windows and macOS apps" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 text-[12px] font-semibold text-gray-500">
               <span className="text-base">{item.icon}</span>
@@ -135,15 +112,15 @@ export function HowItWorksSection() {
     },
     {
       n: "02", icon: "🎤", title: "Start Your Interview",
-      desc: "Open Replysis on desktop or web. It silently listens via mic, transcribes speech in real-time, and works invisibly on any platform.",
-      time: "Zero setup",
+      desc: "Open Replysis on desktop or web. It uses the microphone you approve, transcribes speech in real time, and works alongside major meeting platforms.",
+      time: "Guided setup",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
     },
     {
-      n: "03", icon: "⚡", title: "Get Perfect Answers",
-      desc: "Tailored answers stream to your stealth overlay in under 2 seconds. Invisible to screen-share. Just a confident you.",
-      time: "Under 2 seconds",
+      n: "03", icon: "⚡", title: "Get Tailored Suggestions",
+      desc: "Tailored answer suggestions stream to the desktop overlay. Capture controls are designed for standard screen-share paths on supported setups.",
+      time: "Target under 2 seconds",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
     },
@@ -155,8 +132,8 @@ export function HowItWorksSection() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 bg-gray-50 mb-5">
             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">How It Works</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">3 steps. Then you win.</h2>
-          <p className="text-gray-500 text-lg max-w-lg mx-auto">No complex setup. Upload, open, ace your interview.</p>
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Three steps from context to guidance.</h2>
+          <p className="text-gray-500 text-lg max-w-lg mx-auto">Add your background, start a session, and review each suggestion before you use it.</p>
         </BlurFade>
         <div ref={ref} className="relative">
           {/* Connector line (desktop only) */}
@@ -232,7 +209,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
               <p className="text-gray-600 text-lg max-w-xl mx-auto mb-3 leading-relaxed">
                 Replysis listens live, reads your resume, and streams the answer in under two seconds, so you walk in ready to clear the one barrier between you and the offer.
               </p>
-              <p className="text-gray-400 text-sm mb-10">Average user lands their target offer within <strong className="text-gray-600">3 weeks</strong> of starting.</p>
+              <p className="text-gray-400 text-sm mb-10">Start with 100 monthly credits. No payment details are required to explore the product.</p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <motion.div
@@ -260,7 +237,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
 
               {/* Trust footer */}
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                {["No credit card", "Free mock interviews", "Cancel anytime", "Zero audio stored"].map((t, i) => (
+                {["No credit card", "100 monthly credits", "Cancel anytime", "Raw audio not stored"].map((t, i) => (
                   <div key={i} className="flex items-center gap-1.5 text-[11px] text-gray-400">
                     <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

@@ -509,7 +509,7 @@ function AuthGate({ onSignIn }: { onSignIn: () => void }) {
           Sign in to continue
         </h2>
         <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.65, marginBottom: 28 }}>
-          You need an account to access Mock Interview. Practice unlimited with AI-powered feedback.
+          Create an account to access mock interviews, structured practice, and AI-powered feedback.
         </p>
         <button onClick={onSignIn}
           style={{
@@ -521,7 +521,7 @@ function AuthGate({ onSignIn }: { onSignIn: () => void }) {
           <LogIn size={16} /> Sign in / Create account
         </button>
         <p style={{ fontSize: 11, color: T.textFaint, marginTop: 16 }}>
-          Enterprise-grade encryption · Data not stored
+          Secure sign-in · Monthly usage shown before you begin
         </p>
       </motion.div>
     </div>

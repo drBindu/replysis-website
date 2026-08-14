@@ -33,7 +33,7 @@ function ensureAdminInit() {
 // ── STRIPE PRICE IDS  -  create these in Stripe Dashboard ──
 // Go to: dashboard.stripe.com → Products → Create Product
 // Pro Monthly   → $29.99/mo  → copy price ID → STRIPE_PRO_MONTHLY_PRICE
-// Pro Annual    → $299.88/yr → copy price ID → STRIPE_PRO_ANNUAL_PRICE
+// Pro Annual    → $299/yr    → copy price ID → STRIPE_PRO_ANNUAL_PRICE
 // Max Monthly   → $49.99/mo  → copy price ID → STRIPE_MAX_MONTHLY_PRICE
 // Max Annual    → $499/yr    → copy price ID → STRIPE_MAX_ANNUAL_PRICE
 const PRICE_IDS: Record<string, string> = {
@@ -133,6 +133,20 @@ export async function POST(req: Request) {
     params.append("success_url", `${origin}/pricing?success=true`);
     params.append("cancel_url", `${origin}/pricing?canceled=true`);
     params.append("customer_email", email || "");
+    // Keep Checkout Stripe-hosted for speed and buyer trust, while giving it
+    // the same polished Replysis identity as the rest of the product.
+    params.append("branding_settings[display_name]", "Replysis");
+    params.append("branding_settings[background_color]", "#F7FAF7");
+    params.append("branding_settings[button_color]", "#267B42");
+    params.append("branding_settings[font_family]", "inter");
+    params.append("branding_settings[border_style]", "rounded");
+    params.append("branding_settings[icon][type]", "url");
+    params.append("branding_settings[icon][url]", `${SITE_URL}/icon.png`);
+    params.append("submit_type", "subscribe");
+    params.append(
+      "custom_text[submit][message]",
+      "Instant access after payment. To cancel, email support@replysis.com from your Replysis account email."
+    );
     params.append("metadata[uid]", uid);
     params.append("metadata[plan]", plan);
     params.append("subscription_data[metadata][uid]", uid);

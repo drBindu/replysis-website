@@ -129,16 +129,16 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         tag="Resume Builder"
         tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Your resume,\nprofessionally rebuilt."}
-        sub="Land 3x more interviews."
-        desc="Paste your experience, choose your target role. Replysis rewrites every bullet point to be ATS-optimized and role-specific, in under 2 minutes."
-        stats={[{ n: "3×", l: "more callbacks" }, { n: "2 min", l: "avg build time" }, { n: "ATS", l: "optimized" }]}
+        sub="Build a clearer, role-aware resume draft."
+        desc="Paste your experience and choose a target role. Replysis helps restructure bullets, surface relevant keywords, and create a polished draft you can verify before downloading."
+        stats={[{ n: "Role", l: "aware" }, { n: "PDF", l: "download" }, { n: "AI", l: "assisted" }]}
         cta="Build My Resume"
         gradient="radial-gradient(circle, #2E8B45, transparent)"
         mockup={[
           { icon: "👤", label: "Input", text: "Pavan Sharma, Software Engineer, 3 years at startup" },
           { icon: "⚙️", label: "Processing", text: "Analyzing role: Senior SWE @ Google...", dim: true },
-          { icon: "✅", label: "ATS Score", text: "94 / 100: Ready to submit", accent: true, badge: "Optimized" },
-          { icon: "📄", label: "Output", text: "5 tailored bullet points added. Keywords matched.", highlight: true },
+          { icon: "✅", label: "Keyword review", text: "Role-aligned terms and missing context identified", accent: true, badge: "Review" },
+          { icon: "📄", label: "Output", text: "A tailored draft ready for your final fact-check.", highlight: true },
         ]}
       />
       <div className="h-px bg-gray-100" />
@@ -151,8 +151,8 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
         headline={"Practice until\nnerves are gone."}
         sub="Rehearse the hard questions before they count."
-        desc="Over 200 behavioral, technical, and role-specific questions. Every answer is scored instantly with coaching on exactly what to improve."
-        stats={[{ n: "200+", l: "questions" }, { n: "Live", l: "scoring" }, { n: "Any", l: "role" }]}
+        desc="Generate behavioral, technical, and role-aware questions. Practice each response, then use structured AI feedback to decide what to improve."
+        stats={[{ n: "Role", l: "aware" }, { n: "AI", l: "feedback" }, { n: "Saved", l: "review" }]}
         cta="Start Practicing Free"
         gradient="radial-gradient(circle, #A04E2C, transparent)"
         mockup={[
@@ -170,17 +170,17 @@ export default function WhatIsItSection({ onNav }: { onNav: (p: string) => void 
         isPrimary={false}
         tag="Live Interview Copilot"
         tagColor="text-zinc-600 bg-zinc-800/10 border-zinc-800/30"
-        headline={"Live answers,\ncompletely invisible."}
-        sub="Perfect response streamed in under 2 seconds."
-        desc="During your real interview, Replysis silently listens, reads your resume for context, and streams the ideal answer to your private stealth overlay. Screen-share safe. Zero lag."
-        stats={[{ n: "<2s", l: "response time" }, { n: "100%", l: "stealth" }, { n: "98%", l: "accuracy" }]}
+        headline={"Live guidance,\nkept on your screen."}
+        sub="Resume-grounded suggestions designed for fast delivery."
+        desc="During a live session, Replysis transcribes the question, uses your resume for context, and streams an answer suggestion to the desktop overlay. Standard capture exclusion depends on your setup, so test it before the call."
+        stats={[{ n: "<2s", l: "response target" }, { n: "OS", l: "capture controls" }, { n: "Live", l: "streaming" }]}
         cta="Try Live Copilot"
         gradient="radial-gradient(circle, #21924A, transparent)"
         mockup={[
           { icon: "🎤", label: "Listening", text: "Interview audio detected, processing...", dim: true },
           { icon: "❓", label: "Question Detected", text: '"Why should we hire you over other candidates?"' },
-          { icon: "⚡", label: "Response", text: "Streaming answer... 1.8s", accent: true, badge: "Live" },
-          { icon: "🛡️", label: "Stealth Status", text: "Overlay hidden from screen share ✓", highlight: true },
+          { icon: "⚡", label: "Response", text: "Streaming answer suggestion...", accent: true, badge: "Live" },
+          { icon: "🛡️", label: "Capture Status", text: "Standard capture exclusion enabled", highlight: true },
         ]}
       />
     </>

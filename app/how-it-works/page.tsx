@@ -15,10 +15,10 @@ const STEPS = [
     accent: "text-zinc-900",
     title: "Upload your resume",
     sub: "Takes 30 seconds. Works for every job you apply to.",
-    desc: "Paste your resume text or upload a PDF. Replysis reads every role, project, metric, and skill you've listed. This becomes the context engine behind every answer, so nothing it says will ever sound generic or disconnected from your actual background.",
+    desc: "Paste your resume text or upload a PDF. Replysis uses the roles, projects, metrics, and skills you provide as context for answer suggestions. Review generated content before using it.",
     detail: [
       { label: "What it reads", value: "Job titles, companies, dates, projects, technologies, achievements, metrics" },
-      { label: "How it's stored", value: "Locally in your browser session. Not uploaded to any server permanently." },
+      { label: "How it's handled", value: "Drafts may be stored locally. Submitted resume text is processed by Replysis and the selected AI provider; saved sessions can include a short resume snippet." },
       { label: "How often", value: "Once per job application. Update it whenever your resume changes." },
     ],
     tip: "Include specific metrics in your resume (e.g. 'reduced latency by 40%'). Replysis will reference them directly in live answers.",
@@ -30,9 +30,9 @@ const STEPS = [
     accent: "text-zinc-900",
     title: "Open Replysis before your interview",
     sub: "Desktop app for real interviews. Browser for practice.",
-    desc: "Download the Windows or macOS app for live interviews. It captures audio at the system level, so no browser microphone permission prompts and no chance of the overlay appearing in screen-share. For mock practice, the browser version works perfectly.",
+    desc: "Download the Windows or macOS app for live interviews. It adds system audio and operating-system capture controls that a normal browser tab cannot provide. For mock practice, the browser version requires no installation.",
     detail: [
-      { label: "For live interviews", value: "Use the Windows (.msix) or macOS (.pkg) desktop app. System audio capture, overlay fully hidden from screen-share." },
+      { label: "For live interviews", value: "Use the Windows or macOS desktop app for system audio and standard capture-path exclusion. Test the exact setup first." },
       { label: "For practice", value: "Browser version at replysis.com/real-interview or /mock-interview. No install needed." },
       { label: "Setup time", value: "Under 60 seconds from download to first answer." },
     ],
@@ -44,23 +44,23 @@ const STEPS = [
     light: "bg-zinc-100 border-zinc-200",
     accent: "text-zinc-900",
     title: "Answer every question with confidence",
-    sub: "1.8 seconds from question end to answer on screen.",
-    desc: "Your interviewer asks a question. Replysis picks it up via your microphone, transcribes it in real time, matches it against your resume context, and streams a tailored answer to your private overlay in under 2 seconds. You read it naturally, in your own words.",
+    sub: "Answer suggestions designed to begin streaming in under 2 seconds.",
+    desc: "Replysis transcribes the question, matches it against the context you provide, and streams a tailored answer suggestion to the overlay. Treat it as an outline, verify the facts, and respond in your own words.",
     detail: [
-      { label: "What you see", value: "A private floating overlay showing the answer, streaming token-by-token." },
-      { label: "What your interviewer sees", value: "Only you. The overlay is completely invisible to screen-share and recording." },
-      { label: "Speed", value: "1.8s average from the moment the question ends to the first word on screen." },
+      { label: "What you see", value: "A focused floating overlay showing the suggestion, streaming token-by-token." },
+      { label: "Capture behavior", value: "The desktop app targets standard screen-share paths. Coverage depends on the operating system and capture tool." },
+      { label: "Speed", value: "Designed for a sub-two-second response start; network and provider conditions can affect timing." },
     ],
     tip: "Don't read the answer word-for-word. Use it as a structured outline and speak naturally. It will sound completely authentic.",
   },
 ];
 
 const FAQS = [
-  { q: "Can the interviewer detect Replysis?", a: "No. The stealth overlay is built specifically to be invisible to screen-share on Zoom, Teams, Meet, and Webex. It doesn't appear in recordings either. We have tested this extensively." },
-  { q: "Does it work for HireVue and one-way video interviews?", a: "Yes. HireVue uses your microphone and webcam. Replysis works at the system audio level, so it captures the questions whether they're read aloud by the platform or by a human interviewer." },
-  { q: "What if the answer isn't right?", a: "Every answer is grounded in your resume, so it will always reference your real experience. If a specific answer doesn't fit, ignore it and use your own words. Think of it as a live outline, not a script." },
-  { q: "Do I need the desktop app, or can I use the browser?", a: "For mock practice, the browser is perfect. For real interviews, we strongly recommend the desktop app. It uses system audio capture which gives you true stealth. The browser version requires microphone access which can occasionally trigger platform warnings." },
-  { q: "Is my data safe?", a: "Your audio never leaves your device. Raw audio is processed locally. Only the text transcript is sent to the LLM for answer generation, and that's discarded after each response. We don't store conversation history or sell your data." },
+  { q: "Can Replysis be excluded from screen sharing?", a: "The desktop app uses operating-system controls designed for standard capture paths. Coverage varies by operating system, meeting tool, recorder, and proctoring environment, so there is no universal guarantee. Test your setup and follow the rules of the interview." },
+  { q: "Does it work for HireVue and one-way video interviews?", a: "Replysis is designed for audio-based interview workflows, including one-way sessions, but compatibility depends on the device, permissions, and platform configuration." },
+  { q: "What if the answer isn't right?", a: "AI suggestions can be incomplete or wrong. Ignore anything that does not fit, verify every fact, and use your own words. Replysis is an outline and coaching tool, not a source of guaranteed answers." },
+  { q: "Do I need the desktop app, or can I use the browser?", a: "The browser is suitable for practice. The desktop app adds system audio and operating-system capture controls for live workflows. Always test microphone, audio, and capture behavior before an important call." },
+  { q: "How is my data handled?", a: "Live audio streams to our speech-to-text provider and is not stored by Replysis. Transcripts and resume context are processed to generate answers. If you use saved history, session content is stored in your account until deletion. See the Trust Center and Privacy Policy for details." },
   { q: "How is this different from just Googling answers?", a: "Every answer is generated in real time from your actual resume. You're not reading a generic answer. You're getting a response that references your specific projects, metrics, and experience, which sounds authentic and avoids the obvious 'I Googled this' tells." },
 ];
 
@@ -75,11 +75,11 @@ export default function HowItWorksPage() {
           <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.05]">
             3 steps.<br />
             <span style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              Then you win.
+              Then review the suggestion.
             </span>
           </h1>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-            No complex setup. Upload your resume, open the app, and walk into every interview with the right answer already on screen.
+            Add your resume, test your setup, and enter the interview with a structured source of guidance you can adapt naturally.
           </p>
         </div>
       </section>

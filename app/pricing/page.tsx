@@ -9,6 +9,7 @@ import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
 import { copyFor } from "../../components/feedback/messages";
+import { PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY } from "../../data/productFacts";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -58,7 +59,7 @@ const ALL_PLANS: {
     id: "free",
     name: "Starter",
     emoji: "🚀",
-    tagline: "Get started today",
+    tagline: "Explore Replysis before you upgrade.",
     monthlyPrice: 0,
     annualPrice: 0,
     oneTime: false,
@@ -67,24 +68,25 @@ const ALL_PLANS: {
     badge: null,
     popular: false,
     special: null,
-    usagePool: "~50 min live interviews / month",
+    usagePool: PUBLIC_PLAN_CAPACITY.free.summary,
     features: [
-      "Live AI answers in under 2 seconds",
+      "Live AI answers with a sub-two-second response target",
+      "Answers tailored to your resume and role",
       "Works on Zoom, Meet, Teams and phone calls",
       "Resume builder with free PDF download",
-      "Allowance refreshes every month",
+      "100 credits refresh automatically each month",
     ],
     notIncluded: [
       "Screen share exclusion (desktop app)",
       "AI resume rewrite for job postings",
-      "Session recordings",
+      "Saved interview history",
     ],
   },
   {
     id: "pro",
     name: "Pro",
     emoji: "👑",
-    tagline: "Everything you need for a job search.",
+    tagline: "The complete toolkit for an active job search.",
     monthlyPrice: 29.99,
     // Annual is anchored to a clean yearly total ($299) and shown per month,
     // so the "billed" figure on the card matches the Stripe price exactly.
@@ -95,13 +97,15 @@ const ALL_PLANS: {
     badge: "Most popular",
     popular: true,
     special: null,
-    usagePool: "~16 hours live interviews / month",
+    usagePool: PUBLIC_PLAN_CAPACITY.pro.summary,
     features: [
-      "~16 hours of live interviews, or 100 mock sessions",
-      "Allowance refreshes every month",
-      "Desktop app, kept out of screen shares and recordings",
-      "Every interview saved and reviewable",
+      "Best AI models for polished, natural answers",
+      "Answers grounded in your resume, role and job description",
+      "Up to 100 guided mock sessions with mock-only use",
+      "Desktop capture exclusion for standard screen-share paths",
+      "Saved interview history for review",
       "AI rewrites your resume for any job posting",
+      "2,000 credits refresh automatically each month",
     ],
     notIncluded: [],
   },
@@ -109,22 +113,25 @@ const ALL_PLANS: {
     id: "max",
     name: "Max",
     emoji: "👑",
-    tagline: "For back-to-back interview weeks.",
+    tagline: "Maximum access for interview-heavy weeks.",
     monthlyPrice: 49.99,
     annualPrice: 41.58,
     oneTime: false,
     cta: "Get Max",
     ctaNote: "Cancel anytime",
-    badge: "Best value",
+    badge: "Highest access",
     popular: false,
     special: null,
-    usagePool: "~41 hours live interviews / month",
+    usagePool: PUBLIC_PLAN_CAPACITY.max.summary,
     features: [
-      "~41 hours of live interviews, or 250 mock sessions",
-      "Allowance refreshes every month",
-      "Two and a half times the usage for twice the price",
-      "Everything in Pro, nothing held back",
-      "Priority support",
+      "Everything in Pro, with 2.5× the monthly capacity",
+      "Best AI models for polished, natural answers",
+      "Answers grounded in your resume, role and job description",
+      "Up to 250 guided mock sessions with mock-only use",
+      "Desktop capture exclusion for standard screen-share paths",
+      "Saved interview history for review",
+      "AI resume tailoring for every role you target",
+      "Priority support when you need help",
     ],
     notIncluded: [],
   },
@@ -145,14 +152,14 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean) =>
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
-  { cat: "Live Copilot",  label: "Answer speed",                         free: "Under 2 sec",  pro: "Under 2 sec", max: "Under 2 sec"},
-  { cat: "Live Copilot",  label: "Monthly allowance",                    free: "50 min/mo",    pro: "~16 hrs/mo",  max: "~41 hrs/mo"},
+  { cat: "Live Copilot",  label: "Answer response target",               free: "Under 2 sec",  pro: "Under 2 sec", max: "Under 2 sec"},
+  { cat: "Live Copilot",  label: "Monthly credits",                      free: "100",          pro: "2,000",        max: "5,000"},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
-  { cat: "Live Copilot",  label: "Excluded from screen share",           free: "Browser only", pro: "Desktop app", max: "Desktop app"},
-  { cat: "Live Copilot",  label: "Camera stealth mode",                  free: false,          pro: true,          max: true},
+  { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: false,          pro: "Included",     max: "Included"},
+  { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
   { cat: "Mock Practice", label: "Mock interview sessions",              free: "6/month",      pro: "100/month",   max: "250/month"},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
-  { cat: "Mock Practice", label: "Session recordings",                   free: false,          pro: true,          max: true},
+  { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
   { cat: "Resume",        label: "Verify AI reads your resume",          free: true,           pro: true,          max: true},
   { cat: "Resume",        label: "AI rewrite for any job posting",       free: false,          pro: true,          max: true},
@@ -167,15 +174,15 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
 const FAQS = [
   {
     q: "What is the live copilot?",
-    a: "During your real interview, Replysis listens through your microphone, reads your resume, and streams a tailored answer to your screen in under 2 seconds. The interviewer sees nothing. It works on Zoom, Google Meet, Teams, phone calls, and in-person interviews.",
+    a: "During a session, Replysis transcribes audio, uses your resume as context, and streams a tailored answer suggestion to your screen. The desktop app includes operating-system capture controls for standard screen-share paths; always test your exact setup before an interview.",
   },
   {
     q: "How much can I actually use?",
-    a: "Starter covers about 50 minutes of live interviews a month, Pro about 16 hours, and Max about 41 hours. Mock sessions and resume rewrites draw from the same monthly allowance, so 16 hours of live time is roughly 100 mock sessions instead. Your allowance resets on the 1st of every month."
+    a: "Starter includes 100 credits per month, Pro includes 2,000, and Max includes 5,000. Live answers, mock practice, and AI resume tools share this balance. Credits refresh monthly and do not roll over. The cost is shown before a credit-using action."
   },
   {
-    q: "Why do I need the desktop app for full stealth?",
-    a: "Browsers cannot reliably exclude windows from screen share. The desktop app marks its window for OS-level exclusion from screen capture, which covers screen shares and recordings on Zoom, Teams, Meet and Webex that use the standard Windows capture path. Camera stealth on Pro and Max hides the overlay as well.",
+    q: "Why do I need the desktop app for capture controls?",
+    a: "Browsers cannot reliably exclude windows from screen share. The desktop app uses operating-system capture controls for standard capture paths. Coverage varies by operating system and capture tool; no software can guarantee exclusion in every proctoring or locked-down environment. Test your setup and follow the rules of your interview.",
   },
   {
     q: "What does AI resume tailoring do?",
@@ -183,19 +190,19 @@ const FAQS = [
   },
   {
     q: "What is the difference between Pro and Max?",
-    a: "Every feature is the same. The only difference is how much you can use. Pro covers around 16 hours of live interviews a month, Max around 41 hours. Pro suits most job searches. Choose Max if you are interviewing several times a week or running mock sessions daily.",
+    a: "Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes 2,000 monthly credits. Max includes 5,000 monthly credits (2.5x Pro) plus priority support. Max increases capacity, not answer accuracy.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your account settings in one click. You keep full access until the end of your billing period. Upgrades take effect immediately. Downgrades take effect at the next billing cycle.",
+    a: "Yes. Email support@replysis.com from your account email to request cancellation. You keep paid access through the end of the billing period and will not be charged for the next renewal. Self-service subscription management is being added.",
   },
   {
     q: "Is my data private?",
-    a: "Yes. Resume text is only used during your session. Interview audio is processed on your device. Raw audio is never sent to our servers. We do not sell your data or use it to train AI models.",
+    a: "Live audio streams from your device to our speech-to-text provider and is not stored by Replysis. Transcripts and resume context are processed by Replysis and the selected AI provider to create responses. Saved session history stores interview content in your account until deletion. See the Privacy Policy and Trust Center for details.",
   },
   {
     q: "What if I want to stop paying?",
-    a: "Cancel from your account settings at any time and you will not be billed again. You keep full access until the end of the period you already paid for. If something goes wrong with a charge, email support@replysis.com and we will look into it."
+    a: "Email support@replysis.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
   },
 ];
 
@@ -234,7 +241,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ─── Plan card styles by type ─────────────────────────────────────────────────
 function getPlanStyle(plan: typeof ALL_PLANS[0]) {
   if (plan.popular) return {
-    card:    { background: "linear-gradient(160deg, #faf7ff 0%, #f0e9ff 60%, #fff5f0 100%)", border: "2px solid rgba(31,138,62,0.3)", boxShadow: "0 20px 60px rgba(31,138,62,0.15)" },
+    card:    { background: "linear-gradient(160deg, #ffffff 0%, #f5fbf6 58%, #eef8f0 100%)", border: "1.5px solid rgba(31,138,62,0.42)", boxShadow: "0 24px 70px rgba(22,72,39,0.14), 0 2px 8px rgba(22,72,39,0.06)" },
     stripe:  "linear-gradient(90deg, #1C7A3E, #2E8B45, #21924A)",
     badge:   { background: "linear-gradient(135deg, #1C7A3E, #21924A)" },
     btn:     { background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 4px 20px rgba(31,138,62,0.35)" },
@@ -242,7 +249,7 @@ function getPlanStyle(plan: typeof ALL_PLANS[0]) {
     check:   "violet" as const,
   };
   return {
-    card:    { background: "#ffffff", border: "1px solid #e5e7eb" },
+    card:    { background: plan.id === "max" ? "linear-gradient(160deg, #ffffff 0%, #fbfbf8 100%)" : "#ffffff", border: "1px solid rgba(24,35,28,0.11)", boxShadow: "0 16px 50px rgba(20,33,24,0.07), 0 2px 8px rgba(20,33,24,0.03)" },
     stripe:  "#e5e7eb",
     badge:   { background: "#374151" },
     btn:     { background: "#111827" },
@@ -309,77 +316,64 @@ export default function PricingPage() {
       <PageHeader />
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative pt-20 pb-20 px-6 text-center overflow-hidden"
-        style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 75%, #ffffff 100%)" }}>
-        <div className="absolute pointer-events-none top-0 left-1/4 w-[500px] h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.12) 0%, transparent 65%)", filter: "blur(80px)", transform: "translateX(-50%)" }} />
-        <div className="absolute pointer-events-none top-0 right-0 w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.10) 0%, transparent 65%)", filter: "blur(70px)" }} />
+      <section className="relative px-5 sm:px-6 pt-8 md:pt-9 pb-7 md:pb-8 overflow-hidden border-b border-[#1f6f3d]/10"
+        style={{ background: "linear-gradient(145deg, #ffffff 0%, #f7fbf7 52%, #f1f7f2 100%)" }}>
+        <div className="absolute pointer-events-none -top-40 -left-24 w-[460px] h-[460px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.14) 0%, transparent 68%)", filter: "blur(70px)" }} />
+        <div className="absolute pointer-events-none -top-48 right-0 w-[420px] h-[420px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(181,214,190,0.30) 0%, transparent 68%)", filter: "blur(70px)" }} />
         <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.045) 1px, transparent 1px)", backgroundSize: "28px 28px", maskImage: "linear-gradient(to bottom, black, transparent 90%)" }} />
 
-        <div className="relative max-w-3xl mx-auto z-10">
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-zinc-300/70 shadow-sm backdrop-blur-sm mb-6">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-800 opacity-60" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-800" />
-            </span>
-            <span className="text-[11px] font-semibold text-gray-600 tracking-wide">Simple pricing. No hidden fees. Cancel anytime.</span>
-          </motion.div>
+        <div className="relative max-w-7xl mx-auto z-10 grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center gap-6 lg:gap-12">
+          <div className="text-center lg:text-left">
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#1f6f3d]/20 shadow-sm backdrop-blur-sm mb-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1C7A3E] shadow-[0_0_0_4px_rgba(31,138,62,0.10)]" />
+              <span className="text-[10px] font-bold text-[#32513c] tracking-[0.08em] uppercase">Simple plans. Serious interview advantage.</span>
+            </motion.div>
 
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
-            className="text-4xl md:text-[3.2rem] font-black tracking-tight leading-[1.08] text-gray-900 mb-5">
-            The AI that gets you<br />
-            <span style={{ background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              the job.
-            </span>
-          </motion.h1>
+            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.62, delay: 0.04 }}
+              className="text-[2.15rem] sm:text-4xl md:text-[2.8rem] font-black tracking-[-0.04em] leading-[1.03] text-[#121812] mb-3">
+              The AI that gets you <span className="text-[#267b42]">the job.</span>
+            </motion.h1>
 
-          <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}
-            className="text-gray-500 text-[1.05rem] leading-relaxed mb-8 max-w-2xl mx-auto">
-            Hears your interviewer. Shows you the perfect answer. In 1.8 seconds. Completely invisible to everyone else on the call.
-          </motion.p>
+            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.12 }}
+              className="text-gray-600 text-sm md:text-[0.96rem] leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              Fast, resume-grounded answer suggestions with desktop controls designed for standard screen-share paths.
+            </motion.p>
 
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400 mb-10">
-            {["Secure checkout via Stripe", "Cancel anytime", "No hidden fees", "Audio never stored"].map((t, i) => (
-              <span key={i} className="flex items-center gap-1.5">
-                <Check color="emerald" />
-                {t}
-              </span>
-            ))}
-          </motion.div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+              className="mt-4 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-1.5 text-[11px] font-medium text-gray-500">
+              {["Secure Stripe checkout", "Cancel anytime", "Clear monthly limits"].map((t, i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e7f3e9] text-[#267b42]">✓</span>
+                  {t}
+                </span>
+              ))}
+            </motion.div>
+          </div>
 
           {/* Billing toggle */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-            className="flex flex-col items-center gap-2.5">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Billing period</p>
-            <div className="inline-flex items-center bg-white/80 backdrop-blur-sm border-2 border-zinc-300/70 rounded-full p-1.5 shadow-md gap-1">
+          <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.15 }}
+            className="rounded-2xl border border-[#1f6f3d]/15 bg-white/85 p-3.5 shadow-[0_16px_45px_rgba(27,67,39,0.10)] backdrop-blur-md">
+            <div className="mb-2.5 flex items-center justify-between px-1">
+              <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">Billing period</p>
+              <span className="rounded-full bg-[#e7f3e9] px-2.5 py-1 text-[10px] font-black text-[#267b42]">Save {ANNUAL_SAVING_PCT}% yearly</span>
+            </div>
+            <div className="grid grid-cols-2 items-center rounded-xl bg-[#eef2ed] p-1 gap-1">
               <button onClick={() => setAnnual(false)}
-                className={`px-6 py-2.5 rounded-full text-sm font-black transition-all ${!annual ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                className={`px-4 py-2.5 rounded-lg text-sm font-black transition-all ${!annual ? "bg-[#111711] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
                 Monthly
               </button>
               <button onClick={() => setAnnual(true)}
-                className={`px-6 py-2.5 rounded-full text-sm font-black transition-all flex items-center gap-2 ${annual ? "text-white" : "text-zinc-900 hover:text-zinc-950"}`}
-                style={annual ? { background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 2px 12px rgba(31,138,62,0.3)" } : {}}>
+                className={`px-4 py-2.5 rounded-lg text-sm font-black transition-all ${annual ? "bg-[#267b42] text-white shadow-sm" : "text-[#267b42] hover:text-[#185b31]"}`}>
                 Annual
-                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full text-white"
-                  style={{ background: annual ? "rgba(255,255,255,0.2)" : "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
-                  Save {ANNUAL_SAVING_PCT}%
-                </span>
               </button>
             </div>
-            <AnimatePresence>
-              {!annual && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-xs font-semibold text-zinc-900 cursor-pointer hover:text-zinc-950 transition-colors"
-                  onClick={() => setAnnual(true)}>
-                  Switch to annual. Pro drops to {perMonth(PRO_PLAN, true)}. Max drops to {perMonth(MAX_PLAN, true)}.
-                </motion.p>
-              )}
-            </AnimatePresence>
+            <p className="mt-2.5 px-1 text-center text-[11px] font-semibold text-gray-500">
+              Annual: Pro {perMonth(PRO_PLAN, true)} · Max {perMonth(MAX_PLAN, true)}
+            </p>
           </motion.div>
         </div>
       </section>
@@ -398,10 +392,10 @@ export default function PricingPage() {
       </AnimatePresence>
 
       {/* ══ PLAN CARDS — all 4 side by side ════════════════════════════════════ */}
-      <section className="relative px-6 pb-20"
-        style={{ background: "linear-gradient(180deg, #ffffff 0%, #ffffff 30%)" }}>
-        <div className="max-w-7xl mx-auto -mt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+      <section className="relative px-5 sm:px-6 pt-6 pb-20"
+        style={{ background: "linear-gradient(180deg, #f6f8f4 0%, #ffffff 28%)" }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 items-start">
             {ALL_PLANS.map((plan, i) => {
               const s = getPlanStyle(plan);
               const price = plan.oneTime ? plan.monthlyPrice : (annual ? plan.annualPrice : plan.monthlyPrice);
@@ -415,32 +409,32 @@ export default function PricingPage() {
                   initial={{ opacity: 0, y: 28 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative rounded-2xl flex flex-col overflow-hidden"
+                  className="relative rounded-[22px] flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-1"
                   style={s.card}>
 
                   {/* Top stripe */}
-                  <div className="h-[3px] w-full" style={{ background: s.stripe }} />
+                  <div className="h-1 w-full" style={{ background: s.stripe }} />
 
                   {/* Badge */}
                   {plan.badge && (
-                    <div className="absolute top-3 right-3 text-[9px] font-black px-2.5 py-1 rounded-full text-white"
+                    <div className="absolute top-4 right-4 text-[9px] font-black uppercase tracking-[0.08em] px-2.5 py-1 rounded-full text-white shadow-sm"
                       style={s.badge}>
                       {plan.badge}
                     </div>
                   )}
 
-                  <div className="p-5 pb-4">
+                  <div className="p-5 lg:p-6 pb-4 lg:pb-4">
                     {/* Header */}
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-lg">{plan.emoji}</span>
-                      <h2 className="text-base font-black text-gray-900">{plan.name}</h2>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#edf5ee] text-base">{plan.emoji}</span>
+                      <h2 className="text-lg font-black tracking-tight text-gray-900">{plan.name}</h2>
                     </div>
-                    <p className="text-[11px] font-semibold text-gray-400 mb-4 tracking-wide">{plan.tagline}</p>
+                    <p className="text-[11px] font-semibold text-gray-500 mb-3 mt-2 tracking-wide">{plan.tagline}</p>
 
                     {/* Price */}
-                    <div className="mb-4">
+                    <div className="mb-3">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-gray-900 tracking-tight">
+                        <span className="text-[2.25rem] leading-none font-black text-gray-950 tracking-[-0.04em]">
                           {price === 0 ? "Free" : `$${price}`}
                         </span>
                         {price > 0 && (
@@ -463,14 +457,14 @@ export default function PricingPage() {
                     </div>
 
                     {/* Usage pill */}
-                    <div className="rounded-lg px-3 py-2 mb-4" style={s.pool}>
+                    <div className="rounded-xl px-3 py-2.5 mb-3" style={s.pool}>
                       <p className="text-[11px] font-black" style={{ color: s.pool.color }}>{plan.usagePool}</p>
                     </div>
 
                     {/* CTA */}
                     {plan.id === "free" ? (
                       <button onClick={() => !user && setShowAuth(true)}
-                        className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${
+                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
                           isCurrent || user ? "bg-gray-100 text-gray-400 cursor-default" : "bg-gray-900 hover:bg-gray-700 text-white"
                         }`}>
                         {isCurrent ? "Current plan" : user ? "You're on Starter" : plan.cta}
@@ -478,7 +472,7 @@ export default function PricingPage() {
                     ) : (
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading || isCurrent}
-                        className="w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ ...(isCurrent ? { background: "#d1d5db" } : s.btn) }}>
                         {isCurrent ? "Current plan" : loading === plan.id ? "Redirecting..." : plan.cta}
                       </button>
@@ -488,6 +482,7 @@ export default function PricingPage() {
 
                   {/* Features */}
                   <div className="px-5 pb-5 border-t border-gray-100/80 pt-4 flex-1">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">What you get</p>
                     <ul className="space-y-2.5">
                       {plan.features.map((f, fi) => (
                         <li key={fi} className="flex items-start gap-2">
@@ -524,6 +519,90 @@ export default function PricingPage() {
               </button>
             </motion.p>
           )}
+
+          <div className="mt-7 rounded-2xl border border-[#1f6f3d]/15 bg-white p-5 shadow-[0_12px_40px_rgba(20,60,34,0.06)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">How credits work</p>
+                <h3 className="mt-1 text-base font-black text-gray-900">One monthly balance across the product</h3>
+              </div>
+              <p className="text-xs text-gray-500">Mixed usage changes how many sessions you can run.</p>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {PUBLIC_CREDIT_COSTS.map((item) => (
+                <div key={item.action} className="rounded-xl bg-[#f5f8f5] px-3.5 py-3">
+                  <p className="text-[11px] font-semibold text-gray-600">{item.action}</p>
+                  <p className="mt-1 text-sm font-black text-gray-900">{item.cost} {item.cost === 1 ? "credit" : "credits"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══ REPLYSIS ADVANTAGE ════════════════════════════════════════════════ */}
+      <section className="py-20 px-6 border-y border-[#1f6f3d]/10 overflow-hidden"
+        style={{ background: "linear-gradient(145deg, #0f1711 0%, #14261a 58%, #17351f 100%)" }}>
+        <div className="max-w-6xl mx-auto relative">
+          <div className="absolute pointer-events-none -top-52 right-0 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl" />
+          <FadeUp className="relative text-center mb-11">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-200 mb-4">
+              The Replysis advantage
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-[-0.035em]">One copilot. Your entire interview workflow.</h2>
+            <p className="text-emerald-50/60 text-sm max-w-2xl mx-auto leading-relaxed">
+              Paid plans include the complete premium experience. No separate upgrade for premium AI, desktop capture controls, mock practice, or resume tailoring.
+            </p>
+          </FadeUp>
+
+          <div className="relative grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            {[
+              { number: "01", title: "Premium AI included", text: "Polished, natural answers grounded in your resume, role, and job description." },
+              { number: "02", title: "Built for live pressure", text: "Answers stream as they generate, with a sub-two-second response target for live use." },
+              { number: "03", title: "Desktop capture controls", text: "Designed to stay out of standard screen-share paths on supported desktop setups." },
+              { number: "04", title: "Prepare and perform", text: "Tailor your resume, run mock sessions, get live help, and review interviews in one place." },
+            ].map((item, i) => (
+              <FadeUp key={item.number} delay={i * 0.06}>
+                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.055] p-5 backdrop-blur-sm transition-colors hover:bg-white/[0.08]">
+                  <span className="text-[10px] font-black tracking-[0.15em] text-emerald-300/70">{item.number}</span>
+                  <h3 className="mt-3 text-sm font-black text-white">{item.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-emerald-50/55">{item.text}</p>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+
+          <FadeUp delay={0.2}>
+            <div className="relative grid md:grid-cols-[1fr_auto_1fr] items-stretch overflow-hidden rounded-[24px] border border-emerald-200/15 bg-white text-[#121812] shadow-2xl">
+              <div className="p-6 md:p-7">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">Best for most people</p>
+                    <h3 className="mt-1 text-xl font-black">Choose Pro</h3>
+                  </div>
+                  <span className="rounded-full bg-[#e8f4ea] px-3 py-1 text-xs font-black text-[#267b42]">{perMonth(PRO_PLAN, annual)}</span>
+                </div>
+                <p className="text-sm leading-relaxed text-gray-600">You are actively applying and interviewing, but do not run several sessions every day.</p>
+                <button onClick={() => handleCheckout("pro")} className="mt-5 text-sm font-black text-[#267b42] hover:text-[#185b31]">Get Pro →</button>
+              </div>
+
+              <div className="hidden md:flex items-center justify-center bg-[#edf4ee] px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#267b42] [writing-mode:vertical-rl] rotate-180">
+                Choose in 10 seconds
+              </div>
+
+              <div className="border-t border-gray-100 p-6 md:border-l md:border-t-0 md:p-7">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Highest monthly capacity</p>
+                    <h3 className="mt-1 text-xl font-black">Choose Max</h3>
+                  </div>
+                  <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-black text-white">{perMonth(MAX_PLAN, annual)}</span>
+                </div>
+                <p className="text-sm leading-relaxed text-gray-600">You have frequent interview loops, practice daily, or need 2.5× Pro capacity and priority support.</p>
+                <button onClick={() => handleCheckout("max")} className="mt-5 text-sm font-black text-gray-900 hover:text-[#267b42]">Get Max →</button>
+              </div>
+            </div>
+          </FadeUp>
         </div>
       </section>
 
@@ -545,12 +624,12 @@ export default function PricingPage() {
               {
                 emoji: "👑", name: "Pro", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.18)", tc: "#1C7A3E",
                 who: "Serious job seekers",
-                items: ["Actively interviewing every week", "Targeting competitive companies", "Need screen share protection", "Want session recordings to review"],
+                items: ["Actively interviewing every week", "Targeting competitive companies", "Want desktop capture controls", "Want saved history to review"],
               },
               {
                 emoji: "👑", name: "Max", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
                 who: "Interviewing constantly",
-                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Do not want to think about running out"],
+                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Need the highest monthly capacity"],
               },
             ].map((col, ci) => (
               <FadeUp key={ci} delay={ci * 0.08}>
@@ -696,7 +775,7 @@ export default function PricingPage() {
               </Link>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-5 mt-8 text-[11px] text-gray-400">
-              {["1.8s answer speed", "100% private", "Works on any platform", "Free to start"].map((s, i) => (
+              {["Fast streaming", "Raw audio not stored", "Major platform support", "Free to start"].map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-zinc-600" />
                   {s}

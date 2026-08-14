@@ -20,6 +20,7 @@ import {
   Crown, X, TrendingUp,
 } from "lucide-react";
 import { useCredits } from "../lib/use-credits";
+import { PLAN_CONFIG } from "../lib/credits";
 import { useToast } from "../../components/feedback/Toast";
 import { classifyFailure } from "../../components/feedback/messages";
 
@@ -371,7 +372,7 @@ function CreditMeter({ credits=0, max=100, isUnlimited=false, plan="free", onOpe
 }) {
   const pct   = isUnlimited ? 100 : Math.min(100, Math.round((credits/max)*100));
   const color = isUnlimited ? T.purple : pct>50 ? T.success : pct>20 ? T.warning : T.danger;
-  const label = isUnlimited ? "Pro plan · Unlimited credits" : `${credits} / ${max} credits remaining`;
+  const label = isUnlimited ? "Monthly plan credits" : `${credits} / ${max} credits remaining`;
   return (
     <Tooltip tip={`${label} · Click to see usage`} side="bottom">
       <button onClick={onOpenHistory}
@@ -521,9 +522,9 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                 color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                 boxShadow:"0 4px 14px rgba(45,91,227,0.3)" }}>
-              <Crown size={15} /> Upgrade for unlimited credits
+              <Crown size={15} /> Upgrade for more monthly credits
             </button>
-            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro plan · $29/mo · Unlimited everything</p>
+            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes 2,000 credits refreshed monthly</p>
           </div>
         )}
       </motion.div>
@@ -677,7 +678,7 @@ export default function ResumePage() {
   const [showCreditDrawer, setShowCreditDrawer] = useState(false);
   const [creditToast,      setCreditToast]      = useState<{ action:string; cost:number; remaining:number; isUnlimited:boolean; }|null>(null);
 
-  const planMax = (plan === "pro" || plan === "max" || plan === "teams") ? 99999 : plan === "lifetime" ? 2000 : 100;
+  const planMax = PLAN_CONFIG[plan]?.totalCredits ?? PLAN_CONFIG.free.totalCredits;
 
   const recordCreditUsage = useCallback((label: string, action: string, cost: number) => {
     setCreditHistory(prev => [...prev, { action, label, cost, timestamp: new Date() }]);
