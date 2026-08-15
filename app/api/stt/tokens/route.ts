@@ -137,11 +137,19 @@ function cleanJson(text: string) {
 // ============================================================================
 type ModelProvider = "groq" | "openai" | "gemini";
 
+// Groq retired the Llama models on 2026-08-16 and Mixtral before them. The old
+// ids stay as keys so a saved preference or an older client still resolves, but
+// they now point at the replacements Groq names.
+const GROQ_FAST = "openai/gpt-oss-20b";    // replaces llama-3.1-8b-instant
+const GROQ_DEEP = "openai/gpt-oss-120b";   // replaces llama-3.3-70b-versatile
+
 const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> = {
-  "llama-3.1-8b":         { provider: "groq",   apiModel: "llama-3.1-8b-instant"     },
-  "llama-3.3-70b":        { provider: "groq",   apiModel: "llama-3.3-70b-versatile"  },
-  "mixtral-8x7b":         { provider: "groq",   apiModel: "mixtral-8x7b-32768"       },
-  "llama-3.1-8b-instant": { provider: "groq",   apiModel: "llama-3.1-8b-instant"     },
+  "llama-3.1-8b":         { provider: "groq",   apiModel: GROQ_FAST                  },
+  "llama-3.3-70b":        { provider: "groq",   apiModel: GROQ_DEEP                  },
+  "mixtral-8x7b":         { provider: "groq",   apiModel: GROQ_DEEP                  },
+  "llama-3.1-8b-instant": { provider: "groq",   apiModel: GROQ_FAST                  },
+  "gpt-oss-20b":          { provider: "groq",   apiModel: GROQ_FAST                  },
+  "gpt-oss-120b":         { provider: "groq",   apiModel: GROQ_DEEP                  },
   "gpt-4o":               { provider: "openai", apiModel: "gpt-4o"                   },
   "gpt-4o-mini":          { provider: "openai", apiModel: "gpt-4o-mini"              },
   "gemini-1.5-pro":       { provider: "gemini", apiModel: "gemini-1.5-pro"           },
@@ -149,7 +157,7 @@ const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> =
 };
 
 function resolveModel(modelId: string): { provider: ModelProvider; apiModel: string } {
-  if (!modelId) return { provider: "groq", apiModel: "llama-3.1-8b-instant" };
+  if (!modelId) return { provider: "groq", apiModel: GROQ_FAST };
   if (MODEL_MAP[modelId]) return MODEL_MAP[modelId];
   const lower = modelId.toLowerCase();
   if (MODEL_MAP[lower]) return MODEL_MAP[lower];
@@ -157,7 +165,7 @@ function resolveModel(modelId: string): { provider: ModelProvider; apiModel: str
     if (lower.includes(key) || key.includes(lower)) return MODEL_MAP[key];
   }
   console.warn(`⚠️ Unknown model "${modelId}", defaulting to Groq`);
-  return { provider: "groq", apiModel: "llama-3.1-8b-instant" };
+  return { provider: "groq", apiModel: GROQ_FAST };
 }
 
 // ── OpenAI-compatible caller (Groq + OpenAI) ──
@@ -827,13 +835,13 @@ export async function POST(req: Request) {
     const safeMessages = sanitizeMessages(messages);
 
     // ── MODEL RESTRICTION BY PLAN ────────────────────────────────
-    // Free users may only use the fast Llama model.
+    // Free users may only use the fast model.
     // Pro, Lifetime, Teams users have no restriction.
-    const FREE_MODELS = ["llama-3.1-8b-instant", "llama-3.1-8b"];
+    const FREE_MODELS = ["openai/gpt-oss-20b", "gpt-oss-20b", "llama-3.1-8b-instant", "llama-3.1-8b"];
 
     let selectedModel = typeof model === "string" && MODEL_MAP[model]
       ? model
-      : "llama-3.1-8b-instant";
+      : "openai/gpt-oss-20b";
 
     if (db && userEmail) {
       try {
@@ -841,14 +849,14 @@ export async function POST(req: Request) {
         if (userSnapshot.exists) {
           const plan = userSnapshot.data()?.plan || "free";
           if (plan === "free" && !FREE_MODELS.includes(selectedModel)) {
-            console.warn(`[model-guard] free user "${userEmail}" tried "${selectedModel}" → clamped to llama`);
-            selectedModel = "llama-3.1-8b-instant";
+            console.warn(`[model-guard] free user "${userEmail}" tried "${selectedModel}" → clamped to the fast model`);
+            selectedModel = "openai/gpt-oss-20b";
           }
           // pro, lifetime, teams: no restriction
         }
       } catch (err) {
         console.warn("[model-guard] plan lookup failed; using the free model:", err);
-        selectedModel = "llama-3.1-8b-instant";
+        selectedModel = "openai/gpt-oss-20b";
       }
     }
 

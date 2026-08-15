@@ -19,7 +19,7 @@ export const PLAN_CONFIG = {
     label: "Free",
     totalCredits: PLAN_MONTHLY_CREDITS.free,
     monthlyReset: true,
-    allowedModels: ["llama-3.1-8b-instant"],
+    allowedModels: ["openai/gpt-oss-20b"],
     features: {
       resumeBuilder: true,
       aiTailor: false,
@@ -36,7 +36,7 @@ export const PLAN_CONFIG = {
     monthlyReset: true,
     price: 29.99,
     stripePriceId: "",
-    allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
+    allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
       resumeBuilder: true,
       aiTailor: true,
@@ -53,7 +53,7 @@ export const PLAN_CONFIG = {
     monthlyReset: true,
     price: 49.99,
     stripePriceId: "",
-    allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
+    allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
       resumeBuilder: true,
       aiTailor: true,
@@ -70,7 +70,7 @@ export const PLAN_CONFIG = {
     monthlyReset: true,
     price: 299,
     stripePriceId: "",
-    allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
+    allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
       resumeBuilder: true,
       aiTailor: true,
@@ -87,7 +87,7 @@ export const PLAN_CONFIG = {
     monthlyReset: true,
     price: 49,
     stripePriceId: "",
-    allowedModels: ["llama-3.1-8b-instant", "gpt-4o-mini", "gpt-4.1"],
+    allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
       resumeBuilder: true,
       aiTailor: true,

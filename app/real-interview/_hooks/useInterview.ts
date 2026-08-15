@@ -216,7 +216,7 @@ export function useInterview(config: {
           resume:     cleanResume,
           jd:         cleanJd,
           userEmail:  config.userEmail,
-          model:      config.model || "llama-3.1-8b-instant",
+          model:      config.model || "openai/gpt-oss-20b",
           context:    `Interview mode: ${config.interviewMode} | Answer style: ${config.answerStyle ?? "balanced"} | Role: ${config.role} | Company: ${config.companyName}`,
       });
       const sendRequest = async () => {

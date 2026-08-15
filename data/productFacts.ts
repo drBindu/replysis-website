@@ -24,7 +24,12 @@ export const CREDIT_ACTION_COSTS = {
   mock_interview_session: 15,
   mock_feedback: 5,
   mock_script: 5,
-  realtime_per_minute: 2,
+  // Charged per generated answer, not per minute, despite the name. The desktop
+  // backend has always taken 5 for the same action, so the site advertised 2
+  // while Pro users were really getting 400 answers from 2,000 credits, not
+  // 1,000. This value also drives the web app's own deduction, so both
+  // platforms now charge the same.
+  realtime_per_minute: 5,
   question_generation: 5,
   verify_resume: 0,
 } as const;

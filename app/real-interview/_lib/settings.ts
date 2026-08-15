@@ -21,7 +21,7 @@ export const ANSWER_STYLES: Array<{ id: AnswerStyle; label: string; description:
 ];
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  model:          "llama-3.1-8b-instant",
+  model:          "openai/gpt-oss-20b",
   maxDelay:       0.7,
   operatingPoint: "enhanced",
   temperature:    0.3,
@@ -30,8 +30,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const MODELS = [
-  { id: "llama-3.1-8b-instant", label: "Llama 3.1 8B",     tag: "FAST",     color: "blue"   },
-  { id: "llama-3.3-70b",    label: "Llama 3.3 70B",    tag: "SMART",    color: "purple" },
+  // Groq retired the Llama models on 2026-08-16. A saved preference using an
+  // old id still resolves, because MODEL_MAP keeps those ids as aliases.
+  { id: "openai/gpt-oss-20b",  label: "GPT-OSS 20B",  tag: "FAST",     color: "blue"   },
+  { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", tag: "SMART",    color: "purple" },
   { id: "gpt-4o-mini",      label: "GPT-4o Mini",      tag: "BALANCED", color: "green"  },
   { id: "gpt-4o",           label: "GPT-4o",           tag: "BEST",     color: "yellow" },
   { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash", tag: "GOOGLE",   color: "red"    },

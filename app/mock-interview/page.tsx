@@ -103,8 +103,10 @@ interface TaggedQuestion {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 const AI_MODELS: AiModel[] = [
-  { id: "gpt-4o",        name: "GPT-4o",        provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#2E8B45" },
-  { id: "llama-3.3-70b", name: "Llama 3.3 70B", provider: "Groq",   badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 2, icon: "🦙", color: "#21924A" },
+  { id: "gpt-4o",         name: "GPT-4o",      provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#2E8B45" },
+  // Was "Llama 3.3 70B" at 2 credits. Groq retired the Llama models on
+  // 2026-08-16, and a live answer has always cost 5 credits, not 2.
+  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Groq",  badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
 ];
 
 const MIN_QUESTIONS          = 5;
