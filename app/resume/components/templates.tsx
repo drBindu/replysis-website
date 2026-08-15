@@ -998,14 +998,13 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
        <link rel="stylesheet" href="${fontUrl}&display=block">`
     : "";
 
-  // The page margin stays at zero because every template already insets its own
-  // content with .r-pad (padV/padH). Setting the same values here too applied the
-  // spacing twice, so the exported PDF carried roughly double the whitespace the
-  // live preview showed. Zero also keeps the full-bleed headers (dualaxis, bold,
-  // exec) flush to the paper edge instead of floating in a white border.
+  // Left as the template padding on purpose. Zeroing this looks tidier, since
+  // the PDF service already passes margin 0 to the renderer, but measured
+  // against that renderer it fits one line less per page, which pushes borderline
+  // resumes onto an extra page. Not worth the regression.
   const pageCSS = paperSize === "letter"
-  ? `size: letter portrait; margin: 0;`
-  : `size: A4 portrait; margin: 0;`;
+  ? `size: letter portrait; margin: ${padV} ${padH};`
+  : `size: A4 portrait; margin: ${padV} ${padH};`;
 
   const paperPx = paperSize === "letter" ? 816 : 794;
 
