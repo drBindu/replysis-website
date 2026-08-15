@@ -957,9 +957,16 @@ export default function ResumePage() {
   /* ── Save ── */
   const handleSave = async () => {
     setSaveStatus("saving");
+    // These endpoints require a bearer token. Save, Export PDF and Export Word
+    // all sent none, so each answered 401. It went unnoticed because the CSP
+    // blocked the request before it ever reached the server.
+    let saveToken = "";
+    try { saveToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch {}
+    if (!saveToken) { setSaveStatus("error"); notifyFailure("sessionExpired"); setTimeout(() => setSaveStatus("idle"), 2500); return; }
+
     try {
       const r = await fetch(`${API_BASE}/api/v1/resume/save`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
+        method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${saveToken}`},
         body: JSON.stringify({ fullName:resumeData.personalInfo?.name, headline:resumeData.personalInfo?.headline, email:resumeData.personalInfo?.email, phone:resumeData.personalInfo?.phone, summary:resumeData.summary, skills:JSON.stringify(resumeData.skillCategories||[]), experience:JSON.stringify(resumeData.experience||[]), projects:JSON.stringify(resumeData.projects||[]), accentColor:ac, fontSize:fs }),
       });
       setSaveStatus(r.ok ? "saved" : "error");
@@ -973,6 +980,11 @@ export default function ResumePage() {
   ════════════════════════════════════════════════════════════════ */
   const handleExportPDF = async () => {
     if (isPrinting) return;
+
+    let pdfToken = "";
+    try { pdfToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch {}
+    if (!pdfToken) { notifyFailure("sessionExpired"); return; }
+
     setIsPrinting(true);
     try {
       const html = buildPrintHTML(templateId, {
@@ -983,7 +995,7 @@ export default function ResumePage() {
 
       const res = await fetch(`${API_BASE}/api/v1/resume/export-pdf`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${pdfToken}` },
         body: JSON.stringify({ html, paperSize }),
       });
 
@@ -1010,11 +1022,16 @@ export default function ResumePage() {
   ════════════════════════════════════════════════════════════════ */
   const handleExportWord = async () => {
     if (isExportingWord) return;
+
+    let wordToken = "";
+    try { wordToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch {}
+    if (!wordToken) { notifyFailure("sessionExpired"); return; }
+
     setIsExportingWord(true);
     try {
       const res = await fetch(`${API_BASE}/api/v1/resume/export-word`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${wordToken}` },
         body: JSON.stringify({
           data: resumeData,
           styles: { ac, fs, lh: lineHeight },
