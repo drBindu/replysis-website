@@ -1229,22 +1229,32 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     .r-tech-lnk     { font-size:8.5px;color:${ac} }
 
     @page { ${pageCSS} }
-    /* Page breaks. Without these the renderer would break anywhere, and a
-       section heading could be left stranded at the foot of a page with its
-       content pushed to the next one: the exported resume ended a page on
-       "CERTIFICATIONS" and put the two certificates alone overleaf, leaving a
-       large empty gap the on-screen preview never showed.
-       Headings are glued to what follows them, and a single job, project or
-       school is kept whole, but a long section may still split across pages so
-       nothing is forced to leap to a new page and leave a bigger hole. */
-    .r-sh-wrap, .r-shl-wrap, .r-shf, .r-shp-wrap, .r-shm-wrap, .r-sht-wrap {
-      break-after: avoid; page-break-after: avoid;
+    /* Page breaks. With no rules at all the renderer broke anywhere, and a
+       heading could be stranded at the foot of a page with its content
+       overleaf: an exported resume ended a page on "CERTIFICATIONS" and put
+       the two certificates alone on page two, leaving a large gap the preview
+       never showed.
+       "break-after: avoid" is the obvious rule and Chromium ignores it in print
+       layout, verified against this renderer. What does work is making the
+       heading occupy space it does not visually use: the padding reserves a
+       strip below it, so the heading only fits where its first lines also fit,
+       and the negative margin takes that strip straight back so the spacing on
+       the page is unchanged. Each negative margin is its own padding less the
+       gap that class had before.
+       Sections themselves stay breakable on purpose. Forcing a long Work
+       Experience block to move whole would leave a bigger hole than this fixes. */
+    .r-sh-wrap, .r-shp-wrap, .r-sht-wrap {
+      break-inside: avoid; page-break-inside: avoid;
+      padding-bottom: 60px; margin-bottom: -54px;
+    }
+    .r-shl-wrap, .r-shm-wrap {
+      break-inside: avoid; page-break-inside: avoid;
+      padding-bottom: 60px; margin-bottom: -55px;
     }
     .r-entry-gap, .r-proj-gap, .r-edu-gap, .r-skill-row, .r-cert-list > * {
       break-inside: avoid; page-break-inside: avoid;
     }
     .r-bullet { break-inside: avoid; page-break-inside: avoid }
-    .r-row    { break-after: avoid; page-break-after: avoid }
 
     @media print {
       html, body { width:100% !important;background:#ffffff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important }
