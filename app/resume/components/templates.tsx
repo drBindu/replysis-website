@@ -998,9 +998,14 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
        <link rel="stylesheet" href="${fontUrl}&display=block">`
     : "";
 
+  // The page margin stays at zero because every template already insets its own
+  // content with .r-pad (padV/padH). Setting the same values here too applied the
+  // spacing twice, so the exported PDF carried roughly double the whitespace the
+  // live preview showed. Zero also keeps the full-bleed headers (dualaxis, bold,
+  // exec) flush to the paper edge instead of floating in a white border.
   const pageCSS = paperSize === "letter"
-  ? `size: letter portrait; margin: ${padV} ${padH};`
-  : `size: A4 portrait; margin: ${padV} ${padH};`;
+  ? `size: letter portrait; margin: 0;`
+  : `size: A4 portrait; margin: 0;`;
 
   const paperPx = paperSize === "letter" ? 816 : 794;
 
@@ -1224,6 +1229,23 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     .r-tech-lnk     { font-size:8.5px;color:${ac} }
 
     @page { ${pageCSS} }
+    /* Page breaks. Without these the renderer would break anywhere, and a
+       section heading could be left stranded at the foot of a page with its
+       content pushed to the next one: the exported resume ended a page on
+       "CERTIFICATIONS" and put the two certificates alone overleaf, leaving a
+       large empty gap the on-screen preview never showed.
+       Headings are glued to what follows them, and a single job, project or
+       school is kept whole, but a long section may still split across pages so
+       nothing is forced to leap to a new page and leave a bigger hole. */
+    .r-sh-wrap, .r-shl-wrap, .r-shf, .r-shp-wrap, .r-shm-wrap, .r-sht-wrap {
+      break-after: avoid; page-break-after: avoid;
+    }
+    .r-entry-gap, .r-proj-gap, .r-edu-gap, .r-skill-row, .r-cert-list > * {
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    .r-bullet { break-inside: avoid; page-break-inside: avoid }
+    .r-row    { break-after: avoid; page-break-after: avoid }
+
     @media print {
       html, body { width:100% !important;background:#ffffff !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important }
       * { -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important }
