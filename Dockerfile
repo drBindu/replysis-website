@@ -13,7 +13,14 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_BACKEND_URL=https://coopilotxai.com
+# Same origin as the site. This used to point at the pre-rebrand domain,
+# coopilotxai.com, which the browser refused to call because the site's own
+# Content-Security-Policy lists only 'self' in connect-src. Every backend call
+# the resume builder makes was blocked before it left the browser: tailor, save,
+# export PDF and export Word all failed with "Failed to fetch" and never reached
+# the server. nginx already proxies /api/v1/ here to the backend on 8082, so
+# same-origin needs no CSP exception and no CORS.
+ARG NEXT_PUBLIC_BACKEND_URL=https://replysis.com
 ARG NEXT_PUBLIC_SPEECHMATICS_RT_HOST=us.rt.speechmatics.com
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 ENV NEXT_PUBLIC_SPEECHMATICS_RT_HOST=$NEXT_PUBLIC_SPEECHMATICS_RT_HOST
