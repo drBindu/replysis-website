@@ -341,7 +341,15 @@ async function checkAndDeductCredits(
   email: string,
   mode:  string
 ): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean }> {
-  const cost = CREDIT_COSTS[mode] ?? 2;
+  // An unknown mode used to fall back to charging 2 credits, which quietly
+  // invented a price for something with no price. Modes are validated against an
+  // allow-list before reaching here, so this can only fire if that list and this
+  // table drift apart; refusing makes that visible instead of silently billing.
+  const cost = CREDIT_COSTS[mode];
+  if (typeof cost !== "number") {
+    console.error(`[credits] no price defined for mode "${mode}" — refusing to charge`);
+    return { allowed: false, remaining: 0, unavailable: true };
+  }
   if (cost === 0) return { allowed: true, remaining: -1 };
 
   // FAIL CLOSED: if the credit store is unreachable, paid features pause rather

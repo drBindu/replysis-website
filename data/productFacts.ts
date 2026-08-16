@@ -19,8 +19,16 @@ export type ActivePlanId = "free" | "pro" | "max";
 
 export const CREDIT_ACTION_COSTS = {
   live_transcription_start: 1,
-  resume_analysis: 10,
+  // 5, not 10. The backend has always charged 5 (ResumeController.ANALYSIS_CREDITS)
+  // while this table advertised 10, so every analysis billed half of what the page
+  // promised. Aligned downward on purpose: analysis is how someone first sees the
+  // product work, and a cheap first look is worth more than the extra credits.
+  resume_analysis: 5,
   resume_tailor: 20,
+  // Kept for the plan-capacity copy below, which describes a whole mock session.
+  // It is NOT a charge: nothing in the product ever deducted it. A mock session
+  // bills per action instead (questions, script, feedback), which lands in the
+  // same place for a full session but only charges for what is actually used.
   mock_interview_session: 15,
   mock_feedback: 5,
   mock_script: 5,
@@ -55,12 +63,17 @@ export const PUBLIC_PLAN_CAPACITY = {
   },
 } as const;
 
+// Every row here is a charge the product actually makes, and every charge the
+// product makes has a row here. "Start a mock session" used to sit in this list
+// at 15 credits and was never deducted anywhere, while rewriting a bullet and
+// generating a summary were charged 5 each and appeared nowhere. Both directions
+// are the same problem: a price list that does not describe the product.
 export const PUBLIC_CREDIT_COSTS = [
   { action: "Start live transcription", cost: CREDIT_ACTION_COSTS.live_transcription_start },
   { action: "Generate a live answer", cost: CREDIT_ACTION_COSTS.realtime_per_minute },
-  { action: "Start a mock session", cost: CREDIT_ACTION_COSTS.mock_interview_session },
-  { action: "Generate mock feedback", cost: CREDIT_ACTION_COSTS.mock_feedback },
   { action: "Generate a question set", cost: CREDIT_ACTION_COSTS.question_generation },
+  { action: "Generate mock feedback", cost: CREDIT_ACTION_COSTS.mock_feedback },
+  { action: "Rewrite a bullet or summary", cost: CREDIT_ACTION_COSTS.mock_script },
   { action: "Analyze a resume", cost: CREDIT_ACTION_COSTS.resume_analysis },
   { action: "Tailor a resume", cost: CREDIT_ACTION_COSTS.resume_tailor },
 ] as const;

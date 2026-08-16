@@ -680,9 +680,16 @@ export default function ResumePage() {
 
   const planMax = PLAN_CONFIG[plan]?.totalCredits ?? PLAN_CONFIG.free.totalCredits;
 
+  // Reports a charge the server has already made. It must not do the subtraction
+  // itself: `credits` comes from a live Firestore listener, so by the time this
+  // runs the balance may already reflect the charge, and subtracting again showed
+  // a number lower than the user actually had. Whether that happened depended on
+  // which landed first, so the figure was sometimes right and sometimes not.
+  // The live value is the single source of truth for the balance; this only
+  // reports what the action cost.
   const recordCreditUsage = useCallback((label: string, action: string, cost: number) => {
     setCreditHistory(prev => [...prev, { action, label, cost, timestamp: new Date() }]);
-    setCreditToast({ action: label, cost, remaining: isUnlimited ? planMax : Math.max(0, credits - cost), max: planMax, isUnlimited });
+    setCreditToast({ action: label, cost, remaining: isUnlimited ? planMax : Math.max(0, credits), max: planMax, isUnlimited });
   }, [credits, isUnlimited, planMax]);
 
   /* ── Draggable split pane ── */
