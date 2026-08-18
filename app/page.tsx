@@ -22,7 +22,14 @@ import {
   HowItWorksSection, CtaSection,
 } from "../components/home/MidSections";
 
-const WINDOWS_DOWNLOAD = "/app.msixbundle";
+// The Microsoft Store listing, not a file on this site.
+//
+// This pointed at /app.msixbundle, which has not existed on the server for
+// some time: every visitor who read the pricing and clicked Download for
+// Windows was sent to a 404. The Store copy installs with no security
+// warning, updates itself, and is already live, so it is the better
+// destination regardless of whether the file comes back.
+const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
 const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
@@ -156,10 +163,17 @@ export default function Home() {
   };
 
   const download = async (os: "win" | "mac") => {
-    const a = document.createElement("a");
-    a.href     = os === "win" ? WINDOWS_DOWNLOAD : MAC_DOWNLOAD;
-    a.download = os === "win" ? "app.msixbundle" : "InterviewCopilot-mac.dmg";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    // Windows now opens the Store listing in a new tab. The Mac build is still
+    // a file, so it keeps the download attribute; applying that to a Store URL
+    // would ask the browser to save the page rather than open it.
+    if (os === "win") {
+      window.open(WINDOWS_DOWNLOAD, "_blank", "noopener,noreferrer");
+    } else {
+      const a = document.createElement("a");
+      a.href     = MAC_DOWNLOAD;
+      a.download = "InterviewCopilot-mac.dmg";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
     try {
       const authToken = (await auth.currentUser?.getIdToken()) ?? "";
       await fetch("/api/telemetry/download", {
