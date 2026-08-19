@@ -77,6 +77,7 @@ const ALL_PLANS: {
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
       "100 credits refresh automatically each month",
+      "1 hour of live listening each month — resume and screen tools never use it",
     ],
     notIncluded: [
       "Screen share exclusion (desktop app)",
@@ -108,6 +109,7 @@ const ALL_PLANS: {
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
       "2,000 credits refresh automatically each month",
+      "15 hours of live listening each month — resume and screen tools never use it",
     ],
     notIncluded: [],
   },
@@ -130,6 +132,7 @@ const ALL_PLANS: {
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
       "Up to 250 guided mock sessions with mock-only use",
+      "30 hours of live listening each month — resume and screen tools never use it",
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI resume tailoring for every role you target",
