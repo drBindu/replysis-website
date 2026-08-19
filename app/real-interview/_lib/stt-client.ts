@@ -5,6 +5,15 @@
 
 const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Press Space to reconnect.";
 const OUT_OF_CREDITS = "You have used your available credits. Choose a plan to continue.";
+const IDLE_STOPPED =
+  "Listening stopped after 3 minutes of silence, so your listening time is not spent on an empty room. Press Space to start again.";
+
+// How long a silence runs before the microphone gives up. In a real interview
+// somebody speaks every few seconds and even a long thinking pause is well
+// under a minute, so this catches an empty room and never a person deciding
+// what to say.
+const IDLE_TIMEOUT_MS = 3 * 60_000;
+const REPORT_INTERVAL_SECONDS = 60;
 
 type StartOptions = {
   onStatus:        (s: string) => void;
@@ -43,6 +52,16 @@ export class SpeechmaticsClient {
   private reconnectTimer: number | null = null;
   private stableTimer: number | null = null;
   private onlineHandler: (() => void) | null = null;
+
+  // Listening time, the cost credits never saw. Speechmatics bills by the hour
+  // of audio, so a microphone held open costs money whether or not anything is
+  // asked. Measured here and reported as it goes, because a closed tab, a
+  // crashed browser and a dropped connection all look the same afterwards and
+  // all three would otherwise have listened for free.
+  private meterTimer: number | null = null;
+  private listeningSince = 0;
+  private lastSpeechAt = 0;
+  private unreportedSeconds = 0;
 
   async start(opts: StartOptions) {
     if (this.started) return;
@@ -93,6 +112,11 @@ export class SpeechmaticsClient {
       opts.onStatus(this.reconnects ? "Connection restored. Starting microphone…" : "Starting microphone…");
       await this.setupAudio(opts);
       if (this.started) {
+        // The clock starts when the microphone does, and a reconnect resumes
+        // rather than restarting it, so a dropped connection cannot be used to
+        // reset the idle timer for free.
+        if (this.meterTimer === null) this.startMeter();
+        else { this.listeningSince = Date.now(); this.lastSpeechAt = Date.now(); }
         this.clearStableTimer();
         this.stableTimer = window.setTimeout(() => { this.reconnects = 0; }, 8000);
       }
@@ -233,6 +257,7 @@ export class SpeechmaticsClient {
   private handleMessage(event: MessageEvent, opts: StartOptions) {
     try {
       const message = JSON.parse(event.data as string);
+      if (message.metadata?.transcript) this.lastSpeechAt = Date.now();
       if (message.message === "AddTranscript" && message.metadata?.transcript) {
         opts.onFinal(message.metadata.transcript);
       } else if (message.message === "AddPartialTranscript" && message.metadata?.transcript) {
@@ -279,7 +304,79 @@ export class SpeechmaticsClient {
     this.onlineHandler = null;
   }
 
+  private startMeter() {
+    this.listeningSince = Date.now();
+    this.lastSpeechAt = Date.now();
+    this.unreportedSeconds = 0;
+    this.clearMeter();
+    this.meterTimer = window.setInterval(() => this.meterTick(), 5_000);
+  }
+
+  private clearMeter() {
+    if (this.meterTimer !== null) window.clearInterval(this.meterTimer);
+    this.meterTimer = null;
+  }
+
+  private meterTick() {
+    if (!this.started) { this.flushMeter(); return; }
+
+    const now = Date.now();
+
+    if (now - this.lastSpeechAt >= IDLE_TIMEOUT_MS) {
+      // Stopping silently would be worse than the waste it prevents: someone
+      // coming back would speak into a microphone they believed was on.
+      const opts = this.options;
+      this.stop();
+      opts?.onStatus(IDLE_STOPPED);
+      opts?.onError(IDLE_STOPPED);
+      return;
+    }
+
+    if (this.listeningSince) {
+      this.unreportedSeconds += (now - this.listeningSince) / 1000;
+      this.listeningSince = now;
+    }
+
+    if (this.unreportedSeconds >= REPORT_INTERVAL_SECONDS) {
+      const minutes = Math.floor(this.unreportedSeconds / 60);
+      this.unreportedSeconds -= minutes * 60;
+      void this.reportMinutes(minutes);
+    }
+  }
+
+  /** Anything past half a minute still counts, so an interview of short turns is not free. */
+  private flushMeter() {
+    this.clearMeter();
+    if (this.listeningSince) {
+      this.unreportedSeconds += (Date.now() - this.listeningSince) / 1000;
+      this.listeningSince = 0;
+    }
+    if (this.unreportedSeconds >= 30) {
+      const minutes = Math.max(1, Math.round(this.unreportedSeconds / 60));
+      this.unreportedSeconds = 0;
+      void this.reportMinutes(minutes);
+    }
+  }
+
+  private async reportMinutes(minutes: number) {
+    if (minutes <= 0) return;
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (this.options?.authToken) headers.Authorization = `Bearer ${this.options.authToken}`;
+      // keepalive so the last minute still lands when the tab is closing.
+      await fetch("/api/usage/listening", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ minutes }),
+        keepalive: true,
+      });
+    } catch {
+      // Accounting must never interrupt an interview. The minute is lost, not the call.
+    }
+  }
+
   stop() {
+    this.flushMeter();
     this.started = false;
     this.clearReconnectTimer();
     this.clearStableTimer();

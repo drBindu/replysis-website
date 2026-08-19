@@ -319,6 +319,55 @@ const CREDIT_COSTS: Record<string, number> = {
 };
 const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
 
+// Listening time, the cost credits never saw.
+//
+// Credits meter questions. Speechmatics bills by the hour of audio, so a
+// microphone left open costs money whether or not anything is asked. These
+// must match PLAN_MONTHLY_AUDIO_MINUTES in the Java backend's
+// FirestoreCreditsService: both write the same `audioMinutesUsed` field on
+// the same user document, and a user moving between the website and the
+// desktop apps has one allowance, not two.
+const PLAN_MONTHLY_AUDIO_MINUTES: Record<string, number> = {
+  free:       60,   //  1 hour
+  pro:       900,   // 15 hours
+  max:      1800,   // 30 hours
+  lifetime: 1800,
+  teams:    6000,   // 100 hours, shared
+};
+
+function audioAllowance(plan: string): number {
+  return PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
+}
+
+/**
+ * True when this user still has listening time left this month.
+ *
+ * Read-only: the minutes themselves are added by the client reporting as it
+ * listens. This is only the door check, and it is here because no token means
+ * no audio, which means no bill.
+ */
+async function hasAudioTimeLeft(uid: string, email: string): Promise<boolean> {
+  if (!db || !uid) return true;                       // never block on a store fault
+  if (UNLIMITED_EMAILS.has(email.toLowerCase())) return true;
+
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    if (!snap.exists) return true;
+    const data = snap.data() ?? {};
+    const plan = typeof data.plan === "string" ? data.plan : "free";
+
+    // Shares the credits reset date, so one month means one month everywhere.
+    const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
+    if (resetAt && Date.now() >= resetAt) return true;
+
+    const used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
+    return used < audioAllowance(plan);
+  } catch (err) {
+    console.error("Audio allowance check error:", err);
+    return true;   // a Firestore hiccup must not end someone's interview
+  }
+}
+
 // Owner/internal accounts are never charged (so testing isn't capped).
 const UNLIMITED_EMAILS = new Set(
   (process.env.UNLIMITED_EMAILS || process.env.ADMIN_EMAIL || "")
@@ -720,6 +769,16 @@ export async function GET(req: Request) {
       return NextResponse.json(
         { error: "Too many token requests. Please wait a moment." },
         { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+      );
+    }
+
+    // Listening time is checked before credits, because it is the cost that
+    // credits cannot see: a microphone held open bills by the hour whether or
+    // not a question is ever asked. Checked here since no token means no audio.
+    if (!(await hasAudioTimeLeft(verifiedUid, verifiedEmail))) {
+      return NextResponse.json(
+        { error: "You have used all your listening time this month.", reason: "audio-limit" },
+        { status: 402 },
       );
     }
 
