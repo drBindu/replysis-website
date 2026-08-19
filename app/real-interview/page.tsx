@@ -46,16 +46,35 @@ function sanitizeText(text: string): string {
 // ─────────────────────────────────────────────
 // CREDITS DISPLAY
 // ─────────────────────────────────────────────
+/** Listening time in the units a person would say it in. */
+function formatListeningTime(minutes: number): string {
+  if (minutes <= 0) return "0m";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+}
+
 function CreditsDisplay({
-  credits, plan, loading, onUpgrade,
+  credits, plan, loading, onUpgrade, minutesLeft,
 }: {
   credits: number; plan: string;
   loading: boolean; onUpgrade: () => void;
+  minutesLeft: number;
 }) {
   const cap = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
   const isPaid = plan !== "free";
-  const isLow = credits <= Math.max(10, Math.round(cap * 0.05));
-  const isEmpty = credits <= 0;
+
+  // Two limits stop an interview and either can be the one that bites, so
+  // both are shown and whichever is closest decides the colour. Credits alone
+  // were never the whole truth: they meter questions, and the microphone bills
+  // by the hour. Somebody with two thousand credits on screen and no listening
+  // time left reads a healthy number and a dead microphone, and reasonably
+  // concludes the product is broken rather than that they reached a limit.
+  const timeLow = minutesLeft <= 15;
+  const timeEmpty = minutesLeft <= 0;
+  const isLow = credits <= Math.max(10, Math.round(cap * 0.05)) || timeLow;
+  const isEmpty = credits <= 0 || timeEmpty;
   const planLabel = ({ free: "Starter", pro: "Pro", max: "Max", lifetime: "Lifetime", teams: "Teams" } as Record<string, string>)[plan] ?? "Starter";
 
   if (loading) return (
@@ -75,7 +94,12 @@ function CreditsDisplay({
           : <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />}
         <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
           {planLabel} · {credits.toLocaleString()}
-          <span className="font-normal text-[10px] ml-1 opacity-60">credits left</span>
+          <span className="font-normal text-[10px] ml-1 opacity-60">credits</span>
+          <span className="mx-1 opacity-30">·</span>
+          {formatListeningTime(minutesLeft)}
+          <span className="font-normal text-[10px] ml-1 opacity-60">
+            {timeEmpty ? "listening time used up" : "listening"}
+          </span>
         </span>
         {isLow && (
           <div className="flex items-center gap-1">
@@ -109,6 +133,10 @@ export default function RealInterviewPage() {
   const [plan, setPlan]                     = useState<string>("free");
   const [creditsLoading, setCreditsLoading] = useState(false);
 
+  // The second limit. Credits meter questions; the microphone bills by the
+  // hour, so either one can be what stops an interview.
+  const [audioMinutesUsed, setAudioMinutesUsed] = useState<number>(0);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -121,12 +149,20 @@ export default function RealInterviewPage() {
           const data = snap.data();
           setCredits(data.credits ?? 0);
           setPlan(data.plan ?? "free");
+          setAudioMinutesUsed(Math.max(0, Number(data.audioMinutesUsed ?? 0)));
         }
       } catch (err) { console.error("[Replysis] Could not load credits:", (err as Error)?.name ?? "Error"); }
       setCreditsLoading(false);
     });
     return unsub;
   }, []);
+
+  // Must match PLAN_MONTHLY_AUDIO_MINUTES in the STT token route and in the
+  // Java backend. All of them read the same audioMinutesUsed field, so one
+  // allowance covers the website and the desktop apps together.
+  const audioAllowance =
+    ({ free: 60, pro: 900, max: 1800, lifetime: 1800, teams: 6000 } as Record<string, number>)[plan] ?? 60;
+  const audioMinutesLeft = Math.max(0, audioAllowance - audioMinutesUsed);
 
   const handleStart = (cfg: InterviewConfig) => {
     sessionStorage.setItem("interviewConfig", JSON.stringify({
@@ -200,6 +236,7 @@ export default function RealInterviewPage() {
               <div className="flex items-center gap-3">
                 <CreditsDisplay
                   credits={credits} plan={plan}
+                  minutesLeft={audioMinutesLeft}
                   loading={creditsLoading}
                   onUpgrade={() => router.push("/pricing")}
                 />

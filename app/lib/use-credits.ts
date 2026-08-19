@@ -12,11 +12,26 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import { CREDIT_COSTS, type CreditAction, type PlanId } from "./credits";
 
+const PLAN_MONTHLY_AUDIO_MINUTES: Record<string, number> = {
+  free:       60,
+  pro:       900,
+  max:      1800,
+  lifetime: 1800,
+  teams:    6000,
+};
+
 export function useCredits() {
   const [uid, setUid] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [plan, setPlan] = useState<PlanId>("free");
   const [loading, setLoading] = useState(true);
+
+  // Listening time, the second limit. Credits meter questions and the
+  // microphone bills by the hour, so either can stop an interview. Showing
+  // only the credits is how a support ticket starts: somebody with two
+  // thousand credits on screen and no listening time left reads a healthy
+  // number and a dead microphone, and concludes the product is broken.
+  const [audioMinutesUsed, setAudioMinutesUsed] = useState<number>(0);
 
   // Paywall state
   const [showPaywall, setShowPaywall] = useState(false);
@@ -34,6 +49,7 @@ export function useCredits() {
       if (!user) {
         setCredits(0);
         setPlan("free");
+        setAudioMinutesUsed(0);
         setLoading(false);
       }
     });
@@ -48,6 +64,7 @@ export function useCredits() {
         const data = snap.data();
         setCredits(data.credits || 0);
         setPlan((data.plan as PlanId) || "free");
+        setAudioMinutesUsed(Math.max(0, Number(data.audioMinutesUsed ?? 0)));
       }
       setLoading(false);
     });
@@ -105,9 +122,19 @@ export function useCredits() {
     return ok;
   }, [canAfford, deductOnServer]);
 
+  // Must match PLAN_MONTHLY_AUDIO_MINUTES in the STT token route and in the
+  // Java backend's FirestoreCreditsService. All three read and write the same
+  // audioMinutesUsed field, so a user of the website and the desktop apps has
+  // one allowance rather than three that each look generous alone.
+  const audioAllowance = PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
+  const audioMinutesLeft = Math.max(0, audioAllowance - audioMinutesUsed);
+
   return {
     uid,
     credits,
+    audioMinutesLeft,
+    audioMinutesUsed,
+    audioAllowance,
     plan,
     loading,
     canAfford,
