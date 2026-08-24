@@ -308,7 +308,7 @@ export default function Home() {
             {(!mounted || detectedOS !== "mac") && (
             <button onClick={() => download("win")}
               title="Open the Microsoft Store listing - installs with no security prompt"
-              className="group hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
+              className="group flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
               <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z"/>
               </svg>
