@@ -305,7 +305,9 @@ export default function Home() {
               </svg>
             </button>
             )}
-            {(!mounted || detectedOS !== "mac") && (
+            {/* Windows only, and only once the OS is known: a Store listing
+                offers a Mac or Linux visitor something they cannot install. */}
+            {mounted && detectedOS === "win" && (
             <button onClick={() => download("win")}
               title="Open the Microsoft Store listing - installs with no security prompt"
               className="group flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
@@ -483,7 +485,7 @@ export default function Home() {
                   Windows
                 </button>
                 )}
-                {(!mounted || detectedOS !== "mac") && (
+                {mounted && detectedOS === "win" && (
                 <button onClick={() => { download("win"); setShowMobile(false); }}
                   className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-gray-700 bg-white border border-gray-200 rounded-xl">
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

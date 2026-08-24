@@ -80,10 +80,12 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
       {/* Show ONLY the visitor's own OS. Only fall back to showing both
           when the OS is unknown (Linux / mobile / unrecognized).
           Windows visitors also get the Store, because it installs with no
-          security prompt and some people will not take an .exe from a link. */}
+          security prompt and some people will not take an .exe from a link.
+          An unknown OS is offered both installers and no Store: the listing is
+          a Windows one, and a Linux visitor cannot use it. */}
       {detectedOS === "mac" ? btn("mac", true)
         : detectedOS === "win" ? <>{btn("win-direct", true)}{storeBtn}</>
-        : <>{btn("win-direct", true)}{storeBtn}{btn("mac", false)}</>}
+        : <>{btn("win-direct", true)}{btn("mac", false)}</>}
     </div>
   );
 }
