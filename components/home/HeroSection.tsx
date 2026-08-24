@@ -6,7 +6,7 @@ import BrandIcon from "../BrandIcon";
 interface Props {
   mounted: boolean;
   detectedOS: "win" | "mac" | "other";
-  onDownload: (os: "win" | "mac") => void;
+  onDownload: (os: "win" | "win-direct" | "mac") => void;
   onNav: (path: string) => void;
 }
 
@@ -48,29 +48,51 @@ function Magnetic({ children, strength = 0.4, className = "" }: { children: Reac
 
 export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "default" }: {
   detectedOS: "win" | "mac" | "other"; mounted: boolean;
-  onDownload: (os: "win" | "mac") => void; size?: "default" | "large";
+  onDownload: (os: "win" | "win-direct" | "mac") => void; size?: "default" | "large";
 }) {
   const cls = size === "large" ? "px-8 py-4 text-base rounded-2xl gap-3" : "px-5 py-2.5 text-sm rounded-xl gap-2";
-  const btn = (os: "win" | "mac", primary: boolean) => (
+  // Windows downloads the installer, the same as macOS downloads a .dmg. The
+  // Store is a second, separate destination rather than what this button
+  // secretly does - it used to open the Store while saying "Download", which is
+  // a different action from the one on the label.
+  const btn = (os: "win-direct" | "mac", primary: boolean) => (
     <button key={os} onClick={() => onDownload(os)}
       className={`flex items-center justify-center font-semibold border transition-all active:scale-[0.97] ${cls} ${
         primary ? "text-white border-transparent" : "bg-white text-gray-600 border-gray-200 hover:border-zinc-400 hover:text-zinc-900 shadow-sm"
       }`}
       style={primary ? { background: "linear-gradient(135deg,#21924A,#21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.32)" } : undefined}>
-      {os === "win" ? <WinIcon className="w-4 h-4 flex-shrink-0" /> : <MacIcon className="w-4 h-4 flex-shrink-0" />}
-      <span>{os === "win" ? "Download for Windows" : "Download for macOS"}</span>
+      {os === "win-direct" ? <WinIcon className="w-4 h-4 flex-shrink-0" /> : <MacIcon className="w-4 h-4 flex-shrink-0" />}
+      <span>{os === "win-direct" ? "Download for Windows" : "Download for macOS"}</span>
       {primary && <span className="text-[10px] font-black bg-white/25 px-2 py-0.5 rounded-full">FREE</span>}
     </button>
   );
-  if (!mounted) return <div className="flex gap-3">{btn("win", true)}</div>;
+
+  const storeBtn = (
+    <button key="store" onClick={() => onDownload("win")}
+      className={`flex items-center justify-center font-semibold border bg-white text-gray-600 border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 shadow-sm transition-all active:scale-[0.97] ${cls}`}>
+      <StoreIcon className="w-4 h-4 flex-shrink-0" />
+      <span>Get it from Microsoft Store</span>
+    </button>
+  );
+  if (!mounted) return <div className="flex gap-3">{btn("win-direct", true)}</div>;
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       {/* Show ONLY the visitor's own OS. Only fall back to showing both
-          when the OS is unknown (Linux / mobile / unrecognized). */}
+          when the OS is unknown (Linux / mobile / unrecognized).
+          Windows visitors also get the Store, because it installs with no
+          security prompt and some people will not take an .exe from a link. */}
       {detectedOS === "mac" ? btn("mac", true)
-        : detectedOS === "win" ? btn("win", true)
-        : <>{btn("win", true)}{btn("mac", false)}</>}
+        : detectedOS === "win" ? <>{btn("win-direct", true)}{storeBtn}</>
+        : <>{btn("win-direct", true)}{storeBtn}{btn("mac", false)}</>}
     </div>
+  );
+}
+
+function StoreIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z" />
+    </svg>
   );
 }
 
