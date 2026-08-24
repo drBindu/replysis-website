@@ -306,7 +306,8 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       animate={{ opacity: [0.35, 0.75, 0.35], scale: [0.97, 1.05, 0.97] }}
                       transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }} />
                   )}
-                  <button onClick={() => onDownload("win")}
+                  <button onClick={() => onDownload("win-direct")}
+                    title="Download the Windows installer"
                     className="group relative w-full flex items-center gap-3.5 px-8 py-[1.15rem] rounded-2xl text-white font-bold overflow-hidden"
                     style={
                       !mounted || detectedOS === "win" || detectedOS === "other"
@@ -369,8 +370,27 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                 )}
               </div>
 
-              {/* Secondary cross-platform nudge — always visible */}
-              <div className="flex items-center gap-2">
+              {/* Under the download: the same app from the Store, then the other
+                  platform. Both are alternatives to the button above, so they
+                  sit beneath it rather than competing with it - the installer
+                  is the route we lead with.
+
+                  The Store is a button rather than a text link because it is a
+                  real second way to get the app, not a footnote: it installs
+                  with no security prompt, which for some people is the
+                  difference between installing and not. */}
+              <div className="flex flex-wrap items-center gap-3">
+                {mounted && detectedOS === "win" && (
+                  <button onClick={() => onDownload("win")}
+                    title="Open the Microsoft Store listing - installs with no security prompt"
+                    className="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-xl bg-white border border-gray-200 hover:border-emerald-500/50 shadow-sm hover:shadow transition-all active:scale-[0.97]">
+                    <StoreIcon className="w-4 h-4 flex-shrink-0 text-gray-500 group-hover:text-emerald-700 transition-colors" />
+                    <span className="text-left leading-tight">
+                      <span className="block text-[8.5px] font-semibold uppercase tracking-wider text-gray-400">Get it from</span>
+                      <span className="block text-[12px] font-black text-gray-800 group-hover:text-emerald-800 transition-colors">Microsoft Store</span>
+                    </span>
+                  </button>
+                )}
                 {mounted && detectedOS === "win" && (
                   <button onClick={() => onDownload("mac")}
                     className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
@@ -382,7 +402,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   </button>
                 )}
                 {mounted && detectedOS === "mac" && (
-                  <button onClick={() => onDownload("win")}
+                  <button onClick={() => onDownload("win-direct")}
                     className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
                     <WinIcon className="w-3 h-3 flex-shrink-0" />
                     <span>Also available for Windows</span>
