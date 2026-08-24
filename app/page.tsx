@@ -30,6 +30,13 @@ import {
 // warning, updates itself, and is already live, so it is the better
 // destination regardless of whether the file comes back.
 const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
+// The same app, downloaded straight from us rather than through the Store.
+// Offered alongside the Store rather than instead of it: the Store copy installs
+// with no security warning, and this one shows Windows' unrecognised-publisher
+// prompt until the installer is signed and has built reputation. It exists
+// because a fix reaches people in minutes here, against days waiting on Store
+// review, and because some people will not install from a store at all.
+const WINDOWS_DIRECT = "https://github.com/drBindu/replysis-windows/releases/latest/download/Replysis-win-Setup.exe";
 const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
@@ -162,12 +169,17 @@ export default function Home() {
     setUser(null); setShowMenu(false);
   };
 
-  const download = async (os: "win" | "mac") => {
-    // Windows now opens the Store listing in a new tab. The Mac build is still
-    // a file, so it keeps the download attribute; applying that to a Store URL
+  const download = async (os: "win" | "win-direct" | "mac") => {
+    // The Store listing is a page and opens in a tab; the other two are files
+    // and use the download attribute. Applying that attribute to a Store URL
     // would ask the browser to save the page rather than open it.
     if (os === "win") {
       window.open(WINDOWS_DOWNLOAD, "_blank", "noopener,noreferrer");
+    } else if (os === "win-direct") {
+      const a = document.createElement("a");
+      a.href     = WINDOWS_DIRECT;
+      a.download = "Replysis-Setup.exe";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } else {
       const a = document.createElement("a");
       a.href     = MAC_DOWNLOAD;
@@ -278,7 +290,8 @@ export default function Home() {
           {/* ── Download pills  -  md+ ── */}
           <div className="hidden md:flex items-center gap-2 mr-1">
             {(!mounted || detectedOS !== "mac") && (
-            <button onClick={() => download("win")}
+            <button onClick={() => download("win-direct")}
+              title="Download the installer for Windows"
               className="group relative flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap overflow-hidden"
               style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 2px 10px rgba(26,102,48,0.28)" }}>
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
@@ -290,6 +303,16 @@ export default function Home() {
               <svg className="w-2.5 h-2.5 group-hover:translate-y-0.5 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
+            </button>
+            )}
+            {(!mounted || detectedOS !== "mac") && (
+            <button onClick={() => download("win")}
+              title="Open the Microsoft Store listing - installs with no security prompt"
+              className="group hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 bg-white border border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 rounded-full transition-all active:scale-[0.97] shadow-sm whitespace-nowrap">
+              <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z"/>
+              </svg>
+              Microsoft Store
             </button>
             )}
             {(!mounted || detectedOS !== "win") && (
@@ -451,13 +474,22 @@ export default function Home() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Download App</p>
               <div className={`grid gap-2 ${mounted && detectedOS !== "other" ? "grid-cols-1" : "grid-cols-2"}`}>
                 {(!mounted || detectedOS !== "mac") && (
-                <button onClick={() => { download("win"); setShowMobile(false); }}
+                <button onClick={() => { download("win-direct"); setShowMobile(false); }}
                   className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-white rounded-xl"
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)" }}>
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
                   </svg>
                   Windows
+                </button>
+                )}
+                {(!mounted || detectedOS !== "mac") && (
+                <button onClick={() => { download("win"); setShowMobile(false); }}
+                  className="flex items-center justify-center gap-2 py-3 text-[12px] font-bold text-gray-700 bg-white border border-gray-200 rounded-xl">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z"/>
+                  </svg>
+                  Microsoft Store
                 </button>
                 )}
                 {(!mounted || detectedOS !== "win") && (
