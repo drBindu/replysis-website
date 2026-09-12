@@ -520,16 +520,6 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-white/10 bg-[#0e0e15] p-0.5">
-              {WINDOWS.map((d) => (
-                <button key={d}
-                  onClick={() => { setWindowDays(d); fetchAll(true, currentCursor, d); }}
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                    windowDays === d ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
-                  {d}d
-                </button>
-              ))}
-            </div>
             <button
               onClick={() => fetchAll(true, currentCursor)}
               disabled={refreshing}
@@ -559,6 +549,10 @@ export default function AdminPage() {
           <Kpi label="Listening time" value={fmtMinutes(metrics.totalUsageMinutes)}
                sub="all users, all time" icon={<Clock size={12} />} />
         </section>
+        <p className="-mt-2 text-[11px] text-zinc-600">
+          These four are current state and all-time totals. They do not follow the
+          date range below.
+        </p>
 
         {/* Usage */}
         <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
@@ -566,15 +560,31 @@ export default function AdminPage() {
             <div>
               <h2 className="text-sm font-semibold">Usage and charges</h2>
               <p className="mt-0.5 text-[11px] text-zinc-500">
-                Last {windowDays} days. One row is recorded per billable action.
+                One row per billable action. This range drives everything in this
+                section and the usage columns in the table.
               </p>
             </div>
-            {usage?.window?.truncated && (
-              <span className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300">
-                Showing the newest {num(usage.window.eventsScanned)} events only
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider text-zinc-600">Range</span>
+              <div className="flex rounded-lg border border-white/10 bg-black/30 p-0.5">
+                {WINDOWS.map((d) => (
+                  <button key={d}
+                    onClick={() => { setWindowDays(d); fetchAll(true, currentCursor, d); }}
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
+                      windowDays === d ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
+                    {d} days
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {usage?.window?.truncated && (
+            <div className="mb-4 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+              More events than can be read at once. Showing the newest{" "}
+              {num(usage.window.eventsScanned)}, so totals below understate the range.
+            </div>
+          )}
 
           {usageError ? (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
