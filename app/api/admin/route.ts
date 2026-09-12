@@ -19,6 +19,15 @@ const DEFAULT_PAGE_SIZE = 100;
 const MAX_PAGE_SIZE = 100;
 const ONLINE_WINDOW_MS = 150_000;
 const VALID_PLANS = new Set(["free", "pro", "max", "lifetime", "teams"]);
+// Usage aggregation reads raw events and groups them here rather than asking
+// Firestore for one aggregate per user, which would be a query per row on the
+// page. The cap is what stops a busy month from turning the dashboard into a
+// multi-megabyte read: past it the portal says the window is truncated instead
+// of quietly showing a number that is too low.
+const USAGE_MAX_EVENTS = 5_000;
+const USAGE_DEFAULT_DAYS = 30;
+const USAGE_MAX_DAYS = 180;
+
 const BACKEND_INTERNAL_URL = (process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 const ACCOUNT_DELETION_TOKEN = process.env.ACCOUNT_DELETION_TOKEN || "";
 
@@ -205,6 +214,120 @@ async function deleteBackendResumes(userId: string) {
   }
 }
 
+type UsageRow = {
+  credits: number;       // net, refunds already subtracted
+  charged: number;       // gross, before refunds
+  refunded: number;      // positive number, what came back
+  events: number;
+  refunds: number;
+  promptTokens: number;
+  completionTokens: number;
+  // Tokens per model, so a cost can be worked out at each model's own rate
+  // rather than one blended guess across providers.
+  tokensByModel: Record<string, { prompt: number; completion: number }>;
+  byAction: Record<string, number>;
+  byModel: Record<string, number>;
+  lastAt: number | null;
+  guest: boolean;
+};
+
+function emptyUsageRow(guest: boolean): UsageRow {
+  return {
+    credits: 0, charged: 0, refunded: 0, events: 0, refunds: 0,
+    promptTokens: 0, completionTokens: 0, tokensByModel: {},
+    byAction: {}, byModel: {}, lastAt: null, guest,
+  };
+}
+
+/**
+ * Per-identity and whole-product usage over a window.
+ *
+ * Charges and refunds are separate rows by design, so a net figure alone would
+ * hide how often an answer was paid for and then failed. Both are returned:
+ * `credits` is what was kept, `charged` and `refunded` are what happened.
+ */
+async function usageView(db: Firestore, days: number) {
+  const since = new Date(Date.now() - days * 86_400_000);
+
+  const snapshot = await db.collection("usage_events")
+    .where("createdAt", ">=", since)
+    .orderBy("createdAt", "desc")
+    .limit(USAGE_MAX_EVENTS + 1)
+    .get();
+
+  const truncated = snapshot.docs.length > USAGE_MAX_EVENTS;
+  const docs = truncated ? snapshot.docs.slice(0, USAGE_MAX_EVENTS) : snapshot.docs;
+
+  const byIdentity: Record<string, UsageRow> = {};
+  const totals = emptyUsageRow(false);
+  const byDay: Record<string, number> = {};
+  const recent: any[] = [];
+
+  for (const doc of docs) {
+    const d = doc.data();
+    const id = typeof d.identityId === "string" ? d.identityId : "";
+    if (!id) continue;
+
+    const credits = Number(d.credits) || 0;
+    const isRefund = credits < 0;
+    const action = typeof d.action === "string" ? d.action : "unknown";
+    const model = typeof d.model === "string" && d.model ? d.model : "unknown";
+    const at = d.createdAt?.toMillis?.() ?? null;
+
+    const promptTokens = Number(d.promptTokens) || 0;
+    const completionTokens = Number(d.completionTokens) || 0;
+
+    const row = byIdentity[id] ?? (byIdentity[id] = emptyUsageRow(Boolean(d.guest)));
+    for (const target of [row, totals]) {
+      target.credits += credits;
+      target.events += 1;
+      if (isRefund) { target.refunded += -credits; target.refunds += 1; }
+      else          { target.charged  += credits; }
+      target.byAction[action] = (target.byAction[action] ?? 0) + 1;
+      target.byModel[model]   = (target.byModel[model] ?? 0) + 1;
+
+      // Tokens are counted on refunded rows too. The provider ran and billed us
+      // whether or not the customer was charged in the end, and the point of
+      // this number is what the traffic cost, not what it earned.
+      target.promptTokens += promptTokens;
+      target.completionTokens += completionTokens;
+      if (promptTokens || completionTokens) {
+        const bucket = target.tokensByModel[model]
+          ?? (target.tokensByModel[model] = { prompt: 0, completion: 0 });
+        bucket.prompt += promptTokens;
+        bucket.completion += completionTokens;
+      }
+    }
+    if (at && (row.lastAt === null || at > row.lastAt)) row.lastAt = at;
+    if (at && (totals.lastAt === null || at > totals.lastAt)) totals.lastAt = at;
+
+    const day = typeof d.day === "string" ? d.day : null;
+    if (day && !isRefund) byDay[day] = (byDay[day] ?? 0) + credits;
+
+    // A short feed so the portal can show what just happened without a
+    // second round trip.
+    if (recent.length < 100) {
+      recent.push({
+        identityId: id,
+        email: typeof d.email === "string" ? d.email : null,
+        guest: Boolean(d.guest),
+        action, model,
+        provider: typeof d.provider === "string" ? d.provider : null,
+        credits, at,
+        promptTokens, completionTokens,
+      });
+    }
+  }
+
+  return {
+    window: { days, since: since.toISOString(), truncated, eventsScanned: docs.length },
+    totals,
+    byIdentity,
+    byDay,
+    recent,
+  };
+}
+
 export async function GET(req: Request) {
   const limit = rateLimit(`admin:${clientIp(req)}`, 60, 60_000);
   if (!limit.ok) {
@@ -221,6 +344,25 @@ export async function GET(req: Request) {
   if (!db) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
 
   const query = new URL(req.url).searchParams;
+
+  if (query.get("view") === "usage") {
+    const requestedDays = Number(query.get("days"));
+    const days = Number.isSafeInteger(requestedDays) && requestedDays > 0
+      ? Math.min(requestedDays, USAGE_MAX_DAYS)
+      : USAGE_DEFAULT_DAYS;
+    try {
+      return NextResponse.json(await usageView(db, days));
+    } catch (error) {
+      // The range query needs a createdAt index. Say so plainly rather than
+      // returning a generic 500 that looks like the portal is broken.
+      console.error("[admin] Usage query failed", error);
+      return NextResponse.json(
+        { error: "Unable to load usage. If this is the first run, Firestore may still be building the usage_events index." },
+        { status: 500 },
+      );
+    }
+  }
+
   const cursor = query.get("cursor");
   if (cursor !== null && !validUserId(cursor)) {
     return NextResponse.json({ error: "Invalid page cursor" }, { status: 400 });
@@ -240,6 +382,8 @@ export async function GET(req: Request) {
       userPage,
       userCount,
       paidCount,
+      proCount,
+      maxCount,
       usage,
       liveCount,
       winDownloads,
@@ -248,6 +392,8 @@ export async function GET(req: Request) {
       usersQuery.get(),
       users.count().get(),
       users.where("plan", "in", ["pro", "max", "lifetime", "teams"]).count().get(),
+      users.where("plan", "==", "pro").count().get(),
+      users.where("plan", "==", "max").count().get(),
       users.aggregate({ totalDurationSeconds: AggregateField.sum("totalDurationSeconds") }).get(),
       users.where("lastActive", ">=", activeSince).count().get(),
       downloads.where("os", "==", "win").count().get(),
@@ -272,6 +418,11 @@ export async function GET(req: Request) {
       metrics: {
         users: userCount.data().count,
         paidUsers: paidCount.data().count,
+        // Split so the portal can price revenue. Counted server side because
+        // the user list is paginated and a page of 100 cannot be summed into a
+        // figure that describes the whole product.
+        proUsers: proCount.data().count,
+        maxUsers: maxCount.data().count,
         liveUsers: liveCount.data().count,
         totalUsageMinutes: Math.round((Number(usage.data().totalDurationSeconds) || 0) / 60),
         winDownloads: winDownloads.data().count,

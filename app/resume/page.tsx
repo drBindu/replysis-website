@@ -70,7 +70,6 @@ const AI_PROVIDERS: {
 }[] = [
   { id: "openai", label: "OpenAI", model: "GPT-4o",    color: "#10a37f", light: "rgba(16,163,127,0.10)", icon: "✦", desc: "Best quality" },
   { id: "gemini", label: "Gemini", model: "2.0 Flash", color: "#4285f4", light: "rgba(66,133,244,0.10)", icon: "✧", desc: "Fast & smart" },
-  { id: "groq",   label: "Groq",   model: "Llama 3.3", color: "#f55036", light: "rgba(245,80,54,0.10)",  icon: "⚡", desc: "Ultra fast"  },
 ];
 
 const FONTS = [

@@ -135,21 +135,27 @@ function cleanJson(text: string) {
 // ============================================================================
 // 4) MODEL ROUTER
 // ============================================================================
-type ModelProvider = "groq" | "openai" | "gemini";
+type ModelProvider = "openai" | "gemini";
 
-// Groq retired the Llama models on 2026-08-16 and Mixtral before them. The old
-// ids stay as keys so a saved preference or an older client still resolves, but
-// they now point at the replacements Groq names.
-const GROQ_FAST = "openai/gpt-oss-20b";    // replaces llama-3.1-8b-instant
-const GROQ_DEEP = "openai/gpt-oss-120b";   // replaces llama-3.3-70b-versatile
+// Groq is gone from the product. It was dropped because its capacity could not
+// be bought above a hard free-tier ceiling, and the desktop backend moved to
+// Cerebras and Gemini; this route kept a full Groq client and defaulted to it
+// long after nothing called it.
+//
+// The retired ids stay as keys. A saved preference or an older client still
+// sends "llama-3.3-70b", and a key that resolves is better than an error for a
+// choice the product no longer offers. They now point at Gemini, which is what
+// the Java backend does with the same strings.
+const FAST_MODEL = "gemini-3.5-flash-lite";
+const DEEP_MODEL = "gemini-3.5-flash-lite";
 
 const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> = {
-  "llama-3.1-8b":         { provider: "groq",   apiModel: GROQ_FAST                  },
-  "llama-3.3-70b":        { provider: "groq",   apiModel: GROQ_DEEP                  },
-  "mixtral-8x7b":         { provider: "groq",   apiModel: GROQ_DEEP                  },
-  "llama-3.1-8b-instant": { provider: "groq",   apiModel: GROQ_FAST                  },
-  "gpt-oss-20b":          { provider: "groq",   apiModel: GROQ_FAST                  },
-  "gpt-oss-120b":         { provider: "groq",   apiModel: GROQ_DEEP                  },
+  "llama-3.1-8b":         { provider: "gemini", apiModel: FAST_MODEL                 },
+  "llama-3.3-70b":        { provider: "gemini", apiModel: DEEP_MODEL                 },
+  "mixtral-8x7b":         { provider: "gemini", apiModel: DEEP_MODEL                 },
+  "llama-3.1-8b-instant": { provider: "gemini", apiModel: FAST_MODEL                 },
+  "gpt-oss-20b":          { provider: "gemini", apiModel: FAST_MODEL                 },
+  "gpt-oss-120b":         { provider: "gemini", apiModel: DEEP_MODEL                 },
   "gpt-4o":               { provider: "openai", apiModel: "gpt-4o"                   },
   "gpt-4o-mini":          { provider: "openai", apiModel: "gpt-4o-mini"              },
   "gemini-1.5-pro":       { provider: "gemini", apiModel: "gemini-1.5-pro"           },
@@ -157,15 +163,15 @@ const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> =
 };
 
 function resolveModel(modelId: string): { provider: ModelProvider; apiModel: string } {
-  if (!modelId) return { provider: "groq", apiModel: GROQ_FAST };
+  if (!modelId) return { provider: "gemini", apiModel: FAST_MODEL };
   if (MODEL_MAP[modelId]) return MODEL_MAP[modelId];
   const lower = modelId.toLowerCase();
   if (MODEL_MAP[lower]) return MODEL_MAP[lower];
   for (const key of Object.keys(MODEL_MAP)) {
     if (lower.includes(key) || key.includes(lower)) return MODEL_MAP[key];
   }
-  console.warn(`⚠️ Unknown model "${modelId}", defaulting to Groq`);
-  return { provider: "groq", apiModel: GROQ_FAST };
+  console.warn(`Unknown model "${modelId}", defaulting to Gemini`);
+  return { provider: "gemini", apiModel: FAST_MODEL };
 }
 
 // ── OpenAI-compatible caller (Groq + OpenAI) ──
@@ -245,18 +251,11 @@ async function callLLM(
       if (!apiKey) throw new Error("GEMINI_API_KEY missing");
       return await callGemini(apiKey, apiModel, systemPrompt, userPrompt, opts);
     }
-    if (provider === "openai") {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) throw new Error("OPENAI_API_KEY missing");
-      return await callOpenAICompatible("https://api.openai.com/v1", apiKey, apiModel, [
-        { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt   },
-      ], opts);
-    }
-    // Default: Groq
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY missing");
-    return await callOpenAICompatible("https://api.groq.com/openai/v1", apiKey, apiModel, [
+    // Default: OpenAI. Gemini is handled above, so this is only reached for an
+    // openai id or something that resolved to one.
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
+    return await callOpenAICompatible("https://api.openai.com/v1", apiKey, apiModel, [
       { role: "system", content: systemPrompt },
       { role: "user",   content: userPrompt   },
     ], opts);
@@ -290,19 +289,11 @@ async function callLLMWithMessages(
     return callGemini(apiKey, apiModel, systemMsg, userMsg, opts);
   }
 
-  if (provider === "openai") {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
-    return callOpenAICompatible(
-      "https://api.openai.com/v1", apiKey, apiModel, messages, opts
-    );
-  }
-
-  // Default: Groq
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY missing");
+  // Default: OpenAI. Gemini is handled above.
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY missing");
   return callOpenAICompatible(
-    "https://api.groq.com/openai/v1", apiKey, apiModel, messages, opts
+    "https://api.openai.com/v1", apiKey, apiModel, messages, opts
   );
 }
 

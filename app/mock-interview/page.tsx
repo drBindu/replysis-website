@@ -105,8 +105,11 @@ interface TaggedQuestion {
 const AI_MODELS: AiModel[] = [
   { id: "gpt-4o",         name: "GPT-4o",      provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#2E8B45" },
   // Was "Llama 3.3 70B" at 2 credits. Groq retired the Llama models on
-  // 2026-08-16, and a live answer has always cost 5 credits, not 2.
-  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Groq",  badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
+  // 2026-08-16, and a live answer has always cost 5 credits, not 2. The
+  // model name stayed and the provider changed again: the same id is served
+  // by Cerebras now, and naming Groq here described a provider the product
+  // no longer calls.
+  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Cerebras", badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
 ];
 
 const MIN_QUESTIONS          = 5;

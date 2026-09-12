@@ -9,7 +9,7 @@ const STRENGTHS = [
     unit: "response target",
     title: "Faster than your next thought",
     body: "Live answer suggestions begin streaming as they are generated. Network quality, question length, and provider load can affect the exact response time.",
-    tag: "Groq LPU inference",
+    tag: "Cerebras inference",
     color: "text-zinc-600",
     glow: "rgba(26,102,48,0.12)",
     border: "rgba(26,102,48,0.18)",

@@ -94,7 +94,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">7. Third-party services</h2>
-            <p className="text-sm">The Service integrates with Stripe, Firebase, Groq, and Speechmatics. Use of these is subject to their own terms. We are not responsible for their actions or content.</p>
+            <p className="text-sm">The Service integrates with Stripe, Firebase, Cerebras, Google Gemini, and Speechmatics. Use of these is subject to their own terms. We are not responsible for their actions or content.</p>
           </div>
 
           <div>
