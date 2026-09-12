@@ -109,7 +109,7 @@ const AI_MODELS: AiModel[] = [
   // model name stayed and the provider changed again: the same id is served
   // by Cerebras now, and naming Groq here described a provider the product
   // no longer calls.
-  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Cerebras", badge: "Instant",     speed: "~0.3s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
+  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Cerebras", badge: "Instant",     speed: "~0.15s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
 ];
 
 const MIN_QUESTIONS          = 5;

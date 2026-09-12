@@ -135,7 +135,7 @@ function cleanJson(text: string) {
 // ============================================================================
 // 4) MODEL ROUTER
 // ============================================================================
-type ModelProvider = "openai" | "gemini";
+type ModelProvider = "cerebras" | "openai" | "gemini";
 
 // Groq is gone from the product. It was dropped because its capacity could not
 // be bought above a hard free-tier ceiling, and the desktop backend moved to
@@ -146,16 +146,27 @@ type ModelProvider = "openai" | "gemini";
 // sends "llama-3.3-70b", and a key that resolves is better than an error for a
 // choice the product no longer offers. They now point at Gemini, which is what
 // the Java backend does with the same strings.
+// gpt-oss-120b on Cerebras is what the desktop app uses, and it is the fastest
+// thing available: measured from the server at 129ms to the first visible word
+// against 458-523ms for Gemini on the same prompt. The website offered the same
+// model name while calling somebody else, so the picker said Cerebras and the
+// request went to Google. Same model, same provider, both places now.
+//
+// reasoning_effort matters as much as the model here. gpt-oss streams hidden
+// reasoning before any answer text; without "low" the measurement never reached
+// a visible word at all. See callOpenAICompatible below.
+const CEREBRAS_MODEL = "gpt-oss-120b";
 const FAST_MODEL = "gemini-3.5-flash-lite";
-const DEEP_MODEL = "gemini-3.5-flash-lite";
 
 const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> = {
-  "llama-3.1-8b":         { provider: "gemini", apiModel: FAST_MODEL                 },
-  "llama-3.3-70b":        { provider: "gemini", apiModel: DEEP_MODEL                 },
-  "mixtral-8x7b":         { provider: "gemini", apiModel: DEEP_MODEL                 },
-  "llama-3.1-8b-instant": { provider: "gemini", apiModel: FAST_MODEL                 },
-  "gpt-oss-20b":          { provider: "gemini", apiModel: FAST_MODEL                 },
-  "gpt-oss-120b":         { provider: "gemini", apiModel: DEEP_MODEL                 },
+  // Retired Groq ids. A saved preference still resolves rather than erroring,
+  // and it lands on the model that replaced them.
+  "llama-3.1-8b":         { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "llama-3.3-70b":        { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "mixtral-8x7b":         { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "llama-3.1-8b-instant": { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "gpt-oss-20b":          { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "gpt-oss-120b":         { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
   "gpt-4o":               { provider: "openai", apiModel: "gpt-4o"                   },
   "gpt-4o-mini":          { provider: "openai", apiModel: "gpt-4o-mini"              },
   "gemini-1.5-pro":       { provider: "gemini", apiModel: "gemini-1.5-pro"           },
@@ -163,15 +174,15 @@ const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> =
 };
 
 function resolveModel(modelId: string): { provider: ModelProvider; apiModel: string } {
-  if (!modelId) return { provider: "gemini", apiModel: FAST_MODEL };
+  if (!modelId) return { provider: "cerebras", apiModel: CEREBRAS_MODEL };
   if (MODEL_MAP[modelId]) return MODEL_MAP[modelId];
   const lower = modelId.toLowerCase();
   if (MODEL_MAP[lower]) return MODEL_MAP[lower];
   for (const key of Object.keys(MODEL_MAP)) {
     if (lower.includes(key) || key.includes(lower)) return MODEL_MAP[key];
   }
-  console.warn(`Unknown model "${modelId}", defaulting to Gemini`);
-  return { provider: "gemini", apiModel: FAST_MODEL };
+  console.warn(`Unknown model "${modelId}", defaulting to Cerebras`);
+  return { provider: "cerebras", apiModel: CEREBRAS_MODEL };
 }
 
 // ── OpenAI-compatible caller (Groq + OpenAI) ──
@@ -188,6 +199,11 @@ async function callOpenAICompatible(
     temperature: opts.temperature ?? 0.3,
     max_tokens:  opts.max_tokens  ?? 1000,
   };
+  // Without this, gpt-oss spends the whole token budget on hidden reasoning and
+  // returns little or no answer. The Java backend sends the same thing for the
+  // same reason; "none" is rejected outright with a 400, "low" is as far down as
+  // it goes.
+  if (apiModel.includes("gpt-oss")) body.reasoning_effort = "low";
   if (opts.json) body.response_format = { type: "json_object" };
 
   const res  = await fetch(`${baseUrl}/chat/completions`, {
@@ -251,8 +267,15 @@ async function callLLM(
       if (!apiKey) throw new Error("GEMINI_API_KEY missing");
       return await callGemini(apiKey, apiModel, systemPrompt, userPrompt, opts);
     }
-    // Default: OpenAI. Gemini is handled above, so this is only reached for an
-    // openai id or something that resolved to one.
+    if (provider === "cerebras") {
+      const apiKey = process.env.CEREBRAS_API_KEY;
+      if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
+      return await callOpenAICompatible("https://api.cerebras.ai/v1", apiKey, apiModel, [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userPrompt   },
+      ], opts);
+    }
+    // Default: OpenAI, reached only for an openai id.
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY missing");
     return await callOpenAICompatible("https://api.openai.com/v1", apiKey, apiModel, [
@@ -289,7 +312,14 @@ async function callLLMWithMessages(
     return callGemini(apiKey, apiModel, systemMsg, userMsg, opts);
   }
 
-  // Default: OpenAI. Gemini is handled above.
+  if (provider === "cerebras") {
+    const apiKey = process.env.CEREBRAS_API_KEY;
+    if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
+    return callOpenAICompatible(
+      "https://api.cerebras.ai/v1", apiKey, apiModel, messages, opts
+    );
+  }
+  // Default: OpenAI, reached only for an openai id.
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY missing");
   return callOpenAICompatible(
