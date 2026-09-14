@@ -103,7 +103,6 @@ interface TaggedQuestion {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 const AI_MODELS: AiModel[] = [
-  { id: "gpt-4o",         name: "GPT-4o",      provider: "OpenAI", badge: "Recommended", speed: "~2s",   quality: "Best",  creditsPerQ: 5, icon: "🤖", color: "#2E8B45" },
   // Was "Llama 3.3 70B" at 2 credits. Groq retired the Llama models on
   // 2026-08-16, and a live answer has always cost 5 credits, not 2. The
   // model name stayed and the provider changed again: the same id is served
@@ -654,7 +653,7 @@ export default function MockInterviewPage() {
   // ── Session Config ───────────────────────────────────────────
   const [resumeText,   setResumeText]   = useState("");
   const [jdText,       setJdText]       = useState("");
-  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [selectedModel, setSelectedModel] = useState("gpt-oss-120b");
   const [questionCount, setQuestionCount] = useState(10);
   const [showModelPicker,  setShowModelPicker]  = useState(false);
   const [showDiffPicker,   setShowDiffPicker]   = useState(false);

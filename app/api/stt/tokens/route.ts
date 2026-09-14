@@ -135,7 +135,7 @@ function cleanJson(text: string) {
 // ============================================================================
 // 4) MODEL ROUTER
 // ============================================================================
-type ModelProvider = "cerebras" | "openai" | "gemini";
+type ModelProvider = "cerebras" | "gemini";
 
 // Groq is gone from the product. It was dropped because its capacity could not
 // be bought above a hard free-tier ceiling, and the desktop backend moved to
@@ -167,10 +167,15 @@ const MODEL_MAP: Record<string, { provider: ModelProvider; apiModel: string }> =
   "llama-3.1-8b-instant": { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
   "gpt-oss-20b":          { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
   "gpt-oss-120b":         { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
-  "gpt-4o":               { provider: "openai", apiModel: "gpt-4o"                   },
-  "gpt-4o-mini":          { provider: "openai", apiModel: "gpt-4o-mini"              },
-  "gemini-1.5-pro":       { provider: "gemini", apiModel: "gemini-1.5-pro"           },
-  "gemini-1.5-flash":     { provider: "gemini", apiModel: "gemini-1.5-flash"         },
+  // OpenAI is gone as well; its account has no billing. These ids stay as
+  // aliases so a saved preference resolves instead of failing.
+  "gpt-4o":               { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  "gpt-4o-mini":          { provider: "cerebras", apiModel: CEREBRAS_MODEL           },
+  // Google retired every 1.5 model: both answered 404 "not found for API
+  // version v1beta" on 2026-09-14. Kept as aliases onto the current model so a
+  // saved preference works instead of failing.
+  "gemini-1.5-pro":       { provider: "gemini", apiModel: FAST_MODEL                 },
+  "gemini-1.5-flash":     { provider: "gemini", apiModel: FAST_MODEL                 },
 };
 
 function resolveModel(modelId: string): { provider: ModelProvider; apiModel: string } {
@@ -185,7 +190,7 @@ function resolveModel(modelId: string): { provider: ModelProvider; apiModel: str
   return { provider: "cerebras", apiModel: CEREBRAS_MODEL };
 }
 
-// ── OpenAI-compatible caller (Groq + OpenAI) ──
+// ── OpenAI-compatible caller, the request shape Cerebras speaks ──
 async function callOpenAICompatible(
   baseUrl:  string,
   apiKey:   string,
@@ -267,18 +272,12 @@ async function callLLM(
       if (!apiKey) throw new Error("GEMINI_API_KEY missing");
       return await callGemini(apiKey, apiModel, systemPrompt, userPrompt, opts);
     }
-    if (provider === "cerebras") {
-      const apiKey = process.env.CEREBRAS_API_KEY;
-      if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
-      return await callOpenAICompatible("https://api.cerebras.ai/v1", apiKey, apiModel, [
-        { role: "system", content: systemPrompt },
-        { role: "user",   content: userPrompt   },
-      ], opts);
-    }
-    // Default: OpenAI, reached only for an openai id.
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
-    return await callOpenAICompatible("https://api.openai.com/v1", apiKey, apiModel, [
+    // Everything that is not Gemini is Cerebras. OpenAI used to be the
+    // fallthrough here, on an account with no billing, so the mock interview,
+    // whose default model was gpt-4o, failed with a 429 on its first request.
+    const apiKey = process.env.CEREBRAS_API_KEY;
+    if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
+    return await callOpenAICompatible("https://api.cerebras.ai/v1", apiKey, apiModel, [
       { role: "system", content: systemPrompt },
       { role: "user",   content: userPrompt   },
     ], opts);
@@ -312,18 +311,11 @@ async function callLLMWithMessages(
     return callGemini(apiKey, apiModel, systemMsg, userMsg, opts);
   }
 
-  if (provider === "cerebras") {
-    const apiKey = process.env.CEREBRAS_API_KEY;
-    if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
-    return callOpenAICompatible(
-      "https://api.cerebras.ai/v1", apiKey, apiModel, messages, opts
-    );
-  }
-  // Default: OpenAI, reached only for an openai id.
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY missing");
+  // Everything that is not Gemini is Cerebras; see callLLM above.
+  const apiKey = process.env.CEREBRAS_API_KEY;
+  if (!apiKey) throw new Error("CEREBRAS_API_KEY missing");
   return callOpenAICompatible(
-    "https://api.openai.com/v1", apiKey, apiModel, messages, opts
+    "https://api.cerebras.ai/v1", apiKey, apiModel, messages, opts
   );
 }
 

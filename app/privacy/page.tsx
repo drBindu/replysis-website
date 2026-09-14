@@ -91,7 +91,6 @@ export default function PrivacyPage() {
                 { name: "Firebase (Google)", purpose: "Authentication and account management" },
                 { name: "Stripe", purpose: "Payment processing and subscription management" },
                 { name: "Cerebras", purpose: "Language-model inference for live interview answers" },
-                { name: "OpenAI", purpose: "Language-model inference when an OpenAI model is selected" },
                 { name: "Google Gemini", purpose: "Language-model inference when a Gemini model is selected" },
                 { name: "Speechmatics", purpose: "Real-time speech-to-text; live audio streams directly to this provider" },
               ].map((s, i) => (

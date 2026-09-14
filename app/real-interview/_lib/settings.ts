@@ -34,9 +34,6 @@ export const MODELS = [
   // old id still resolves, because MODEL_MAP keeps those ids as aliases.
   { id: "openai/gpt-oss-20b",  label: "GPT-OSS 20B",  tag: "FAST",     color: "blue"   },
   { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B", tag: "SMART",    color: "purple" },
-  { id: "gpt-4o-mini",      label: "GPT-4o Mini",      tag: "BALANCED", color: "green"  },
-  { id: "gpt-4o",           label: "GPT-4o",           tag: "BEST",     color: "yellow" },
-  { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash", tag: "GOOGLE",   color: "red"    },
 ] as const;
 
 export function loadSettings(): AppSettings {

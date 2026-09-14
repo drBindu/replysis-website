@@ -68,7 +68,6 @@ const AI_PROVIDERS: {
   id: AiProvider; label: string; model: string;
   color: string; light: string; icon: string; desc: string;
 }[] = [
-  { id: "openai", label: "OpenAI", model: "GPT-4o",    color: "#10a37f", light: "rgba(16,163,127,0.10)", icon: "✦", desc: "Best quality" },
   { id: "gemini", label: "Gemini", model: "2.0 Flash", color: "#4285f4", light: "rgba(66,133,244,0.10)", icon: "✧", desc: "Fast & smart" },
 ];
 
@@ -286,7 +285,7 @@ const ProBadge = () => (
    AI PROVIDER SELECTOR
 ════════════════════════════════════════════════════════════════ */
 function AiProviderSelector({ value, onChange }: { value: AiProvider; onChange: (p: AiProvider) => void }) {
-  const active = AI_PROVIDERS.find(p => p.id === value)!;
+  const active = AI_PROVIDERS.find(p => p.id === value) ?? AI_PROVIDERS[0];
   return (
     <div style={{ marginBottom:16 }}>
       <Label>AI Provider</Label>
@@ -648,7 +647,7 @@ export default function ResumePage() {
     }, 40);
   };
   const [jd,           setJd]           = useState("");
-  const [aiProvider,   setAiProvider]   = useState<AiProvider>("openai");
+  const [aiProvider,   setAiProvider]   = useState<AiProvider>("gemini");
 
   const [accentColor,  setAccentColor]  = useState("#1C7A3E");
   const [fontSize,     setFontSize]     = useState(11);

@@ -102,8 +102,6 @@ function SettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void 
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-wide ${
                         m.color === "blue"   ? "text-zinc-900 bg-zinc-100 border-zinc-200"         :
                         m.color === "purple" ? "text-zinc-900 bg-zinc-100 border-zinc-200"   :
-                        m.color === "green"  ? "text-zinc-900 bg-zinc-100 border-zinc-200":
-                        m.color === "yellow" ? "text-zinc-900 bg-zinc-100 border-zinc-200"      :
                                                "text-red-600 bg-red-50 border-red-100"
                       }`}>{m.tag}</span>
                     </button>
