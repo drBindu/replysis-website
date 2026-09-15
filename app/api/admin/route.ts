@@ -386,6 +386,8 @@ export async function GET(req: Request) {
       maxCount,
       usage,
       liveCount,
+      listeningUsers,
+      listeningGuests,
       winDownloads,
       macDownloads,
     ] = await Promise.all([
@@ -396,6 +398,11 @@ export async function GET(req: Request) {
       users.where("plan", "==", "max").count().get(),
       users.aggregate({ totalDurationSeconds: AggregateField.sum("totalDurationSeconds") }).get(),
       users.where("lastActive", ">=", activeSince).count().get(),
+      // Apps report listening once a minute while the mic is live, and the
+      // backend stamps lastListeningAt on each report. Guests live in
+      // anon_devices, and they hold speech sessions just the same.
+      users.where("lastListeningAt", ">=", activeSince).count().get(),
+      db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get(),
       downloads.where("os", "==", "win").count().get(),
       downloads.where("os", "==", "mac").count().get(),
     ]);
@@ -424,6 +431,7 @@ export async function GET(req: Request) {
         proUsers: proCount.data().count,
         maxUsers: maxCount.data().count,
         liveUsers: liveCount.data().count,
+        listeningNow: listeningUsers.data().count + listeningGuests.data().count,
         totalUsageMinutes: Math.round((Number(usage.data().totalDurationSeconds) || 0) / 60),
         winDownloads: winDownloads.data().count,
         macDownloads: macDownloads.data().count,

@@ -14,6 +14,13 @@ import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/pro
 // client beats every 60s, so 150s tolerates one missed beat.
 const ONLINE_WINDOW_SECS = 150;
 
+// Speech sessions that can run at the same moment: Deepgram's 150 on
+// pay-as-you-go, then Speechmatics' 50 as the fallback behind it. Past this a
+// new session is refused, so the warning comes early enough to ask Deepgram
+// for more before anyone is turned away.
+const SPEECH_SESSION_LIMIT = 200;
+const SPEECH_WARN_AT = 120;
+
 // What each plan bills per month. Matches the Stripe products created in
 // app/api/stripe/checkout/route.ts; retired plans bill nothing on renewal.
 const PLAN_PRICE_USD: Record<string, number> = {
@@ -24,13 +31,13 @@ const WINDOWS = [7, 30, 90] as const;
 
 type AdminMetrics = {
   users: number; paidUsers: number; proUsers: number; maxUsers: number;
-  liveUsers: number; totalUsageMinutes: number;
+  liveUsers: number; listeningNow: number; totalUsageMinutes: number;
   winDownloads: number; macDownloads: number;
 };
 
 const EMPTY_METRICS: AdminMetrics = {
   users: 0, paidUsers: 0, proUsers: 0, maxUsers: 0,
-  liveUsers: 0, totalUsageMinutes: 0, winDownloads: 0, macDownloads: 0,
+  liveUsers: 0, listeningNow: 0, totalUsageMinutes: 0, winDownloads: 0, macDownloads: 0,
 };
 
 type UsageRow = {
@@ -313,6 +320,7 @@ export default function AdminPage() {
         proUsers: Number(m.proUsers) || 0,
         maxUsers: Number(m.maxUsers) || 0,
         liveUsers: Number(m.liveUsers) || 0,
+        listeningNow: Number(m.listeningNow) || 0,
         totalUsageMinutes: Number(m.totalUsageMinutes) || 0,
         winDownloads: Number(m.winDownloads) || 0,
         macDownloads: Number(m.macDownloads) || 0,
@@ -537,6 +545,20 @@ export default function AdminPage() {
           </div>
         )}
 
+        {metrics.listeningNow >= SPEECH_WARN_AT ? (
+          <div role="alert" className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-200">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <div>
+              <div className="font-semibold">
+                {num(metrics.listeningNow)} people are listening at once. The limit is {num(SPEECH_SESSION_LIMIT)}.
+              </div>
+              <div className="mt-0.5 text-amber-200/80">
+                Ask Deepgram for a higher limit before it fills: deepgram.com/contact-us
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {/* Money and people */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Monthly revenue" value={money(mrr)}
@@ -544,8 +566,10 @@ export default function AdminPage() {
                icon={<TrendingUp size={12} />} tone={mrr > 0 ? "good" : "plain"} />
           <Kpi label="Users" value={num(metrics.users)}
                sub={`${num(metrics.paidUsers)} paying`} icon={<Users size={12} />} />
-          <Kpi label="Live now" value={num(metrics.liveUsers)}
-               sub={`within ${ONLINE_WINDOW_SECS}s`} icon={<Activity size={12} />} />
+          <Kpi label="Listening now" value={num(metrics.listeningNow)}
+               sub={`of ${num(SPEECH_SESSION_LIMIT)} at once, ${num(metrics.liveUsers)} apps open`}
+               icon={<Activity size={12} />}
+               tone={metrics.listeningNow >= SPEECH_WARN_AT ? "warn" : "plain"} />
           <Kpi label="Listening time" value={fmtMinutes(metrics.totalUsageMinutes)}
                sub="all users, all time" icon={<Clock size={12} />} />
         </section>
