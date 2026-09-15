@@ -36,7 +36,7 @@ const STEPS = [
       { label: "For practice", value: "Browser version at replysis.com/real-interview or /mock-interview. No install needed." },
       { label: "Setup time", value: "Under 60 seconds from download to first answer." },
     ],
-    tip: "Test the desktop overlay, microphone, system audio, and capture behavior in a practice call before your real interview.",
+    tip: "Test the desktop overlay, microphone, system audio, and capture behavior in a practice call before your real interview. In the real Zoom, Teams or Meet interview, turn off Use my microphone in Settings so only the interviewer is heard.",
   },
   {
     n: "03",
