@@ -216,34 +216,85 @@ export function isGreeting(q: string): boolean {
   ].includes(t);
 }
 
+// The pleasantries themselves, matched and then subtracted. One list, so the
+// matching and the subtraction can never drift apart.
+export const SMALL_TALK_PHRASES = [
+  "how are you", "how's it going", "how is it going", "how you doing",
+  "how have you been", "how is your day", "how's your day", "how was your day",
+  "how is your evening", "how's your evening", "how is your night",
+  "nice to meet", "thanks for coming", "pleasure to meet",
+];
+
+// Words that can trail a pleasantry without making it a question. Generous on
+// purpose: a word wrongly listed here costs a canned reply to chit-chat, a word
+// wrongly missing costs one model round trip, and only one of those is visible
+// to an interviewer.
+const PLEASANTRY_FILLER = new Set([
+  "hi", "hello", "hey", "there", "greetings",
+  "good", "great", "fine", "well", "ok", "okay", "alright",
+  "morning", "afternoon", "evening", "night", "day", "today",
+  "you", "your", "yours", "yourself", "u", "i", "im", "me", "my",
+  "we", "us", "it", "its", "and", "so", "too", "very", "much",
+  "thanks", "thank", "thankyou", "welcome", "please",
+  "sir", "maam", "madam", "mam",
+  "am", "are", "is", "was", "be", "been", "doing", "do", "did",
+  "how", "hope", "glad", "happy", "nice", "meet", "meeting",
+  "pleasure", "coming", "come", "in", "for", "to", "the", "a", "an",
+  "yeah", "yes", "yep", "no", "um", "uh", "er", "oh", "hmm",
+]);
+
+/**
+ * Take the pleasantry and the filler away: is anything left standing?
+ *
+ * This replaces a rule that fired on any line of eight words or fewer that
+ * merely CONTAINED "how are you" or "nice to meet", with no escape at all, so
+ * "How are you handling state in React?" was answered with "Doing really well,
+ * thanks! Excited to be here" and the model never saw it. The canned reply is
+ * written straight into the transcript, so nothing tells the candidate it
+ * happened.
+ *
+ * A word list can only name the technologies somebody thought of on the day.
+ * Subtracting asks the question the code actually cares about: after the
+ * pleasantry and the filler, did the interviewer say anything else?
+ */
+export function isPleasantryOnly(q: string): boolean {
+  let stripped = q.toLowerCase();
+  for (const phrase of SMALL_TALK_PHRASES) stripped = stripped.split(phrase).join(" ");
+
+  const leftovers = stripped
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .filter((w) => !PLEASANTRY_FILLER.has(w));
+
+  return leftovers.length === 0;
+}
+
 export function isSmallTalk(q: string): boolean {
   const t         = q.toLowerCase();
   const wordCount = t.split(/\s+/).filter(Boolean).length;
-  // Only fire if question is SHORT (≤8 words)  -  not when greeting is embedded in a real question
-  return (
-    wordCount <= 8 &&
-    (
-      t.includes("how are you")       || t.includes("how's it going") ||
-      t.includes("how you doing")     || t.includes("how have you been") ||
-      t.includes("nice to meet")      || t.includes("thanks for coming") ||
-      t.includes("pleasure to meet")
-    )
-  );
+  if (wordCount > 8) return false;
+  if (!SMALL_TALK_PHRASES.some((phrase) => t.includes(phrase))) return false;
+  return isPleasantryOnly(t);
 }
 
 export function isGreetingPlusSmallTalk(q: string): boolean {
   const t = q.toLowerCase();
-  // Only match if the question is primarily a greeting + small talk (no real question after)
-  return (
-    /^(hi|hello|hey)[\s,]+.*(how are you|how's it going|how you doing)/i.test(t) &&
-    q.trim().split(/\s+/).length <= 10
-  );
+  if (!/^(hi|hello|hey)[\s,]+/.test(t)) return false;
+  if (!SMALL_TALK_PHRASES.some((phrase) => t.includes(phrase))) return false;
+  // "Hi, how are you handling state in React?" is eight words, and the old
+  // length-only rule called it chit-chat.
+  return isPleasantryOnly(t);
 }
 
 export function isNoisyGreeting(q: string): boolean {
   const t     = q.toLowerCase();
   const words = t.split(/\s+/).filter(Boolean);
-  return words.length <= 4 && /\bhi\b|\bhello\b|\bhey\b/i.test(t);
+  if (words.length === 0 || words.length > 4) return false;
+  if (!/\bhi\b|\bhello\b|\bhey\b/i.test(t)) return false;
+  // "Hey, quick question?" is four words containing "hey", and used to be
+  // answered with the canned greeting.
+  return isPleasantryOnly(t);
 }
 
 export function isCompanyPitch(q: string): boolean {

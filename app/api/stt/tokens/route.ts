@@ -3,6 +3,12 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
+// Shared with the browser interview so the two cannot disagree about what
+// counts as chit-chat. They did: this path carried its own six-word regex.
+import {
+  isSmallTalk as isPleasantrySmallTalk,
+  isGreetingPlusSmallTalk as isPleasantryGreetingPlusSmallTalk,
+} from "../../../real-interview/_lib/promptBuilder";
 import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS } from "../../../../data/productFacts";
 
 export const dynamic = "force-dynamic";
@@ -1117,8 +1123,8 @@ export async function POST(req: Request) {
       const wordCount = safeTranscript.split(/\s+/).length;
 
       const isGreeting = /^(hi|hello|hey|good morning|good afternoon|good evening|greetings)[\.,]?\s*$/i.test(lowerQ);
-      const isSmallTalk = /how are you|how's it going|how you doing/i.test(lowerQ) && wordCount <= 6;
-      const isGreetingPlusSmallTalk = /^(hi|hello|hey)[\s,]+.*(how are you|how's it going)/i.test(lowerQ);
+      const isSmallTalk = isPleasantrySmallTalk(safeTranscript);
+      const isGreetingPlusSmallTalk = isPleasantryGreetingPlusSmallTalk(safeTranscript);
 
       const logisticalKeywords = ["relocate","relocation","start date","notice period","salary","compensation","ctc","travel","visa","sponsorship","citizenship","work authorization","hybrid","remote","onsite"];
       const behavioralKeywords = ["challenge","conflict","difficult","weakness","strength","describe a time","tell me about a time","mistake","failure","team","pressure","deadline","leadership"];
