@@ -12,12 +12,12 @@ const DATA_FLOW = [
   {
     number: "01",
     title: "Transcribe",
-    text: "Live audio streams from your device to Speechmatics for real-time transcription. Replysis does not store the raw audio file on its application servers.",
+    text: "Live audio streams from your device to Deepgram for real-time transcription, with Speechmatics as a backup. Replysis does not store the raw audio file on its application servers. The Windows app keeps an encrypted copy on your own computer for 7 days.",
   },
   {
     number: "02",
     title: "Generate",
-    text: "The transcript, resume context, and instructions pass through Replysis to the selected AI provider so it can generate an answer, feedback, or resume suggestion.",
+    text: "The transcript, resume context, and instructions pass through Replysis to the selected AI provider so it can generate an answer, feedback, or resume suggestion. While the desktop app is listening it also sends screenshots of your screen, which Replysis holds for at most 90 seconds before deleting them.",
   },
   {
     number: "03",

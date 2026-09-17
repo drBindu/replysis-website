@@ -39,7 +39,8 @@ export default function PrivacyPage() {
               {[
                 { title: "Account information", body: "Your email address. If you use Google Sign-In, your Google profile name and photo. Managed securely via Firebase Authentication." },
                 { title: "Resume and job content", body: "Drafts may be stored in your browser. When you request AI output, resume and job-description text is sent through Replysis to the selected AI provider. Saved interview sessions can include a short resume snippet." },
-                { title: "Interview audio and transcripts", body: "Live audio streams from your device to our speech-to-text provider. Replysis does not store raw audio on its application servers. Transcripts are processed to generate output and may be stored when you use saved session history." },
+                { title: "Interview audio and transcripts", body: "Live audio streams from your device to our speech-to-text providers, Deepgram, with Speechmatics as a backup. Replysis does not store raw audio on its application servers. The Windows app keeps an encrypted copy of each session's audio on your own computer, which it deletes automatically after 7 days. Transcripts are processed to generate output and may be stored when you use saved session history." },
+                { title: "Screen captures", body: "While the desktop app is listening, it takes a screenshot of your screen every 2 seconds, and every 15 seconds for up to 5 minutes after you mute, so it can answer questions about what is on screen. Screenshots that have changed are sent to Replysis, held for at most 90 seconds, used for one answer, then deleted, and are read by Google Gemini." },
                 { title: "Payment information", body: "Handled entirely by Stripe. We never see or store your card number, CVV, or bank details. Only your subscription status reaches our servers." },
                 { title: "Usage and service data", body: "We record account-linked service metadata such as feature used, request count, transcript character count, duration, timestamps, credit balance, and error diagnostics. Usage logs are not intended to contain transcript text." },
               ].map((c, i) => (
@@ -91,8 +92,9 @@ export default function PrivacyPage() {
                 { name: "Firebase (Google)", purpose: "Authentication and account management" },
                 { name: "Stripe", purpose: "Payment processing and subscription management" },
                 { name: "Cerebras", purpose: "Language-model inference for live interview answers" },
-                { name: "Google Gemini", purpose: "Language-model inference when a Gemini model is selected" },
-                { name: "Speechmatics", purpose: "Real-time speech-to-text; live audio streams directly to this provider" },
+                { name: "Google Gemini", purpose: "Reading screen captures, and language-model inference when a Gemini model is selected" },
+                { name: "Deepgram", purpose: "Real-time speech-to-text; live audio streams directly to this provider" },
+                { name: "Speechmatics", purpose: "Backup real-time speech-to-text when Deepgram is unavailable; live audio streams directly to this provider" },
               ].map((s, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                   <p className="font-bold text-gray-900 text-xs mb-1">{s.name}</p>
@@ -104,7 +106,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">6. Data retention</h2>
-            <p className="text-sm">Account, subscription, credit, and saved-session data is retained while your account is active or as needed for legal, fraud-prevention, and billing obligations. Saved session history remains until it is deleted. We aim to complete verified account-deletion requests within 30 days unless retention is legally required.</p>
+            <p className="text-sm">Account, subscription, credit, and saved-session data is retained while your account is active or as needed for legal, fraud-prevention, and billing obligations. Saved session history remains until it is deleted. Screen captures are deleted from Replysis servers within 90 seconds. Session audio kept by the Windows app stays on your computer, encrypted, and is deleted automatically after 7 days. We aim to complete verified account-deletion requests within 30 days unless retention is legally required.</p>
           </div>
 
           <div>
