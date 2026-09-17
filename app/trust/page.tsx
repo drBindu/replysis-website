@@ -12,7 +12,7 @@ const DATA_FLOW = [
   {
     number: "01",
     title: "Transcribe",
-    text: "Live audio streams from your device to Deepgram for real-time transcription, with Speechmatics as a backup. Replysis does not store the raw audio file on its application servers. The Windows app keeps an encrypted copy on your own computer for 7 days.",
+    text: "Live audio streams from your device to Deepgram for real-time transcription, with Speechmatics as a backup. Replysis does not store the raw audio file on its application servers. From version 1.0.20 the Windows app keeps an encrypted copy on your own computer for 7 days only if you turn on Save session audio.",
   },
   {
     number: "02",
