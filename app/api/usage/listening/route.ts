@@ -41,7 +41,7 @@ const db = getApps().length ? getFirestore() : null;
  */
 
 const PLAN_MONTHLY_AUDIO_MINUTES: Record<string, number> = {
-  free:       60,
+  free:       15,
   pro:       900,
   max:      1800,
   lifetime: 1800,

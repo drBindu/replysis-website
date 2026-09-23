@@ -30,7 +30,12 @@ export const PLAN_MONTHLY_CREDITS = {
  * desktop apps together.
  */
 export const PLAN_MONTHLY_AUDIO_MINUTES = {
-  free:        60,   //  1 hour
+  // 15 minutes, not an hour. Listening is the only expensive part of this
+  // product, and a free user pays nothing for it: an hour of speech costs
+  // about $0.54, so ten thousand free users spending a fifth of an hour each
+  // is a five-figure rupee bill every month with no revenue behind it.
+  // Fifteen minutes is still enough to sit in a real call and watch it work.
+  free:        15,   //  15 minutes
   pro:        900,   // 15 hours
   max:      1_800,   // 30 hours
   lifetime: 1_800,
@@ -74,7 +79,7 @@ export const PUBLIC_PLAN_CAPACITY = {
     label: "Starter",
     credits: PLAN_MONTHLY_CREDITS.free,
     listeningHours: PLAN_MONTHLY_AUDIO_MINUTES.free / 60,
-    summary: "100 credits and 1 hour of live listening each month",
+    summary: "100 credits and 15 minutes of live listening each month",
     example: "Enough to explore live answers, mock practice, and resume tools.",
   },
   pro: {

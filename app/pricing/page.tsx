@@ -77,7 +77,7 @@ const ALL_PLANS: {
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
       "100 credits refresh automatically each month",
-      "1 hour of live listening each month — resume and screen tools never use it",
+      "15 minutes of live listening each month — resume and screen tools never use it",
     ],
     notIncluded: [
       "Screen share exclusion (desktop app)",

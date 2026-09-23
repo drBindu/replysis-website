@@ -347,7 +347,7 @@ const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
 // the same user document, and a user moving between the website and the
 // desktop apps has one allowance, not two.
 const PLAN_MONTHLY_AUDIO_MINUTES: Record<string, number> = {
-  free:       60,   //  1 hour
+  free:       15,   //  15 minutes
   pro:       900,   // 15 hours
   max:      1800,   // 30 hours
   lifetime: 1800,
