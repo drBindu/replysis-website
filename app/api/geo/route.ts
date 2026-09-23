@@ -18,8 +18,22 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const country = await countryOf(req.headers);
+
+  // Whether the rupee top-up prices exist in Stripe yet.
+  //
+  // The page must never show a price the checkout will not charge, and these
+  // three are created by hand in the Dashboard. Reporting it from the server
+  // means the display switches on by itself the moment the keys are set, and
+  // stays on dollars until then, with no code change and no window where the
+  // card says one number and the receipt says another.
+  const rupeePacks = Boolean(
+    process.env.STRIPE_CREDITS_500_PRICE_INR &&
+    process.env.STRIPE_CREDITS_1500_PRICE_INR &&
+    process.env.STRIPE_CREDITS_5000_PRICE_INR
+  );
+
   return NextResponse.json(
-    { country },
+    { country, rupeePacks },
     { headers: { "Cache-Control": "no-store" } }
   );
 }

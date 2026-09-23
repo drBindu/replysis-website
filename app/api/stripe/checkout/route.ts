@@ -61,6 +61,12 @@ const PRICE_IDS_INR: Record<string, string> = {
   max_annual:  process.env.STRIPE_MAX_ANNUAL_PRICE_INR  || "",
 };
 
+const CREDIT_PRICE_IDS_INR: Record<string, string> = {
+  "500":  process.env.STRIPE_CREDITS_500_PRICE_INR  || "",
+  "1500": process.env.STRIPE_CREDITS_1500_PRICE_INR || "",
+  "5000": process.env.STRIPE_CREDITS_5000_PRICE_INR || "",
+};
+
 const CREDIT_PRICE_IDS: Record<string, string> = {
   "500": process.env.STRIPE_CREDITS_500_PRICE || "price_REPLACE_ME",
   "1500": process.env.STRIPE_CREDITS_1500_PRICE || "price_REPLACE_ME",
@@ -149,8 +155,10 @@ export async function POST(req: Request) {
     // decide what it is charged. A timezone is a setting, and the gap between
     // Rs 299 and $29.99 is ninety percent, so a client-supplied country would
     // be an open discount for anyone who read this file.
-    if (!isCreditPack && (await isIndia(req.headers))) {
-      const rupees = PRICE_IDS_INR[priceKey];
+    if (await isIndia(req.headers)) {
+      const rupees = isCreditPack
+        ? CREDIT_PRICE_IDS_INR[selectedPack!.id]
+        : PRICE_IDS_INR[priceKey];
       if (rupees) {
         priceId = rupees;
         console.log(`[checkout] India: charging the rupee price for ${priceKey}`);

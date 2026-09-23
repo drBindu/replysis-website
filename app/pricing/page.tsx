@@ -311,11 +311,19 @@ export default function PricingPage() {
   // $29.99 is ninety percent. If the two ever disagree, the charge wins and the
   // buyer sees a surprise, so both read the same source.
   const [india, setIndia] = useState(false);
+  // The top-up packs have their own rupee prices in Stripe, created separately.
+  // Until all three exist the packs stay in dollars, so the page can never show
+  // a number the checkout will not charge.
+  const [rupeePacks, setRupeePacks] = useState(false);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/geo")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && d?.country === "IN") setIndia(true); })
+      .then((d) => {
+        if (cancelled || d?.country !== "IN") return;
+        setIndia(true);
+        if (d?.rupeePacks) setRupeePacks(true);
+      })
       .catch(() => { /* dollars, which is the safe default */ });
     return () => { cancelled = true; };
   }, []);
@@ -701,7 +709,7 @@ export default function PricingPage() {
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
                 className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
-                Pay annually and save 2 months. Pro drops to {perMonth(PRO_PLAN, true)}. Max drops to {perMonth(MAX_PLAN, true)}.
+                Pay annually and save 2 months. Pro drops to {perMonth(PRO_PLAN, true, india)}. Max drops to {perMonth(MAX_PLAN, true, india)}.
               </button>
             </motion.p>
           )}
@@ -736,7 +744,7 @@ export default function PricingPage() {
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               {CREDIT_PACKS.map(pack => (
                 <div key={pack.id} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">{pack.label}</p><p className="mt-2 text-2xl font-black">{pack.credits.toLocaleString()} credits</p></div><p className="text-lg font-black">${pack.price}</p></div>
+                  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">{pack.label}</p><p className="mt-2 text-2xl font-black">{pack.credits.toLocaleString()} credits</p></div><p className="text-lg font-black">{rupeePacks ? `₹${pack.inr}` : `$${pack.price}`}</p></div>
                   <p className="mt-2 text-[11px] font-semibold text-white/45">One payment · added after Stripe confirms payment</p>
                   <button onClick={() => handleCreditCheckout(pack.id)} disabled={Boolean(loading)} className="mt-4 w-full rounded-xl bg-white py-2.5 text-xs font-black text-[#142018] transition hover:bg-emerald-50 disabled:opacity-50">{loading === `credits_${pack.id}` ? "Redirecting…" : "Buy one-time credits"}</button>
                 </div>
@@ -786,7 +794,7 @@ export default function PricingPage() {
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">Best for most people</p>
                     <h3 className="mt-1 text-xl font-black">Choose Pro</h3>
                   </div>
-                  <span className="rounded-full bg-[#e8f4ea] px-3 py-1 text-xs font-black text-[#267b42]">{perMonth(PRO_PLAN, annual)}</span>
+                  <span className="rounded-full bg-[#e8f4ea] px-3 py-1 text-xs font-black text-[#267b42]">{perMonth(PRO_PLAN, annual, india)}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-gray-600">You are actively applying and interviewing, but do not run several sessions every day.</p>
                 <button onClick={() => handleCheckout("pro")} className="mt-5 text-sm font-black text-[#267b42] hover:text-[#185b31]">Get Pro →</button>
@@ -802,7 +810,7 @@ export default function PricingPage() {
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Highest monthly capacity</p>
                     <h3 className="mt-1 text-xl font-black">Choose Max</h3>
                   </div>
-                  <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-black text-white">{perMonth(MAX_PLAN, annual)}</span>
+                  <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-black text-white">{perMonth(MAX_PLAN, annual, india)}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-gray-600">You have frequent interview loops, practice daily, or need 2.5× Pro capacity and priority support.</p>
                 <button onClick={() => handleCheckout("max")} className="mt-5 text-sm font-black text-gray-900 hover:text-[#267b42]">Get Max →</button>
@@ -875,8 +883,8 @@ export default function PricingPage() {
                   <div className="px-5 py-4" />
                   {[
                     { name: "Starter", price: "Free",                             style: "" },
-                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual), style: "bg-zinc-100/60 text-zinc-900" },
-                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual), style: "" },
+                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual, india), style: "bg-zinc-100/60 text-zinc-900" },
+                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual, india), style: "" },
                   ].map(({ name, price, style }, i) => (
                     <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
                       <p className={`text-sm font-black ${style.includes("violet") ? "text-zinc-900" : style.includes("orange") ? "text-zinc-900" : "text-gray-900"}`}>{name}</p>
