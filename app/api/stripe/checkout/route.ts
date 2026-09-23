@@ -151,7 +151,19 @@ export async function POST(req: Request) {
     // Pro and Max are both recurring. The one-time payment path went away with
     // the Lifetime plan, which was retired.
     params.append("mode", isCreditPack ? "payment" : "subscription");
-    params.append("payment_method_types[0]", "card");
+
+    // No payment_method_types here, deliberately.
+    //
+    // Naming one pins Checkout to exactly that list and makes it ignore the
+    // payment methods configured in the Dashboard. This line said "card", so
+    // every method turned on in Stripe - UPI, Google Pay, Link, Apple Pay,
+    // Amazon Pay - was invisible at checkout no matter what the Dashboard said.
+    // For India that mattered most: UPI is how the country pays, and enabling
+    // it in Stripe did nothing while this line existed.
+    //
+    // Leaving it out is what switches on dynamic payment methods, where Stripe
+    // shows the methods relevant to the buyer's country and currency, from the
+    // set the account has enabled. Cards are still one of them.
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
     params.append("success_url", `${origin}/pricing?${isCreditPack ? "credits=success" : "success=true"}`);
