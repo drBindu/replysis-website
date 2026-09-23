@@ -55,11 +55,17 @@ const ALL_PLANS: {
    * priced for the market and still keeps about forty percent after Stripe's
    * cut and the cost of the listening hours it buys.
    *
-   * Only monthly. There is no annual rupee price yet, so an Indian buyer who
-   * chooses annual sees and pays the dollar price, which the checkout agrees
-   * with. Display and charge must never disagree.
+   * Display and charge read the same numbers: whatever is shown here has a
+   * matching Stripe price behind it, chosen server side from the same address.
    */
   inrMonthly?: number;
+  /**
+   * The whole year in rupees. Ten months for twelve, the same two-months-free
+   * deal the dollar plans give. Stripe's fixed fee is also paid once instead of
+   * twelve times, so annual is the better of the two for us as well as the
+   * cheaper one for them.
+   */
+  inrAnnualYearly?: number;
   oneTime: boolean;
   cta: string;
   ctaNote: string;
@@ -105,6 +111,7 @@ const ALL_PLANS: {
     tagline: "The complete toolkit for an active job search.",
     monthlyPrice: 29.99,
     inrMonthly: 299,
+    inrAnnualYearly: 2990,
     // Annual is anchored to a clean yearly total ($299) and shown per month,
     // so the "billed" figure on the card matches the Stripe price exactly.
     annualPrice: 24.92,
@@ -134,6 +141,7 @@ const ALL_PLANS: {
     tagline: "Maximum access for interview-heavy weeks.",
     monthlyPrice: 49.99,
     inrMonthly: 599,
+    inrAnnualYearly: 5990,
     annualPrice: 41.58,
     oneTime: false,
     cta: "Get Max",
@@ -166,8 +174,15 @@ const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
   ? Math.round((1 - PRO_PLAN.annualPrice / PRO_PLAN.monthlyPrice) * 100)
   : 0;
 
-const perMonth = (plan: typeof PRO_PLAN, annual: boolean) =>
-  `$${(annual ? plan.annualPrice : plan.monthlyPrice).toFixed(2)}/mo`;
+const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
+  if (india) {
+    const rupees = annual
+      ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
+      : plan.inrMonthly;
+    if (rupees) return `₹${rupees}/mo`;
+  }
+  return `$${(annual ? plan.annualPrice : plan.monthlyPrice).toFixed(2)}/mo`;
+};
 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
@@ -494,7 +509,7 @@ export default function PricingPage() {
               </button>
             </div>
             <p className="mt-2.5 px-1 text-center text-[11px] font-semibold text-gray-500">
-              Annual: Pro {perMonth(PRO_PLAN, true)} · Max {perMonth(MAX_PLAN, true)}
+              Annual: Pro {perMonth(PRO_PLAN, true, india)} · Max {perMonth(MAX_PLAN, true, india)}
             </p>
           </motion.div>
         </div>
@@ -552,9 +567,13 @@ export default function PricingPage() {
               const price = plan.oneTime ? plan.monthlyPrice : (annual ? plan.annualPrice : plan.monthlyPrice);
               // Rupees for a monthly plan bought from India. Annual has no
               // rupee price, so it stays in dollars and says so below.
-              const inRupees = india && !annual && !plan.oneTime && !!plan.inrMonthly;
-              const shownPrice = inRupees
-                ? `₹${plan.inrMonthly}`
+              const rupeesForThisCard = !plan.oneTime && india
+                ? (annual
+                    ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
+                    : plan.inrMonthly)
+                : undefined;
+              const shownPrice = rupeesForThisCard
+                ? `₹${rupeesForThisCard}`
                 : price === 0 ? "Free" : `$${price}`;
               const isCurrent = currentPlan === plan.id;
               const savings = !plan.oneTime && plan.monthlyPrice > 0
@@ -602,16 +621,15 @@ export default function PricingPage() {
                       </div>
                       {annual && savings > 0 && (
                         <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
-                          ${Math.round(plan.annualPrice * 12)}/yr billed. Save ${savings}.
+                          {india && plan.inrAnnualYearly && plan.inrMonthly
+                            ? `₹${plan.inrAnnualYearly}/yr billed. Save ₹${plan.inrMonthly * 12 - plan.inrAnnualYearly}.`
+                            : `$${Math.round(plan.annualPrice * 12)}/yr billed. Save $${savings}.`}
                         </p>
                       )}
                       {plan.oneTime && (
                         <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
                           Pays for itself in under 12 months.
                         </p>
-                      )}
-                      {india && annual && price > 0 && (
-                        <p className="text-[11px] mt-0.5 font-semibold text-gray-500">Billed in US dollars.</p>
                       )}
                       {price === 0 && <p className="text-[11px] text-gray-400 mt-0.5">No credit card needed</p>}
                     </div>

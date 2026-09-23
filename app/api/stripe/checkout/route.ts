@@ -51,11 +51,14 @@ const PRICE_IDS: Record<string, string> = {
 // prices on the same products, so a missing one simply falls back to the dollar
 // price rather than failing the checkout.
 //
-// Monthly only for now. An annual Indian price does not exist yet, so an Indian
-// buyer choosing annual pays the dollar price, which is the safe direction.
+// Monthly and annual. A key left empty falls back to the dollar price rather
+// than failing, which is the safe direction: a missing rupee price costs a
+// discount that was never promised, not a broken checkout.
 const PRICE_IDS_INR: Record<string, string> = {
   pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_INR || "",
   max_monthly: process.env.STRIPE_MAX_MONTHLY_PRICE_INR || "",
+  pro_annual:  process.env.STRIPE_PRO_ANNUAL_PRICE_INR  || "",
+  max_annual:  process.env.STRIPE_MAX_ANNUAL_PRICE_INR  || "",
 };
 
 const CREDIT_PRICE_IDS: Record<string, string> = {
