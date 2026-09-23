@@ -11,6 +11,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
+import { isIndia } from "@/app/lib/buyer-country";
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -43,6 +44,18 @@ const PRICE_IDS: Record<string, string> = {
   pro_annual:     process.env.STRIPE_PRO_ANNUAL_PRICE     || "price_REPLACE_ME",
   max_monthly:    process.env.STRIPE_MAX_MONTHLY_PRICE    || "price_REPLACE_ME",
   max_annual:     process.env.STRIPE_MAX_ANNUAL_PRICE     || "price_REPLACE_ME",
+};
+
+// India pays in rupees for the same plan, at a price set for the market rather
+// than converted from dollars: Rs 299 against $29.99. These are separate Stripe
+// prices on the same products, so a missing one simply falls back to the dollar
+// price rather than failing the checkout.
+//
+// Monthly only for now. An annual Indian price does not exist yet, so an Indian
+// buyer choosing annual pays the dollar price, which is the safe direction.
+const PRICE_IDS_INR: Record<string, string> = {
+  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_INR || "",
+  max_monthly: process.env.STRIPE_MAX_MONTHLY_PRICE_INR || "",
 };
 
 const CREDIT_PRICE_IDS: Record<string, string> = {
@@ -126,7 +139,20 @@ export async function POST(req: Request) {
     }
     // Pro and Max are both recurring, so every plan resolves to a billing period.
     const priceKey = isCreditPack ? `credits_${selectedPack!.id}` : `${plan}_${annual ? "annual" : "monthly"}`;
-    const priceId = isCreditPack ? CREDIT_PRICE_IDS[selectedPack!.id] : PRICE_IDS[priceKey];
+    let priceId = isCreditPack ? CREDIT_PRICE_IDS[selectedPack!.id] : PRICE_IDS[priceKey];
+
+    // The rupee price is chosen here, from the buyer's address, and nowhere
+    // else. The browser decides what currency to show; it does not get to
+    // decide what it is charged. A timezone is a setting, and the gap between
+    // Rs 299 and $29.99 is ninety percent, so a client-supplied country would
+    // be an open discount for anyone who read this file.
+    if (!isCreditPack && (await isIndia(req.headers))) {
+      const rupees = PRICE_IDS_INR[priceKey];
+      if (rupees) {
+        priceId = rupees;
+        console.log(`[checkout] India: charging the rupee price for ${priceKey}`);
+      }
+    }
 
     if (!priceId || priceId === "price_REPLACE_ME") {
       // Price not configured yet. Don't leak the internal env-key name to the

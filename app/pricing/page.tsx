@@ -47,6 +47,19 @@ const ALL_PLANS: {
   tagline: string;
   monthlyPrice: number;
   annualPrice: number;
+  /**
+   * The monthly price in rupees, for buyers in India.
+   *
+   * Not a conversion of the dollar price. $29.99 converts to about Rs 2,868,
+   * which is a month's phone bill there and simply does not sell. Rs 299 is
+   * priced for the market and still keeps about forty percent after Stripe's
+   * cut and the cost of the listening hours it buys.
+   *
+   * Only monthly. There is no annual rupee price yet, so an Indian buyer who
+   * chooses annual sees and pays the dollar price, which the checkout agrees
+   * with. Display and charge must never disagree.
+   */
+  inrMonthly?: number;
   oneTime: boolean;
   cta: string;
   ctaNote: string;
@@ -91,6 +104,7 @@ const ALL_PLANS: {
     emoji: "👑",
     tagline: "The complete toolkit for an active job search.",
     monthlyPrice: 29.99,
+    inrMonthly: 299,
     // Annual is anchored to a clean yearly total ($299) and shown per month,
     // so the "billed" figure on the card matches the Stripe price exactly.
     annualPrice: 24.92,
@@ -119,6 +133,7 @@ const ALL_PLANS: {
     emoji: "👑",
     tagline: "Maximum access for interview-heavy weeks.",
     monthlyPrice: 49.99,
+    inrMonthly: 599,
     annualPrice: 41.58,
     oneTime: false,
     cta: "Get Max",
@@ -272,6 +287,23 @@ export default function PricingPage() {
   const [pendingCreditPack, setPendingCreditPack] = useState<CreditPackId | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
   const [annual,   setAnnual]   = useState(false);
+
+  // Where the visitor is, asked of the server rather than the browser.
+  //
+  // This only chooses what the page shows. What the card is charged is decided
+  // again on the server when the checkout session is made, from the same
+  // address, because a timezone is a setting and the gap between Rs 299 and
+  // $29.99 is ninety percent. If the two ever disagree, the charge wins and the
+  // buyer sees a surprise, so both read the same source.
+  const [india, setIndia] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/geo")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.country === "IN") setIndia(true); })
+      .catch(() => { /* dollars, which is the safe default */ });
+    return () => { cancelled = true; };
+  }, []);
   const [showAll,  setShowAll]  = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutReturn, setCheckoutReturn] = useState<"success" | "credits" | "canceled" | null>(null);
@@ -518,6 +550,12 @@ export default function PricingPage() {
             {ALL_PLANS.map((plan, i) => {
               const s = getPlanStyle(plan);
               const price = plan.oneTime ? plan.monthlyPrice : (annual ? plan.annualPrice : plan.monthlyPrice);
+              // Rupees for a monthly plan bought from India. Annual has no
+              // rupee price, so it stays in dollars and says so below.
+              const inRupees = india && !annual && !plan.oneTime && !!plan.inrMonthly;
+              const shownPrice = inRupees
+                ? `₹${plan.inrMonthly}`
+                : price === 0 ? "Free" : `$${price}`;
               const isCurrent = currentPlan === plan.id;
               const savings = !plan.oneTime && plan.monthlyPrice > 0
                 ? Math.round((plan.monthlyPrice - plan.annualPrice) * 12)
@@ -554,7 +592,7 @@ export default function PricingPage() {
                     <div className="mb-3">
                       <div className="flex items-baseline gap-1">
                         <span className="text-[2.25rem] leading-none font-black text-gray-950 tracking-[-0.04em]">
-                          {price === 0 ? "Free" : `$${price}`}
+                          {shownPrice}
                         </span>
                         {price > 0 && (
                           <span className="text-xs text-gray-400 font-medium">
@@ -571,6 +609,9 @@ export default function PricingPage() {
                         <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
                           Pays for itself in under 12 months.
                         </p>
+                      )}
+                      {india && annual && price > 0 && (
+                        <p className="text-[11px] mt-0.5 font-semibold text-gray-500">Billed in US dollars.</p>
                       )}
                       {price === 0 && <p className="text-[11px] text-gray-400 mt-0.5">No credit card needed</p>}
                     </div>
