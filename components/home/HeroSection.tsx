@@ -69,12 +69,13 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
 
   const storeBtn = (
     <button key="store" onClick={() => onDownload("win")}
-      className={`flex items-center justify-center font-semibold border bg-white text-gray-600 border-gray-200 hover:border-emerald-500/60 hover:text-emerald-800 shadow-sm transition-all active:scale-[0.97] ${cls}`}>
+      className={`flex items-center justify-center font-semibold border border-transparent text-white transition-all active:scale-[0.97] ${cls}`}
+      style={{ background: "linear-gradient(135deg,#21924A,#21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.32)" }}>
       <StoreIcon className="w-4 h-4 flex-shrink-0" />
       <span>Get it from Microsoft Store</span>
     </button>
   );
-  if (!mounted) return <div className="flex gap-3">{btn("win-direct", true)}</div>;
+  if (!mounted) return <div className="flex gap-3">{storeBtn}</div>;
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       {/* Show ONLY the visitor's own OS. Only fall back to showing both
@@ -84,8 +85,8 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
           An unknown OS is offered both installers and no Store: the listing is
           a Windows one, and a Linux visitor cannot use it. */}
       {detectedOS === "mac" ? btn("mac", true)
-        : detectedOS === "win" ? <>{btn("win-direct", true)}{storeBtn}</>
-        : <>{btn("win-direct", true)}{btn("mac", false)}</>}
+        : detectedOS === "win" ? storeBtn
+        : <>{storeBtn}{btn("mac", false)}</>}
     </div>
   );
 }
@@ -306,8 +307,8 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       animate={{ opacity: [0.35, 0.75, 0.35], scale: [0.97, 1.05, 0.97] }}
                       transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }} />
                   )}
-                  <button onClick={() => onDownload("win-direct")}
-                    title="Download the Windows installer"
+                  <button onClick={() => onDownload("win")}
+                    title="Get Replysis from the Microsoft Store - installs with no security prompt"
                     className="group relative w-full flex items-center gap-3.5 px-8 py-[1.15rem] rounded-2xl text-white font-bold overflow-hidden"
                     style={
                       !mounted || detectedOS === "win" || detectedOS === "other"
@@ -321,10 +322,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                       transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.6 }} />
                     <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       style={{ background: "linear-gradient(135deg, #14532B 0%, #21924A 50%, #14532B 100%)" }} />
-                    <WinIcon className="w-6 h-6 relative flex-shrink-0" />
+                    <StoreIcon className="w-6 h-6 relative flex-shrink-0" />
                     <span className="relative text-left leading-tight">
-                      <span className="block text-[10px] font-medium opacity-75 mb-0.5 uppercase tracking-wider">Download free for</span>
-                      <span className="block text-[17px] font-black">Windows</span>
+                      <span className="block text-[10px] font-medium opacity-75 mb-0.5 uppercase tracking-wider">Get it from</span>
+                      <span className="block text-[17px] font-black">Microsoft Store</span>
                     </span>
                     <span className="relative ml-auto flex items-center gap-1.5">
                       <span className="text-[10px] font-black bg-white/25 px-2.5 py-0.5 rounded-full">FREE</span>
@@ -381,17 +382,6 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   difference between installing and not. */}
               <div className="flex flex-wrap items-center gap-3">
                 {mounted && detectedOS === "win" && (
-                  <button onClick={() => onDownload("win")}
-                    title="Open the Microsoft Store listing - installs with no security prompt"
-                    className="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-xl bg-white border border-gray-200 hover:border-emerald-500/50 shadow-sm hover:shadow transition-all active:scale-[0.97]">
-                    <StoreIcon className="w-4 h-4 flex-shrink-0 text-gray-500 group-hover:text-emerald-700 transition-colors" />
-                    <span className="text-left leading-tight">
-                      <span className="block text-[8.5px] font-semibold uppercase tracking-wider text-gray-400">Get it from</span>
-                      <span className="block text-[12px] font-black text-gray-800 group-hover:text-emerald-800 transition-colors">Microsoft Store</span>
-                    </span>
-                  </button>
-                )}
-                {mounted && detectedOS === "win" && (
                   <button onClick={() => onDownload("mac")}
                     className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
                     <MacIcon className="w-3 h-3 flex-shrink-0" />
@@ -402,10 +392,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   </button>
                 )}
                 {mounted && detectedOS === "mac" && (
-                  <button onClick={() => onDownload("win-direct")}
+                  <button onClick={() => onDownload("win")}
                     className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
                     <WinIcon className="w-3 h-3 flex-shrink-0" />
-                    <span>Also available for Windows</span>
+                    <span>Also on the Microsoft Store</span>
                     <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>

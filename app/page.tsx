@@ -30,13 +30,9 @@ import {
 // warning, updates itself, and is already live, so it is the better
 // destination regardless of whether the file comes back.
 const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
-// The same app, downloaded straight from us rather than through the Store.
-// Offered alongside the Store rather than instead of it: the Store copy installs
-// with no security warning, and this one shows Windows' unrecognised-publisher
-// prompt until the installer is signed and has built reputation. It exists
-// because a fix reaches people in minutes here, against days waiting on Store
-// review, and because some people will not install from a store at all.
-const WINDOWS_DIRECT = "https://github.com/drBindu/replysis-windows/releases/latest/download/Replysis-win-Setup.exe";
+// A signed direct installer does not exist yet, so there is no direct-download
+// button on the site: every Windows visitor is sent to the Store, which installs
+// with no SmartScreen warning. When a signed .exe exists, add it back here.
 const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
@@ -176,10 +172,12 @@ export default function Home() {
     if (os === "win") {
       window.open(WINDOWS_DOWNLOAD, "_blank", "noopener,noreferrer");
     } else if (os === "win-direct") {
-      const a = document.createElement("a");
-      a.href     = WINDOWS_DIRECT;
-      a.download = "Replysis-Setup.exe";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      // There is no signed direct installer yet, so a .exe from a link would
+      // show every Windows visitor the "Windows protected your PC" warning -
+      // the exact thing the Store avoids. Until a signed installer exists,
+      // every Windows download goes to the Store. Kept as its own case so the
+      // buttons and layout stay put while only the destination changes.
+      window.open(WINDOWS_DOWNLOAD, "_blank", "noopener,noreferrer");
     } else {
       const a = document.createElement("a");
       a.href     = MAC_DOWNLOAD;

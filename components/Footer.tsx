@@ -28,8 +28,7 @@ const GROUPS = [
     title: "Support",
     links: [
       { label: "Contact support", href: "mailto:support@replysis.com" },
-      { label: "Download for Windows", href: "https://github.com/drBindu/replysis-windows/releases/latest/download/Replysis-win-Setup.exe" },
-      { label: "Windows on the Microsoft Store", href: "https://apps.microsoft.com/detail/9N13GQC3MKK9" },
+      { label: "Download for Windows", href: "https://apps.microsoft.com/detail/9N13GQC3MKK9" },
       { label: "Download for macOS", href: "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg" },
     ],
   },
