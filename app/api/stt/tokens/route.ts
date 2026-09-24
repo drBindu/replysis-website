@@ -354,7 +354,17 @@ const PLAN_MONTHLY_AUDIO_MINUTES: Record<string, number> = {
   teams:    6000,   // 100 hours, shared
 };
 
-function audioAllowance(plan: string): number {
+/**
+ * The allowance for one user, which is not always their plan's.
+ *
+ * A rupee subscription carries a smaller number of hours for a much smaller
+ * price, written onto the user when the subscription was created. Anything
+ * absent or nonsensical falls back to the plan default, so a document written
+ * before this existed behaves exactly as it did.
+ */
+function audioAllowance(plan: string, data: Record<string, unknown> = {}): number {
+  const own = Number(data.audioMinutesAllowance);
+  if (Number.isFinite(own) && own > 0 && own <= 100_000) return own;
   return PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
 }
 
@@ -380,7 +390,7 @@ async function hasAudioTimeLeft(uid: string, email: string): Promise<boolean> {
     if (resetAt && Date.now() >= resetAt) return true;
 
     const used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
-    return used < audioAllowance(plan);
+    return used < audioAllowance(plan, data);
   } catch (err) {
     console.error("Audio allowance check error:", err);
     return true;   // a Firestore hiccup must not end someone's interview

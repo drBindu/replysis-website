@@ -110,7 +110,12 @@ export async function POST(req: Request) {
       const snap = await tx.get(userRef);
       const data = snap.exists ? (snap.data() ?? {}) : {};
       const plan = typeof data.plan === "string" ? data.plan : "free";
-      const allowance = PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
+      // A rupee subscription carries its own, smaller allowance, written onto
+      // the user when it was created. Absent means the plan default.
+      const own = Number(data.audioMinutesAllowance);
+      const allowance = Number.isFinite(own) && own > 0 && own <= 100_000
+        ? own
+        : PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
 
       // Shares the credits reset date, so a user's month is one month rather
       // than two that drift apart and confuse everybody.

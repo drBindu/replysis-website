@@ -59,6 +59,10 @@ const ALL_PLANS: {
    * matching Stripe price behind it, chosen server side from the same address.
    */
   inrMonthly?: number;
+  /** Credits a month on the rupee price. Smaller, because the price is. */
+  inrCredits?: number;
+  /** Listening hours a month on the rupee price. */
+  inrHours?: number;
   /**
    * The whole year in rupees. Ten months for twelve, the same two-months-free
    * deal the dollar plans give. Stripe's fixed fee is also paid once instead of
@@ -110,8 +114,10 @@ const ALL_PLANS: {
     emoji: "👑",
     tagline: "The complete toolkit for an active job search.",
     monthlyPrice: 29.99,
-    inrMonthly: 299,
-    inrAnnualYearly: 2990,
+    inrMonthly: 699,
+    inrAnnualYearly: 6990,
+    inrCredits: 1200,
+    inrHours: 6,
     // Annual is anchored to a clean yearly total ($299) and shown per month,
     // so the "billed" figure on the card matches the Stripe price exactly.
     annualPrice: 24.92,
@@ -140,8 +146,10 @@ const ALL_PLANS: {
     emoji: "👑",
     tagline: "Maximum access for interview-heavy weeks.",
     monthlyPrice: 49.99,
-    inrMonthly: 599,
-    inrAnnualYearly: 5990,
+    inrMonthly: 1299,
+    inrAnnualYearly: 12990,
+    inrCredits: 3000,
+    inrHours: 12,
     annualPrice: 41.58,
     oneTime: false,
     cta: "Get Max",
@@ -173,6 +181,29 @@ const MAX_PLAN = ALL_PLANS.find((p) => p.id === "max")!;
 const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
   ? Math.round((1 - PRO_PLAN.annualPrice / PRO_PLAN.monthlyPrice) * 100)
   : 0;
+
+/**
+ * The allowance lines, rewritten for a rupee plan.
+ *
+ * A card that promises fifteen hours to someone whose account will hold six is
+ * not a pricing decision, it is a refund. Both the pill and the two bullets
+ * that name numbers are swapped together, from the same values the webhook
+ * writes onto the user.
+ */
+const usagePoolFor = (plan: typeof PRO_PLAN, india: boolean) =>
+  india && plan.inrCredits && plan.inrHours
+    ? `${plan.inrCredits.toLocaleString()} credits and ${plan.inrHours} hours of live listening each month`
+    : plan.usagePool;
+
+const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
+  india && plan.inrCredits && plan.inrHours
+    ? plan.features.map((line) =>
+        /credits refresh automatically/.test(line)
+          ? `${plan.inrCredits!.toLocaleString()} credits refresh automatically each month`
+          : /of live listening each month/.test(line)
+            ? `${plan.inrHours} hours of live listening each month \u2014 resume and screen tools never use it`
+            : line)
+    : plan.features;
 
 const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
   if (india) {
@@ -644,7 +675,7 @@ export default function PricingPage() {
 
                     {/* Usage pill */}
                     <div className="rounded-xl px-3 py-2.5 mb-3" style={s.pool}>
-                      <p className="text-[11px] font-black" style={{ color: s.pool.color }}>{plan.usagePool}</p>
+                      <p className="text-[11px] font-black" style={{ color: s.pool.color }}>{usagePoolFor(plan, india)}</p>
                     </div>
 
                     {/* CTA */}
@@ -678,7 +709,7 @@ export default function PricingPage() {
                   <div className="px-5 pb-5 border-t border-gray-100/80 pt-4 flex-1">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">What you get</p>
                     <ul className="space-y-2.5">
-                      {plan.features.map((f, fi) => (
+                      {featuresFor(plan, india).map((f, fi) => (
                         <li key={fi} className="flex items-start gap-2">
                           <Check color={s.check} />
                           <span className="text-xs text-gray-700 leading-snug">{f}</span>

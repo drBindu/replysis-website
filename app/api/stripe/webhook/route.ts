@@ -16,7 +16,7 @@ import { NextResponse }  from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
-import { PLAN_MONTHLY_CREDITS } from "../../../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
 
 const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY    || "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -62,8 +62,38 @@ const PLAN_BY_PRICE_ID = new Map<string, "pro" | "max">(
     [process.env.STRIPE_PRO_ANNUAL_PRICE, "pro"],
     [process.env.STRIPE_MAX_MONTHLY_PRICE, "max"],
     [process.env.STRIPE_MAX_ANNUAL_PRICE, "max"],
+    // The rupee prices are the same two plans. Without these a customer who
+    // paid in rupees would land on the free tier, which is the worst possible
+    // way to be wrong.
+    [process.env.STRIPE_PRO_MONTHLY_PRICE_INR, "pro"],
+    [process.env.STRIPE_PRO_ANNUAL_PRICE_INR, "pro"],
+    [process.env.STRIPE_MAX_MONTHLY_PRICE_INR, "max"],
+    [process.env.STRIPE_MAX_ANNUAL_PRICE_INR, "max"],
   ].filter((entry): entry is [string, "pro" | "max"] => Boolean(entry[0])),
 );
+
+/**
+ * The Stripe prices that are sold in rupees.
+ *
+ * A rupee subscription is the same plan at a price set for that market rather
+ * than converted - Pro is Rs 699 against $29.99 - and it carries a smaller
+ * allowance to match, because listening is the only part of this product that
+ * costs real money. Written onto the user here, at the one moment we know
+ * which price was actually bought.
+ */
+const INDIA_PRICE_IDS = new Set(
+  [
+    process.env.STRIPE_PRO_MONTHLY_PRICE_INR,
+    process.env.STRIPE_PRO_ANNUAL_PRICE_INR,
+    process.env.STRIPE_MAX_MONTHLY_PRICE_INR,
+    process.env.STRIPE_MAX_ANNUAL_PRICE_INR,
+  ].filter((id): id is string => Boolean(id)),
+);
+
+function boughtInRupees(subscription: any): boolean {
+  const priceId = subscription?.items?.data?.[0]?.price?.id;
+  return typeof priceId === "string" && INDIA_PRICE_IDS.has(priceId);
+}
 
 function subscriptionPlan(subscription: any): string | null {
   const priceId = subscription?.items?.data?.[0]?.price?.id;
@@ -230,7 +260,12 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
       ? currentData.plan
       : "free";
     const previousCap = PLAN_MONTHLY_CREDITS[previousPlan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
-    const nextCap = PLAN_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+    // A rupee subscription carries its own, smaller allowance.
+    const india = boughtInRupees(subscription);
+    const indiaAllowance = india
+      ? INDIA_PLAN_ALLOWANCE[plan as keyof typeof INDIA_PLAN_ALLOWANCE]
+      : undefined;
+    const nextCap = indiaAllowance?.credits ?? PLAN_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
     const purchasedCredits = Math.max(0, Number(currentData.purchasedCredits ?? 0));
     const currentCredits = Math.max(0, Number(currentData.credits ?? 0) - purchasedCredits);
     const adjustedCredits = plan === previousPlan
@@ -242,6 +277,10 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
     transaction.set(userRef, {
       plan,
       credits: adjustedCredits + purchasedCredits,
+      // Cleared rather than left behind when the subscription is not a rupee
+      // one, so somebody who moves from a rupee plan to a dollar plan is not
+      // still capped at the smaller allowance.
+      audioMinutesAllowance: indiaAllowance?.audioMinutes ?? FieldValue.delete(),
       stripeCustomerId: subscription.customer ?? currentData.stripeCustomerId ?? null,
       stripeSubscriptionId: subscription.id ?? currentData.stripeSubscriptionId ?? null,
       stripeSubscriptionStatus: subscription.status ?? "active",

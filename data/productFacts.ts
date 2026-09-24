@@ -42,6 +42,28 @@ export const PLAN_MONTHLY_AUDIO_MINUTES = {
   teams:    6_000,   // 100 hours, shared across the team
 } as const;
 
+/**
+ * What the same plans include when bought in rupees.
+ *
+ * India pays a price set for that market rather than converted from dollars:
+ * Pro is Rs 699 against $29.99. A quarter of the price cannot carry the same
+ * fifteen hours of speech - listening is the only part of this product that
+ * costs real money, and at Rs 699 the full allowance loses money on every
+ * heavy subscriber.
+ *
+ * Six hours is about eight interviews in a month, which is more than most
+ * people do while job hunting, so the number is smaller without being felt.
+ *
+ * These are written onto the user when the subscription is created and read
+ * back wherever an allowance is checked. The plan stays "pro" or "max", so
+ * every feature check in both codebases keeps working: only the size of the
+ * allowance differs.
+ */
+export const INDIA_PLAN_ALLOWANCE = {
+  pro: { credits: 1_200, audioMinutes: 360 },   //  6 hours
+  max: { credits: 3_000, audioMinutes: 720 },   // 12 hours
+} as const;
+
 export type PlanId = keyof typeof PLAN_MONTHLY_CREDITS;
 export type ActivePlanId = "free" | "pro" | "max";
 
