@@ -374,7 +374,7 @@ export default function RealInterviewPage() {
                     <button onClick={() => router.push("/pricing")}
                       className="w-full mt-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center justify-center gap-2 transition-all"
                       style={{ border: "1px solid rgba(31,138,62,0.25)", background: "rgba(31,138,62,0.07)", color: "#1C7A3E" }}>
-                      Upgrade to Pro for 2,000 monthly credits <ArrowRight size={13} />
+                      Upgrade to Pro for more monthly credits <ArrowRight size={13} />
                     </button>
                   )}
                 </div>
