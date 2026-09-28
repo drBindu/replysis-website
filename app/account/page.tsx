@@ -322,7 +322,7 @@ export default function AccountPage() {
                 );
               })}
             </div>
-            <a href="mailto:support@replysis.com" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-emerald-300 hover:text-emerald-200">
+            <a href="mailto:admin@varoxel.com" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-emerald-300 hover:text-emerald-200">
               Need help? Contact support <ArrowRight className="h-4 w-4" />
             </a>
           </section>
@@ -365,7 +365,7 @@ export default function AccountPage() {
               <p className="mt-2 flex items-center gap-2 text-xs text-slate-500"><Check className="h-3.5 w-3.5 text-[#267b42]" /> Your sign-in and payment information are protected separately.</p>
             </div>
           </div>
-          <a href="mailto:support@replysis.com" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+          <a href="mailto:admin@varoxel.com" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             <BriefcaseBusiness className="h-4 w-4" /> Contact support
           </a>
         </section>

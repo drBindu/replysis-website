@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const LAST_UPDATED = "August 13, 2026";
-const CONTACT = "support@replysis.com";
+const CONTACT = "admin@varoxel.com";
 
 export default function PrivacyPage() {
   return (

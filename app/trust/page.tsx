@@ -52,7 +52,7 @@ export default function TrustPage() {
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/privacy" className="rounded-full bg-[#1C7A3E] px-5 py-2.5 text-xs font-black text-white hover:bg-[#155f30]">Read Privacy Policy</Link>
-            <a href="mailto:support@replysis.com" className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-xs font-black text-gray-700 hover:border-[#1C7A3E]">Ask a privacy question</a>
+            <a href="mailto:admin@varoxel.com" className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-xs font-black text-gray-700 hover:border-[#1C7A3E]">Ask a privacy question</a>
           </div>
         </div>
       </section>

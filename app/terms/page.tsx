@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const LAST_UPDATED = "May 1, 2026";
-const CONTACT = "support@replysis.com";
+const CONTACT = "admin@varoxel.com";
 
 export default function TermsPage() {
   return (
@@ -75,7 +75,7 @@ export default function TermsPage() {
               {[
                 { label: "Free tier", body: "A free tier with limited usage is available. No credit card required to start." },
                 { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice." },
-                { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact support@replysis.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
+                { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact admin@varoxel.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
                 { label: "Cancellations", body: "Cancel any time. Your access continues until the end of the current billing period." },
                 { label: "Credits", body: "Unused credits do not roll over between billing periods and have no cash value." },
               ].map((c, i) => (

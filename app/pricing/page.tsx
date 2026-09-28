@@ -268,7 +268,7 @@ const FAQS = [
   },
   {
     q: "What if I want to stop paying?",
-    a: "Email support@replysis.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
+    a: "Email admin@varoxel.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
   },
 ];
 
@@ -979,7 +979,7 @@ export default function PricingPage() {
             </div>
             <p className="text-center text-sm text-gray-400 mt-6">
               Still have questions?{" "}
-              <a href="mailto:support@replysis.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
+              <a href="mailto:admin@varoxel.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
               {" "}and we reply same day.
             </p>
           </FadeUp>
