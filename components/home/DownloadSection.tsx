@@ -55,6 +55,10 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
                     <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z" />
                   </svg> Get it from Microsoft Store
                 </button>
+                <button onClick={() => onDownload("win-direct")}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-700 transition-colors">
+                  <WinIcon className="w-3.5 h-3.5" /> Or download the installer directly (.exe)
+                </button>
               </div>
             )}
 

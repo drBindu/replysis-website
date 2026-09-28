@@ -80,13 +80,14 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
     <div className="flex flex-col sm:flex-row gap-3">
       {/* Show ONLY the visitor's own OS. Only fall back to showing both
           when the OS is unknown (Linux / mobile / unrecognized).
-          Windows visitors also get the Store, because it installs with no
-          security prompt and some people will not take an .exe from a link.
-          An unknown OS is offered both installers and no Store: the listing is
-          a Windows one, and a Linux visitor cannot use it. */}
+          Windows visitors get the Store first (no security prompt) and the
+          signed direct .exe as a second option, for anyone who can't or
+          won't install from the Store. An unknown OS is offered the
+          Windows installer and the Mac one, and no Store: the listing is a
+          Windows one, and a Linux visitor cannot use it. */}
       {detectedOS === "mac" ? btn("mac", true)
-        : detectedOS === "win" ? storeBtn
-        : <>{storeBtn}{btn("mac", false)}</>}
+        : detectedOS === "win" ? <>{storeBtn}{btn("win-direct", false)}</>
+        : <>{btn("win-direct", false)}{btn("mac", false)}</>}
     </div>
   );
 }
@@ -382,14 +383,24 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
                   difference between installing and not. */}
               <div className="flex flex-wrap items-center gap-3">
                 {mounted && detectedOS === "win" && (
-                  <button onClick={() => onDownload("mac")}
-                    className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
-                    <MacIcon className="w-3 h-3 flex-shrink-0" />
-                    <span>Also available for macOS</span>
-                    <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  <>
+                    <button onClick={() => onDownload("win-direct")}
+                      className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
+                      <WinIcon className="w-3 h-3 flex-shrink-0" />
+                      <span>Direct download (.exe)</span>
+                      <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button onClick={() => onDownload("mac")}
+                      className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors group">
+                      <MacIcon className="w-3 h-3 flex-shrink-0" />
+                      <span>Also available for macOS</span>
+                      <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
                 )}
                 {mounted && detectedOS === "mac" && (
                   <button onClick={() => onDownload("win")}
