@@ -49,15 +49,15 @@ export default function DownloadSection({ mounted, detectedOS, onDownload }: Pro
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2">Replysis for Windows</h3>
                 <p className="text-gray-500 mb-7">Works on Windows 10 and 11 · Auto-updates</p>
-                <button onClick={() => onDownload("win")}
-                  className="inline-flex items-center gap-3 px-10 py-5 bg-zinc-900 hover:bg-black text-white font-black text-lg rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.45)] transition-all active:scale-[0.97]">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z" />
-                  </svg> Get it from Microsoft Store
-                </button>
                 <button onClick={() => onDownload("win-direct")}
+                  className="inline-flex items-center gap-3 px-10 py-5 bg-zinc-900 hover:bg-black text-white font-black text-lg rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_48px_rgba(0,0,0,0.45)] transition-all active:scale-[0.97]">
+                  <WinIcon className="w-6 h-6" /> Download for Windows
+                </button>
+                <button onClick={() => onDownload("win")}
                   className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-gray-400 hover:text-gray-700 transition-colors">
-                  <WinIcon className="w-3.5 h-3.5" /> Or download the installer directly (.exe)
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M3 3h8.5v8.5H3V3zm9.5 0H21v8.5h-8.5V3zM3 12.5h8.5V21H3v-8.5zm9.5 0H21V21h-8.5v-8.5z" />
+                  </svg> Or get it from the Microsoft Store
                 </button>
               </div>
             )}
