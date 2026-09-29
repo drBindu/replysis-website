@@ -24,7 +24,7 @@ const SPEECH_WARN_AT = 120;
 // What each plan bills per month. Matches the Stripe products created in
 // app/api/stripe/checkout/route.ts; retired plans bill nothing on renewal.
 const PLAN_PRICE_USD: Record<string, number> = {
-  free: 0, pro: 29.99, max: 49.99, lifetime: 0, teams: 0, guest: 0,
+  free: 0, pro: 34.99, max: 79.99, lifetime: 0, teams: 0, guest: 0,
 };
 
 const WINDOWS = [7, 30, 90] as const;
@@ -385,7 +385,7 @@ export default function AdminPage() {
   }
 
   async function updatePlan(userId: string, plan: string) {
-    const credits = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? 100;
+    const credits = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
     if (await runAdminAction("updatePlan", { userId, plan, credits })) fetchAll(true, currentCursor);
   }
 
@@ -747,7 +747,7 @@ export default function AdminPage() {
                 {rows.map((user) => {
                   const plan = planOf(user);
                   const u = usageFor(user.id);
-                  const allowance = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? 100;
+                  const allowance = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
                   const audioCap = PLAN_MONTHLY_AUDIO_MINUTES[plan as keyof typeof PLAN_MONTHLY_AUDIO_MINUTES] ?? 60;
                   const audioUsed = Math.round(Number(user.audioMinutesUsed) || 0);
                   const online = Date.now() - toMs(user.lastActive) < ONLINE_WINDOW_SECS * 1000;

@@ -10,7 +10,24 @@ import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
 import { copyFor } from "../../components/feedback/messages";
-import { PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, answersFor } from "../../data/productFacts";
+import {
+  PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
+  answersFor, interviewsFor,
+} from "../../data/productFacts";
+
+// Yearly plans are hidden (owner, 2026-09-29). A job search lasts one to three months, and
+// rival tools get their loudest complaints for advertising a low monthly figure that needs a
+// year paid upfront. The yearly prices in ALL_PLANS and the checkout route are kept, unused,
+// so turning this on later needs no other change, but they were priced for the old monthly
+// prices and must be reviewed first.
+const ANNUAL_ENABLED = false;
+
+// Every count on this page comes from the same numbers the server enforces.
+const fmt = (n: number) => n.toLocaleString("en-US");
+const FREE_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.free);
+const PRO_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.pro);
+const MAX_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.max);
+const MOCK_CREDITS = 20;   // what one guided mock session costs on average, see PUBLIC_CREDIT_COSTS
 import { CREDIT_PACKS, type CreditPackId } from "../../data/creditPacks";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -84,7 +101,7 @@ const ALL_PLANS: {
     id: "free",
     name: "Starter",
     emoji: "🚀",
-    tagline: "Explore Replysis before you upgrade.",
+    tagline: `See it work in a real interview. ${FREE_ANSWERS} answers, no card.`,
     monthlyPrice: 0,
     annualPrice: 0,
     oneTime: false,
@@ -99,11 +116,12 @@ const ALL_PLANS: {
       "Answers tailored to your resume and role",
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
-      "100 credits refresh automatically each month",
+      `${PLAN_MONTHLY_CREDITS.free} credits once: ${FREE_ANSWERS} live answers to try it`,
       "Live listening included with your credits, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
     ],
     notIncluded: [
+      "More answers each month (Pro and Max)",
       "AI resume rewrite for job postings",
       "Saved interview history",
     ],
@@ -113,13 +131,13 @@ const ALL_PLANS: {
     name: "Pro",
     emoji: "👑",
     tagline: "The complete toolkit for an active job search.",
-    monthlyPrice: 29.99,
+    monthlyPrice: 34.99,
     inrMonthly: 699,
     inrAnnualYearly: 6990,
-    inrCredits: 1200,
-    inrHours: 6,
-    // Annual is anchored to a clean yearly total ($299) and shown per month,
-    // so the "billed" figure on the card matches the Stripe price exactly.
+    inrCredits: INDIA_PLAN_ALLOWANCE.pro.credits,
+    inrHours: INDIA_PLAN_ALLOWANCE.pro.audioMinutes / 60,
+    // Yearly is hidden (ANNUAL_ENABLED). This is the OLD yearly price ($299 a year, anchored to
+    // a clean total and shown per month), left in place unused; review before turning it on.
     annualPrice: 24.92,
     oneTime: false,
     cta: "Get Pro",
@@ -131,11 +149,11 @@ const ALL_PLANS: {
     features: [
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
-      "Up to 100 guided mock sessions with mock-only use",
+      `Up to ${fmt(Math.floor(PLAN_MONTHLY_CREDITS.pro / MOCK_CREDITS))} guided mock sessions with mock-only use`,
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
-      "2,000 credits refresh automatically each month",
+      `${fmt(PLAN_MONTHLY_CREDITS.pro)} credits refresh automatically each month`,
       "Live listening included with your credits, subject to fair use",
     ],
     notIncluded: [],
@@ -145,12 +163,12 @@ const ALL_PLANS: {
     name: "Max",
     emoji: "👑",
     tagline: "Maximum access for interview-heavy weeks.",
-    monthlyPrice: 49.99,
+    monthlyPrice: 79.99,
     inrMonthly: 1299,
     inrAnnualYearly: 12990,
-    inrCredits: 3000,
-    inrHours: 12,
-    annualPrice: 41.58,
+    inrCredits: INDIA_PLAN_ALLOWANCE.max.credits,
+    inrHours: INDIA_PLAN_ALLOWANCE.max.audioMinutes / 60,
+    annualPrice: 41.58,   // old yearly price, unused while ANNUAL_ENABLED is false
     oneTime: false,
     cta: "Get Max",
     ctaNote: "Cancel anytime",
@@ -159,10 +177,10 @@ const ALL_PLANS: {
     special: null,
     usagePool: PUBLIC_PLAN_CAPACITY.max.summary,
     features: [
-      "Everything in Pro, with 2.5× the monthly capacity",
+      `Everything in Pro, with ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× the monthly capacity`,
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
-      "Up to 250 guided mock sessions with mock-only use",
+      `Up to ${fmt(Math.floor(PLAN_MONTHLY_CREDITS.max / MOCK_CREDITS))} guided mock sessions with mock-only use`,
       "Live listening included with your credits, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
@@ -217,11 +235,13 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Answer response target",               free: "<2 sec target", pro: "<2 sec target", max: "<2 sec target"},
-  { cat: "Live Copilot",  label: "Monthly credits",                      free: "100",          pro: "2,000",        max: "5,000"},
+  { cat: "Live Copilot",  label: "Credits",                              free: `${PLAN_MONTHLY_CREDITS.free}, once`, pro: `${fmt(PLAN_MONTHLY_CREDITS.pro)} a month`, max: `${fmt(PLAN_MONTHLY_CREDITS.max)} a month`},
+  { cat: "Live Copilot",  label: "Live answers",                         free: `${FREE_ANSWERS}, once`,               pro: `${fmt(PRO_ANSWERS)} a month`,               max: `${fmt(MAX_ANSWERS)} a month`},
+  { cat: "Live Copilot",  label: "About this many interviews",           free: "less than one",                        pro: `${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} a month`, max: `${interviewsFor(PLAN_MONTHLY_CREDITS.max)} a month`},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview sessions",              free: "6/month",      pro: "100/month",   max: "250/month"},
+  { cat: "Mock Practice", label: "Mock interview sessions",              free: `${Math.max(1, Math.floor(PLAN_MONTHLY_CREDITS.free / MOCK_CREDITS))}, once`, pro: `${fmt(Math.floor(PLAN_MONTHLY_CREDITS.pro / MOCK_CREDITS))}/month`, max: `${fmt(Math.floor(PLAN_MONTHLY_CREDITS.max / MOCK_CREDITS))}/month`},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -242,7 +262,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: "Starter includes 100 credits per month, Pro includes 2,000, and Max includes 5,000. Live answers, mock practice, and AI resume tools share this balance. Credits refresh monthly and do not roll over. The cost is shown before a credit-using action."
+    a: `A live answer costs 5 credits. Starter gives you ${PLAN_MONTHLY_CREDITS.free} credits once, which is ${FREE_ANSWERS} answers, enough to see it work. Pro includes ${fmt(PLAN_MONTHLY_CREDITS.pro)} credits a month (${fmt(PRO_ANSWERS)} answers, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(PLAN_MONTHLY_CREDITS.max)} (${fmt(MAX_ANSWERS)} answers, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Live answers, mock practice, and AI resume tools share this balance. Paid credits refresh monthly and do not roll over. The cost is shown before a credit-using action.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
@@ -254,7 +274,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between Pro and Max?",
-    a: "Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes 2,000 monthly credits. Max includes 5,000 monthly credits (2.5x Pro) plus priority support. Max increases capacity, not answer accuracy.",
+    a: `Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes ${fmt(PLAN_MONTHLY_CREDITS.pro)} monthly credits. Max includes ${fmt(PLAN_MONTHLY_CREDITS.max)} monthly credits (${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}x Pro) plus priority support. Max increases capacity, not answer accuracy.`,
   },
   {
     q: "Can I cancel anytime?",
@@ -330,6 +350,7 @@ export default function PricingPage() {
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
   const [pendingCreditPack, setPendingCreditPack] = useState<CreditPackId | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
+  // Always monthly while ANNUAL_ENABLED is false: nothing on the page can turn it on.
   const [annual,   setAnnual]   = useState(false);
 
   // Where the visitor is, asked of the server rather than the browser.
@@ -528,7 +549,33 @@ export default function PricingPage() {
             </motion.div>
           </div>
 
+          {/* What you get, in answers and interviews. Shown instead of the billing toggle while
+              yearly plans are hidden. */}
+          {!ANNUAL_ENABLED && (
+            <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.15 }}
+              className="rounded-2xl border border-[#1f6f3d]/15 bg-white/85 p-4 shadow-[0_16px_45px_rgba(27,67,39,0.10)] backdrop-blur-md">
+              <p className="mb-3 px-1 text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">What you get</p>
+              <div className="divide-y divide-[#1f6f3d]/10 text-sm">
+                {[
+                  { name: PUBLIC_PLAN_CAPACITY.free.label, line: `${FREE_ANSWERS} answers to try it, once`, price: "Free" },
+                  { name: PRO_PLAN.name, line: `${fmt(PRO_ANSWERS)} answers a month, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews`, price: perMonth(PRO_PLAN, false, india) },
+                  { name: MAX_PLAN.name, line: `${fmt(MAX_ANSWERS)} answers a month, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews`, price: perMonth(MAX_PLAN, false, india) },
+                ].map((row) => (
+                  <div key={row.name} className="flex items-baseline justify-between gap-3 px-1 py-2.5">
+                    <div>
+                      <p className="font-black text-gray-900">{row.name}</p>
+                      <p className="text-xs font-medium text-gray-600">{row.line}</p>
+                    </div>
+                    <p className="whitespace-nowrap font-black text-gray-900">{row.price}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 px-1 text-[11px] font-medium text-gray-500">One answer is 5 credits. Cancel anytime.</p>
+            </motion.div>
+          )}
+
           {/* Billing toggle */}
+          {ANNUAL_ENABLED && (
           <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.15 }}
             className="rounded-2xl border border-[#1f6f3d]/15 bg-white/85 p-3.5 shadow-[0_16px_45px_rgba(27,67,39,0.10)] backdrop-blur-md">
             <div className="mb-2.5 flex items-center justify-between px-1">
@@ -549,6 +596,7 @@ export default function PricingPage() {
               Annual: Pro {perMonth(PRO_PLAN, true, india)} · Max {perMonth(MAX_PLAN, true, india)}
             </p>
           </motion.div>
+          )}
         </div>
       </section>
 
@@ -733,7 +781,7 @@ export default function PricingPage() {
             })}
           </div>
 
-          {!annual && (
+          {ANNUAL_ENABLED && !annual && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
               className="text-center text-sm mt-6">
               <button onClick={() => setAnnual(true)}
@@ -747,7 +795,7 @@ export default function PricingPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">How credits work</p>
-                <h3 className="mt-1 text-base font-black text-gray-900">One monthly balance across the product</h3>
+                <h3 className="mt-1 text-base font-black text-gray-900">One balance across the product</h3>
               </div>
               <p className="text-xs text-gray-500">Mixed usage changes how many sessions you can run.</p>
             </div>
@@ -755,7 +803,7 @@ export default function PricingPage() {
               {PUBLIC_CREDIT_COSTS.map((item) => (
                 <div key={item.action} className="rounded-xl bg-[#f5f8f5] px-3.5 py-3">
                   <p className="text-[11px] font-semibold text-gray-600">{item.action}</p>
-                  <p className="mt-1 text-sm font-black text-gray-900">{item.cost} {item.cost === 1 ? "credit" : "credits"}</p>
+                  <p className="mt-1 text-sm font-black text-gray-900">{item.cost} {item.cost > 1 ? "credits" : "credit"}</p>
                 </div>
               ))}
             </div>
@@ -841,7 +889,7 @@ export default function PricingPage() {
                   </div>
                   <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-black text-white">{perMonth(MAX_PLAN, annual, india)}</span>
                 </div>
-                <p className="text-sm leading-relaxed text-gray-600">You have frequent interview loops, practice daily, or need 2.5× Pro capacity and priority support.</p>
+                <p className="text-sm leading-relaxed text-gray-600">You have frequent interview loops, practice daily, or need {PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× Pro capacity and priority support.</p>
                 <button onClick={() => handleCheckout("max")} className="mt-5 text-sm font-black text-gray-900 hover:text-[#267b42]">Get Max →</button>
               </div>
             </div>

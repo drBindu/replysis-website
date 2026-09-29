@@ -130,9 +130,9 @@ export default function AccountPage() {
   const plan = profile?.plan && profile.plan in PLAN_MONTHLY_CREDITS ? profile.plan : "free";
   const activePlan = plan === "pro" || plan === "max" ? plan : "free";
   const planFacts = plan === "lifetime"
-    ? { label: "Legacy Lifetime", summary: "5,000 credits each month" }
+    ? { label: "Legacy Lifetime", summary: `${PLAN_MONTHLY_CREDITS.lifetime.toLocaleString("en-US")} credits each month` }
     : plan === "teams"
-      ? { label: "Legacy Teams", summary: "10,000 credits each month" }
+      ? { label: "Legacy Teams", summary: `${PLAN_MONTHLY_CREDITS.teams.toLocaleString("en-US")} credits each month` }
       : PUBLIC_PLAN_CAPACITY[activePlan];
   const credits = Math.max(0, Number(profile?.credits ?? 0));
   const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;

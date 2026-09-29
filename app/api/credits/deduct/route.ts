@@ -5,7 +5,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS } from "../../../../data/productFacts";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset } from "../../../../data/productFacts";
 
 function getDb() {
   if (getApps().length) return getFirestore();
@@ -147,7 +147,8 @@ export async function POST(req: Request) {
       // Lazy monthly reset: refill to the plan cap once the reset date passes.
       const resetAt = userData.creditsResetDate ? Date.parse(userData.creditsResetDate) : 0;
       let didReset = false;
-      if (resetAt && Date.now() >= resetAt) { credits = cap + purchasedCredits; used = 0; didReset = true; }
+      // Free is a one-time trial and is not refilled; a paid plan is topped up.
+      if (resetAt && Date.now() >= resetAt) { credits = creditsAfterMonthlyReset(plan, credits, purchasedCredits); used = 0; didReset = true; }
 
       if (credits < cost) {
         if (didReset) transaction.update(userRef, { credits, creditsUsed: 0, creditsResetDate: nextResetISO() });

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { db } from "../app/firebaseConfig";
 import { useAuth } from "./AuthProvider";
+import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor, interviewsFor } from "../data/productFacts";
 
 type Notice = {
   credits: number;
@@ -52,18 +53,19 @@ export default function CreditUpgradeNotice() {
       const plan = typeof data.plan === "string" ? data.plan : "free";
       const credits = Math.max(0, Number(data.credits ?? 0));
 
-      if (plan !== "free" || credits > 20) {
+      // Two answers left or fewer is "low"; less than the price of one answer is "out".
+      if (plan !== "free" || credits > ANSWER_CREDIT_COST * 2) {
         setNotice(null);
         return;
       }
 
-      const tier: Notice["tier"] = credits === 0 ? "empty" : "low";
-      const storageKey = `replysis-credit-warning:${user.uid}:${cycleKey(data.creditsResetDate)}:${tier}`;
+      const tier: Notice["tier"] = credits < ANSWER_CREDIT_COST ? "empty" : "low";
+      // The free trial is one time, not monthly, so each warning is shown once ever, not once a month.
+      const storageKey = `replysis-credit-warning:${user.uid}:trial:${tier}`;
       if (localStorage.getItem(storageKey)) return;
 
-      // Each warning is shown once per credit cycle. Reaching zero is a new,
-      // stronger tier, so it still appears even if the low-credit warning was
-      // already dismissed earlier in the month.
+      // Each warning is shown once. Running out is a new, stronger tier, so it still appears
+      // even if the low-credit warning was already dismissed.
       localStorage.setItem(storageKey, "shown");
       setNotice({ credits, tier, resetLabel: resetLabel(data.creditsResetDate) });
     }, () => {
@@ -81,7 +83,7 @@ export default function CreditUpgradeNotice() {
         <motion.aside
           role="dialog"
           aria-live="polite"
-          aria-label={empty ? "Free credits used" : "Free credits running low"}
+          aria-label={empty ? "Free answers used" : "Free answers running low"}
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -98,12 +100,12 @@ export default function CreditUpgradeNotice() {
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-black text-slate-900">
-                  {empty ? "Your free credits are used" : "Your free credits are running low"}
+                  {empty ? "Your free answers are used" : "Your free answers are running low"}
                 </h2>
                 <p className="mt-1 text-[13px] leading-5 text-slate-600">
                   {empty
-                    ? `Upgrade to Pro to continue now, or wait until your free credits refresh on ${notice.resetLabel}.`
-                    : `You have ${notice.credits} free credits remaining. They refresh on ${notice.resetLabel}. Upgrade now to avoid an interruption.`}
+                    ? `That is what Replysis does in a real interview. Pro gives you ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month, enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews.`
+                    : `You have ${answersFor(notice.credits)} free ${answersFor(notice.credits) === 1 ? "answer" : "answers"} left. Free answers do not refresh. Upgrade to Pro for ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month.`}
                 </p>
               </div>
               <button

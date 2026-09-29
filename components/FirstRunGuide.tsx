@@ -5,6 +5,7 @@ import { ArrowRight, FileText, MessageCircleQuestion, Mic2, Sparkles, X } from "
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
+import { FREE_TRIAL_ANSWERS } from "../data/productFacts";
 
 const STEPS = [
   { title: "Prepare your resume", body: "Give Replysis the context it needs.", href: "/resume", icon: FileText },
@@ -145,7 +146,7 @@ export default function FirstRunGuide() {
               </div>
 
               <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-slate-500">Your Starter plan includes 100 monthly credits. No payment details required.</p>
+                <p className="text-xs text-slate-500">Your Starter plan includes {FREE_TRIAL_ANSWERS} free answers to try it. No payment details required.</p>
                 <button type="button" onClick={dismiss} className="whitespace-nowrap rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">I will explore myself</button>
               </div>
             </div>

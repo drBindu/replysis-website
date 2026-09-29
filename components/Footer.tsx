@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import BrandIcon from "./BrandIcon";
+import { FREE_TRIAL_ANSWERS } from "../data/productFacts";
 
 const GROUPS = [
   {
@@ -49,7 +50,7 @@ export default function Footer() {
               A connected interview workspace for resume preparation, realistic practice, and fast live guidance grounded in the context you provide.
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold text-white/55">
-              {["100 free monthly credits", "Clear plan limits", "Secure Stripe checkout"].map((item) => (
+              {[`${FREE_TRIAL_ANSWERS} free answers`, "Clear plan limits", "Secure Stripe checkout"].map((item) => (
                 <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">{item}</span>
               ))}
             </div>

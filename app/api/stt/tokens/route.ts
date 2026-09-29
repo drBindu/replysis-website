@@ -9,7 +9,7 @@ import {
   isSmallTalk as isPleasantrySmallTalk,
   isGreetingPlusSmallTalk as isPleasantryGreetingPlusSmallTalk,
 } from "../../../real-interview/_lib/promptBuilder";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS } from "../../../../data/productFacts";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset } from "../../../../data/productFacts";
 
 export const dynamic = "force-dynamic";
 
@@ -414,6 +414,39 @@ function nextResetISO(): string {
   return d.toISOString();
 }
 
+/**
+ * The door check for listening: is there enough left for at least one answer?
+ *
+ * It used to spend a credit each time a session started or reconnected, which meant a free
+ * account's 25 credits were not five answers on the website. Starting is free now, but
+ * nobody with less than an answer's worth gets a speech token, because they could listen
+ * and never be able to ask (listening is what costs us money).
+ */
+async function hasCreditsToListen(
+  uid: string,
+  email: string,
+): Promise<{ allowed: boolean; unavailable?: boolean }> {
+  if (UNLIMITED_EMAILS.has(email.toLowerCase())) return { allowed: true };
+  if (!db)  return { allowed: false, unavailable: true };   // fail closed, as everywhere here
+  if (!uid) return { allowed: false };
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    if (!snap.exists) return { allowed: false };
+    const data = snap.data() ?? {};
+    const plan = typeof data.plan === "string" ? data.plan : "free";
+    let credits = typeof data.credits === "number" ? data.credits : (PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free);
+    const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
+    // Not written here: the next charge performs the reset. This only asks what it would be.
+    if (resetAt && Date.now() >= resetAt) {
+      credits = creditsAfterMonthlyReset(plan, credits, Math.max(0, Number(data.purchasedCredits ?? 0)));
+    }
+    return { allowed: credits >= CREDIT_ACTION_COSTS.realtime_per_minute };
+  } catch (err) {
+    console.error("Listening credit check error:", err);
+    return { allowed: false, unavailable: true };
+  }
+}
+
 async function checkAndDeductCredits(
   uid: string,
   email: string,
@@ -469,7 +502,8 @@ async function checkAndDeductCredits(
       // it a user who hit 0 would be stuck forever.
       const resetAt = userData.creditsResetDate ? Date.parse(userData.creditsResetDate) : 0;
       if (resetAt && Date.now() >= resetAt) {
-        credits = cap + purchasedCredits;
+        // Free is a one-time trial and is not refilled; a paid plan is topped up.
+        credits = creditsAfterMonthlyReset(plan, credits, purchasedCredits);
         used    = 0;
         updates.creditsUsed      = 0;
         updates.creditsResetDate = nextResetISO();
@@ -811,14 +845,16 @@ export async function GET(req: Request) {
       );
     }
 
-    const creditResult = await checkAndDeductCredits(verifiedUid, verifiedEmail, "stt_token");
+    // A check, not a charge: starting a session spends nothing (see hasCreditsToListen).
+    const creditResult = await hasCreditsToListen(verifiedUid, verifiedEmail);
     if (!creditResult.allowed) {
       return NextResponse.json(
         { error: creditResult.unavailable ? "Credit service unavailable" : "Insufficient credits" },
         { status: creditResult.unavailable ? 503 : 402 },
       );
     }
-    tokenCreditCharged = true;
+    // Nothing was taken, so nothing needs giving back if the token cannot be issued.
+    tokenCreditCharged = false;
     tokenCreditUid = verifiedUid;
     tokenCreditEmail = verifiedEmail;
 

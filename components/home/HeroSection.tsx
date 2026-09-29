@@ -2,6 +2,7 @@
 import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import BrandIcon from "../BrandIcon";
+import { FREE_TRIAL_ANSWERS } from "../../data/productFacts";
 
 interface Props {
   mounted: boolean;
@@ -416,7 +417,7 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                  <span className="text-[11px] text-gray-500">100 credits monthly</span>
+                  <span className="text-[11px] text-gray-500">{FREE_TRIAL_ANSWERS} free answers</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>

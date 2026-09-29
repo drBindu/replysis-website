@@ -6,7 +6,7 @@
 
 import { doc, getDoc, updateDoc, setDoc, increment, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, type PlanId } from "../../data/productFacts";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, creditsAfterMonthlyReset, type PlanId } from "../../data/productFacts";
 
 // ── CREDIT COSTS PER ACTION ──
 export const CREDIT_COSTS = CREDIT_ACTION_COSTS;
@@ -34,7 +34,7 @@ export const PLAN_CONFIG = {
     label: "Pro",
     totalCredits: PLAN_MONTHLY_CREDITS.pro,
     monthlyReset: true,
-    price: 29.99,
+    price: 34.99,
     stripePriceId: "",
     allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
@@ -51,7 +51,7 @@ export const PLAN_CONFIG = {
     label: "Max",
     totalCredits: PLAN_MONTHLY_CREDITS.max,
     monthlyReset: true,
-    price: 49.99,
+    price: 79.99,
     stripePriceId: "",
     allowedModels: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "gpt-4o-mini", "gpt-4.1"],
     features: {
@@ -206,7 +206,8 @@ export async function deductCredits(uid: string, action: CreditAction): Promise<
       const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
       let didReset = false;
       if (resetAt && Date.now() >= resetAt) {
-        credits  = plan.totalCredits + purchasedCredits;
+        // Free is a one-time trial and is not refilled; a paid plan is topped up.
+        credits  = creditsAfterMonthlyReset(planKey, credits, purchasedCredits);
         used = 0;
         didReset = true;
       }

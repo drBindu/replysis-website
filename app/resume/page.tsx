@@ -365,7 +365,7 @@ function CreditUsageToast({ action, cost, remaining, max, isUnlimited, onDone }:
 /* ════════════════════════════════════════════════════════════════
    CREDIT METER
 ════════════════════════════════════════════════════════════════ */
-function CreditMeter({ credits=0, max=100, isUnlimited=false, plan="free", onOpenHistory }: {
+function CreditMeter({ credits=0, max=PLAN_CONFIG.free.totalCredits, isUnlimited=false, plan="free", onOpenHistory }: {
   credits?: number; max?: number; isUnlimited?: boolean; plan?: string; onOpenHistory?: () => void;
 }) {
   const pct   = isUnlimited ? 100 : Math.min(100, Math.round((credits/max)*100));
@@ -522,7 +522,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                 boxShadow:"0 4px 14px rgba(45,91,227,0.3)" }}>
               <Crown size={15} /> Upgrade for more monthly credits
             </button>
-            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes 2,000 credits refreshed monthly</p>
+            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes {PLAN_CONFIG.pro.totalCredits.toLocaleString("en-US")} credits refreshed monthly</p>
           </div>
         )}
       </motion.div>

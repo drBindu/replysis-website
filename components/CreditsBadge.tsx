@@ -7,7 +7,7 @@ import { auth, db } from "../app/firebaseConfig";
 import { CREDIT_COSTS } from "../app/lib/credits";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { PLAN_MONTHLY_CREDITS } from "../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor } from "../data/productFacts";
 
 type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
@@ -148,8 +148,10 @@ export default function CreditsBadge() {
   const max            = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const displayCredits = Math.min(credits, max);
   const pct            = Math.max(0, Math.min(100, Math.round((displayCredits / max) * 100)));
-  const isLow          = plan === "free" && credits < 20;
-  const isCrit         = plan === "free" && credits < 5;
+  // In answers, not raw numbers: the trial is five answers, so "low" is two left or fewer and
+  // "out" is less than the price of one.
+  const isLow          = plan === "free" && credits <= ANSWER_CREDIT_COST * 2;
+  const isCrit         = plan === "free" && credits < ANSWER_CREDIT_COST;
   const isPaid         = plan !== "free";
 
   const barColor  = isCrit ? "#ef4444" : isLow ? "#f59e0b" : meta.dropdownAccent;
@@ -200,7 +202,7 @@ export default function CreditsBadge() {
                     {isPaid ? `${meta.label} Plan` : "Starter Plan"}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
-                    {max.toLocaleString()} credits per month
+                    {isPaid ? `${max.toLocaleString()} credits per month` : `${answersFor(max)} free answers, once`}
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
@@ -227,7 +229,7 @@ export default function CreditsBadge() {
                     <span className="text-2xl font-black text-gray-900">{displayCredits.toLocaleString()}</span>
                     <span className="text-[12px] text-gray-400 font-medium">/ {max.toLocaleString()}</span>
                   </div>
-                  <p className="text-[11px] text-gray-500">credits remaining this month</p>
+                  <p className="text-[11px] text-gray-500">{isPaid ? "credits remaining this month" : `credits left, ${answersFor(credits)} ${answersFor(credits) === 1 ? "answer" : "answers"}`}</p>
                   {isCrit && (
                     <p className="text-[11px] font-bold text-red-500 mt-1">Almost out. Upgrade to keep going.</p>
                   )}
@@ -250,7 +252,7 @@ export default function CreditsBadge() {
               {/* Credit cost hints — pulled from CREDIT_COSTS so they never go stale */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Live interview / min", cost: CREDIT_COSTS.realtime_per_minute },
+                  { label: "Live answer", cost: CREDIT_COSTS.realtime_per_minute },
                   { label: "Mock session",          cost: CREDIT_COSTS.mock_interview_session },
                 ].map((h, i) => (
                   <div key={i} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-100">
@@ -270,7 +272,7 @@ export default function CreditsBadge() {
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.32)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)" }} />
-                  Upgrade to Pro · 2,000 monthly credits
+                  Upgrade to Pro · {answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month
                   <span className="ml-1.5 opacity-80">→</span>
                 </button>
               ) : (

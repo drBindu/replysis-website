@@ -15,6 +15,7 @@ import {
 import { auth } from "../app/firebaseConfig";
 import { establishBrowserSession } from "../app/lib/auth-session";
 import BrandIcon from "./BrandIcon";
+import { FREE_TRIAL_ANSWERS } from "../data/productFacts";
 
 type Mode = "signin" | "signup" | "reset";
 
@@ -226,7 +227,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                     </h2>
                     <p className="text-[13px] text-gray-400 mt-0.5">
                       {mode === "signin" ? "Sign in to continue to Replysis"
-                        : mode === "signup" ? "Start with 100 free AI credits. No card needed."
+                        : mode === "signup" ? `Start with ${FREE_TRIAL_ANSWERS} free answers. No card needed.`
                         : "We'll send a reset link to your inbox"}
                     </p>
                   </motion.div>

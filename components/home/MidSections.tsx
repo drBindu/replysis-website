@@ -2,11 +2,12 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FadeUp, FadeIn, BlurFade } from "./shared";
+import { PLAN_MONTHLY_CREDITS, FREE_TRIAL_ANSWERS, answersFor } from "../../data/productFacts";
 
 /* ── VERIFIABLE PRODUCT FACTS ───────────────────────────────── */
 export function TrustedBySection() {
   const proof = [
-    { value: "100", label: "free monthly credits", detail: "Explore all three workflows before paying." },
+    { value: String(FREE_TRIAL_ANSWERS), label: "free answers to try", detail: "See live answers work in a real interview before paying." },
     { value: "2", label: "desktop platforms", detail: "Native apps for Windows and macOS." },
     { value: "3-in-1", label: "interview workspace", detail: "Resume, practice, and live support together." },
     { value: "Stripe", label: "secure checkout", detail: "Card details never touch Replysis servers." },
@@ -48,8 +49,8 @@ export function StatsSection() {
   const stats = [
     { to: 2,    suf: "s", pre: "<", label: "Response target", sub: "answers begin streaming",      accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
     { to: 3,    suf: "",  pre: "",  label: "Core workflows",  sub: "resume, mock, and live",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
-    { to: 2000, suf: "",  pre: "",  label: "Pro credits",     sub: "refreshed every month",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
-    { to: 5000, suf: "",  pre: "",  label: "Max credits",     sub: "2.5x Pro monthly capacity",   accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(33,146,74,0.12)" },
+    { to: answersFor(PLAN_MONTHLY_CREDITS.pro), suf: "",  pre: "",  label: "Pro answers",     sub: "every month",       accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(31,138,62,0.12)" },
+    { to: answersFor(PLAN_MONTHLY_CREDITS.max), suf: "",  pre: "",  label: "Max answers",     sub: `${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}x Pro monthly capacity`,   accent: "text-zinc-900", border: "border-zinc-800/20", bg: "bg-zinc-100", glow: "rgba(33,146,74,0.12)" },
   ];
   return (
     <section className="py-28 px-6 overflow-hidden" style={{ background: "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)" }}>
@@ -209,7 +210,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
               <p className="text-gray-600 text-lg max-w-xl mx-auto mb-3 leading-relaxed">
                 Replysis listens live, uses your resume as context, and is designed around a sub-two-second response-start target. Network and provider conditions can affect timing.
               </p>
-              <p className="text-gray-400 text-sm mb-10">Start with 100 monthly credits. No payment details are required to explore the product.</p>
+              <p className="text-gray-400 text-sm mb-10">Start with {FREE_TRIAL_ANSWERS} free answers. No payment details are required to try the product.</p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <motion.div
@@ -237,7 +238,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
 
               {/* Trust footer */}
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-                {["No credit card", "100 monthly credits", "Cancel anytime", "Raw audio not stored"].map((t, i) => (
+                {["No credit card", `${FREE_TRIAL_ANSWERS} free answers`, "Cancel anytime", "Raw audio not stored"].map((t, i) => (
                   <div key={i} className="flex items-center gap-1.5 text-[11px] text-gray-400">
                     <svg className="w-3 h-3 text-zinc-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
