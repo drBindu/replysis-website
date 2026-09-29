@@ -46,15 +46,6 @@ function sanitizeText(text: string): string {
 // ─────────────────────────────────────────────
 // CREDITS DISPLAY
 // ─────────────────────────────────────────────
-/** Listening time in the units a person would say it in. */
-function formatListeningTime(minutes: number): string {
-  if (minutes <= 0) return "0m";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
-}
-
 function CreditsDisplay({
   credits, plan, loading, onUpgrade, minutesLeft,
 }: {
@@ -65,15 +56,11 @@ function CreditsDisplay({
   const cap = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
   const isPaid = plan !== "free";
 
-  // Two limits stop an interview and either can be the one that bites, so
-  // both are shown and whichever is closest decides the colour. Credits alone
-  // were never the whole truth: they meter questions, and the microphone bills
-  // by the hour. Somebody with two thousand credits on screen and no listening
-  // time left reads a healthy number and a dead microphone, and reasonably
-  // concludes the product is broken rather than that they reached a limit.
-  const timeLow = minutesLeft <= 15;
+  // One meter: credits. Listening time is a fair use guard on the server and
+  // is shown only in words, and only if it is ever reached, so that credits
+  // left over never sits beside a dead microphone unexplained.
   const timeEmpty = minutesLeft <= 0;
-  const isLow = credits <= Math.max(10, Math.round(cap * 0.05)) || timeLow;
+  const isLow = credits <= Math.max(10, Math.round(cap * 0.05));
   const isEmpty = credits <= 0 || timeEmpty;
   const planLabel = ({ free: "Starter", pro: "Pro", max: "Max", lifetime: "Lifetime", teams: "Teams" } as Record<string, string>)[plan] ?? "Starter";
 
@@ -95,11 +82,9 @@ function CreditsDisplay({
         <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
           {planLabel} · {credits.toLocaleString()}
           <span className="font-normal text-[10px] ml-1 opacity-60">credits</span>
-          <span className="mx-1 opacity-30">·</span>
-          {formatListeningTime(minutesLeft)}
-          <span className="font-normal text-[10px] ml-1 opacity-60">
-            {timeEmpty ? "listening time used up" : "listening"}
-          </span>
+          {timeEmpty && (
+            <span className="font-normal text-[10px] ml-2">Monthly listening limit reached</span>
+          )}
         </span>
         {isLow && (
           <div className="flex items-center gap-1">

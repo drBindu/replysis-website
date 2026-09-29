@@ -806,7 +806,7 @@ export async function GET(req: Request) {
     // not a question is ever asked. Checked here since no token means no audio.
     if (!(await hasAudioTimeLeft(verifiedUid, verifiedEmail))) {
       return NextResponse.json(
-        { error: "You have used all your listening time this month.", reason: "audio-limit" },
+        { error: "You have reached this month's fair use limit for listening.", reason: "audio-limit" },
         { status: 402 },
       );
     }

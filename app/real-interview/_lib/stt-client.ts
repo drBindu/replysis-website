@@ -6,13 +6,18 @@
 const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Press Space to reconnect.";
 const OUT_OF_CREDITS = "You have used your available credits. Choose a plan to continue.";
 const IDLE_STOPPED =
-  "Listening stopped after 3 minutes of silence, so your listening time is not spent on an empty room. Press Space to start again.";
+  "Listening stopped after 3 minutes of silence. Press Space to start again.";
 
 // How long a silence runs before the microphone gives up. In a real interview
 // somebody speaks every few seconds and even a long thinking pause is well
 // under a minute, so this catches an empty room and never a person deciding
 // what to say.
 const IDLE_TIMEOUT_MS = 3 * 60_000;
+
+// Listening is counted as speech, not as microphone time (owner, 2026-09-29):
+// an interval counts when words arrived in it or in this window before it. Same
+// rule and same number as the desktop app's ListeningBilling.SpeechWindow.
+const SPEECH_WINDOW_MS = 6_000;
 const REPORT_INTERVAL_SECONDS = 60;
 
 type StartOptions = {
@@ -312,6 +317,11 @@ export class SpeechmaticsClient {
     this.meterTimer = window.setInterval(() => this.meterTick(), 5_000);
   }
 
+  /** The part of [start, end] that counts: all of it when speech was heard in or just before it, else none. */
+  private speechSeconds(start: number, end: number): number {
+    return this.lastSpeechAt > start - SPEECH_WINDOW_MS ? (end - start) / 1000 : 0;
+  }
+
   private clearMeter() {
     if (this.meterTimer !== null) window.clearInterval(this.meterTimer);
     this.meterTimer = null;
@@ -333,7 +343,7 @@ export class SpeechmaticsClient {
     }
 
     if (this.listeningSince) {
-      this.unreportedSeconds += (now - this.listeningSince) / 1000;
+      this.unreportedSeconds += this.speechSeconds(this.listeningSince, now);
       this.listeningSince = now;
     }
 
@@ -348,7 +358,7 @@ export class SpeechmaticsClient {
   private flushMeter() {
     this.clearMeter();
     if (this.listeningSince) {
-      this.unreportedSeconds += (Date.now() - this.listeningSince) / 1000;
+      this.unreportedSeconds += this.speechSeconds(this.listeningSince, Date.now());
       this.listeningSince = 0;
     }
     if (this.unreportedSeconds >= 30) {

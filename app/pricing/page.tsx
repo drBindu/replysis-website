@@ -10,7 +10,7 @@ import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
 import { copyFor } from "../../components/feedback/messages";
-import { PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY } from "../../data/productFacts";
+import { PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, answersFor } from "../../data/productFacts";
 import { CREDIT_PACKS, type CreditPackId } from "../../data/creditPacks";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -100,7 +100,7 @@ const ALL_PLANS: {
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
       "100 credits refresh automatically each month",
-      "15 minutes of live listening each month — resume and screen tools never use it",
+      "Live listening included with your credits, subject to fair use",
     ],
     notIncluded: [
       "Screen share exclusion (desktop app)",
@@ -136,7 +136,7 @@ const ALL_PLANS: {
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
       "2,000 credits refresh automatically each month",
-      "15 hours of live listening each month — resume and screen tools never use it",
+      "Live listening included with your credits, subject to fair use",
     ],
     notIncluded: [],
   },
@@ -163,7 +163,7 @@ const ALL_PLANS: {
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
       "Up to 250 guided mock sessions with mock-only use",
-      "30 hours of live listening each month — resume and screen tools never use it",
+      "Live listening included with your credits, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI resume tailoring for every role you target",
@@ -191,18 +191,16 @@ const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
  * writes onto the user.
  */
 const usagePoolFor = (plan: typeof PRO_PLAN, india: boolean) =>
-  india && plan.inrCredits && plan.inrHours
-    ? `${plan.inrCredits.toLocaleString()} credits and ${plan.inrHours} hours of live listening each month`
+  india && plan.inrCredits
+    ? `${plan.inrCredits.toLocaleString()} credits, about ${answersFor(plan.inrCredits).toLocaleString()} answers each month`
     : plan.usagePool;
 
 const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
-  india && plan.inrCredits && plan.inrHours
+  india && plan.inrCredits
     ? plan.features.map((line) =>
         /credits refresh automatically/.test(line)
           ? `${plan.inrCredits!.toLocaleString()} credits refresh automatically each month`
-          : /of live listening each month/.test(line)
-            ? `${plan.inrHours} hours of live listening each month \u2014 resume and screen tools never use it`
-            : line)
+          : line)
     : plan.features;
 
 const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
@@ -230,7 +228,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Resume",        label: "Verify AI reads your resume",          free: true,           pro: true,          max: true},
   { cat: "Resume",        label: "AI rewrite for any job posting",       free: false,          pro: true,          max: true},
   { cat: "Apps",          label: "Web app, no install needed",           free: true,           pro: true,          max: true},
-  { cat: "Apps",          label: "Windows desktop app",                  free: false,          pro: true,          max: true},
+  { cat: "Apps",          label: "Windows desktop app",                  free: true,           pro: true,          max: true},
   { cat: "Apps",          label: "macOS desktop app",                    free: false,          pro: true,          max: true},
   { cat: "AI",            label: "AI model",                             free: "Standard",     pro: "Best",        max: "Best"},
   { cat: "Billing",       label: "Future features included",             free: false,          pro: true,          max: true},

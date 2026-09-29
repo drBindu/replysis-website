@@ -93,41 +93,44 @@ export const CREDIT_ACTION_COSTS = {
 } as const;
 
 // Both limits are stated, because both can be the one a customer meets.
-// Listening hours are quoted in hours rather than minutes: nobody prices 1,800
-// minutes against their afternoon, and the point of publishing a limit is that
-// it can be understood before it is reached rather than discovered after.
+// The customer sees ONE meter: credits, and what they buy in answers
+// (owner, 2026-09-29: "credits, and no minutes, no hours, nothing"). Listening
+// still has a fair use limit on the server (PLAN_MONTHLY_AUDIO_MINUTES above),
+// counted in minutes of speech actually heard, so an open microphone that hears
+// nobody costs nothing. It is a cost guard, sized so a customer meets their
+// credits first, and it is never quoted as a number here: a number quoted twice
+// is a number that drifts.
+//
+// Answers are derived from the same cost the server charges, never typed.
+export const ANSWER_CREDIT_COST = CREDIT_ACTION_COSTS.realtime_per_minute;
+export const answersFor = (credits: number) => Math.floor(credits / ANSWER_CREDIT_COST);
+const answersText = (credits: number) =>
+  `${credits.toLocaleString("en-US")} credits, about ${answersFor(credits).toLocaleString("en-US")} answers each month`;
+
 export const PUBLIC_PLAN_CAPACITY = {
   free: {
     label: "Starter",
     credits: PLAN_MONTHLY_CREDITS.free,
-    listeningHours: PLAN_MONTHLY_AUDIO_MINUTES.free / 60,
-    summary: "100 credits and 15 minutes of live listening each month",
+    summary: answersText(PLAN_MONTHLY_CREDITS.free),
     example: "Enough to explore live answers, mock practice, and resume tools.",
   },
   pro: {
     label: "Pro",
     credits: PLAN_MONTHLY_CREDITS.pro,
-    listeningHours: PLAN_MONTHLY_AUDIO_MINUTES.pro / 60,
-    summary: "2,000 credits and 15 hours of live listening each month",
-    example: "Around 15 hour-long interviews, or 100 guided mock sessions.",
+    summary: answersText(PLAN_MONTHLY_CREDITS.pro),
+    example: `About ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} live answers, or 100 guided mock sessions.`,
   },
   max: {
     label: "Max",
     credits: PLAN_MONTHLY_CREDITS.max,
-    listeningHours: PLAN_MONTHLY_AUDIO_MINUTES.max / 60,
-    summary: "5,000 credits and 30 hours of live listening each month",
-    example: "Around 30 hour-long interviews, or 250 guided mock sessions.",
+    summary: answersText(PLAN_MONTHLY_CREDITS.max),
+    example: `About ${answersFor(PLAN_MONTHLY_CREDITS.max).toLocaleString("en-US")} live answers, or 250 guided mock sessions.`,
   },
 } as const;
 
 /**
- * What the two limits actually cover, since "credits" and "hours" sound like
- * the same thing and are not.
- *
- * Listening time is spent only while the microphone is on. Everything else —
- * resume work, screen analysis, typed questions — costs credits alone, so a
- * customer who runs out of hours still has a usable product for the rest of
- * the month rather than a locked one.
+ * What credits cover, and the one caveat that has to be disclosed: live
+ * listening is included, subject to a fair use limit.
  */
 export const PUBLIC_LIMIT_EXPLAINER = {
   credits: {
@@ -135,9 +138,9 @@ export const PUBLIC_LIMIT_EXPLAINER = {
     covers: "Every answer, resume analysis, resume tailoring and screen read.",
   },
   listening: {
-    title: "Listening time",
-    covers: "Only the minutes the microphone is on during a live or mock interview.",
-    note: "Resume tools, screen analysis and typed questions never use listening time.",
+    title: "Live listening",
+    covers: "Included with your credits, subject to fair use.",
+    note: "Resume tools, screen analysis and typed questions never use it.",
   },
 } as const;
 
