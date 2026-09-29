@@ -10,11 +10,12 @@ const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
 const PORTAL_CONFIGURATION_VERSION = "phase3-v1";
 
+// Monthly only, on purpose. Yearly plans are hidden and checkout refuses them; if the portal offered them a
+// subscriber could still switch to a yearly price here, around that rule. Add the annual ones back together
+// with ANNUAL_ENABLED on the pricing page.
 const PRICE_IDS = [
   process.env.STRIPE_PRO_MONTHLY_PRICE,
-  process.env.STRIPE_PRO_ANNUAL_PRICE,
   process.env.STRIPE_MAX_MONTHLY_PRICE,
-  process.env.STRIPE_MAX_ANNUAL_PRICE,
 ].filter((value): value is string => Boolean(value && !value.includes("REPLACE_ME")));
 
 function ensureAdminInit() {
