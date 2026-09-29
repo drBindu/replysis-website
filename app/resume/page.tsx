@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useCredits } from "../lib/use-credits";
 import { PLAN_CONFIG } from "../lib/credits";
+import { answerCount, answersLabel } from "../../data/productFacts";
 import { useToast } from "../../components/feedback/Toast";
 import { classifyFailure } from "../../components/feedback/messages";
 
@@ -343,10 +344,10 @@ function CreditUsageToast({ action, cost, remaining, max, isUnlimited, onDone }:
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:12, fontWeight:700, color:T.textPrimary, marginBottom:2 }}>
-          {isUnlimited ? "Plan credits active" : `-${cost} credits used`}
+          {isUnlimited ? "Plan answers active" : `${answersLabel(cost)} used`}
         </div>
         <div style={{ fontSize:11, color:T.textSecondary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-          {action} {isUnlimited ? "✓" : `· ${remaining} remaining`}
+          {action} {isUnlimited ? "✓" : `· ${answerCount(remaining)} left`}
         </div>
         {!isUnlimited && (
           <div style={{ marginTop:5, height:3, borderRadius:3, background:T.border, overflow:"hidden" }}>
@@ -370,7 +371,7 @@ function CreditMeter({ credits=0, max=PLAN_CONFIG.free.totalCredits, isUnlimited
 }) {
   const pct   = isUnlimited ? 100 : Math.min(100, Math.round((credits/max)*100));
   const color = isUnlimited ? T.purple : pct>50 ? T.success : pct>20 ? T.warning : T.danger;
-  const label = isUnlimited ? "Monthly plan credits" : `${credits} / ${max} credits remaining`;
+  const label = isUnlimited ? "Monthly plan answers" : `${answerCount(credits)} / ${answerCount(max)} answers left`;
   return (
     <Tooltip tip={`${label} · Click to see usage`} side="bottom">
       <button onClick={onOpenHistory}
@@ -381,7 +382,7 @@ function CreditMeter({ credits=0, max=PLAN_CONFIG.free.totalCredits, isUnlimited
         <div style={{ display:"flex", alignItems:"center", gap:5 }}>
           {isUnlimited ? <Crown size={13} style={{ color:T.purple }} /> : <Coins size={13} style={{ color }} />}
           <span style={{ fontSize:12, fontWeight:800, color, fontVariantNumeric:"tabular-nums" }}>
-            {isUnlimited ? "∞" : credits}
+            {isUnlimited ? "∞" : answerCount(credits)}
           </span>
         </div>
         {!isUnlimited && (
@@ -428,7 +429,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                 <TrendingUp size={16} style={{ color:T.accent }} />
               </div>
               <div>
-                <div style={{ fontSize:14, fontWeight:800, color:T.textPrimary }}>Credit Usage</div>
+                <div style={{ fontSize:14, fontWeight:800, color:T.textPrimary }}>Answers used</div>
                 <div style={{ fontSize:10, color:T.textTertiary }}>This session</div>
               </div>
             </div>
@@ -442,8 +443,8 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
               <div>
                 <div style={{ fontSize:11, color:T.textTertiary, fontWeight:600, marginBottom:2 }}>Current Balance</div>
                 <div style={{ fontSize:28, fontWeight:900, color:barColor, lineHeight:1 }}>
-                  {isUnlimited ? "∞" : credits}
-                  {!isUnlimited && <span style={{ fontSize:13, fontWeight:600, color:T.textTertiary }}> / {max}</span>}
+                  {isUnlimited ? "∞" : answerCount(credits)}
+                  {!isUnlimited && <span style={{ fontSize:13, fontWeight:600, color:T.textTertiary }}> / {answerCount(max)}</span>}
                 </div>
               </div>
               <div style={{ textAlign:"right" }}>
@@ -460,13 +461,13 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
           </div>
         </div>
         <div style={{ padding:"14px 20px", borderBottom:`1.5px solid ${T.border}`, flexShrink:0 }}>
-          <div style={{ fontSize:10, fontWeight:800, color:T.textTertiary, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>Credit Costs</div>
+          <div style={{ fontSize:10, fontWeight:800, color:T.textTertiary, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>What uses an answer</div>
           <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
             {[
               { label:"AI Tailor Resume",    cost:20, icon:"✦", color:T.accent  },
               { label:"AI Rewrite Bullet",   cost:5,  icon:"✧", color:T.purple  },
               { label:"AI Generate Summary", cost:5,  icon:"✧", color:T.purple  },
-              { label:"Resume Analysis",     cost:10, icon:"◈", color:T.warning },
+              { label:"Resume Analysis",     cost:5,  icon:"◈", color:T.warning },
               { label:"ATS Scan",            cost:0,  icon:"◎", color:T.success },
             ].map(item => (
               <div key={item.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -476,7 +477,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                   <span style={{ fontSize:11, fontWeight:600, color:T.textSecondary }}>{item.label}</span>
                 </div>
                 <span style={{ fontSize:11, fontWeight:800, color:item.cost===0?T.success:T.textPrimary }}>
-                  {item.cost===0 ? "Free" : `${item.cost} cr`}
+                  {item.cost===0 ? "Free" : answersLabel(item.cost)}
                 </span>
               </div>
             ))}
@@ -520,9 +521,9 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                 color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                 boxShadow:"0 4px 14px rgba(45,91,227,0.3)" }}>
-              <Crown size={15} /> Upgrade for more monthly credits
+              <Crown size={15} /> Upgrade for more answers
             </button>
-            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes {PLAN_CONFIG.pro.totalCredits.toLocaleString("en-US")} credits refreshed monthly</p>
+            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes {answerCount(PLAN_CONFIG.pro.totalCredits).toLocaleString("en-US")} answers refreshed monthly</p>
           </div>
         )}
       </motion.div>
@@ -549,12 +550,12 @@ function PaywallModal({ action, cost, remaining, onClose }: {
           display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
           <Coins size={24} style={{ color:T.danger }} />
         </div>
-        <div style={{ fontSize:18, fontWeight:800, color:T.textPrimary, marginBottom:8 }}>Not enough credits</div>
+        <div style={{ fontSize:18, fontWeight:800, color:T.textPrimary, marginBottom:8 }}>Not enough answers left</div>
         <p style={{ fontSize:13, color:T.textSecondary, lineHeight:1.6, marginBottom:6 }}>
-          <strong>{action}</strong> costs <strong>{cost} credits</strong>.
+          <strong>{action}</strong> uses <strong>{answersLabel(cost)}</strong>.
         </p>
         <p style={{ fontSize:13, color:T.textSecondary, lineHeight:1.6, marginBottom:24 }}>
-          You have <strong style={{ color:T.danger }}>{remaining} credits</strong> remaining.
+          You have <strong style={{ color:T.danger }}>{answersLabel(remaining)}</strong> left.
         </p>
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={onClose}
@@ -1214,14 +1215,14 @@ export default function ResumePage() {
             })}
           </div>
           <div style={{ marginTop:"auto", width:"100%", padding:"0 8px", display:"flex", flexDirection:"column", gap:3 }}>
-            <Tooltip tip="Credit usage" side="right">
+            <Tooltip tip="Answers used" side="right">
               <button onClick={() => setShowCreditDrawer(true)}
                 style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
                   padding:"7px 0", borderRadius:T.radius, border:"none", background:"none",
                   cursor:"pointer", color:T.textTertiary, fontSize:9, fontWeight:700, transition:"all 0.15s" }}
                 onMouseEnter={e=>{(e.currentTarget as any).style.color=T.accent;(e.currentTarget as any).style.background=T.accentLight;}}
                 onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.background="none";}}>
-                <Coins size={14} /><span>Credits</span>
+                <Coins size={14} /><span>Answers</span>
               </button>
             </Tooltip>
             <Tooltip tip="Reset to default" side="right">
@@ -1379,7 +1380,7 @@ export default function ResumePage() {
                                             <div id="field-summary"><Textarea value={resumeData.summary||""} onChange={(e:any)=>set(d=>({...d,summary:e.target.value}))} rows={8} placeholder="Professional summary..." /></div>
                                             <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:6 }}>
                                               <Coins size={10} style={{ color:T.textTertiary }} />
-                                              <p style={{ fontSize:10, color:T.textTertiary, margin:0 }}>AI Generate uses <strong>5 credits</strong></p>
+                                              <p style={{ fontSize:10, color:T.textTertiary, margin:0 }}>AI Generate uses <strong>1 answer</strong></p>
                                             </div>
                                           </>
                                         )}
@@ -1411,7 +1412,7 @@ export default function ResumePage() {
                                                       <div key={bi} style={{ display:"flex", gap:5 }}>
                                                         <Textarea value={b} onChange={(e:any)=>updateBullet("experience",i,bi,e.target.value)} rows={2} />
                                                         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                                                          <Tooltip tip="AI rewrite (5 credits)" side="right">
+                                                          <Tooltip tip="AI rewrite (1 answer)" side="right">
                                                             <button onClick={()=>handleRewriteBullet("experience",i,bi)} disabled={rewritingBullet===`experience-${i}-${bi}`}
                                                               style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                               onMouseEnter={e=>{(e.currentTarget as any).style.color=T.purple;(e.currentTarget as any).style.borderColor=T.purple+"50";}}
@@ -1461,7 +1462,7 @@ export default function ResumePage() {
                                                       <div key={bi} style={{ display:"flex", gap:5 }}>
                                                         <Textarea value={b} onChange={(e:any)=>updateBullet("projects",i,bi,e.target.value)} rows={2} />
                                                         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                                                          <Tooltip tip="AI rewrite (5 credits)" side="right">
+                                                          <Tooltip tip="AI rewrite (1 answer)" side="right">
                                                             <button onClick={()=>handleRewriteBullet("projects",i,bi)} disabled={rewritingBullet===`projects-${i}-${bi}`}
                                                               style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                               onMouseEnter={e=>{(e.currentTarget as any).style.color=T.purple;(e.currentTarget as any).style.borderColor=T.purple+"50";}}
@@ -1661,8 +1662,8 @@ export default function ResumePage() {
                               display:"flex", alignItems:"center", gap:10 }}>
                             <AlertCircle size={14} style={{ color:T.danger, flexShrink:0 }} />
                             <div>
-                              <div style={{ fontSize:11, fontWeight:700, color:T.danger }}>Low on credits</div>
-                              <div style={{ fontSize:10, color:T.textSecondary }}>{credits} credits left. Tailor costs 20.</div>
+                              <div style={{ fontSize:11, fontWeight:700, color:T.danger }}>Low on answers</div>
+                              <div style={{ fontSize:10, color:T.textSecondary }}>{answersLabel(credits)} left. Tailoring uses 4.</div>
                             </div>
                             <button onClick={() => window.location.href="/pricing"}
                               style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:T.radius, border:"none",
@@ -1702,8 +1703,8 @@ export default function ResumePage() {
                             <span style={{ fontSize:11, fontWeight:600, color:T.textSecondary }}>AI Tailor costs</span>
                           </div>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:13, fontWeight:800, color:T.accent }}>20 credits</span>
-                            <span style={{ fontSize:10, color:T.textTertiary }}>· {isUnlimited?"∞ remaining":`${credits} remaining`}</span>
+                            <span style={{ fontSize:13, fontWeight:800, color:T.accent }}>4 answers</span>
+                            <span style={{ fontSize:10, color:T.textTertiary }}>· {isUnlimited?"∞ left":`${answerCount(credits)} left`}</span>
                           </div>
                         </div>
                         <button onClick={handleTailor} disabled={loading||!jd}

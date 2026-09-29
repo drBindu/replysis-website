@@ -133,8 +133,18 @@ export default function CreditUpgradeNotice() {
               </button>
               <button
                 type="button"
-                onClick={() => setNotice(null)}
+                onClick={() => {
+                  setNotice(null);
+                  router.push("/account#add-answers");
+                }}
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                Add answers
+              </button>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="rounded-xl px-3 py-2.5 text-[13px] font-semibold text-slate-400 transition hover:text-slate-600"
               >
                 Later
               </button>

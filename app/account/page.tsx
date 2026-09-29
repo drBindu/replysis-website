@@ -24,7 +24,8 @@ import {
 import { db } from "../firebaseConfig";
 import { useAuth } from "../../components/AuthProvider";
 import { PageHeader } from "../../components/PageShell";
-import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, type PlanId } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, answerCount, type PlanId } from "../../data/productFacts";
+import AnswerPacks from "../../components/AnswerPacks";
 
 type AccountProfile = {
   displayName?: string;
@@ -98,6 +99,15 @@ export default function AccountPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [billingReturned, setBillingReturned] = useState(false);
+  const [answersAdded, setAnswersAdded] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("answers") !== "added") return;
+    setAnswersAdded(true);
+    url.searchParams.delete("answers");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -130,9 +140,9 @@ export default function AccountPage() {
   const plan = profile?.plan && profile.plan in PLAN_MONTHLY_CREDITS ? profile.plan : "free";
   const activePlan = plan === "pro" || plan === "max" ? plan : "free";
   const planFacts = plan === "lifetime"
-    ? { label: "Legacy Lifetime", summary: `${PLAN_MONTHLY_CREDITS.lifetime.toLocaleString("en-US")} credits each month` }
+    ? { label: "Legacy Lifetime", summary: `${answerCount(PLAN_MONTHLY_CREDITS.lifetime).toLocaleString("en-US")} answers each month` }
     : plan === "teams"
-      ? { label: "Legacy Teams", summary: `${PLAN_MONTHLY_CREDITS.teams.toLocaleString("en-US")} credits each month` }
+      ? { label: "Legacy Teams", summary: `${answerCount(PLAN_MONTHLY_CREDITS.teams).toLocaleString("en-US")} answers each month` }
       : PUBLIC_PLAN_CAPACITY[activePlan];
   const credits = Math.max(0, Number(profile?.credits ?? 0));
   const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
@@ -195,7 +205,7 @@ export default function AccountPage() {
               </div>
               <h1 className="text-3xl font-black tracking-[-0.04em] sm:text-5xl">Your Replysis workspace</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                See your plan and credits, manage billing securely, and choose the clearest next step.
+                See your plan and answers left, manage billing securely, and choose the clearest next step.
               </p>
             </div>
             <div className="rounded-2xl border border-white bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
@@ -207,6 +217,15 @@ export default function AccountPage() {
       </section>
 
       <main className="mx-auto max-w-6xl space-y-8 px-5 py-8 pb-20 sm:px-6 sm:py-10">
+        {answersAdded && (
+          <section role="status" className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
+            <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+            <div>
+              <h2 className="text-sm font-black">Payment received</h2>
+              <p className="mt-1 text-sm text-emerald-900/75">Your extra answers are being added now. They will show under Answers left in a few seconds.</p>
+            </div>
+          </section>
+        )}
         {billingReturned && (
           <section role="status" className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
             <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
@@ -243,7 +262,7 @@ export default function AccountPage() {
                       billingStatus.tone === "green" ? "bg-emerald-100 text-emerald-800" : billingStatus.tone === "amber" ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-600"
                     }`}>{billingStatus.label}</span>
                   </div>
-                  <p className="mt-2 text-sm text-slate-600">{planFacts.summary}. Credits refresh automatically and never create extra charges.</p>
+                  <p className="mt-2 text-sm text-slate-600">{planFacts.summary}. {isPaid ? "Answers refresh automatically and never create extra charges." : "Free answers are given once and do not refresh."}</p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-[#1C7A3E]">
                   <BadgeCheck className="h-6 w-6" />
@@ -253,8 +272,8 @@ export default function AccountPage() {
               <div className="mt-7 rounded-2xl border border-slate-100 bg-slate-50/80 p-5">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Credits remaining</p>
-                    <p className="mt-1 text-3xl font-black tracking-tight">{credits.toLocaleString()} <span className="text-sm font-semibold text-slate-400">/ {cap.toLocaleString()}</span></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Answers left</p>
+                    <p className="mt-1 text-3xl font-black tracking-tight">{answerCount(credits).toLocaleString()} <span className="text-sm font-semibold text-slate-400">/ {answerCount(cap).toLocaleString()}</span></p>
                   </div>
                   <span className="text-sm font-black text-[#267b42]">{percentage}% left</span>
                 </div>
@@ -262,7 +281,7 @@ export default function AccountPage() {
                   <div className="h-full rounded-full bg-gradient-to-r from-[#1C7A3E] to-[#68b874] transition-[width] duration-500" style={{ width: `${percentage}%` }} />
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                  <RefreshCw className="h-3.5 w-3.5" /> Refreshes {formatDate(profile?.creditsResetDate)}
+                  <RefreshCw className="h-3.5 w-3.5" /> {isPaid ? `Refreshes ${formatDate(profile?.creditsResetDate)}` : "Free answers are one time and do not refresh"}
                 </div>
               </div>
 
@@ -327,6 +346,8 @@ export default function AccountPage() {
             </a>
           </section>
         </div>
+
+        <AnswerPacks />
 
         <section>
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

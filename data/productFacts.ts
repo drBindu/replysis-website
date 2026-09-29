@@ -140,8 +140,18 @@ export const answersFor = (credits: number) => Math.floor(credits / ANSWER_CREDI
 
 /** "5 free answers", for headings and sign-up boxes. Derived, so it cannot drift. */
 export const FREE_TRIAL_ANSWERS = Math.floor(PLAN_MONTHLY_CREDITS.free / CREDIT_ACTION_COSTS.realtime_per_minute);
+
+// Customers are shown ANSWERS, never credits (owner, 2026-09-29: "don't expose the credits in detail").
+// Credits stay inside the server and the code; anything a customer can read goes through these.
+// Rounded DOWN: what someone has is what they can actually use, never more (12 credits is 2 answers).
+// Costs are all whole answers, so it makes no difference there.
+export const answerCount = (credits: number) => Math.floor(Math.max(0, credits) / ANSWER_CREDIT_COST);
+export const answersLabel = (credits: number) => {
+  const n = answerCount(credits);
+  return `${n.toLocaleString("en-US")} ${n === 1 ? "answer" : "answers"}`;
+};
 const answersText = (credits: number) =>
-  `${credits.toLocaleString("en-US")} credits, about ${answersFor(credits).toLocaleString("en-US")} answers each month`;
+  `${answersFor(credits).toLocaleString("en-US")} answers each month`;
 
 // One real interview is about 30 answers with Auto on (it sometimes answers twice).
 // Customers think in interviews, not credits, so the copy says both.
@@ -153,20 +163,20 @@ export const PUBLIC_PLAN_CAPACITY = {
   free: {
     label: "Starter",
     credits: PLAN_MONTHLY_CREDITS.free,
-    summary: `${PLAN_MONTHLY_CREDITS.free} credits, ${answersFor(PLAN_MONTHLY_CREDITS.free)} answers to try it, once`,
+    summary: `${answersFor(PLAN_MONTHLY_CREDITS.free)} answers to try it, once`,
     example: "Enough to see live answers work in a real interview. Pro gives you a month of them.",
   },
   pro: {
     label: "Pro",
     credits: PLAN_MONTHLY_CREDITS.pro,
-    summary: answersText(PLAN_MONTHLY_CREDITS.pro),
-    example: `About ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} live answers, enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.pro / 20)} guided mock sessions.`,
+    summary: `${answersText(PLAN_MONTHLY_CREDITS.pro)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews`,
+    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.pro / 20)} guided mock sessions.`,
   },
   max: {
     label: "Max",
     credits: PLAN_MONTHLY_CREDITS.max,
-    summary: answersText(PLAN_MONTHLY_CREDITS.max),
-    example: `About ${answersFor(PLAN_MONTHLY_CREDITS.max).toLocaleString("en-US")} live answers, enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.max / 20)} guided mock sessions.`,
+    summary: `${answersText(PLAN_MONTHLY_CREDITS.max)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews`,
+    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.max / 20)} guided mock sessions.`,
   },
 } as const;
 
@@ -176,8 +186,8 @@ export const PUBLIC_PLAN_CAPACITY = {
  */
 export const PUBLIC_LIMIT_EXPLAINER = {
   credits: {
-    title: "Credits",
-    covers: "Every answer, resume analysis, resume tailoring and screen read.",
+    title: "Answers",
+    covers: "Every live answer, screen read, mock step and resume tool uses your answers.",
   },
   listening: {
     title: "Live listening",
@@ -191,13 +201,16 @@ export const PUBLIC_LIMIT_EXPLAINER = {
 // at 15 credits and was never deducted anywhere, while rewriting a bullet and
 // generating a summary were charged 5 each and appeared nowhere. Both directions
 // are the same problem: a price list that does not describe the product.
+// `cost` is the internal credit price; `answers` is what a customer is shown (5 credits is one answer).
+const priced = <A extends string, C extends number>(action: A, cost: C) =>
+  ({ action, cost, answers: Math.max(1, Math.ceil(cost / CREDIT_ACTION_COSTS.realtime_per_minute)) }) as const;
 export const PUBLIC_CREDIT_COSTS = [
-  { action: "Generate a live answer", cost: CREDIT_ACTION_COSTS.realtime_per_minute },
-  { action: "Generate a question set", cost: CREDIT_ACTION_COSTS.question_generation },
-  { action: "Generate mock feedback", cost: CREDIT_ACTION_COSTS.mock_feedback },
-  { action: "Rewrite a bullet or summary", cost: CREDIT_ACTION_COSTS.mock_script },
-  { action: "Analyze a resume", cost: CREDIT_ACTION_COSTS.resume_analysis },
-  { action: "Tailor a resume", cost: CREDIT_ACTION_COSTS.resume_tailor },
+  priced("Generate a live answer", CREDIT_ACTION_COSTS.realtime_per_minute),
+  priced("Generate a question set", CREDIT_ACTION_COSTS.question_generation),
+  priced("Generate mock feedback", CREDIT_ACTION_COSTS.mock_feedback),
+  priced("Rewrite a bullet or summary", CREDIT_ACTION_COSTS.mock_script),
+  priced("Analyze a resume", CREDIT_ACTION_COSTS.resume_analysis),
+  priced("Tailor a resume", CREDIT_ACTION_COSTS.resume_tailor),
 ] as const;
 
 export const TRUST_FACTS = {

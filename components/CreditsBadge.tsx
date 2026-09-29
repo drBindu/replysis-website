@@ -7,7 +7,7 @@ import { auth, db } from "../app/firebaseConfig";
 import { CREDIT_COSTS } from "../app/lib/credits";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor } from "../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor, answerCount, answersLabel } from "../data/productFacts";
 
 type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
@@ -166,13 +166,13 @@ export default function CreditsBadge() {
         aria-controls={panelId}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all duration-150 ${meta.pillClass} ${isCrit ? "animate-pulse" : ""}`}
         style={meta.pillStyle}
-        title="View your credits and plan">
+        title="View your answers and plan">
         <span className={isCrit ? "text-red-500" : isLow ? "text-zinc-800" : ""}>{meta.icon}</span>
         {isPaid ? (
           <span>{meta.label}</span>
         ) : (
           <span className={isCrit ? "text-red-600" : isLow ? "text-zinc-900" : ""}>
-            {credits.toLocaleString()} credits
+            {answersLabel(credits)}
           </span>
         )}
         <svg className={`w-2.5 h-2.5 transition-transform ${open ? "rotate-180" : ""} ${isPaid ? "opacity-70" : "text-gray-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -186,7 +186,7 @@ export default function CreditsBadge() {
           <motion.div
             id={panelId}
             role="dialog"
-            aria-label="Plan and credit usage"
+            aria-label="Plan and answers left"
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
@@ -202,7 +202,7 @@ export default function CreditsBadge() {
                     {isPaid ? `${meta.label} Plan` : "Starter Plan"}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
-                    {isPaid ? `${max.toLocaleString()} credits per month` : `${answersFor(max)} free answers, once`}
+                    {isPaid ? `${answersLabel(max)} per month` : `${answersFor(max)} free answers, once`}
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
@@ -226,10 +226,10 @@ export default function CreditsBadge() {
                 {/* Numbers */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-2xl font-black text-gray-900">{displayCredits.toLocaleString()}</span>
-                    <span className="text-[12px] text-gray-400 font-medium">/ {max.toLocaleString()}</span>
+                    <span className="text-2xl font-black text-gray-900">{answerCount(displayCredits).toLocaleString()}</span>
+                    <span className="text-[12px] text-gray-400 font-medium">/ {answerCount(max).toLocaleString()}</span>
                   </div>
-                  <p className="text-[11px] text-gray-500">{isPaid ? "credits remaining this month" : `credits left, ${answersFor(credits)} ${answersFor(credits) === 1 ? "answer" : "answers"}`}</p>
+                  <p className="text-[11px] text-gray-500">{isPaid ? "answers left this month" : "answers left, and they do not refresh"}</p>
                   {isCrit && (
                     <p className="text-[11px] font-bold text-red-500 mt-1">Almost out. Upgrade to keep going.</p>
                   )}
@@ -257,7 +257,7 @@ export default function CreditsBadge() {
                 ].map((h, i) => (
                   <div key={i} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-100">
                     <p className="text-[10px] text-gray-400 mb-0.5">{h.label}</p>
-                    <p className="text-[11px] font-bold text-gray-700">{h.cost} credits</p>
+                    <p className="text-[11px] font-bold text-gray-700">{answersLabel(h.cost)}</p>
                   </div>
                 ))}
               </div>

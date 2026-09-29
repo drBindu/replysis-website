@@ -28,7 +28,6 @@ const FREE_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.free);
 const PRO_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.pro);
 const MAX_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.max);
 const MOCK_CREDITS = 20;   // what one guided mock session costs on average, see PUBLIC_CREDIT_COSTS
-import { CREDIT_PACKS, type CreditPackId } from "../../data/creditPacks";
 
 function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
@@ -116,8 +115,8 @@ const ALL_PLANS: {
       "Answers tailored to your resume and role",
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
-      `${PLAN_MONTHLY_CREDITS.free} credits once: ${FREE_ANSWERS} live answers to try it`,
-      "Live listening included with your credits, subject to fair use",
+      `${FREE_ANSWERS} live answers to try it, once`,
+      "Live listening included, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
     ],
     notIncluded: [
@@ -153,8 +152,8 @@ const ALL_PLANS: {
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
-      `${fmt(PLAN_MONTHLY_CREDITS.pro)} credits refresh automatically each month`,
-      "Live listening included with your credits, subject to fair use",
+      `${fmt(PRO_ANSWERS)} answers refresh automatically each month`,
+      "Live listening included, subject to fair use",
     ],
     notIncluded: [],
   },
@@ -181,7 +180,7 @@ const ALL_PLANS: {
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
       `Up to ${fmt(Math.floor(PLAN_MONTHLY_CREDITS.max / MOCK_CREDITS))} guided mock sessions with mock-only use`,
-      "Live listening included with your credits, subject to fair use",
+      "Live listening included, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI resume tailoring for every role you target",
@@ -210,14 +209,14 @@ const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
  */
 const usagePoolFor = (plan: typeof PRO_PLAN, india: boolean) =>
   india && plan.inrCredits
-    ? `${plan.inrCredits.toLocaleString()} credits, about ${answersFor(plan.inrCredits).toLocaleString()} answers each month`
+    ? `${answersFor(plan.inrCredits).toLocaleString()} answers each month, about ${interviewsFor(plan.inrCredits)} interviews`
     : plan.usagePool;
 
 const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
   india && plan.inrCredits
     ? plan.features.map((line) =>
-        /credits refresh automatically/.test(line)
-          ? `${plan.inrCredits!.toLocaleString()} credits refresh automatically each month`
+        /answers refresh automatically/.test(line)
+          ? `${answersFor(plan.inrCredits!).toLocaleString()} answers refresh automatically each month`
           : line)
     : plan.features;
 
@@ -235,7 +234,6 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Answer response target",               free: "<2 sec target", pro: "<2 sec target", max: "<2 sec target"},
-  { cat: "Live Copilot",  label: "Credits",                              free: `${PLAN_MONTHLY_CREDITS.free}, once`, pro: `${fmt(PLAN_MONTHLY_CREDITS.pro)} a month`, max: `${fmt(PLAN_MONTHLY_CREDITS.max)} a month`},
   { cat: "Live Copilot",  label: "Live answers",                         free: `${FREE_ANSWERS}, once`,               pro: `${fmt(PRO_ANSWERS)} a month`,               max: `${fmt(MAX_ANSWERS)} a month`},
   { cat: "Live Copilot",  label: "About this many interviews",           free: "less than one",                        pro: `${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} a month`, max: `${interviewsFor(PLAN_MONTHLY_CREDITS.max)} a month`},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
@@ -262,7 +260,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: `A live answer costs 5 credits. Starter gives you ${PLAN_MONTHLY_CREDITS.free} credits once, which is ${FREE_ANSWERS} answers, enough to see it work. Pro includes ${fmt(PLAN_MONTHLY_CREDITS.pro)} credits a month (${fmt(PRO_ANSWERS)} answers, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(PLAN_MONTHLY_CREDITS.max)} (${fmt(MAX_ANSWERS)} answers, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Live answers, mock practice, and AI resume tools share this balance. Paid credits refresh monthly and do not roll over. The cost is shown before a credit-using action.`
+    a: `A live answer, a screen read and most other actions use one answer. Starter gives you ${FREE_ANSWERS} answers once, enough to see it work. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers, mock practice, and AI resume tools share this balance. Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
@@ -274,7 +272,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between Pro and Max?",
-    a: `Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes ${fmt(PLAN_MONTHLY_CREDITS.pro)} monthly credits. Max includes ${fmt(PLAN_MONTHLY_CREDITS.max)} monthly credits (${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}x Pro) plus priority support. Max increases capacity, not answer accuracy.`,
+    a: `Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes ${fmt(PRO_ANSWERS)} answers a month. Max includes ${fmt(MAX_ANSWERS)} (${MAX_ANSWERS / PRO_ANSWERS}x Pro) plus priority support. Max increases capacity, not answer accuracy.`,
   },
   {
     q: "Can I cancel anytime?",
@@ -348,7 +346,6 @@ export default function PricingPage() {
   const [profile,  setProfile]  = useState<UserProfile | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
-  const [pendingCreditPack, setPendingCreditPack] = useState<CreditPackId | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
   // Always monthly while ANNUAL_ENABLED is false: nothing on the page can turn it on.
   const [annual,   setAnnual]   = useState(false);
@@ -361,10 +358,6 @@ export default function PricingPage() {
   // $29.99 is ninety percent. If the two ever disagree, the charge wins and the
   // buyer sees a surprise, so both read the same source.
   const [india, setIndia] = useState(false);
-  // The top-up packs have their own rupee prices in Stripe, created separately.
-  // Until all three exist the packs stay in dollars, so the page can never show
-  // a number the checkout will not charge.
-  const [rupeePacks, setRupeePacks] = useState(false);
   useEffect(() => {
     let cancelled = false;
     fetch("/api/geo")
@@ -372,7 +365,6 @@ export default function PricingPage() {
       .then((d) => {
         if (cancelled || d?.country !== "IN") return;
         setIndia(true);
-        if (d?.rupeePacks) setRupeePacks(true);
       })
       .catch(() => { /* dollars, which is the safe default */ });
     return () => { cancelled = true; };
@@ -445,38 +437,8 @@ export default function PricingPage() {
     setLoading(null);
   };
 
-  const handleCreditCheckout = async (creditPack: CreditPackId, checkoutUser: User | null = user) => {
-    if (!checkoutUser) {
-      setPendingCreditPack(creditPack);
-      setPendingPlan(null);
-      setShowAuth(true);
-      return;
-    }
-    setLoading(`credits_${creditPack}`);
-    setCheckoutError(null);
-    try {
-      const token = await checkoutUser.getIdToken();
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ creditPack, uid: checkoutUser.uid }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (data.url) window.location.href = data.url;
-      else {
-        console.error("[Replysis] Credit checkout could not start:", response.status);
-        setCheckoutError(response.status === 429 ? copyFor("rateLimited").body : "We could not start checkout. You have not been charged. Please try again.");
-      }
-    } catch (error) {
-      console.error("[Replysis] Credit checkout request failed:", (error as Error)?.name ?? "Error");
-      setCheckoutError(copyFor("offline").body);
-    }
-    setLoading(null);
-  };
-
   const openFreeAccount = () => {
     setPendingPlan(null);
-    setPendingCreditPack(null);
     setShowAuth(true);
   };
 
@@ -484,11 +446,8 @@ export default function PricingPage() {
     setUser(signedInUser);
     setShowAuth(false);
     const planToBuy = pendingPlan;
-    const packToBuy = pendingCreditPack;
     setPendingPlan(null);
-    setPendingCreditPack(null);
-    if (packToBuy) void handleCreditCheckout(packToBuy, signedInUser);
-    else if (planToBuy) void handleCheckout(planToBuy, signedInUser);
+    if (planToBuy) void handleCheckout(planToBuy, signedInUser);
     else window.location.href = "/real-interview";
   };
 
@@ -507,7 +466,7 @@ export default function PricingPage() {
 
   return (
     <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); setPendingCreditPack(null); }} onSuccess={handleAuthSuccess} />}
+      {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); }} onSuccess={handleAuthSuccess} />}
       <PageHeader />
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
@@ -570,7 +529,7 @@ export default function PricingPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-2 px-1 text-[11px] font-medium text-gray-500">One answer is 5 credits. Cancel anytime.</p>
+              <p className="mt-2 px-1 text-[11px] font-medium text-gray-500">Cancel anytime.</p>
             </motion.div>
           )}
 
@@ -618,9 +577,9 @@ export default function PricingPage() {
               {checkoutReturn === "canceled"
                 ? "Checkout canceled. You were not charged."
                 : checkoutReturn === "credits"
-                  ? "Payment received. Your one-time credits are being added to your balance now."
+                  ? "Payment received. Your extra answers are being added now."
                 : currentPlan === "pro" || currentPlan === "max"
-                  ? `Your ${currentPlan === "pro" ? "Pro" : "Max"} plan is active. Your monthly credits are ready.`
+                  ? `Your ${currentPlan === "pro" ? "Pro" : "Max"} plan is active. Your monthly answers are ready.`
                   : "We’re confirming your checkout and activating your plan. This usually takes only a few seconds."}
             </span>
             <button onClick={clearCheckoutReturn} aria-label="Dismiss checkout message" className="opacity-70 hover:opacity-100 transition-opacity ml-2">
@@ -794,7 +753,7 @@ export default function PricingPage() {
           <div className="mt-7 rounded-2xl border border-[#1f6f3d]/15 bg-white p-5 shadow-[0_12px_40px_rgba(20,60,34,0.06)]">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">How credits work</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">What each action uses</p>
                 <h3 className="mt-1 text-base font-black text-gray-900">One balance across the product</h3>
               </div>
               <p className="text-xs text-gray-500">Mixed usage changes how many sessions you can run.</p>
@@ -803,27 +762,7 @@ export default function PricingPage() {
               {PUBLIC_CREDIT_COSTS.map((item) => (
                 <div key={item.action} className="rounded-xl bg-[#f5f8f5] px-3.5 py-3">
                   <p className="text-[11px] font-semibold text-gray-600">{item.action}</p>
-                  <p className="mt-1 text-sm font-black text-gray-900">{item.cost} {item.cost > 1 ? "credits" : "credit"}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-[26px] border border-slate-200 bg-[#111b14] p-6 text-white shadow-[0_18px_55px_rgba(13,28,18,0.16)]">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">Optional one-time top-ups</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight">Need extra capacity without changing plans?</h3>
-                <p className="mt-2 max-w-2xl text-xs font-medium leading-relaxed text-white/60">Purchased credits are added to your current balance, survive monthly plan refreshes, and are used after your monthly credits. No subscription is created.</p>
-              </div>
-              <Link href="/proof" className="text-xs font-black text-emerald-300 hover:text-emerald-200">See compatibility proof →</Link>
-            </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {CREDIT_PACKS.map(pack => (
-                <div key={pack.id} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">{pack.label}</p><p className="mt-2 text-2xl font-black">{pack.credits.toLocaleString()} credits</p></div><p className="text-lg font-black">{rupeePacks ? `₹${pack.inr}` : `$${pack.price}`}</p></div>
-                  <p className="mt-2 text-[11px] font-semibold text-white/45">One payment · added after Stripe confirms payment</p>
-                  <button onClick={() => handleCreditCheckout(pack.id)} disabled={Boolean(loading)} className="mt-4 w-full rounded-xl bg-white py-2.5 text-xs font-black text-[#142018] transition hover:bg-emerald-50 disabled:opacity-50">{loading === `credits_${pack.id}` ? "Redirecting…" : "Buy one-time credits"}</button>
+                  <p className="mt-1 text-sm font-black text-gray-900">{item.answers} {item.answers > 1 ? "answers" : "answer"}</p>
                 </div>
               ))}
             </div>

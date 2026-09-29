@@ -1438,7 +1438,7 @@ export default function MockInterviewPage() {
                     {[
                       { label: "Est. Time", value: `~${Math.round(questionCount * 2.5)} min` },
                       { label: "Questions", value: `${questionCount}`                        },
-                      { label: "Credits",   value: `~${estimatedCredits}`                   },
+                      { label: "Answers",   value: `~${Math.max(1, Math.ceil(estimatedCredits / 5))}` },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ textAlign: "center" }}>
                         <p style={{ fontSize: 15, fontWeight: 900, color: T.text, lineHeight: 1 }}>{value}</p>
@@ -1564,11 +1564,11 @@ export default function MockInterviewPage() {
                         <Coins size={15} style={{ color: T.warn }} />
                       </div>
                       <div>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Credits Remaining</p>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Answers left</p>
                         <p style={{ fontSize: 20, fontWeight: 900, color: T.warn, lineHeight: 1.1, marginTop: 2 }}>
                           {loadingCredits
                             ? <Loader2 size={15} style={{ display: "inline", animation: "spin 1s linear infinite" }} />
-                            : credits !== null ? credits.toLocaleString() : "0"}
+                            : credits !== null ? Math.ceil(credits / 5).toLocaleString() : "0"}
                         </p>
                       </div>
                     </div>
@@ -1576,11 +1576,11 @@ export default function MockInterviewPage() {
                       <p style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>This session needs</p>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
                         <Flame size={12} style={{ color: "#2E8B45" }} />
-                        <span style={{ fontSize: 14, fontWeight: 900, color: "#2E8B45" }}>~{estimatedCredits}</span>
-                        <span style={{ fontSize: 11, color: T.textFaint }}>credits</span>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#2E8B45" }}>~{Math.max(1, Math.ceil(estimatedCredits / 5))}</span>
+                        <span style={{ fontSize: 11, color: T.textFaint }}>answers</span>
                       </div>
                       {credits !== null && credits < estimatedCredits && (
-                        <p style={{ fontSize: 10, color: T.danger, marginTop: 4, fontWeight: 700 }}>⚠ Insufficient credits</p>
+                        <p style={{ fontSize: 10, color: T.danger, marginTop: 4, fontWeight: 700 }}>⚠ Not enough answers left</p>
                       )}
                     </div>
                   </div>

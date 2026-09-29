@@ -15,7 +15,7 @@ import { auth, db } from "../firebaseConfig";
 import AuthModal from "../../components/AuthModal";
 import BrandIcon from "../../components/BrandIcon";
 import SetupForm from "./_components/SetupForm";
-import { PLAN_MONTHLY_CREDITS } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 import type { InterviewMode } from "./_lib/interviewMode";
 
 export type InterviewConfig = {
@@ -80,8 +80,8 @@ function CreditsDisplay({
           ? <Sparkles size={10} style={{ color: isEmpty ? "#ef4444" : "#1C7A3E" }} />
           : <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />}
         <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
-          {planLabel} · {credits.toLocaleString()}
-          <span className="font-normal text-[10px] ml-1 opacity-60">credits</span>
+          {planLabel} · {answerCount(credits).toLocaleString()}
+          <span className="font-normal text-[10px] ml-1 opacity-60">{answerCount(credits) === 1 ? "answer" : "answers"}</span>
           {timeEmpty && (
             <span className="font-normal text-[10px] ml-2">Monthly listening limit reached</span>
           )}
@@ -339,13 +339,13 @@ export default function RealInterviewPage() {
                   </div>
                 </div>
 
-                {/* Credits */}
+                {/* What uses an answer. Starting a session costs nothing. */}
                 <div className="rounded-2xl p-5 shadow-sm" style={{ border: `1px solid ${BDR}`, background: PNL }}>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Credits</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">What uses an answer</p>
                   <div className="space-y-2.5">
                     {[
-                      { label: "Start transcription", cost: "1 credit", color: "#1C7A3E" },
-                      { label: "Generate live answer", cost: "2 credits", color: "#1C7A3E" },
+                      { label: "Start transcription", cost: "Free", color: "#21924A" },
+                      { label: "Generate live answer", cost: "1 answer", color: "#1C7A3E" },
                       { label: "Resume verification", cost: "Free",    color: "#21924A" },
                     ].map(({ label, cost, color }) => (
                       <div key={label} className="flex items-center justify-between py-1.5"

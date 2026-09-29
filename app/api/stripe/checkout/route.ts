@@ -210,8 +210,10 @@ export async function POST(req: Request) {
     // set the account has enabled. Cards are still one of them.
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
-    params.append("success_url", `${origin}/pricing?${isCreditPack ? "credits=success" : "success=true"}`);
-    params.append("cancel_url", `${origin}/pricing?canceled=true`);
+    // A plan returns to the pricing page. An answer pack is bought from the account (it is not on the
+    // pricing page any more), so it returns there.
+    params.append("success_url", isCreditPack ? `${origin}/account?answers=added` : `${origin}/pricing?success=true`);
+    params.append("cancel_url", isCreditPack ? `${origin}/account#add-answers` : `${origin}/pricing?canceled=true`);
     params.append("customer_email", email || "");
     // Keep Checkout Stripe-hosted for speed and buyer trust, while giving it
     // the same polished Replysis identity as the rest of the product.

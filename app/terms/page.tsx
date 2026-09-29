@@ -77,7 +77,7 @@ export default function TermsPage() {
                 { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice." },
                 { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact admin@varoxel.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
                 { label: "Cancellations", body: "Cancel any time. Your access continues until the end of the current billing period." },
-                { label: "Credits", body: "Unused credits do not roll over between billing periods and have no cash value." },
+                { label: "Answers", body: "Unused answers do not roll over between billing periods and have no cash value." },
               ].map((c, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm">
                   <span className="font-bold text-gray-900">{c.label}: </span>

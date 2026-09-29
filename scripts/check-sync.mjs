@@ -201,12 +201,16 @@ console.log("\nNo old plan numbers left in customer text");
     [/\$49\.99/, "the old Max price $49.99"],
     [/\b(20|twenty) (free )?(answers|questions)\b/i, "the old 20 free answers"],
     [/2\.5[x×] (Pro|the monthly)/i, "the old 2.5x Pro capacity"],
+    // Customers are shown answers, never credits (owner, 2026-09-29). Credits stay inside the server.
+    [/\b\d+(?:,\d{3})*\s+credits?\b/i, "a number of credits"],
+    [/\bcredits? (left|remaining|each month|a month|per month|refresh)/i, "credits as something a customer has"],
+    [/(Credits Remaining|Not enough credits|Insufficient credits|Low on credits|Credit Usage|Credit Costs|Buy one-time credits)/, "credit wording in a screen"],
   ];
   const files = [
     ["pricing page", pricing], ["website facts", stripTsComments(facts || "")],
     ["Windows credits window", winCredits], ["Windows main window", winMain], ["Windows PlanFacts", winPlan],
   ];
-  const others = ["components/CreditsBadge.tsx", "components/CreditUpgradeNotice.tsx", "components/Footer.tsx", "components/AuthModal.tsx",
+  const others = ["app/trust/page.tsx", "components/AnswerPacks.tsx", "components/CreditsBadge.tsx", "components/CreditUpgradeNotice.tsx", "components/Footer.tsx", "components/AuthModal.tsx",
     "components/FirstRunGuide.tsx", "components/home/MidSections.tsx", "components/home/HeroSection.tsx", "app/account/page.tsx",
     "app/resume/page.tsx", "app/real-interview/page.tsx", "app/mock-interview/page.tsx", "app/admin/page.tsx", "app/lib/credits.ts"];
   for (const f of others) files.push([f, read(resolve(FRONT, f))]);
@@ -215,8 +219,9 @@ console.log("\nNo old plan numbers left in customer text");
   let stale = 0;
   for (const [label, text] of files) {
     if (!text) continue;
-    text.split(/\r?\n/).forEach((line, i) => {
-      if (commentLine.test(line)) return;
+    text.split(/\r?\n/).forEach((raw, i) => {
+      if (commentLine.test(raw)) return;
+      const line = raw.replace(/\s\/\/[^"'`]*$/, "");   // a note after the code is not customer text
       for (const [re, what] of OLD)
         if (re.test(line)) { stale++; bad(`${label}:${i + 1} still says ${what}: ${line.trim().slice(0, 100)}`); }
     });
@@ -282,6 +287,20 @@ if (packs.length === 3 && proPrice && maxPrice && fCredits) {
       `${rung[i].name} is no dearer per answer ($${perAnswer(rung[i]).toFixed(3)}) than ${rung[i - 1].name} ($${perAnswer(rung[i - 1]).toFixed(3)}): more buys cheaper answers, so nobody is better off with the smaller thing`);
   (packs.every((p, i) => i === 0 || p.credits > packs[i - 1].credits) ? ok : bad)("the packs are unchanged in size order");
 } else warn("could not read the packs or the plan prices; the ladder was NOT checked");
+
+// ---------- 5c2. the packs are not on the pricing page ----------------------------------------
+console.log("\nAnswer packs live in the account and at the moment someone runs out, not on the pricing page");
+{
+  const account = read(resolve(FRONT, "app/account/page.tsx"));
+  const notice = read(resolve(FRONT, "components/CreditUpgradeNotice.tsx"));
+  const checkout = read(resolve(FRONT, "app/api/stripe/checkout/route.ts"));
+  const comp = read(resolve(FRONT, "components/AnswerPacks.tsx"));
+  (pricing && !/CREDIT_PACKS|creditPacks/.test(pricing) ? ok : bad)("the pricing page does not sell the packs (three plans and three packs side by side made Pro look worse)");
+  (account && /<AnswerPacks\s*\/>/.test(account) ? ok : bad)("the account page has 'Add more answers'");
+  (notice && /account#add-answers/.test(notice) ? ok : bad)("the low and out of answers notice offers them");
+  (checkout && /account\?answers=added/.test(checkout) ? ok : bad)("a pack purchase returns to the account, not the pricing page");
+  (comp && /answersLabel\(pack\.credits\)/.test(comp) ? ok : bad)("packs are named in answers");
+}
 
 // ---------- 5d. yearly plans are hidden ------------------------------------------------
 console.log("\nYearly plans");

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
-import { PUBLIC_PLAN_CAPACITY, TRUST_FACTS } from "../../data/productFacts";
+import { PUBLIC_PLAN_CAPACITY, TRUST_FACTS, answersLabel } from "../../data/productFacts";
 
 export const metadata: Metadata = {
   title: "Trust Center - Replysis",
@@ -127,7 +127,7 @@ export default function TrustPage() {
               {Object.values(PUBLIC_PLAN_CAPACITY).map((plan) => (
                 <div key={plan.label} className="rounded-2xl bg-[#f5f8f5] p-4">
                   <p className="text-sm font-black text-gray-900">{plan.label}</p>
-                  <p className="mt-1 text-lg font-black text-[#267b42]">{plan.credits.toLocaleString()} credits</p>
+                  <p className="mt-1 text-lg font-black text-[#267b42]">{answersLabel(plan.credits)} {plan.label === "Starter" ? "once" : "a month"}</p>
                   <p className="mt-2 text-xs leading-relaxed text-gray-500">{plan.example}</p>
                 </div>
               ))}
