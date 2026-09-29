@@ -164,6 +164,14 @@ export async function POST(req: Request) {
     // short-lived portal session. This keeps the boundary safe even if storage
     // rules are accidentally loosened in a future deployment.
     const customerResponse = await stripeRequest(`/customers/${encodeURIComponent(customerId)}`);
+    // A plan set by hand (a tester, a gift) can carry a customer id Stripe has never heard of. That is not
+    // an outage, so it must not read as one: it used to surface as a 502 and "temporarily unavailable".
+    if (customerResponse.status === 404) {
+      console.warn("[billing-portal] Stripe has no customer for this account", uid);
+      return NextResponse.json({
+        error: "We could not find a billing account for you. If your plan was set up by our team there is nothing to manage here. Contact support and we will sort it out.",
+      }, { status: 404 });
+    }
     if (!customerResponse.ok) throw new Error(`Stripe customer lookup failed: ${customerResponse.status}`);
     const customer = await customerResponse.json();
     const customerEmail = typeof customer?.email === "string" ? customer.email.trim().toLowerCase() : "";
