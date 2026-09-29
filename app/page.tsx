@@ -30,12 +30,12 @@ import {
 // warning, updates itself, and is already live, so it is the better
 // destination regardless of whether the file comes back.
 const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
-// Signed with Azure Trusted Signing since v1.0.24 (current: v1.0.25) - no more SmartScreen
+// Signed with Azure Trusted Signing since v1.0.24 (current: v1.0.26) - no more SmartScreen
 // warning, so the direct-download button is back. Bump this URL's version
 // alongside every new signed release: it stays pinned rather than tracking
 // "latest" because a fresh unsigned or barely-reputable build could
 // otherwise start showing the warning again without anyone deciding that.
-const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.25/Replysis-win-Setup.exe";
+const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.26/Replysis-win-Setup.exe";
 const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
