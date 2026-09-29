@@ -287,6 +287,12 @@ if (packs.length === 3 && proPrice && maxPrice && fCredits) {
 console.log("\nYearly plans");
 (/const ANNUAL_ENABLED = false;/.test(pricing || "") ? ok : bad)("yearly plans are hidden on the pricing page (owner, 2026-09-29)");
 const yearlyOn = /const ANNUAL_ENABLED = true;/.test(pricing || "");
+{
+  const checkout = read(resolve(FRONT, "app/api/stripe/checkout/route.ts"));
+  if (checkout && !yearlyOn)
+    (/annual === true\)\s*\{\s*return NextResponse\.json\(\{ error: "Yearly billing is not available/.test(checkout) ? ok : bad)(
+      "the checkout route refuses a yearly purchase too, not just the page hiding the button");
+}
 
 // ---------- 5e. the reset rule has one home -------------------------------------------
 console.log("\nFree is one time, and every reset uses the same rule");

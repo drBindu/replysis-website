@@ -1,6 +1,6 @@
 ﻿// frontend/app/api/stripe/checkout/route.ts
 // ═══════════════════════════════════════════════════════════════
-// Creates Stripe Checkout session for Pro ($29.99/mo) and Max ($49.99/mo)
+// Creates Stripe Checkout session for Pro ($34.99/mo) and Max ($79.99/mo)
 // After payment, Stripe redirects to /pricing?success=true
 // Stripe webhook updates Firestore plan + credits
 // ═══════════════════════════════════════════════════════════════
@@ -35,10 +35,12 @@ function ensureAdminInit() {
 
 // ── STRIPE PRICE IDS  -  create these in Stripe Dashboard ──
 // Go to: dashboard.stripe.com → Products → Create Product
-// Pro Monthly   → $29.99/mo  → copy price ID → STRIPE_PRO_MONTHLY_PRICE
-// Pro Annual    → $299/yr    → copy price ID → STRIPE_PRO_ANNUAL_PRICE
-// Max Monthly   → $49.99/mo  → copy price ID → STRIPE_MAX_MONTHLY_PRICE
-// Max Annual    → $499/yr    → copy price ID → STRIPE_MAX_ANNUAL_PRICE
+// Pro Monthly   → $34.99/mo  → copy price ID → STRIPE_PRO_MONTHLY_PRICE
+// Max Monthly   → $79.99/mo  → copy price ID → STRIPE_MAX_MONTHLY_PRICE
+// Yearly plans are not sold (owner, 2026-09-29). The old yearly prices ($299 and $499 a year)
+// were set against the old monthly prices and are left in place, unused; see the check below.
+// Pro Annual    → $299/yr    → STRIPE_PRO_ANNUAL_PRICE   (unused)
+// Max Annual    → $499/yr    → STRIPE_MAX_ANNUAL_PRICE   (unused)
 const PRICE_IDS: Record<string, string> = {
   pro_monthly:    process.env.STRIPE_PRO_MONTHLY_PRICE    || "price_REPLACE_ME",
   pro_annual:     process.env.STRIPE_PRO_ANNUAL_PRICE     || "price_REPLACE_ME",
@@ -145,6 +147,11 @@ export async function POST(req: Request) {
 
     if (!isCreditPack && annual !== undefined && typeof annual !== "boolean") {
       return NextResponse.json({ error: "Invalid billing interval" }, { status: 400 });
+    }
+    // Yearly plans are hidden on the pricing page, and refused here as well: a page left open
+    // from before, or a direct call, must not be able to buy one at the old yearly price.
+    if (!isCreditPack && annual === true) {
+      return NextResponse.json({ error: "Yearly billing is not available right now. Please choose monthly." }, { status: 400 });
     }
     // Pro and Max are both recurring, so every plan resolves to a billing period.
     const priceKey = isCreditPack ? `credits_${selectedPack!.id}` : `${plan}_${annual ? "annual" : "monthly"}`;
