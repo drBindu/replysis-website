@@ -148,6 +148,21 @@ if (winCredits && fCredits) {
     (winCredits.includes(`"${want} each month"`) ? ok : bad)(`credits window says ${want} for ${plan}`);
 }
 
+// ---------- 5b. what the table promises free users is true in the app -------------
+console.log("\nPricing table promises match the Windows app");
+const winStealth = read(resolve(WIN, "WindowStealth.cs"));
+const winSettings = read(resolve(WIN, "SettingsWindow.xaml.cs"));
+const tableSaysFreeStealth = /label: "Desktop capture exclusion",\s+free: (true|"Included")/.test(pricing || "");
+const tableSaysFreeApp = /label: "Windows desktop app",\s+free: true/.test(pricing || "");
+if (winStealth && winSettings) {
+  const gated = /\b(UserSession\.Plan|IsPaid|isPaid)\b/.test(winStealth) ||
+                /StealthMode[^\n]*\b(UserSession\.Plan|IsPaid)\b/.test(winSettings);
+  if (tableSaysFreeStealth) (!gated ? ok : bad)("table says free users get capture exclusion, and the app does not gate it by plan");
+  else if (gated) ok("table says capture exclusion is paid, and the app gates it");
+  else bad("table says capture exclusion is paid, but the app does not gate it by plan");
+  (tableSaysFreeApp ? ok : bad)("table says free users get the Windows app, which the website gives them");
+}
+
 // ---------- 6. profit: the worst case of every plan -----------------------------
 console.log("\nProfit, worst case per plan (every credit used as an answer AND the whole fair use limit spent)");
 const STT_PER_MIN = 0.462 / 60;       // Deepgram nova-3, priced at the conservative pay as you go rate
