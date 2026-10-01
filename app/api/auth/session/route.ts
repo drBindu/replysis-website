@@ -53,7 +53,13 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
   await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     if (snapshot.exists) {
-      transaction.update(ref, { lastLogin: FieldValue.serverTimestamp() });
+      // The backend can make this record first, when a new account's first speech key request arrives
+      // before this route does. It does not know the email or name, so fill them in here.
+      const data = snapshot.data() ?? {};
+      const update: Record<string, unknown> = { lastLogin: FieldValue.serverTimestamp() };
+      if (!data.email && email) update.email = email;
+      if (!data.displayName) update.displayName = displayName || "User";
+      transaction.update(ref, update);
       return;
     }
 
