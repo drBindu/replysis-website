@@ -193,7 +193,9 @@ export default function Home() {
           "Content-Type": "application/json",
           ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
         },
-        body: JSON.stringify({ os }),
+        // The route knows two platforms. "win-direct" is Windows too; sending it as is got a 400 and the
+        // direct download, which is the main button, was never counted.
+        body: JSON.stringify({ os: os === "win-direct" ? "win" : os }),
         keepalive: true,
       });
     } catch { /* Download telemetry must never affect the download itself. */ }
