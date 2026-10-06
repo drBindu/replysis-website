@@ -274,10 +274,10 @@ export default function HeroSection({ mounted, detectedOS, onDownload, onNav }: 
               initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="font-display text-[2.9rem] md:text-[3.6rem] lg:text-[4.1rem] leading-[1.02] mb-5 text-[#16150F]">
-              Ace every interview.
+              Your experience.
               <br />
               <span style={{ fontStyle: "italic", background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                Land the offer.
+                Clearly expressed.
               </span>
             </motion.h1>
 

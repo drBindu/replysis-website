@@ -202,7 +202,7 @@ export default function Home() {
   };
 
   return (
-    <main className="marketing bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <main className="marketing replysis-refined bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       <Suspense fallback={null}>
         <AuthQueryWatcher onAuthRequest={openAuthFromQuery} />
