@@ -328,8 +328,147 @@ async function usageView(db: Firestore, days: number) {
   };
 }
 
+// ── Live view ─────────────────────────────────────────────────────
+// What is happening right now, newest first, for the Live panel on the admin page. Unlike the usage view this
+// reads only what is NEW since the caller last looked (plus a short list of who is online), so polling it every few
+// seconds costs a few dozen reads rather than thousands. Each source is read on its own: one that fails (an index
+// still building, a collection nobody has written yet) is named in `problems` and the rest still arrive.
+const LIVE_MAX_BACK_MS = 6 * 3_600_000;
+
+type LiveEvent = {
+  id: string;
+  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error";
+  at: number;
+  who: string | null;
+  detail: string;
+  credits?: number;
+};
+
+function anyMs(value: unknown): number | null {
+  if (!value) return null;
+  const v = value as { toMillis?: () => number };
+  if (typeof v.toMillis === "function") return v.toMillis();
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+function guestLabel(identityId: string): string {
+  const tail = identityId.replace(/^guest:/, "");
+  return `Guest ${tail.slice(0, 4)}`;
+}
+
+async function liveView(db: Firestore, sinceMs: number) {
+  const now = Date.now();
+  const since = new Date(Math.min(Math.max(sinceMs, now - LIVE_MAX_BACK_MS), now));
+  const activeSince = new Date(now - ONLINE_WINDOW_MS);
+  const users = db.collection("users");
+  const problems: string[] = [];
+
+  async function safe<T>(label: string, work: Promise<T>): Promise<T | null> {
+    try { return await work; }
+    catch (error) {
+      console.error(`[admin] Live ${label} failed`, error);
+      problems.push(label);
+      return null;
+    }
+  }
+
+  const [usageSnap, signupSnap, downloadSnap, errorSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+    safe("usage", db.collection("usage_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(150).get()),
+    safe("signups", users.where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
+    safe("downloads", db.collection("app_downloads").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
+    safe("errors", db.collection("client_errors").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
+    safe("online", users.where("lastActive", ">=", activeSince).orderBy("lastActive", "desc").limit(40).get()),
+    safe("listening", users.where("lastListeningAt", ">=", activeSince).count().get()),
+    safe("guests", db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get()),
+  ]);
+
+  const events: LiveEvent[] = [];
+
+  for (const doc of usageSnap?.docs ?? []) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    const credits = Number(d.credits) || 0;
+    const action = typeof d.action === "string" ? d.action : "unknown";
+    const identityId = typeof d.identityId === "string" ? d.identityId : "";
+    const who = typeof d.email === "string" && d.email
+      ? d.email
+      : d.guest ? guestLabel(identityId) : identityId ? identityId.slice(0, 8) : null;
+    const model = typeof d.model === "string" && d.model ? d.model : "";
+    events.push({
+      id: `u:${doc.id}`,
+      kind: credits < 0 ? "refund" : action === "screen" ? "screen" : action === "answer" ? "answer" : "resume",
+      at, who, detail: model, credits,
+    });
+  }
+
+  for (const doc of signupSnap?.docs ?? []) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    events.push({
+      id: `s:${doc.id}`, kind: "signup", at,
+      who: typeof d.email === "string" ? d.email : null,
+      detail: typeof d.plan === "string" ? d.plan : "free",
+    });
+  }
+
+  for (const doc of downloadSnap?.docs ?? []) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    events.push({
+      id: `d:${doc.id}`, kind: "download", at, who: null,
+      detail: d.os === "mac" ? "Mac" : "Windows",
+    });
+  }
+
+  for (const doc of errorSnap?.docs ?? []) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    const bits = [d.type, d.message].filter((x) => typeof x === "string" && x).join(": ");
+    events.push({
+      id: `e:${doc.id}`, kind: "error", at, who: null,
+      detail: `${typeof d.version === "string" ? `v${d.version} ` : ""}${bits}`.slice(0, 220),
+    });
+  }
+
+  events.sort((a, b) => b.at - a.at);
+
+  const online = (onlineSnap?.docs ?? []).map((doc) => {
+    const d = doc.data();
+    const lastListening = anyMs(d.lastListeningAt);
+    return {
+      id: doc.id,
+      email: typeof d.email === "string" ? d.email : null,
+      plan: typeof d.plan === "string" ? d.plan : "free",
+      lastActive: anyMs(d.lastActive),
+      listening: lastListening !== null && lastListening >= activeSince.getTime(),
+    };
+  });
+
+  return {
+    now,
+    events: events.slice(0, 200),
+    online,
+    listeningNow: (listeningUsers?.data().count ?? 0) + (listeningGuests?.data().count ?? 0),
+    problems,
+  };
+}
+
 export async function GET(req: Request) {
-  const limit = rateLimit(`admin:${clientIp(req)}`, 60, 60_000);
+  // The Live panel polls every few seconds and gets its own, larger allowance so it never starves the page's own reads.
+  const isLive = new URL(req.url).searchParams.get("view") === "live";
+  const limit = isLive
+    ? rateLimit(`admin:live:${clientIp(req)}`, 40, 60_000)
+    : rateLimit(`admin:${clientIp(req)}`, 60, 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Too many requests. Please wait a moment." },
@@ -344,6 +483,17 @@ export async function GET(req: Request) {
   if (!db) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
 
   const query = new URL(req.url).searchParams;
+
+  if (query.get("view") === "live") {
+    const requested = Number(query.get("since"));
+    const sinceMs = Number.isFinite(requested) && requested > 0 ? requested : Date.now() - 30 * 60_000;
+    try {
+      return NextResponse.json(await liveView(db, sinceMs));
+    } catch (error) {
+      console.error("[admin] Live view failed", error);
+      return NextResponse.json({ error: "Unable to load live activity" }, { status: 500 });
+    }
+  }
 
   if (query.get("view") === "usage") {
     const requestedDays = Number(query.get("days"));
