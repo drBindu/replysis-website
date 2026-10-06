@@ -10,17 +10,9 @@ import AuthModal from "../components/AuthModal";
 import BrandIcon from "../components/BrandIcon";
 import { establishBrowserSession } from "./lib/auth-session";
 
-import HeroSection from "../components/home/HeroSection";
-import DownloadSection from "../components/home/DownloadSection";
-import WhatIsItSection from "../components/home/WhatIsItSection";
-import DemoSection from "../components/home/DemoSection";
-import FeaturesSection from "../components/home/FeaturesSection";
-import EnterpriseSection from "../components/home/EnterpriseSection";
-import WhyUsSection from "../components/home/WhyUsSection";
-import {
-  TrustedBySection, StatsSection,
-  HowItWorksSection, CtaSection,
-} from "../components/home/MidSections";
+import "./home-v2.css";
+import HeroV2 from "../components/home/v2/HeroV2";
+import { WhatItDoes, ScreenReading, PracticeAndResume, PlainFacts, ClosingCta } from "../components/home/v2/Sections";
 
 // The Microsoft Store listing, not a file on this site.
 //
@@ -202,7 +194,7 @@ export default function Home() {
   };
 
   return (
-    <main className="marketing replysis-refined bg-[#FDFCFA] text-[#16150F] overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <main className="marketing hv2 overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       <Suspense fallback={null}>
         <AuthQueryWatcher onAuthRequest={openAuthFromQuery} />
@@ -219,21 +211,6 @@ export default function Home() {
 
       {/* ══════════════ NAVBAR ══════════════ */}
       <header className="fixed top-0 left-0 right-0 z-50">
-
-        {/* Announcement banner — slim top bar, retracts on scroll */}
-        <motion.div
-          animate={{ height: (!user && !scrolled) ? "auto" : 0, opacity: (!user && !scrolled) ? 1 : 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="overflow-hidden">
-          {!user && (
-          <div className="w-full text-center py-2 text-[11px] font-semibold hidden md:flex items-center justify-center gap-3"
-            style={{ background: "linear-gradient(90deg, rgba(31,138,62,0.08), rgba(31,138,62,0.05))", borderBottom: "1px solid rgba(31,138,62,0.08)", backdropFilter: "blur(12px)" }}>
-            <span className="text-[9px] font-black text-white bg-[#21924A] px-1.5 py-0.5 rounded-full uppercase tracking-widest">NEW</span>
-            <span className="text-gray-600">Screen analysis + multi-platform audio capture now live.</span>
-            <button onClick={() => go("real-interview")} className="text-[#1C7A3E] font-bold hover:text-[#14532B] transition-colors underline underline-offset-2">Try it free →</button>
-          </div>
-          )}
-        </motion.div>
 
         {/* Floating pill nav — shrinks + lifts on scroll */}
         <motion.div
@@ -501,17 +478,12 @@ export default function Home() {
         )}
       </header>
 
-      <HeroSection mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go} />
-      <TrustedBySection />
-      <StatsSection />
-      <EnterpriseSection />
-      <WhatIsItSection onNav={go} />
-      <DemoSection onNav={go} />
-      <HowItWorksSection />
-      <FeaturesSection />
-      <WhyUsSection />
-      <DownloadSection mounted={mounted} detectedOS={detectedOS} onDownload={download} />
-      <CtaSection onNav={go} />
+      <HeroV2 mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go} />
+      <WhatItDoes />
+      <ScreenReading />
+      <PracticeAndResume onNav={go} />
+      <PlainFacts onNav={go} />
+      <ClosingCta mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go} />
 
       {/* ── Auth modal  -  opens on Log in / Get started, never leaves the page ── */}
       <AuthModal

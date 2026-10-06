@@ -1,0 +1,206 @@
+/* The homepage, second design. Scoped to .hv2 so no other page is touched.
+   Rules it follows: no card grids, no pills or uppercase letter-spaced labels in the page's own copy, no emoji, no glows.
+   Structure comes from type, hairlines and whitespace. The only boxes are the product's own windows. */
+
+.hv2 {
+  --paper: #f6f4ee;
+  --paper-deep: #edeadf;
+  --ink: #16201a;
+  --muted: #57635b;
+  --faint: #86908a;
+  --line: rgba(22, 32, 26, 0.16);
+  --green: #1e5a41;
+  --green-deep: #14402e;
+  --mint: #dce7dc;
+  --night: #0b0f14;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hv2 *, .hv2 *::before, .hv2 *::after { box-sizing: border-box; }
+
+.hv2-wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.hv2-wide { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 24px; }
+
+.hv2-serif {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  letter-spacing: -0.028em;
+}
+
+/* ───────── Hero ───────── */
+.hv2-hero { padding: 148px 0 0; }
+.hv2-h1 {
+  font-size: clamp(2.9rem, 7.4vw, 5.6rem);
+  line-height: 0.98;
+  margin: 0 0 28px;
+  max-width: 11.5em;
+}
+.hv2-h1 em { font-style: italic; color: var(--green); }
+.hv2-lead {
+  font-size: clamp(1.08rem, 1.5vw, 1.28rem);
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 41em;
+  margin: 0 0 34px;
+}
+.hv2-cta { margin-bottom: 18px; }
+.hv2-fine { font-size: 0.92rem; color: var(--faint); margin: 0; }
+.hv2-fine button {
+  background: none; border: 0; padding: 0; font: inherit; color: var(--green);
+  text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.hv2-fine button:hover { color: var(--green-deep); }
+
+/* ───────── The stealth demonstration ───────── */
+.hv2-scene { margin: 84px 0 0; padding: 0; }
+.hv2-scene-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 860px) { .hv2-scene-grid { grid-template-columns: 1fr; gap: 36px; } }
+
+.hv2-cap { margin: 0 0 12px; font-size: 0.98rem; color: var(--muted); line-height: 1.45; }
+.hv2-cap strong { display: block; color: var(--ink); font-weight: 600; font-size: 1.04rem; }
+
+.hv2-screen {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 16 / 10.4;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #11161c;
+  box-shadow: 0 0 0 1px rgba(22, 32, 26, 0.35), 0 30px 60px -34px rgba(22, 32, 26, 0.55);
+}
+
+/* the code editor both screens show */
+.hv2-editor { position: absolute; inset: 0; font-size: 2.05cqw; color: #c9d2dc; background: #0f141a; }
+.hv2-editor-top {
+  display: flex; align-items: center; gap: 1.4em; height: 2.9em; padding: 0 1.2em;
+  background: #151b22; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.86em; color: #7f8a96;
+}
+.hv2-editor-top b { color: #dfe6ee; font-weight: 500; border-bottom: 2px solid #4b8f6b; padding: 0.95em 0 0.7em; }
+.hv2-editor-body { display: grid; grid-template-columns: 2.6em 1fr; padding: 1.1em 0 0; font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 0.92em; line-height: 1.72; }
+.hv2-editor-body .ln { text-align: right; padding-right: 0.8em; color: #4a5560; user-select: none; white-space: pre; }
+.hv2-editor-body code { white-space: pre; color: #c9d2dc; }
+.hv2-k { color: #c792ea; } .hv2-f { color: #82aaff; } .hv2-s { color: #c3e88d; } .hv2-c { color: #5c6773; font-style: italic; } .hv2-n { color: #f78c6c; }
+.hv2-problem {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 1em 1.4em 1.1em; font-size: 0.9em; line-height: 1.5;
+  color: #aeb8c2; background: linear-gradient(180deg, rgba(15, 20, 26, 0), #0f141a 38%);
+}
+.hv2-problem b { color: #e6edf4; font-weight: 600; }
+
+/* the share indicator on the interviewer's side */
+.hv2-sharebar {
+  position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
+  background: #1f7a4f; color: #fff; font-size: 1.8cqw; font-weight: 600; padding: 0.55em 1.5em; border-radius: 0 0 9px 9px;
+  display: flex; align-items: center; gap: 0.7em; white-space: nowrap;
+}
+.hv2-sharebar i { width: 0.7em; height: 0.7em; border-radius: 50%; background: #fff; display: block; }
+
+/* the Replysis window laid over a screen */
+.hv2-overlay { position: absolute; z-index: 2; right: 3.2%; bottom: 5%; width: 61%; container-type: inline-size; transition: opacity 0.35s ease, transform 0.35s ease; }
+.hv2-overlay.is-hidden { opacity: 0; transform: translateY(6px); pointer-events: none; }
+.hv2-exposed { outline: 2px solid #e5484d; outline-offset: 3px; border-radius: 14px; }
+.hv2-exposed-tag {
+  position: absolute; z-index: 4; left: 0; top: -2.7em; background: #e5484d; color: #fff; font-size: 3.1cqw; font-weight: 600;
+  padding: 0.45em 1em; border-radius: 6px; white-space: nowrap;
+}
+
+/* the switch under the demonstration */
+.hv2-switch { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 34px 0 0; flex-wrap: wrap; }
+.hv2-switch-label { font-size: 1.02rem; font-weight: 600; }
+.hv2-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; background: rgba(255, 255, 255, 0.55); }
+.hv2-seg button {
+  border: 0; background: transparent; font: inherit; font-size: 0.95rem; font-weight: 600; color: var(--muted);
+  padding: 8px 22px; border-radius: 7px; cursor: pointer; transition: background 0.2s, color 0.2s;
+}
+.hv2-seg button[aria-pressed='true'] { background: var(--green-deep); color: #fff; }
+.hv2-seg button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.hv2-scene-note { max-width: 46em; margin: 18px auto 0; text-align: center; font-size: 0.93rem; line-height: 1.6; color: var(--faint); }
+
+/* ───────── Replica of the real app window ───────── */
+.hv2-app {
+  font-size: 3.55cqw; /* every size inside is in em, so the window scales as one piece */
+  color: #e8edf3;
+  background: rgba(12, 16, 22, 0.975);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.5em;
+  box-shadow: 0 1.4em 3em -1em rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.38;
+}
+.hv2-app-head { display: flex; align-items: center; gap: 0.7em; padding: 0.8em 1em; border-bottom: 1px solid rgba(255, 255, 255, 0.09); }
+.hv2-app-logo { display: flex; align-items: center; gap: 0.55em; font-weight: 700; font-size: 1.02em; }
+.hv2-app-logo img { width: 1.5em; height: 1.5em; border-radius: 0.4em; display: block; }
+.hv2-app-mic { width: 1.75em; height: 1.75em; border-radius: 50%; border: 0.13em solid #31c26b; display: grid; place-items: center; }
+.hv2-app-mic svg { width: 0.85em; height: 0.85em; }
+.hv2-app-live { color: #31c26b; font-weight: 700; font-size: 0.78em; display: flex; align-items: center; gap: 0.5em; }
+.hv2-app-live::before { content: ''; width: 0.55em; height: 0.55em; border-radius: 50%; background: #31c26b; display: block; }
+.hv2-app-chip { margin-left: auto; font-size: 0.78em; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.07); padding: 0.35em 0.8em; border-radius: 0.6em; white-space: nowrap; }
+.hv2-app-body { padding: 0.9em 1em 0.2em; }
+.hv2-app-label { font-size: 0.66em; font-weight: 700; color: #8d99a6; margin: 0 0 0.5em; letter-spacing: 0.04em; }
+.hv2-app-say { margin: 0; font-size: 0.98em; min-height: 4.2em; color: #f1f5f9; }
+.hv2-caret { display: inline-block; width: 0.1em; height: 1em; background: #31c26b; vertical-align: -0.12em; margin-left: 0.1em; animation: hv2-blink 1s steps(1) infinite; }
+@keyframes hv2-blink { 50% { opacity: 0; } }
+.hv2-app-code {
+  margin: 0.7em 0 0; padding: 0.7em 0.9em; border-radius: 0.7em; background: rgba(255, 255, 255, 0.06);
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 0.8em; line-height: 1.6; color: #cfd8e2; white-space: pre;
+  opacity: 0; transform: translateY(4px); transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s; overflow: hidden;
+}
+.hv2-app-code.is-in { opacity: 1; transform: none; }
+.hv2-app-cx { margin: 0.55em 0 0; font-size: 0.74em; color: #31c26b; font-weight: 600; opacity: 0; transition: opacity 0.4s ease 0.3s; }
+.hv2-app-cx.is-in { opacity: 1; }
+.hv2-app-foot { margin: 0.8em 0 0; padding: 0.7em 1em 0.85em; border-top: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.025); }
+.hv2-app-foot p { margin: 0; font-size: 0.82em; color: #b5c0cc; }
+
+/* ───────── Sections ───────── */
+.hv2-section { padding: 132px 0 0; }
+.hv2-rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.hv2-h2 { font-size: clamp(2rem, 4.2vw, 3.2rem); line-height: 1.04; margin: 0 0 22px; max-width: 14em; }
+.hv2-h2 em { font-style: italic; color: var(--green); }
+.hv2-p { font-size: 1.1rem; line-height: 1.7; color: var(--muted); max-width: 36em; margin: 0 0 18px; }
+.hv2-link { color: var(--green); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; background: none; border: 0; padding: 0; cursor: pointer; font-size: 1.02rem; }
+.hv2-link:hover { color: var(--green-deep); }
+
+/* the plain list of what it does */
+.hv2-index { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.hv2-index li { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; padding: 30px 0; border-bottom: 1px solid var(--line); }
+.hv2-index h3 { margin: 0; font-size: clamp(1.45rem, 2.4vw, 1.9rem); line-height: 1.15; }
+.hv2-index p { margin: 0; font-size: 1.08rem; line-height: 1.7; color: var(--muted); max-width: 34em; }
+@media (max-width: 760px) { .hv2-index li { grid-template-columns: 1fr; gap: 10px; padding: 24px 0; } }
+
+/* text beside a picture */
+.hv2-split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 72px; align-items: center; }
+.hv2-split.flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.hv2-split.flip > :first-child { order: 2; }
+@media (max-width: 900px) { .hv2-split, .hv2-split.flip { grid-template-columns: 1fr; gap: 36px; } .hv2-split.flip > :first-child { order: 0; } }
+
+.hv2-stage { position: relative; container-type: inline-size; border-radius: 12px; overflow: hidden; background: #11161c; aspect-ratio: 16 / 11; box-shadow: 0 0 0 1px rgba(22, 32, 26, 0.35), 0 30px 60px -34px rgba(22, 32, 26, 0.55); }
+.hv2-stage .hv2-overlay { width: 66%; right: 3%; bottom: 4%; }
+.hv2-paper { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.5); padding: 26px 0; }
+.hv2-before-after { display: grid; gap: 22px; max-width: 34em; }
+.hv2-before-after dt { font-size: 0.95rem; color: var(--faint); margin: 0 0 6px; }
+.hv2-before-after dd { margin: 0; font-size: 1.12rem; line-height: 1.55; color: var(--ink); }
+.hv2-before-after dd.old { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(22, 32, 26, 0.3); }
+
+/* the plain facts */
+.hv2-facts { margin: 0; border-top: 1px solid var(--line); }
+.hv2-facts > div { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); gap: 32px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.hv2-facts dt { font-weight: 600; font-size: 1.02rem; }
+.hv2-facts dd { margin: 0; font-size: 1.06rem; line-height: 1.7; color: var(--muted); max-width: 44em; }
+.hv2-facts dd a { color: var(--green); text-underline-offset: 3px; }
+@media (max-width: 700px) { .hv2-facts > div { grid-template-columns: 1fr; gap: 6px; padding: 20px 0; } }
+
+.hv2-end { padding: 140px 0 150px; }
+.hv2-end .hv2-h2 { max-width: 12em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hv2-overlay, .hv2-app-code, .hv2-app-cx { transition: none; }
+  .hv2-caret { animation: none; }
+}
+
+/* a window shown on its own, on the page */
+.hv2-solo { container-type: inline-size; max-width: 560px; width: 100%; }
+.hv2-solo .hv2-app { font-size: 3.15cqw; }
