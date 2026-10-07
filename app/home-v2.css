@@ -230,3 +230,76 @@
   .hv2-steps > li { grid-template-columns: 1fr; gap: 20px; padding: 32px 0; }
   .hv2-step-n { font-size: 2.6rem; }
 }
+
+
+/* ───────── Pricing ───────── */
+.hv2-btn-block { display: block; width: 100%; text-align: center; border: 0; cursor: pointer; font-family: inherit; }
+.hv2-btn.is-quiet { background: var(--paper-deep); color: var(--faint); cursor: default; }
+.hv2-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.hv2 button.hv2-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hv2-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.hv2-plan { display: flex; flex-direction: column; padding: 34px 34px 44px; border-bottom: 1px solid var(--line); }
+.hv2-plan + .hv2-plan { border-left: 1px solid var(--line); }
+.hv2-plan.is-main { border-top: 3px solid var(--green); margin-top: -2px; }
+.hv2-plan-note { margin: 0 0 8px; min-height: 1.35em; font-size: 0.92rem; font-weight: 600; color: var(--green); }
+.hv2-plan-name { margin: 0; font-size: 1.9rem; line-height: 1.1; }
+.hv2-price { margin: 20px 0 2px; font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 3.5rem; line-height: 1; letter-spacing: -0.03em; }
+.hv2-price small { font-family: 'Inter', system-ui, sans-serif; font-size: 1rem; letter-spacing: 0; color: var(--faint); }
+.hv2-plan-sub { margin: 8px 0 0; font-size: 0.9rem; color: var(--faint); }
+.hv2-plan-usage { margin: 18px 0 22px; font-size: 1rem; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.hv2-plan-list { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.hv2-plan-list li { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.97rem; line-height: 1.5; color: var(--muted); }
+.hv2-plan-list li.off { color: var(--faint); }
+@media (max-width: 960px) {
+  .hv2-plans { grid-template-columns: 1fr; }
+  .hv2-plan { padding: 30px 4px 36px; }
+  .hv2-plan + .hv2-plan { border-left: 0; border-top: 1px solid var(--line); }
+  .hv2-plan.is-main { border-top: 3px solid var(--green); }
+}
+
+.hv2-table-wrap { margin-top: 30px; overflow-x: auto; }
+.hv2-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.98rem; }
+.hv2-table th, .hv2-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); text-align: center; font-weight: 400; }
+.hv2-table td:first-child { text-align: left; color: var(--muted); padding-left: 0; }
+.hv2-table thead th { border-bottom: 1px solid var(--ink); padding-top: 0; }
+.hv2-table .hv2-table-plan { font-family: 'Fraunces', Georgia, serif; font-size: 1.25rem; font-weight: 500; color: var(--ink); }
+.hv2-table .hv2-table-plan span { display: block; margin-top: 3px; font-family: 'Inter', system-ui, sans-serif; font-size: 0.86rem; color: var(--faint); }
+.hv2-table tr.cat th { text-align: left; padding: 26px 0 8px; font-size: 0.9rem; font-weight: 600; color: var(--green); border-bottom: 1px solid var(--line); }
+
+.hv2-faq { border-top: 1px solid var(--line); max-width: 760px; }
+.hv2-faq-item { border-bottom: 1px solid var(--line); }
+.hv2-faq-q { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 18px; padding: 24px 0; background: none; border: 0; text-align: left; cursor: pointer; color: var(--ink); font-size: 1.3rem; line-height: 1.25; }
+.hv2-faq-q:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.hv2-faq-a { margin: 0; padding: 0 0 26px; font-size: 1.04rem; line-height: 1.7; color: var(--muted); max-width: 40em; }
+
+.hv2-plan .hv2-tagline { min-height: 3em; }
+.hv2-table p { font-size: 0.92rem !important; }
+.hv2-table .text-gray-200 { color: var(--faint) !important; }
+
+
+/* ───────── Legal pages: the wording is unchanged, the boxes are gone ───────── */
+.hv2-legal-hero { padding: 128px 0 28px; }
+.hv2-legal-body { padding: 8px 0 150px; }
+.hv2-legal-text > div { margin-top: 60px; max-width: 760px; }
+.hv2-legal-text > div:first-child { margin-top: 36px; }
+.hv2-legal h2 {
+  font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15;
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem) !important; color: var(--ink) !important; margin-bottom: 16px !important;
+}
+.hv2-legal-text p, .hv2-legal-text li { color: var(--muted); font-size: 1.04rem !important; line-height: 1.75 !important; }
+.hv2-legal-text a { color: var(--green) !important; text-decoration: underline; text-underline-offset: 3px; font-weight: 400 !important; }
+.hv2-legal-text .grid { display: block !important; }
+.hv2-legal-text [class*="rounded-xl"], .hv2-legal-text [class*="rounded-2xl"] {
+  border: 0 !important; border-top: 1px solid var(--line) !important; background: transparent !important;
+  border-radius: 0 !important; padding: 16px 0 !important; box-shadow: none !important;
+}
+.hv2-legal-text [class*="rounded-xl"] > p:first-child, .hv2-legal-text [class*="rounded-xl"] > span:first-child { color: var(--ink) !important; font-weight: 600; }
+.hv2-legal-text [class*="rounded-2xl"][class*="overflow-x-auto"] { border-top: 0 !important; padding: 0 !important; }
+.hv2-legal-text table { width: 100%; border-collapse: collapse; }
+.hv2-legal-text th { text-transform: none !important; letter-spacing: 0 !important; font-size: 0.92rem !important; color: var(--ink) !important; font-weight: 600 !important; padding: 12px 14px 12px 0 !important; }
+.hv2-legal-text td { color: var(--muted) !important; font-size: 0.97rem !important; padding: 14px 14px 14px 0 !important; vertical-align: top; }
+.hv2-legal-text tr { background: transparent !important; border-bottom: 1px solid var(--line) !important; }
+.hv2-legal-text thead tr { border-bottom: 1px solid var(--ink) !important; }
+.hv2-legal-text td span[class*="rounded-full"] { background: transparent !important; padding: 0 !important; color: var(--green) !important; font-size: 0.92rem !important; font-weight: 600 !important; border-radius: 0 !important; }
+.hv2-legal-text code { background: transparent !important; padding: 0 !important; color: var(--ink) !important; font-size: 0.95em !important; }

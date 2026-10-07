@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
+import "../home-v2.css";
 
 export const metadata: Metadata = {
   title: "Terms of Service  -  Replysis",
@@ -12,21 +13,19 @@ const CONTACT = "admin@varoxel.com";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "system-ui, sans-serif" }}>
+    <div className="marketing hv2 hv2-legal min-h-screen">
       <PageHeader />
 
-      {/* Hero */}
-      <section className="py-16 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 50%, #ffffff 100%)" }}>
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-bold text-zinc-900 uppercase tracking-widest mb-3">Legal</p>
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">Terms of Service</h1>
-          <p className="text-gray-500">Last updated: {LAST_UPDATED} · Questions? <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a></p>
+      <section className="hv2-legal-hero">
+        <div className="hv2-wrap">
+          <h1 className="hv2-serif hv2-h1" style={{ fontSize: "clamp(2.4rem, 5vw, 3.8rem)", maxWidth: "none" }}>Terms of Service</h1>
+          <p className="hv2-fine">Last updated: {LAST_UPDATED}. Questions? <a href={`mailto:${CONTACT}`} style={{ color: "var(--green)", textUnderlineOffset: 3 }}>{CONTACT}</a></p>
         </div>
       </section>
 
       {/* Content */}
-      <section className="py-16 px-6 bg-white">
-        <div className="max-w-3xl mx-auto space-y-12 text-gray-600 leading-relaxed">
+      <section className="hv2-legal-body">
+        <div className="hv2-wrap hv2-legal-text">
 
           <p className="text-sm bg-gray-50 border border-gray-100 rounded-xl p-5">
             By accessing or using Replysis at replysis.com or the Replysis desktop apps ("the Service"), you agree to these Terms. If you do not agree, do not use the Service.

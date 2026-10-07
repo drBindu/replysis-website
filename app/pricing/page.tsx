@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { useState, useEffect, Fragment } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
@@ -9,6 +9,7 @@ import { type PlanId, type UserProfile } from "../lib/credits";
 import AuthModal from "../../components/AuthModal";
 import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
+import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
@@ -28,20 +29,6 @@ const FREE_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.free);
 const PRO_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.pro);
 const MAX_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.max);
 const MOCK_CREDITS = 20;   // what one guided mock session costs on average, see PUBLIC_CREDIT_COSTS
-
-function FadeUp({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  return (
-    <motion.div ref={ref}
-      initial={{ opacity: 0, y: 32, scale: 0.97 }}
-      animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
-      transition={{ duration: 0.65, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={className}>
-      {children}
-    </motion.div>
-  );
-}
 
 function Check({ color = "violet" }: { color?: "violet" | "emerald" | "orange" | "blue" | "gray" }) {
   const c = { violet: "text-zinc-800", emerald: "text-zinc-800", orange: "text-zinc-800", blue: "text-zinc-800", gray: "text-gray-300" }[color];
@@ -299,12 +286,11 @@ function Cell({ val, accent, orange }: { val: boolean | string; accent?: boolean
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-gray-100 last:border-0">
-      <button onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left gap-4 group">
-        <span className="font-semibold text-gray-800 text-sm group-hover:text-zinc-900 transition-colors">{q}</span>
+    <div className="hv2-faq-item">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="hv2-faq-q">
+        <span className="hv2-serif">{q}</span>
         <motion.svg animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}
-          className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          className="w-4 h-4 flex-shrink-0" style={{ color: "var(--faint)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </motion.svg>
       </button>
@@ -312,7 +298,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
-            <p className="text-sm text-gray-500 leading-relaxed pb-5">{a}</p>
+            <p className="hv2-faq-a">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -320,25 +306,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-// ─── Plan card styles by type ─────────────────────────────────────────────────
-function getPlanStyle(plan: typeof ALL_PLANS[0]) {
-  if (plan.popular) return {
-    card:    { background: "linear-gradient(160deg, #ffffff 0%, #f5fbf6 58%, #eef8f0 100%)", border: "1.5px solid rgba(31,138,62,0.42)", boxShadow: "0 24px 70px rgba(22,72,39,0.14), 0 2px 8px rgba(22,72,39,0.06)" },
-    stripe:  "linear-gradient(90deg, #1C7A3E, #2E8B45, #21924A)",
-    badge:   { background: "linear-gradient(135deg, #1C7A3E, #21924A)" },
-    btn:     { background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 4px 20px rgba(31,138,62,0.35)" },
-    pool:    { background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)", color: "#1C7A3E" },
-    check:   "violet" as const,
-  };
-  return {
-    card:    { background: plan.id === "max" ? "linear-gradient(160deg, #ffffff 0%, #fbfbf8 100%)" : "#ffffff", border: "1px solid rgba(24,35,28,0.11)", boxShadow: "0 16px 50px rgba(20,33,24,0.07), 0 2px 8px rgba(20,33,24,0.03)" },
-    stripe:  "#e5e7eb",
-    badge:   { background: "#374151" },
-    btn:     { background: "#111827" },
-    pool:    { background: "rgba(31,138,62,0.06)", border: "1px solid rgba(31,138,62,0.12)", color: "#1C7A3E" },
-    check:   "emerald" as const,
-  };
-}
+/** "More answers each month" becomes "more answers each month" after a label, but "AI resume" keeps its capitals. */
+const lowerFirst = (t: string) => (/^[A-Z][a-z]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t);
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PricingPage() {
@@ -465,103 +434,11 @@ export default function PricingPage() {
   const visibleRows = showAll ? ROWS : ROWS.slice(0, 10);
 
   return (
-    <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="marketing hv2 min-h-screen">
       {showAuth && <AuthModal open={showAuth} initialMode="signup" onClose={() => { setShowAuth(false); setPendingPlan(null); }} onSuccess={handleAuthSuccess} />}
       <PageHeader />
 
-      {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative px-5 sm:px-6 pt-8 md:pt-9 pb-7 md:pb-8 overflow-hidden border-b border-[#1f6f3d]/10"
-        style={{ background: "linear-gradient(145deg, #ffffff 0%, #f7fbf7 52%, #f1f7f2 100%)" }}>
-        <div className="absolute pointer-events-none -top-40 -left-24 w-[460px] h-[460px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(31,138,62,0.14) 0%, transparent 68%)", filter: "blur(70px)" }} />
-        <div className="absolute pointer-events-none -top-48 right-0 w-[420px] h-[420px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(181,214,190,0.30) 0%, transparent 68%)", filter: "blur(70px)" }} />
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.045) 1px, transparent 1px)", backgroundSize: "28px 28px", maskImage: "linear-gradient(to bottom, black, transparent 90%)" }} />
-
-        <div className="relative max-w-7xl mx-auto z-10 grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center gap-6 lg:gap-12">
-          <div className="text-center lg:text-left">
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#1f6f3d]/20 shadow-sm backdrop-blur-sm mb-3">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#1C7A3E] shadow-[0_0_0_4px_rgba(31,138,62,0.10)]" />
-              <span className="text-[10px] font-bold text-[#32513c] tracking-[0.08em] uppercase">Simple plans. Serious interview advantage.</span>
-            </motion.div>
-
-            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.62, delay: 0.04 }}
-              className="text-[2.15rem] sm:text-4xl md:text-[2.8rem] font-black tracking-[-0.04em] leading-[1.03] text-[#121812] mb-3">
-              The AI that gets you <span className="text-[#267b42]">the job.</span>
-            </motion.h1>
-
-            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.12 }}
-              className="text-gray-600 text-sm md:text-[0.96rem] leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Fast, resume-grounded answer suggestions with desktop controls designed for standard screen-share paths.
-            </motion.p>
-
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-              className="mt-4 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-1.5 text-[11px] font-medium text-gray-500">
-              {["Secure Stripe checkout", "Cancel anytime", "Clear monthly limits"].map((t, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#e7f3e9] text-[#267b42]">✓</span>
-                  {t}
-                </span>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* What you get, in answers and interviews. Shown instead of the billing toggle while
-              yearly plans are hidden. */}
-          {!ANNUAL_ENABLED && (
-            <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.15 }}
-              className="rounded-2xl border border-[#1f6f3d]/15 bg-white/85 p-4 shadow-[0_16px_45px_rgba(27,67,39,0.10)] backdrop-blur-md">
-              <p className="mb-3 px-1 text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">What you get</p>
-              <div className="divide-y divide-[#1f6f3d]/10 text-sm">
-                {[
-                  { name: PUBLIC_PLAN_CAPACITY.free.label, line: `${FREE_ANSWERS} answers to try it, once`, price: "Free" },
-                  { name: PRO_PLAN.name, line: `${fmt(PRO_ANSWERS)} answers a month, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews`, price: perMonth(PRO_PLAN, false, india) },
-                  { name: MAX_PLAN.name, line: `${fmt(MAX_ANSWERS)} answers a month, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews`, price: perMonth(MAX_PLAN, false, india) },
-                ].map((row) => (
-                  <div key={row.name} className="flex items-baseline justify-between gap-3 px-1 py-2.5">
-                    <div>
-                      <p className="font-black text-gray-900">{row.name}</p>
-                      <p className="text-xs font-medium text-gray-600">{row.line}</p>
-                    </div>
-                    <p className="whitespace-nowrap font-black text-gray-900">{row.price}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-2 px-1 text-[11px] font-medium text-gray-500">Cancel anytime.</p>
-            </motion.div>
-          )}
-
-          {/* Billing toggle */}
-          {ANNUAL_ENABLED && (
-          <motion.div initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.15 }}
-            className="rounded-2xl border border-[#1f6f3d]/15 bg-white/85 p-3.5 shadow-[0_16px_45px_rgba(27,67,39,0.10)] backdrop-blur-md">
-            <div className="mb-2.5 flex items-center justify-between px-1">
-              <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">Billing period</p>
-              <span className="rounded-full bg-[#e7f3e9] px-2.5 py-1 text-[10px] font-black text-[#267b42]">Save {ANNUAL_SAVING_PCT}% yearly</span>
-            </div>
-            <div className="grid grid-cols-2 items-center rounded-xl bg-[#eef2ed] p-1 gap-1">
-              <button onClick={() => setAnnual(false)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-black transition-all ${!annual ? "bg-[#111711] text-white shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>
-                Monthly
-              </button>
-              <button onClick={() => setAnnual(true)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-black transition-all ${annual ? "bg-[#267b42] text-white shadow-sm" : "text-[#267b42] hover:text-[#185b31]"}`}>
-                Annual
-              </button>
-            </div>
-            <p className="mt-2.5 px-1 text-center text-[11px] font-semibold text-gray-500">
-              Annual: Pro {perMonth(PRO_PLAN, true, india)} · Max {perMonth(MAX_PLAN, true, india)}
-            </p>
-          </motion.div>
-          )}
-        </div>
-      </section>
-
-      {/* ══ CHECKOUT ERROR BANNER ════════════════════════════════════════════════ */}
-      {/* Return messages are verified against the live profile. A success
-          query by itself never unlocks a paid plan. */}
+      {/* Return messages are verified against the live profile. A success query by itself never unlocks a paid plan. */}
       <AnimatePresence>
         {checkoutReturn && (
           <motion.div
@@ -601,16 +478,27 @@ export default function PricingPage() {
         )}
       </AnimatePresence>
 
-      {/* ══ PLAN CARDS — all 4 side by side ════════════════════════════════════ */}
-      <section className="relative px-5 sm:px-6 pt-6 pb-20"
-        style={{ background: "linear-gradient(180deg, #f6f8f4 0%, #ffffff 28%)" }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 items-start">
-            {ALL_PLANS.map((plan, i) => {
-              const s = getPlanStyle(plan);
+      {/* ══ HEADING ═════════════════════════════════════════════════════════ */}
+      <section className="hv2-hero" style={{ paddingTop: 112 }}>
+        <div className="hv2-wrap">
+          <h1 className="hv2-serif hv2-h1" style={{ maxWidth: "11em" }}>
+            Pick a plan, <em>or start free.</em>
+          </h1>
+          <p className="hv2-lead">
+            Fast, resume-grounded answer suggestions, with desktop controls designed for standard screen-share paths. Every plan draws on one
+            balance of answers, and the cost is shown before an action uses any.
+          </p>
+          <p className="hv2-fine">Secure Stripe checkout. Cancel anytime. Clear monthly limits.</p>
+        </div>
+      </section>
+
+      {/* ══ PLANS ═══════════════════════════════════════════════════════════ */}
+      <section className="hv2-section" style={{ paddingTop: 72 }}>
+        <div className="hv2-wide">
+          <div className="hv2-plans">
+            {ALL_PLANS.map((plan) => {
               const price = plan.oneTime ? plan.monthlyPrice : (annual ? plan.annualPrice : plan.monthlyPrice);
-              // Rupees for a monthly plan bought from India. Annual has no
-              // rupee price, so it stays in dollars and says so below.
+              // Rupees for a monthly plan bought from India. Annual has no rupee price, so it stays in dollars and says so below.
               const rupeesForThisCard = !plan.oneTime && india
                 ? (annual
                     ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
@@ -625,397 +513,211 @@ export default function PricingPage() {
                 : 0;
 
               return (
-                <motion.div key={plan.id}
-                  initial={{ opacity: 0, y: 28 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative rounded-[22px] flex flex-col overflow-hidden transition-transform duration-300 hover:-translate-y-1"
-                  style={s.card}>
+                <div key={plan.id} className={`hv2-plan${plan.popular ? " is-main" : ""}`}>
+                  <p className="hv2-plan-note">{plan.badge ?? "\u00a0"}</p>
+                  <h2 className="hv2-serif hv2-plan-name">{plan.name}</h2>
+                  <p className="hv2-tagline" style={{ maxWidth: "none" }}>{plan.tagline}</p>
 
-                  {/* Top stripe */}
-                  <div className="h-1 w-full" style={{ background: s.stripe }} />
-
-                  {/* Badge */}
-                  {plan.badge && (
-                    <div className="absolute top-4 right-4 text-[9px] font-black uppercase tracking-[0.08em] px-2.5 py-1 rounded-full text-white shadow-sm"
-                      style={s.badge}>
-                      {plan.badge}
-                    </div>
+                  <p className="hv2-price">
+                    {shownPrice}
+                    {price > 0 && <small>{plan.oneTime ? " one-time" : " a month"}</small>}
+                  </p>
+                  {annual && savings > 0 && (
+                    <p className="hv2-plan-sub">
+                      {india && plan.inrAnnualYearly && plan.inrMonthly
+                        ? `₹${plan.inrAnnualYearly}/yr billed. Save ₹${plan.inrMonthly * 12 - plan.inrAnnualYearly}.`
+                        : `$${Math.round(plan.annualPrice * 12)}/yr billed. Save $${savings}.`}
+                    </p>
                   )}
+                  {plan.oneTime && <p className="hv2-plan-sub">Pays for itself in under 12 months.</p>}
+                  {price === 0 && <p className="hv2-plan-sub">No credit card needed</p>}
 
-                  <div className="p-5 lg:p-6 pb-4 lg:pb-4">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#edf5ee] text-base">{plan.emoji}</span>
-                      <h2 className="text-lg font-black tracking-tight text-gray-900">{plan.name}</h2>
-                    </div>
-                    <p className="text-[11px] font-semibold text-gray-500 mb-3 mt-2 tracking-wide">{plan.tagline}</p>
+                  <p className="hv2-plan-usage">{usagePoolFor(plan, india)}</p>
 
-                    {/* Price */}
-                    <div className="mb-3">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-[2.25rem] leading-none font-black text-gray-950 tracking-[-0.04em]">
-                          {shownPrice}
-                        </span>
-                        {price > 0 && (
-                          <span className="text-xs text-gray-400 font-medium">
-                            {plan.oneTime ? " one-time" : " / mo"}
-                          </span>
-                        )}
-                      </div>
-                      {annual && savings > 0 && (
-                        <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
-                          {india && plan.inrAnnualYearly && plan.inrMonthly
-                            ? `₹${plan.inrAnnualYearly}/yr billed. Save ₹${plan.inrMonthly * 12 - plan.inrAnnualYearly}.`
-                            : `$${Math.round(plan.annualPrice * 12)}/yr billed. Save $${savings}.`}
-                        </p>
-                      )}
-                      {plan.oneTime && (
-                        <p className="text-[11px] mt-0.5 font-semibold text-zinc-900">
-                          Pays for itself in under 12 months.
-                        </p>
-                      )}
-                      {price === 0 && <p className="text-[11px] text-gray-400 mt-0.5">No credit card needed</p>}
-                    </div>
-
-                    {/* Usage pill */}
-                    <div className="rounded-xl px-3 py-2.5 mb-3" style={s.pool}>
-                      <p className="text-[11px] font-black" style={{ color: s.pool.color }}>{usagePoolFor(plan, india)}</p>
-                    </div>
-
-                    {/* CTA */}
-                    {plan.id === "free" ? (
-                      <button onClick={() => !user && openFreeAccount()}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
-                          isCurrent || user ? "bg-gray-100 text-gray-400 cursor-default" : "bg-gray-900 hover:bg-gray-700 text-white"
-                        }`}>
-                        {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
-                      </button>
+                  {plan.id === "free" ? (
+                    <button onClick={() => !user && openFreeAccount()}
+                      className={`hv2-btn hv2-btn-block${isCurrent || user ? " is-quiet" : ""}`}>
+                      {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
+                    </button>
+                  ) : (
+                    hasPaidPlan ? (
+                      <Link href="/account" className="hv2-btn hv2-btn-block">
+                        {isCurrent ? "Manage current plan" : "Change plan securely"}
+                      </Link>
                     ) : (
-                      hasPaidPlan ? (
-                        <Link href="/account"
-                          className="block w-full py-3 rounded-xl font-bold text-sm text-white text-center transition-all hover:brightness-105"
-                          style={s.btn}>
-                          {isCurrent ? "Manage current plan" : "Change plan securely"}
-                        </Link>
-                      ) : (
-                        <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
-                          disabled={!!loading}
-                          className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:brightness-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={s.btn}>
-                          {loading === plan.id ? "Redirecting..." : plan.cta}
-                        </button>
-                      )
-                    )}
-                    <p className="text-center text-[10px] text-gray-400 mt-1.5">{plan.ctaNote}</p>
-                  </div>
+                      <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
+                        disabled={!!loading}
+                        className="hv2-btn hv2-btn-block">
+                        {loading === plan.id ? "Redirecting..." : plan.cta}
+                      </button>
+                    )
+                  )}
+                  <p className="hv2-plan-sub" style={{ textAlign: "center" }}>{plan.ctaNote}</p>
 
-                  {/* Features */}
-                  <div className="px-5 pb-5 border-t border-gray-100/80 pt-4 flex-1">
-                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">What you get</p>
-                    <ul className="space-y-2.5">
-                      {featuresFor(plan, india).map((f, fi) => (
-                        <li key={fi} className="flex items-start gap-2">
-                          <Check color={s.check} />
-                          <span className="text-xs text-gray-700 leading-snug">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {plan.notIncluded.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <ul className="space-y-2">
-                          {plan.notIncluded.map((t, ti) => (
-                            <li key={ti} className="flex items-start gap-2 opacity-40">
-                              <Dash />
-                              <span className="text-xs text-gray-400">{t}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                  <ul className="hv2-plan-list">
+                    {featuresFor(plan, india).map((f) => <li key={f}>{f}</li>)}
+                    {plan.notIncluded.map((t) => <li key={t} className="off">Not included: {lowerFirst(t)}</li>)}
+                  </ul>
+                </div>
               );
             })}
           </div>
-
-          {ANNUAL_ENABLED && !annual && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
-              className="text-center text-sm mt-6">
-              <button onClick={() => setAnnual(true)}
-                className="text-zinc-900 font-bold hover:text-zinc-950 underline underline-offset-2 transition-colors">
-                Pay annually and save 2 months. Pro drops to {perMonth(PRO_PLAN, true, india)}. Max drops to {perMonth(MAX_PLAN, true, india)}.
-              </button>
-            </motion.p>
-          )}
-
-          <div className="mt-7 rounded-2xl border border-[#1f6f3d]/15 bg-white p-5 shadow-[0_12px_40px_rgba(20,60,34,0.06)]">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">What each action uses</p>
-                <h3 className="mt-1 text-base font-black text-gray-900">One balance across the product</h3>
-              </div>
-              <p className="text-xs text-gray-500">Mixed usage changes how many sessions you can run.</p>
-            </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {PUBLIC_CREDIT_COSTS.map((item) => (
-                <div key={item.action} className="rounded-xl bg-[#f5f8f5] px-3.5 py-3">
-                  <p className="text-[11px] font-semibold text-gray-600">{item.action}</p>
-                  <p className="mt-1 text-sm font-black text-gray-900">{item.answers} {item.answers > 1 ? "answers" : "answer"}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* ══ REPLYSIS ADVANTAGE ════════════════════════════════════════════════ */}
-      <section className="py-20 px-6 border-y border-[#1f6f3d]/10 overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0f1711 0%, #14261a 58%, #17351f 100%)" }}>
-        <div className="max-w-6xl mx-auto relative">
-          <div className="absolute pointer-events-none -top-52 right-0 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl" />
-          <FadeUp className="relative text-center mb-11">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-200 mb-4">
-              The Replysis advantage
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-[-0.035em]">One copilot. Your entire interview workflow.</h2>
-            <p className="text-emerald-50/60 text-sm max-w-2xl mx-auto leading-relaxed">
-              Paid plans include the complete premium experience. No separate upgrade for premium AI, desktop capture controls, mock practice, or resume tailoring.
-            </p>
-          </FadeUp>
-
-          <div className="relative grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-            {[
-              { number: "01", title: "Premium AI included", text: "Polished, natural answers grounded in your resume, role, and job description." },
-              { number: "02", title: "Built for live pressure", text: "Answers stream as they generate, with a sub-two-second response target for live use." },
-              { number: "03", title: "Desktop capture controls", text: "Designed to stay out of standard screen-share paths on supported desktop setups." },
-              { number: "04", title: "Prepare and perform", text: "Tailor your resume, run mock sessions, get live help, and review interviews in one place." },
-            ].map((item, i) => (
-              <FadeUp key={item.number} delay={i * 0.06}>
-                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.055] p-5 backdrop-blur-sm transition-colors hover:bg-white/[0.08]">
-                  <span className="text-[10px] font-black tracking-[0.15em] text-emerald-300/70">{item.number}</span>
-                  <h3 className="mt-3 text-sm font-black text-white">{item.title}</h3>
-                  <p className="mt-2 text-xs leading-relaxed text-emerald-50/55">{item.text}</p>
-                </div>
-              </FadeUp>
+      {/* ══ WHAT EACH ACTION USES ═══════════════════════════════════════════ */}
+      <section className="hv2-section">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">What each action <em>uses.</em></h2>
+          <p className="hv2-p">One balance across the product. Mixed usage changes how many sessions you can run.</p>
+          <dl className="hv2-facts">
+            {PUBLIC_CREDIT_COSTS.map((item) => (
+              <div key={item.action}>
+                <dt>{item.action}</dt>
+                <dd>{item.answers} {item.answers > 1 ? "answers" : "answer"}</dd>
+              </div>
             ))}
-          </div>
-
-          <FadeUp delay={0.2}>
-            <div className="relative grid md:grid-cols-[1fr_auto_1fr] items-stretch overflow-hidden rounded-[24px] border border-emerald-200/15 bg-white text-[#121812] shadow-2xl">
-              <div className="p-6 md:p-7">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#267b42]">Best for most people</p>
-                    <h3 className="mt-1 text-xl font-black">Choose Pro</h3>
-                  </div>
-                  <span className="rounded-full bg-[#e8f4ea] px-3 py-1 text-xs font-black text-[#267b42]">{perMonth(PRO_PLAN, annual, india)}</span>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-600">You are actively applying and interviewing, but do not run several sessions every day.</p>
-                <button onClick={() => handleCheckout("pro")} className="mt-5 text-sm font-black text-[#267b42] hover:text-[#185b31]">Get Pro →</button>
-              </div>
-
-              <div className="hidden md:flex items-center justify-center bg-[#edf4ee] px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#267b42] [writing-mode:vertical-rl] rotate-180">
-                Choose in 10 seconds
-              </div>
-
-              <div className="border-t border-gray-100 p-6 md:border-l md:border-t-0 md:p-7">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Highest monthly capacity</p>
-                    <h3 className="mt-1 text-xl font-black">Choose Max</h3>
-                  </div>
-                  <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-black text-white">{perMonth(MAX_PLAN, annual, india)}</span>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-600">You have frequent interview loops, practice daily, or need {PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× Pro capacity and priority support.</p>
-                <button onClick={() => handleCheckout("max")} className="mt-5 text-sm font-black text-gray-900 hover:text-[#267b42]">Get Max →</button>
-              </div>
-            </div>
-          </FadeUp>
+          </dl>
         </div>
       </section>
 
-      {/* ══ WHY EACH PLAN ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <FadeUp className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Who each plan is built for</h2>
-            <p className="text-gray-400 text-sm">Pick the one that matches where you are right now.</p>
-          </FadeUp>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* ══ WHICH PLAN FITS ═════════════════════════════════════════════════ */}
+      <section className="hv2-section">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Which plan <em>fits.</em></h2>
+          <p className="hv2-p">
+            Paid plans include the complete premium experience. There is no separate upgrade for premium AI, desktop capture controls, mock
+            practice, or resume tailoring.
+          </p>
+          <ul className="hv2-index">
             {[
               {
-                emoji: "🚀", name: "Starter", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#1C7A3E",
-                who: "Testing the waters",
+                name: "Starter", who: "Testing the waters", note: "",
                 items: ["Have interviews coming up soon", "Want to try it before committing", "Need a solid resume right now", "Casual job hunting, not urgent"],
               },
               {
-                emoji: "👑", name: "Pro", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.18)", tc: "#1C7A3E",
-                who: "Serious job seekers",
+                name: "Pro", who: "Serious job seekers",
+                note: "You are actively applying and interviewing, but do not run several sessions every day.",
                 items: ["Actively interviewing every week", "Targeting competitive companies", "Want desktop capture controls", "Want saved history to review"],
               },
               {
-                emoji: "👑", name: "Max", color: "rgba(31,138,62,0.07)", border: "rgba(31,138,62,0.16)", tc: "#21924A",
-                who: "Interviewing constantly",
+                name: "Max", who: "Interviewing constantly",
+                note: `You have frequent interview loops, practice daily, or need ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× Pro capacity and priority support.`,
                 items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Need the highest monthly capacity"],
               },
-            ].map((col, ci) => (
-              <FadeUp key={ci} delay={ci * 0.08}>
-                <div className="rounded-2xl p-6 h-full" style={{ background: col.color, border: `1px solid ${col.border}` }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">{col.emoji}</span>
-                    <p className="text-sm font-black text-gray-900">{col.name}</p>
-                  </div>
-                  <p className="text-[11px] font-semibold mb-4" style={{ color: col.tc }}>{col.who}</p>
-                  <ul className="space-y-2.5">
-                    {col.items.map((item, ii) => (
-                      <li key={ii} className="flex items-start gap-2">
-                        <Check color={ci === 0 ? "violet" : ci === 1 ? "violet" : ci === 2 ? "orange" : "blue"} />
-                        <span className="text-xs text-gray-700 leading-snug">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+            ].map((col) => (
+              <li key={col.name}>
+                <div>
+                  <h3 className="hv2-serif" style={{ fontSize: "clamp(1.45rem, 2.4vw, 1.9rem)", lineHeight: 1.15, margin: 0 }}>{col.name}</h3>
+                  <p className="hv2-tagline">{col.who}</p>
                 </div>
-              </FadeUp>
+                <div>
+                  {col.note && <p>{col.note}</p>}
+                  <p className="hv2-points" style={col.note ? undefined : { marginTop: 0 }}>
+                    {col.items.map((item) => <span key={item} style={{ display: "block" }}>{item}</span>)}
+                  </p>
+                  {col.name === "Pro" && !hasPaidPlan && (
+                    <p style={{ marginTop: 14 }}>
+                      <button onClick={() => handleCheckout("pro")} disabled={!!loading} className="hv2-link">
+                        Get Pro, {perMonth(PRO_PLAN, annual, india)}
+                      </button>
+                    </p>
+                  )}
+                  {col.name === "Max" && !hasPaidPlan && (
+                    <p style={{ marginTop: 14 }}>
+                      <button onClick={() => handleCheckout("max")} disabled={!!loading} className="hv2-link">
+                        Get Max, {perMonth(MAX_PLAN, annual, india)}
+                      </button>
+                    </p>
+                  )}
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      {/* ══ COMPARISON TABLE ════════════════════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <FadeUp className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Full plan comparison</h2>
-            <p className="text-gray-400 text-sm">Every feature, every plan, side by side.</p>
-          </FadeUp>
-
-          <FadeUp delay={0.1}>
-            <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm bg-white overflow-x-auto">
-              <div className="min-w-[660px]">
-                <div className="grid grid-cols-4 bg-gray-50/80 border-b border-gray-200">
-                  <div className="px-5 py-4" />
+      {/* ══ COMPARISON ══════════════════════════════════════════════════════ */}
+      <section className="hv2-section">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">The full <em>comparison.</em></h2>
+          <div className="hv2-table-wrap">
+            <table className="hv2-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span className="sr-only">Feature</span></th>
                   {[
-                    { name: "Starter", price: "Free",                             style: "" },
-                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual, india), style: "bg-zinc-100/60 text-zinc-900" },
-                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual, india), style: "" },
-                  ].map(({ name, price, style }, i) => (
-                    <div key={i} className={`px-3 py-4 text-center border-l border-gray-200 ${style}`}>
-                      <p className={`text-sm font-black ${style.includes("violet") ? "text-zinc-900" : style.includes("orange") ? "text-zinc-900" : "text-gray-900"}`}>{name}</p>
-                      <p className={`text-[11px] mt-0.5 font-medium ${style.includes("violet") ? "text-zinc-600" : style.includes("orange") ? "text-zinc-600" : "text-gray-400"}`}>{price}</p>
-                    </div>
+                    { name: "Starter", price: "Free" },
+                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual, india) },
+                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual, india) },
+                  ].map(({ name, price }) => (
+                    <th key={name} scope="col" className="hv2-table-plan">
+                      {name}
+                      <span>{price}</span>
+                    </th>
                   ))}
-                </div>
-
+                </tr>
+              </thead>
+              <tbody>
                 {(() => {
                   let lastCat = "";
                   return visibleRows.map((row, i) => {
                     const showCat = row.cat !== lastCat;
                     lastCat = row.cat;
                     return (
-                      <div key={i}>
+                      <Fragment key={i}>
                         {showCat && (
-                          <div className="grid grid-cols-4 bg-gray-50/40 border-b border-gray-100">
-                            <div className="px-5 py-2 col-span-4">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{row.cat}</span>
-                            </div>
-                          </div>
+                          <tr className="cat"><th colSpan={4} scope="colgroup">{row.cat}</th></tr>
                         )}
-                        <div className="grid grid-cols-4 border-b border-gray-50 hover:bg-gray-50/40 transition-colors">
-                          <div className="px-5 py-3.5"><span className="text-xs text-gray-600">{row.label}</span></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.free} /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 bg-zinc-100/10 flex items-center justify-center"><Cell val={row.pro} accent /></div>
-                          <div className="px-3 py-3.5 border-l border-gray-100 flex items-center justify-center"><Cell val={row.max} /></div>
-                        </div>
-                      </div>
+                        <tr>
+                          <td>{row.label}</td>
+                          <td><Cell val={row.free} /></td>
+                          <td><Cell val={row.pro} accent /></td>
+                          <td><Cell val={row.max} /></td>
+                        </tr>
+                      </Fragment>
                     );
                   });
                 })()}
-
-                <div className="border-t border-gray-100">
-                  <button onClick={() => setShowAll(!showAll)}
-                    className="w-full py-4 text-sm font-semibold text-zinc-900 hover:text-zinc-950 hover:bg-zinc-100/30 transition-colors flex items-center justify-center gap-2">
-                    {showAll ? "Show less" : `Show all ${ROWS.length} features`}
-                    <motion.svg animate={{ rotate: showAll ? 180 : 0 }} transition={{ duration: 0.2 }}
-                      className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </motion.svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </FadeUp>
+              </tbody>
+            </table>
+          </div>
+          <p style={{ marginTop: 18 }}>
+            <button onClick={() => setShowAll(!showAll)} className="hv2-link">
+              {showAll ? "Show less" : `Show all ${ROWS.length} features`}
+            </button>
+          </p>
         </div>
       </section>
 
-
-      {/* ══ FAQ ════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 px-6 bg-white border-t border-gray-100">
-        <div className="max-w-2xl mx-auto">
-          <FadeUp className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">Questions</h2>
-            <p className="text-gray-400 text-sm">Everything you need before signing up.</p>
-          </FadeUp>
-          <FadeUp delay={0.1}>
-            <div className="bg-white rounded-2xl border border-gray-200 px-8 shadow-sm">
-              {FAQS.map((f, i) => <FaqItem key={i} q={f.q} a={f.a} />)}
-            </div>
-            <p className="text-center text-sm text-gray-400 mt-6">
-              Still have questions?{" "}
-              <a href="mailto:admin@varoxel.com" className="text-zinc-900 font-semibold hover:underline">Email us</a>
-              {" "}and we reply same day.
-            </p>
-          </FadeUp>
+      {/* ══ QUESTIONS ═══════════════════════════════════════════════════════ */}
+      <section className="hv2-section">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Questions, <em>answered.</em></h2>
+          <div className="hv2-faq">
+            {FAQS.map((f) => <FaqItem key={f.q} q={f.q} a={f.a} />)}
+          </div>
+          <p className="hv2-fine" style={{ marginTop: 28 }}>
+            Still have questions? <a href="mailto:admin@varoxel.com" style={{ color: "var(--green)", textUnderlineOffset: 3 }}>Email us</a> and we reply same day.
+          </p>
         </div>
       </section>
 
-      {/* ══ BOTTOM CTA ══════════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 text-center relative overflow-hidden"
-        style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 75%, #ffffff 100%)" }}>
-        <div className="absolute pointer-events-none inset-0 flex items-center justify-center">
-          <div className="w-[600px] h-[300px] rounded-full"
-            style={{ background: "radial-gradient(ellipse, rgba(31,138,62,0.09) 0%, transparent 70%)", filter: "blur(60px)" }} />
-        </div>
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(31,138,62,0.04) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
-
-        <div className="relative max-w-xl mx-auto z-10">
-          <FadeUp>
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight leading-tight">
-              Your next interview is<br />
-              <span style={{ background: "linear-gradient(135deg, #1C7A3E 0%, #2E8B45 45%, #21924A 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                your best interview.
-              </span>
-            </h2>
-            <p className="text-gray-400 text-sm mb-8">
-              Start free today. No card needed. See it work in your next real interview, then decide.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => user ? window.location.href = "/real-interview" : openFreeAccount()}
-                className="px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-all shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.3)" }}>
-                {user ? "Go to dashboard →" : "Start for free"}
-              </button>
-              <Link href="/real-interview"
-                className="px-8 py-3.5 rounded-xl border border-gray-200 bg-white hover:border-zinc-400 text-gray-700 hover:text-zinc-900 font-semibold text-sm transition-all">
-                Try live copilot now
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-5 mt-8 text-[11px] text-gray-400">
-              {["Fast streaming", "Raw audio not stored", "Major platform support", "Free to start"].map((s, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600" />
-                  {s}
-                </span>
-              ))}
-            </div>
-          </FadeUp>
+      {/* ══ CLOSING ═════════════════════════════════════════════════════════ */}
+      <section className="hv2-section hv2-end">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Your next interview is <em>your best interview.</em></h2>
+          <p className="hv2-p">Start free today. No card needed. See it work in your next real interview, then decide.</p>
+          <p className="hv2-fine">
+            <button
+              onClick={() => user ? window.location.href = "/real-interview" : openFreeAccount()}
+              className="hv2-btn">
+              {user ? "Go to dashboard" : "Start for free"}
+            </button>
+            <Link href="/real-interview" className="hv2-link" style={{ marginLeft: 22 }}>Try live copilot now</Link>
+          </p>
         </div>
       </section>
-
     </div>
   );
 }
