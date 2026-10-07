@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
+import "../home-v2.css";
 
 export const metadata: Metadata = {
   title: "Features  -  Replysis",
@@ -138,82 +139,57 @@ const FEATURES = [
 
 export default function FeaturesPage() {
   return (
-    <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "system-ui, sans-serif" }}>
+    <div className="marketing hv2 min-h-screen">
       <PageHeader />
 
-      {/* Hero */}
-      <section className="py-20 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 80%, #ffffff 100%)" }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.05]">
-            Everything you need<br />
-            <span style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              to win.
-            </span>
+      <section className="hv2-hero" style={{ paddingTop: 128 }}>
+        <div className="hv2-wrap">
+          <h1 className="hv2-serif hv2-h1" style={{ maxWidth: "12em" }}>
+            What it does, <em>and where it stops.</em>
           </h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto mb-8 leading-relaxed">
-            A connected toolkit for resume preparation, structured practice, and fast live guidance—with clear limits and no inflated promises.
+          <p className="hv2-lead">
+            A connected toolkit for resume preparation, structured practice, and fast live guidance, with clear limits and no inflated promises.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/mock-interview"
-              className="px-7 py-3.5 rounded-xl font-bold text-white text-sm shadow-lg transition-all hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45)", boxShadow: "0 8px 24px rgba(31,138,62,0.3)" }}>
-              Start for free
-            </Link>
-            <Link href="/pricing"
-              className="px-7 py-3.5 rounded-xl font-bold text-gray-700 text-sm bg-white border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 transition-all">
-              See pricing
-            </Link>
-          </div>
+          <p className="hv2-fine">
+            <Link href="/mock-interview" className="hv2-btn">Start free</Link>
+            <Link href="/pricing" className="hv2-link" style={{ marginLeft: 22 }}>See pricing</Link>
+          </p>
         </div>
       </section>
 
-      {/* Features grid */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f, i) => (
-              <div key={i} className={`rounded-2xl border-2 ${f.light} p-7 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5`}>
-                <div className={`w-12 h-12 rounded-xl ${f.color} flex items-center justify-center mb-5 shadow-sm`}>
-                  {f.icon}
+      <section className="hv2-section" style={{ paddingTop: 96 }}>
+        <div className="hv2-wrap">
+          <ul className="hv2-index">
+            {FEATURES.map((f) => (
+              <li key={f.title}>
+                <div>
+                  <h2 className="hv2-serif" style={{ fontSize: "clamp(1.45rem, 2.4vw, 1.9rem)", lineHeight: 1.15, margin: 0 }}>{f.title}</h2>
+                  <p className="hv2-tagline">{f.tagline}</p>
                 </div>
-                <h3 className="text-lg font-black text-gray-900 mb-1">{f.title}</h3>
-                <p className={`text-xs font-bold ${f.accent} mb-3`}>{f.tagline}</p>
-                <p className="text-sm text-gray-600 leading-relaxed mb-4">{f.desc}</p>
-                <ul className="space-y-1.5">
-                  {f.points.map((p, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs text-gray-500">
-                      <svg className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${f.accent}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                <div>
+                  <p>{f.desc}</p>
+                  <p className="hv2-points">
+                    {f.points.map((point) => (
+                      <span key={point} style={{ display: "block" }}>{point}</span>
+                    ))}
+                  </p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-6 bg-gray-50">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">Ready to try it?</h2>
-          <p className="text-gray-500 mb-8">Free to start. No credit card. Your first mock interviews are on us.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/mock-interview"
-              className="px-8 py-4 rounded-xl font-black text-white transition-all hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45)", boxShadow: "0 8px 24px rgba(31,138,62,0.3)" }}>
-              Start practicing free →
-            </Link>
-            <Link href="/how-it-works"
-              className="px-8 py-4 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 transition-all">
-              See how it works
-            </Link>
-          </div>
+      <section className="hv2-section hv2-end">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Try it on a practice <em>question first.</em></h2>
+          <p className="hv2-p">Free to start, no credit card.</p>
+          <p className="hv2-fine">
+            <Link href="/mock-interview" className="hv2-btn">Start practicing free</Link>
+            <Link href="/how-it-works" className="hv2-link" style={{ marginLeft: 22 }}>See how it works</Link>
+          </p>
         </div>
       </section>
-
     </div>
   );
 }

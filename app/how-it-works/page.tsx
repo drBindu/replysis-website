@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { PageHeader } from "../../components/PageShell";
+import "../home-v2.css";
 
 export const metadata: Metadata = {
   title: "How It Works  -  Replysis",
@@ -66,103 +67,72 @@ const FAQS = [
 
 export default function HowItWorksPage() {
   return (
-    <div className="marketing min-h-screen bg-[#FDFCFA] text-[#16150F]" style={{ fontFamily: "system-ui, sans-serif" }}>
+    <div className="marketing hv2 min-h-screen">
       <PageHeader />
 
-      {/* Hero */}
-      <section className="py-20 px-6" style={{ background: "linear-gradient(150deg, #ffffff 0%, #fafafa 40%, #fafafa 80%, #ffffff 100%)" }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tight mb-5 leading-[1.05]">
-            3 steps.<br />
-            <span style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              Then review the suggestion.
-            </span>
+      <section className="hv2-hero" style={{ paddingTop: 128 }}>
+        <div className="hv2-wrap">
+          <h1 className="hv2-serif hv2-h1" style={{ maxWidth: "12em" }}>
+            Three steps, <em>then you review the answer.</em>
           </h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+          <p className="hv2-lead">
             Add your resume, test your setup, and enter the interview with a structured source of guidance you can adapt naturally.
           </p>
         </div>
       </section>
 
-      {/* Steps */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {STEPS.map((s, i) => (
-            <div key={i} className={`rounded-2xl border-2 ${s.light} p-8 md:p-10`}>
-              <div className="flex items-start gap-6">
-                <div className={`w-14 h-14 rounded-2xl ${s.color} flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-md`}>
-                  {s.n}
+      <section className="hv2-section" style={{ paddingTop: 96 }}>
+        <div className="hv2-wrap">
+          <ol className="hv2-steps">
+            {STEPS.map((s, i) => (
+              <li key={s.title}>
+                <div className="hv2-step-head">
+                  <span className="hv2-serif hv2-step-n" aria-hidden>{i + 1}</span>
+                  <h2 className="hv2-serif" style={{ fontSize: "clamp(1.5rem, 2.6vw, 2.05rem)", lineHeight: 1.12, margin: 0 }}>{s.title}</h2>
+                  <p className="hv2-tagline">{s.sub}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">{s.title}</h2>
-                  <p className={`text-sm font-semibold ${s.accent} mb-4`}>{s.sub}</p>
-                  <p className="text-gray-600 leading-relaxed mb-6">{s.desc}</p>
-
-                  <div className="space-y-3 mb-5">
-                    {s.detail.map((d, j) => (
-                      <div key={j} className="flex gap-3 text-sm">
-                        <span className="font-bold text-gray-700 whitespace-nowrap min-w-[120px]">{d.label}</span>
-                        <span className="text-gray-500">{d.value}</span>
+                <div>
+                  <p className="hv2-p" style={{ marginTop: 0 }}>{s.desc}</p>
+                  <dl className="hv2-facts hv2-facts-tight">
+                    {s.detail.map((d) => (
+                      <div key={d.label}>
+                        <dt>{d.label}</dt>
+                        <dd>{d.value}</dd>
                       </div>
                     ))}
-                  </div>
-
-                  <div className="flex items-start gap-2.5 bg-white rounded-xl border border-gray-200 p-4">
-                    <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${s.accent}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.355a7.5 7.5 0 01-3 0" />
-                    </svg>
-                    <p className="text-sm text-gray-600"><span className="font-semibold text-gray-800">Tip:</span> {s.tip}</p>
-                  </div>
+                  </dl>
+                  <p className="hv2-tip"><strong>Tip.</strong> {s.tip}</p>
                 </div>
-              </div>
-
-              {i < STEPS.length - 1 && (
-                <div className="flex justify-center mt-8">
-                  <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-20 px-6 bg-gray-50">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-black text-gray-900 mb-3 tracking-tight text-center">Common questions</h2>
-          <p className="text-gray-500 text-center mb-12">The things people ask before they try it.</p>
-          <div className="space-y-4">
-            {FAQS.map((f, i) => (
-              <div key={i} className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm">
-                <h3 className="font-black text-gray-900 mb-2">{f.q}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.a}</p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">Start your first session</h2>
-          <p className="text-gray-500 mb-8">Free mock interviews, no credit card. See exactly how it feels before your real interview.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/mock-interview"
-              className="px-8 py-4 rounded-xl font-black text-white transition-all hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg, #1C7A3E, #2E8B45)", boxShadow: "0 8px 24px rgba(31,138,62,0.3)" }}>
-              Try mock interview free →
-            </Link>
-            <Link href="/features"
-              className="px-8 py-4 rounded-xl font-bold text-gray-700 bg-white border border-gray-200 hover:border-zinc-400 hover:text-zinc-900 transition-all">
-              See all features
-            </Link>
-          </div>
+      <section className="hv2-section">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Questions people ask <em>before they try it.</em></h2>
+          <ul className="hv2-index">
+            {FAQS.map((f) => (
+              <li key={f.q}>
+                <h3 className="hv2-serif" style={{ fontSize: "clamp(1.25rem, 2vw, 1.5rem)", lineHeight: 1.2, margin: 0 }}>{f.q}</h3>
+                <p>{f.a}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
+      <section className="hv2-section hv2-end">
+        <div className="hv2-wrap">
+          <h2 className="hv2-serif hv2-h2">Start your first <em>session.</em></h2>
+          <p className="hv2-p">Free mock interviews, no credit card. See exactly how it feels before your real interview.</p>
+          <p className="hv2-fine">
+            <Link href="/mock-interview" className="hv2-btn">Try a mock interview free</Link>
+            <Link href="/features" className="hv2-link" style={{ marginLeft: 22 }}>See all features</Link>
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
