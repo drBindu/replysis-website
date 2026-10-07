@@ -362,6 +362,22 @@ function guestLabel(identityId: string): string {
   return `Guest ${tail.slice(0, 4)}`;
 }
 
+/**
+ * Whether each part an answer depends on is awake, from the backend's own keep-warm round (it checks every 30 seconds and this
+ * only reads its last result, so asking is free). Null when the backend itself does not answer, which the panel shows as down.
+ */
+async function systemsView() {
+  const base = BACKEND_INTERNAL_URL || "https://replysis.com";
+  try {
+    const res = await fetch(`${base}/api/v1/health/ready`, { cache: "no-store", signal: AbortSignal.timeout(3_000) });
+    if (!res.ok) return { reachable: false as const };
+    const data = await res.json();
+    return { reachable: true as const, ...data };
+  } catch {
+    return { reachable: false as const };
+  }
+}
+
 async function liveView(db: Firestore, sinceMs: number) {
   const now = Date.now();
   const since = new Date(Math.min(Math.max(sinceMs, now - LIVE_MAX_BACK_MS), now));
@@ -378,7 +394,8 @@ async function liveView(db: Firestore, sinceMs: number) {
     }
   }
 
-  const [usageSnap, signupSnap, downloadSnap, errorSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+    systemsView(),
     safe("usage", db.collection("usage_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(150).get()),
     safe("signups", users.where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("downloads", db.collection("app_downloads").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
@@ -459,6 +476,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     events: events.slice(0, 200),
     online,
     listeningNow: (listeningUsers?.data().count ?? 0) + (listeningGuests?.data().count ?? 0),
+    systems,
     problems,
   };
 }

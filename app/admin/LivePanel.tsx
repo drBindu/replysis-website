@@ -28,13 +28,41 @@ type OnlineUser = {
   lastActive: number | null; listening: boolean;
 };
 
+type PartState = "awake" | "slow" | "down" | "starting";
+type Part = { state: PartState; ms?: number; note?: string; ageMs?: number };
+type Systems =
+  | { reachable: false }
+  | { reachable: true; roundAgeMs: number; uptimeSeconds: number; systems: Record<string, Part> };
+
 type LiveResponse = {
   now: number;
   events: LiveEvent[];
   online: OnlineUser[];
   listeningNow: number;
+  systems?: Systems;
   problems: string[];
 };
+
+// The parts an answer depends on, in the order a question uses them, named for what they do.
+const PARTS: Array<[string, string]> = [
+  ["answer_model", "Answers"],
+  ["screen_model", "Screen reading"],
+  ["database", "Accounts and credits"],
+  ["speech", "Speech"],
+  ["speech_backup", "Speech backup"],
+];
+
+/** Awake only when every part answered recently and quickly; slow when one is late; down when one fails or the check itself has stopped. */
+export function overallState(systems: Systems | undefined): PartState | "unknown" {
+  if (!systems) return "unknown";
+  if (!systems.reachable) return "down";
+  if (systems.roundAgeMs < 0 || systems.roundAgeMs > 120_000) return "down";   // the keep-warm job has stopped
+  const states = PARTS.map(([key]) => systems.systems[key]?.state ?? "starting");
+  if (states.includes("down")) return "down";
+  if (states.includes("slow")) return "slow";
+  if (states.includes("starting")) return "starting";
+  return "awake";
+}
 
 const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: LucideIcon }> = {
   answer:   { label: "Answer",       tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             Icon: MessageSquare },
@@ -81,10 +109,68 @@ function Chip({ label, value, tone = "plain", sub }: {
   );
 }
 
+const STATE_LOOK: Record<PartState | "unknown", { dot: string; label: string; text: string }> = {
+  awake:    { dot: "bg-emerald-400", label: "Awake",     text: "text-emerald-300" },
+  slow:     { dot: "bg-amber-400",   label: "Slow",      text: "text-amber-300" },
+  down:     { dot: "bg-rose-500",    label: "Down",      text: "text-rose-300" },
+  starting: { dot: "bg-zinc-500",    label: "Starting",  text: "text-zinc-400" },
+  unknown:  { dot: "bg-zinc-600",    label: "Checking",  text: "text-zinc-400" },
+};
+
+/** One line that says whether the product is awake, and what each part took the last time it was checked. */
+function SystemsStrip({ systems }: { systems: Systems | undefined }) {
+  const overall = overallState(systems);
+  const look = STATE_LOOK[overall];
+  const ok = systems && systems.reachable ? systems : null;
+  return (
+    <div className="mb-4 rounded-lg border border-white/10 bg-black/20 px-3 py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${look.dot}`} />
+          <span className={look.text}>{look.label}</span>
+        </span>
+        <span className="text-[11px] text-zinc-500">
+          {overall === "awake" ? "Everything an answer needs is ready."
+            : overall === "slow" ? "Working, but something is answering late."
+            : overall === "down" ? (systems && !systems.reachable ? "The server is not answering." : "Something an answer needs is not working.")
+            : "Waiting for the first check."}
+          {ok ? ` Checked ${Math.max(0, Math.round(ok.roundAgeMs / 1000))} s ago. Up ${fmtUptime(ok.uptimeSeconds)}.` : ""}
+        </span>
+      </div>
+      <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
+        {PARTS.map(([key, label]) => {
+          const part = ok?.systems[key];
+          const state: PartState | "unknown" = part ? part.state : ok ? "starting" : "unknown";
+          const l = STATE_LOOK[state];
+          return (
+            <li key={key} className="min-w-0" title={part?.note || undefined}>
+              <div className="flex items-center gap-2 text-xs text-zinc-300">
+                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${l.dot}`} />
+                <span className="truncate">{label}</span>
+              </div>
+              <div className="ml-4 text-[10px] text-zinc-600">
+                {part && part.state !== "starting" ? `${l.label}${part.ms ? `, ${part.ms} ms` : ""}` : l.label}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function fmtUptime(seconds: number): string {
+  if (seconds < 120) return `${seconds} s`;
+  if (seconds < 7_200) return `${Math.round(seconds / 60)} min`;
+  if (seconds < 172_800) return `${Math.round(seconds / 3_600)} h`;
+  return `${Math.round(seconds / 86_400)} days`;
+}
+
 export default function LivePanel({ getToken }: { getToken?: () => Promise<string | null> } = {}) {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [online, setOnline] = useState<OnlineUser[]>([]);
   const [listeningNow, setListeningNow] = useState(0);
+  const [systems, setSystems] = useState<Systems | undefined>(undefined);
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
@@ -126,6 +212,7 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
             setEvents((held) => mergeEvents(held, Array.isArray(data.events) ? data.events : []));
             setOnline(Array.isArray(data.online) ? data.online : []);
             setListeningNow(Number(data.listeningNow) || 0);
+            setSystems(data.systems);
             setProblems(Array.isArray(data.problems) ? data.problems : []);
             setError(null);
             setLastOk(Date.now());
@@ -195,6 +282,8 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
           Not available right now: {problems.join(", ")}. Everything else is live.
         </div>
       ) : null}
+
+      <SystemsStrip systems={systems} />
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Chip label="Online now" value={online.length >= 40 ? "40+" : online.length} tone={online.length > 0 ? "good" : "plain"} sub="apps open" />
