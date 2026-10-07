@@ -28,7 +28,7 @@ const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
 // "latest" because a fresh unsigned or barely-reputable build could
 // otherwise start showing the warning again without anyone deciding that.
 const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.30/Replysis-win-Setup.exe";
-const MAC_DOWNLOAD     = "https://github.com/moto123a/interview-copilot-mac/releases/latest/download/InterviewCopilot-mac.dmg";
+const MAC_DOWNLOAD     = "https://github.com/drBindu/replysis-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
  * Reading the query string opts a component out of static rendering, so it is
