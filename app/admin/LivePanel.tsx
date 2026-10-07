@@ -50,6 +50,7 @@ const PARTS: Array<[string, string]> = [
   ["database", "Accounts and credits"],
   ["speech", "Speech"],
   ["speech_backup", "Speech backup"],
+  ["website", "Website"],
 ];
 
 /** Awake only when every part answered recently and quickly; slow when one is late; down when one fails or the check itself has stopped. */
@@ -137,7 +138,7 @@ function SystemsStrip({ systems }: { systems: Systems | undefined }) {
           {ok ? ` Checked ${Math.max(0, Math.round(ok.roundAgeMs / 1000))} s ago. Up ${fmtUptime(ok.uptimeSeconds)}.` : ""}
         </span>
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
+      <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
         {PARTS.map(([key, label]) => {
           const part = ok?.systems[key];
           const state: PartState | "unknown" = part ? part.state : ok ? "starting" : "unknown";
