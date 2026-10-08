@@ -342,7 +342,27 @@ type LiveEvent = {
   who: string | null;
   detail: string;
   credits?: number;
+  app?: "windows" | "mac";
 };
+
+// An app tells the server who it is (platform and version) whenever it makes an account call, and the server writes that down at
+// most every ten minutes. So an app that is open stamps itself well inside this window, and a stamp older than it is not "open now".
+const APP_SEEN_WINDOW_MS = 30 * 60_000;
+
+/**
+ * Which app a person has open: "windows" or "mac" from the app's own stamp; "app" for an app too old to say (it reports listening, which only the
+ * apps do); otherwise "web". Presence alone cannot tell, because the website and the apps write the same heartbeat.
+ */
+function appOf(d: Record<string, unknown>, now: number): { app: "windows" | "mac" | "app" | "web"; version: string } {
+  const seenAt = anyMs(d.lastAppSeenAt);
+  const platform = d.lastPlatform;
+  if ((platform === "windows" || platform === "mac") && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) {
+    return { app: platform, version: typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "" };
+  }
+  const listeningAt = anyMs(d.lastListeningAt);
+  if (listeningAt && now - listeningAt <= APP_SEEN_WINDOW_MS) return { app: "app", version: "" };
+  return { app: "web", version: "" };
+}
 
 function anyMs(value: unknown): number | null {
   if (!value) return null;
@@ -422,6 +442,7 @@ async function liveView(db: Firestore, sinceMs: number) {
       id: `u:${doc.id}`,
       kind: credits < 0 ? "refund" : action === "screen" ? "screen" : action === "answer" ? "answer" : "resume",
       at, who, detail: model, credits,
+      app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
     });
   }
 
@@ -462,12 +483,15 @@ async function liveView(db: Firestore, sinceMs: number) {
   const online = (onlineSnap?.docs ?? []).map((doc) => {
     const d = doc.data();
     const lastListening = anyMs(d.lastListeningAt);
+    const which = appOf(d, now);
     return {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
       plan: typeof d.plan === "string" ? d.plan : "free",
       lastActive: anyMs(d.lastActive),
       listening: lastListening !== null && lastListening >= activeSince.getTime(),
+      app: which.app,
+      version: which.version,
     };
   });
 

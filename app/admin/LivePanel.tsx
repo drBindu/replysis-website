@@ -21,11 +21,15 @@ export type LiveEvent = {
   who: string | null;
   detail: string;
   credits?: number;
+  app?: "windows" | "mac";
 };
+
+type AppKind = "windows" | "mac" | "app" | "web";
 
 type OnlineUser = {
   id: string; email: string | null; plan: string;
   lastActive: number | null; listening: boolean;
+  app: AppKind; version: string;
 };
 
 type PartState = "awake" | "slow" | "down" | "starting";
@@ -64,6 +68,23 @@ export function overallState(systems: Systems | undefined): PartState | "unknown
   if (states.includes("starting")) return "starting";
   return "awake";
 }
+
+// Which app a person has open. Colour is only a hint; the word is always there.
+const APP_LOOK: Record<AppKind, { label: string; tone: string }> = {
+  windows: { label: "Windows",            tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+  mac:     { label: "Mac",                tone: "border-violet-500/30 bg-violet-500/10 text-violet-300" },
+  app:     { label: "App, older version", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
+  web:     { label: "Website",            tone: "border-white/10 bg-white/5 text-zinc-400" },
+};
+
+type Filter = "all" | "answers" | "screens" | "people" | "problems";
+const FILTERS: Array<[Filter, string, (e: LiveEvent) => boolean]> = [
+  ["all",      "Everything",   () => true],
+  ["answers",  "Answers",      (e) => e.kind === "answer"],
+  ["screens",  "Screen reads", (e) => e.kind === "screen"],
+  ["people",   "People",       (e) => e.kind === "signup" || e.kind === "download"],
+  ["problems", "Problems",     (e) => e.kind === "error" || e.kind === "refund"],
+];
 
 const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: LucideIcon }> = {
   answer:   { label: "Answer",       tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             Icon: MessageSquare },
@@ -177,6 +198,7 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
   const [paused, setPaused] = useState(false);
   const [lastOk, setLastOk] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [filter, setFilter] = useState<Filter>("all");
 
   const sinceRef = useRef<number>(Date.now() - FIRST_LOOK_BACK_MS);
   const pausedRef = useRef(false);
@@ -247,6 +269,24 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
     };
   }, [events, now]);
 
+  // Listening first, then whoever was seen most recently.
+  const people = useMemo(
+    () => [...online].sort((a, b) => Number(b.listening) - Number(a.listening) || (b.lastActive ?? 0) - (a.lastActive ?? 0)),
+    [online],
+  );
+  const byApp = useMemo(() => {
+    const n = { windows: 0, mac: 0, app: 0, web: 0 } as Record<AppKind, number>;
+    for (const u of online) n[u.app] += 1;
+    return n;
+  }, [online]);
+  const appSummary = (["windows", "mac", "app", "web"] as AppKind[])
+    .filter((k) => byApp[k] > 0)
+    .map((k) => `${byApp[k]} ${k === "app" ? "older app" : APP_LOOK[k].label}`)
+    .join(", ");
+
+  const activeFilter = FILTERS.find(([key]) => key === filter) ?? FILTERS[0];
+  const shown = useMemo(() => events.filter(activeFilter[2]), [events, activeFilter]);
+
   const live = !paused && !error && lastOk !== null && now - lastOk < POLL_MS * 3;
 
   return (
@@ -287,7 +327,7 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
       <SystemsStrip systems={systems} />
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Chip label="Online now" value={online.length >= 40 ? "40+" : online.length} tone={online.length > 0 ? "good" : "plain"} sub="apps open" />
+        <Chip label="People here" value={online.length >= 40 ? "40+" : online.length} tone={online.length > 0 ? "good" : "plain"} sub={appSummary || "nobody right now"} />
         <Chip label="Listening" value={listeningNow} tone={listeningNow > 0 ? "good" : "plain"} sub="mic live" />
         <Chip label="Answers" value={recent.answers} sub="last 5 min" />
         <Chip label="Screen reads" value={recent.screens} sub="last 5 min" />
@@ -295,42 +335,63 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
         <Chip label="App problems" value={recent.errors} tone={recent.errors > 0 ? "bad" : "plain"} sub="last 5 min" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-1">
-          <div className="border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            Who is here
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Who is here</span>
+            <span className="normal-case tracking-normal text-zinc-600">{online.length} open</span>
           </div>
-          <ul className="max-h-96 divide-y divide-white/5 overflow-y-auto">
-            {online.length === 0 ? (
-              <li className="px-3 py-6 text-center text-[11px] text-zinc-600">Nobody has the app open right now.</li>
-            ) : online.map((u) => (
-              <li key={u.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                <div className="min-w-0">
-                  <div className="truncate text-xs text-zinc-200">{u.email ?? u.id.slice(0, 8)}</div>
-                  <div className="text-[10px] text-zinc-600">{u.plan}, {ago(u.lastActive, now)}</div>
-                </div>
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                  u.listening
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-zinc-400"}`}>
-                  {u.listening ? "Listening" : "Open"}
-                </span>
-              </li>
-            ))}
+          <ul className="max-h-[28rem] divide-y divide-white/5 overflow-y-auto">
+            {people.length === 0 ? (
+              <li className="px-3 py-6 text-center text-[11px] text-zinc-600">Nobody has the app or the website open right now.</li>
+            ) : people.map((u) => {
+              const look = APP_LOOK[u.app];
+              return (
+                <li key={u.id} className="px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-xs text-zinc-200">{u.email ?? u.id.slice(0, 8)}</span>
+                    <span className={`shrink-0 text-[10px] font-medium ${u.listening ? "text-emerald-300" : "text-zinc-500"}`}>
+                      {u.listening ? "Listening" : "Open"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${look.tone}`}>
+                      {look.label}{u.version ? ` ${u.version}` : ""}
+                    </span>
+                    <span className="text-[10px] text-zinc-600">{u.plan}, seen {ago(u.lastActive, now)}</span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
-        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-            <span className="flex items-center gap-1.5"><Activity size={11} /> What just happened</span>
-            <span className="normal-case tracking-normal text-zinc-600">{events.length} in view</span>
+        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <Activity size={11} /> What just happened
+            </span>
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Filter what just happened">
+              {FILTERS.map(([key, label, test]) => {
+                const count = events.filter(test).length;
+                return (
+                  <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}
+                    className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
+                      filter === key ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
+                    {label}{count > 0 ? ` ${count}` : ""}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <ul className="max-h-96 divide-y divide-white/5 overflow-y-auto">
-            {events.length === 0 ? (
+          <ul className="max-h-[28rem] divide-y divide-white/5 overflow-y-auto">
+            {shown.length === 0 ? (
               <li className="px-3 py-8 text-center text-[11px] text-zinc-600">
-                Nothing in the last 30 minutes. New activity appears here the moment it happens.
+                {events.length === 0
+                  ? "Nothing in the last 30 minutes. New activity appears here the moment it happens."
+                  : `Nothing under ${activeFilter[1]} yet.`}
               </li>
-            ) : events.map((e) => {
+            ) : shown.map((e) => {
               const k = KIND[e.kind];
               const fresh = now - e.at < FRESH_MS;
               return (
@@ -341,7 +402,8 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                   </span>
                   <span className="min-w-0 basis-full truncate text-xs text-zinc-300 sm:flex-1 sm:basis-0">
                     {e.who ? <span className="text-zinc-200">{e.who}</span> : null}
-                    {e.detail ? <span className={`text-zinc-500 ${e.who ? "ml-2" : ""}`}>{e.detail}</span> : null}
+                    {e.app ? <span className="ml-2 text-[10px] text-zinc-500">{APP_LOOK[e.app].label}</span> : null}
+                    {e.detail ? <span className="ml-2 text-zinc-500">{e.detail}</span> : null}
                   </span>
                   {typeof e.credits === "number" && e.credits !== 0 ? (
                     <span className={`shrink-0 text-[11px] tabular-nums ${e.credits < 0 ? "text-amber-300" : "text-zinc-500"}`}>
