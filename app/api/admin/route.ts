@@ -346,22 +346,39 @@ type LiveEvent = {
 };
 
 // An app tells the server who it is (platform and version) whenever it makes an account call, and the server writes that down at
-// most every ten minutes. So an app that is open stamps itself well inside this window, and a stamp older than it is not "open now".
+// most every ten minutes. Only builds that predate the once-a-minute "I am open" ping are judged by it, so it keeps a long window.
 const APP_SEEN_WINDOW_MS = 30 * 60_000;
+// An app or an open website tab pings once a minute; a surface that missed two pings in a row has been closed or put away.
+const PRESENCE_WINDOW_MS = 150_000;
+
+type Surface = { app: "windows" | "mac" | "app" | "web"; version: string };
 
 /**
- * Which app a person has open: "windows" or "mac" from the app's own stamp; "app" for an app too old to say (it reports listening, which only the
- * apps do); otherwise "web". Presence alone cannot tell, because the website and the apps write the same heartbeat.
+ * Where a person is open right now, as a list, because one person can have the website and an app open together.
+ *
+ * Every surface writes the same lastActive, which says somebody is here but not where. So each one also pings the server, which
+ * writes lastAppAt (an app: the platform and version come from its own headers) or lastWebAt (the website). Those two are what is
+ * read first, and a surface that stopped pinging ages out by itself, which is how a closed app stops being shown.
+ *
+ * Only when neither has pinged lately (an app build from before the ping, or a person who has just left) does it fall back to the
+ * older labels: the app's own stamp, then listening, which only apps do, then the website.
  */
-function appOf(d: Record<string, unknown>, now: number): { app: "windows" | "mac" | "app" | "web"; version: string } {
-  const seenAt = anyMs(d.lastAppSeenAt);
+function surfacesOf(d: Record<string, unknown>, now: number): Surface[] {
+  const out: Surface[] = [];
+  const version = typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "";
   const platform = d.lastPlatform;
-  if ((platform === "windows" || platform === "mac") && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) {
-    return { app: platform, version: typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "" };
-  }
+
+  const appAt = anyMs(d.lastAppAt);
+  if (appAt && now - appAt <= PRESENCE_WINDOW_MS && (platform === "windows" || platform === "mac")) out.push({ app: platform, version });
+  const webAt = anyMs(d.lastWebAt);
+  if (webAt && now - webAt <= PRESENCE_WINDOW_MS) out.push({ app: "web", version: "" });
+  if (out.length > 0) return out;
+
+  const seenAt = anyMs(d.lastAppSeenAt);
+  if ((platform === "windows" || platform === "mac") && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) return [{ app: platform, version }];
   const listeningAt = anyMs(d.lastListeningAt);
-  if (listeningAt && now - listeningAt <= APP_SEEN_WINDOW_MS) return { app: "app", version: "" };
-  return { app: "web", version: "" };
+  if (listeningAt && now - listeningAt <= APP_SEEN_WINDOW_MS) return [{ app: "app", version: "" }];
+  return [{ app: "web", version: "" }];
 }
 
 function anyMs(value: unknown): number | null {
@@ -483,15 +500,14 @@ async function liveView(db: Firestore, sinceMs: number) {
   const online = (onlineSnap?.docs ?? []).map((doc) => {
     const d = doc.data();
     const lastListening = anyMs(d.lastListeningAt);
-    const which = appOf(d, now);
+    const where = surfacesOf(d, now);
     return {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
       plan: typeof d.plan === "string" ? d.plan : "free",
       lastActive: anyMs(d.lastActive),
       listening: lastListening !== null && lastListening >= activeSince.getTime(),
-      app: which.app,
-      version: which.version,
+      where,
     };
   });
 

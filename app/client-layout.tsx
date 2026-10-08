@@ -12,6 +12,8 @@ import { auth, db } from "./firebaseConfig";
 import { doc, updateDoc, serverTimestamp, arrayUnion, increment } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
+const PRESENCE_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -33,8 +35,17 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       const userRef = doc(db, "users", user.uid);
 
+      // Say to our server that this tab is open and in front of somebody. The apps and the website all write lastActive, which says
+      // somebody is here but not where, so the server writes lastWebAt for the website and the admin page can tell them apart.
+      const pingPresence = () => {
+        if (!PRESENCE_BASE) return;
+        user.getIdToken()
+          .then((token) => fetch(`${PRESENCE_BASE}/api/v1/presence`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, keepalive: true }))
+          .catch(() => {});
+      };
+
       // Mark online immediately
-      const markActive = () => updateDoc(userRef, { lastActive: serverTimestamp() }).catch(() => {});
+      const markActive = () => { updateDoc(userRef, { lastActive: serverTimestamp() }).catch(() => {}); pingPresence(); };
       markActive();
 
       // Heartbeat: every 60s while the tab is visible, refresh lastActive and
@@ -46,6 +57,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             lastActive: serverTimestamp(),
             totalMinutesSpent: increment(1),
           }).catch(() => {});
+          pingPresence();
         }
       }, 60000);
 

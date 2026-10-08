@@ -29,7 +29,7 @@ type AppKind = "windows" | "mac" | "app" | "web";
 type OnlineUser = {
   id: string; email: string | null; plan: string;
   lastActive: number | null; listening: boolean;
-  app: AppKind; version: string;
+  where: Array<{ app: AppKind; version: string }>;
 };
 
 type PartState = "awake" | "slow" | "down" | "starting";
@@ -276,7 +276,7 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
   );
   const byApp = useMemo(() => {
     const n = { windows: 0, mac: 0, app: 0, web: 0 } as Record<AppKind, number>;
-    for (const u of online) n[u.app] += 1;
+    for (const u of online) for (const w of u.where) n[w.app] += 1;
     return n;
   }, [online]);
   const appSummary = (["windows", "mac", "app", "web"] as AppKind[])
@@ -345,7 +345,6 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
             {people.length === 0 ? (
               <li className="px-3 py-6 text-center text-[11px] text-zinc-600">Nobody has the app or the website open right now.</li>
             ) : people.map((u) => {
-              const look = APP_LOOK[u.app];
               return (
                 <li key={u.id} className="px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
@@ -355,9 +354,11 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                     </span>
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${look.tone}`}>
-                      {look.label}{u.version ? ` ${u.version}` : ""}
-                    </span>
+                    {u.where.map((w) => (
+                      <span key={w.app} className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${APP_LOOK[w.app].tone}`}>
+                        {APP_LOOK[w.app].label}{w.version ? ` ${w.version}` : ""}
+                      </span>
+                    ))}
                     <span className="text-[10px] text-zinc-600">{u.plan}, seen {ago(u.lastActive, now)}</span>
                   </div>
                 </li>
