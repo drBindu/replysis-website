@@ -16,7 +16,7 @@ const FRESH_MS = 8_000;
 
 export type LiveEvent = {
   id: string;
-  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error";
+  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error" | "alert";
   at: number;
   who: string | null;
   detail: string;
@@ -83,7 +83,7 @@ const FILTERS: Array<[Filter, string, (e: LiveEvent) => boolean]> = [
   ["answers",  "Answers",      (e) => e.kind === "answer"],
   ["screens",  "Screen reads", (e) => e.kind === "screen"],
   ["people",   "People",       (e) => e.kind === "signup" || e.kind === "download"],
-  ["problems", "Problems",     (e) => e.kind === "error" || e.kind === "refund"],
+  ["problems", "Problems",     (e) => e.kind === "error" || e.kind === "refund" || e.kind === "alert"],
 ];
 
 const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: LucideIcon }> = {
@@ -94,6 +94,7 @@ const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: Lucid
   signup:   { label: "New account",  tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: UserPlus },
   download: { label: "Download",     tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: Download },
   error:    { label: "App problem",  tone: "border-rose-500/30 bg-rose-500/10 text-rose-300",          Icon: AlertTriangle },
+  alert:    { label: "Alert",        tone: "border-rose-500/30 bg-rose-500/10 text-rose-300",          Icon: AlertTriangle },
 };
 
 /** Merges new rows into what is held: no row twice, newest first, capped. Pure so it can be checked on its own. */
@@ -199,6 +200,8 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
   const [lastOk, setLastOk] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [filter, setFilter] = useState<Filter>("all");
+  const [testNote, setTestNote] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const sinceRef = useRef<number>(Date.now() - FIRST_LOOK_BACK_MS);
   const pausedRef = useRef(false);
@@ -289,6 +292,26 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
 
   const live = !paused && !error && lastOk !== null && now - lastOk < POLL_MS * 3;
 
+  // Asks the server to email the owner one test message, so "alerts reach me" is something that was seen, not assumed.
+  async function sendTestAlert() {
+    setTesting(true);
+    setTestNote(null);
+    try {
+      const token = getToken ? await getToken() : (await auth.currentUser?.getIdToken()) ?? null;
+      const res = await fetch("/api/v1/alerts/test", { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (res.status === 401 || res.status === 403) { setTestNote("Only the owner account can send a test alert. Sign in with it and try again."); return; }
+      if (!res.ok) { setTestNote(`The server did not accept it (${res.status}). Try again in a minute.`); return; }
+      const out = await res.json() as { configured?: boolean; emailed?: boolean; to?: string };
+      if (!out.configured) setTestNote("Not set up yet: the server has no email key. Alerts are still recorded here, but nothing is emailed until it is added.");
+      else if (!out.emailed) setTestNote("The mail service did not take it. The server log says why.");
+      else setTestNote(`Sent to ${out.to}. If it does not arrive in a minute, look in spam.`);
+    } catch {
+      setTestNote("Could not reach the server. Try again.");
+    } finally {
+      setTesting(false);
+    }
+  }
+
   return (
     <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -305,13 +328,25 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
             {lastOk ? ` Last update ${ago(lastOk, now)}.` : ""}
           </p>
         </div>
-        <button
-          onClick={() => setPaused((p) => !p)}
-          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white">
-          {paused ? <Play size={12} /> : <Pause size={12} />}
-          {paused ? "Resume" : "Pause"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={sendTestAlert}
+            disabled={testing}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white disabled:opacity-50">
+            <AlertTriangle size={12} />
+            {testing ? "Sending" : "Send me a test alert"}
+          </button>
+          <button
+            onClick={() => setPaused((p) => !p)}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white">
+            {paused ? <Play size={12} /> : <Pause size={12} />}
+            {paused ? "Resume" : "Pause"}
+          </button>
+        </div>
       </div>
+      {testNote ? (
+        <div role="status" className="mb-3 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-zinc-300">{testNote}</div>
+      ) : null}
 
       {error ? (
         <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">

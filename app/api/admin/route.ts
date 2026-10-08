@@ -337,7 +337,7 @@ const LIVE_MAX_BACK_MS = 6 * 3_600_000;
 
 type LiveEvent = {
   id: string;
-  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error";
+  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error" | "alert";
   at: number;
   who: string | null;
   detail: string;
@@ -431,12 +431,13 @@ async function liveView(db: Firestore, sinceMs: number) {
     }
   }
 
-  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, alertSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
     systemsView(),
     safe("usage", db.collection("usage_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(150).get()),
     safe("signups", users.where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("downloads", db.collection("app_downloads").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("errors", db.collection("client_errors").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
+    safe("alerts", db.collection("alert_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(30).get()),
     safe("online", users.where("lastActive", ">=", activeSince).orderBy("lastActive", "desc").limit(40).get()),
     safe("listening", users.where("lastListeningAt", ">=", activeSince).count().get()),
     safe("guests", db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get()),
@@ -492,6 +493,18 @@ async function liveView(db: Firestore, sinceMs: number) {
     events.push({
       id: `e:${doc.id}`, kind: "error", at, who: null,
       detail: `${typeof d.version === "string" ? `v${d.version} ` : ""}${bits}`.slice(0, 220),
+    });
+  }
+
+  // What the server raised on its own (a part went down, answers started failing) and whether an email went out about it.
+  for (const doc of alertSnap?.docs ?? []) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    const subject = typeof d.subject === "string" ? d.subject.replace(/^Replysis:\s*/, "") : "Alert";
+    events.push({
+      id: `a:${doc.id}`, kind: "alert", at, who: null,
+      detail: `${subject}${d.emailed ? ", emailed" : ", not emailed"}`.slice(0, 220),
     });
   }
 
