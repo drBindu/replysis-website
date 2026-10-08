@@ -37,8 +37,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       // Say to our server that this tab is open and in front of somebody. The apps and the website all write lastActive, which says
       // somebody is here but not where, so the server writes lastWebAt for the website and the admin page can tell them apart.
+      // At most one every 20 s per tab, because coming back to a tab pings too and switching tabs quickly should not add up.
+      let lastPingAt = 0;
       const pingPresence = () => {
-        if (!PRESENCE_BASE) return;
+        if (!PRESENCE_BASE || Date.now() - lastPingAt < 20_000) return;
+        lastPingAt = Date.now();
         user.getIdToken()
           .then((token) => fetch(`${PRESENCE_BASE}/api/v1/presence`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, keepalive: true }))
           .catch(() => {});
