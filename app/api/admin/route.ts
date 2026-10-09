@@ -349,7 +349,11 @@ type LiveEvent = {
 // most every ten minutes. Only builds that predate the once-a-minute "I am open" ping are judged by it, so it keeps a long window.
 const APP_SEEN_WINDOW_MS = 30 * 60_000;
 // An app or an open website tab pings once a minute; a surface that missed two pings in a row has been closed or put away.
-const PRESENCE_WINDOW_MS = 150_000;
+// A clean close is told to the server at once and ends it there and then. A crash or a closed laptop says nothing, so a surface
+// that has missed two pings in a row (they come every minute) is taken as gone.
+const PRESENCE_WINDOW_MS = 120_000;
+// How far lastActive may run ahead of the last ping before something other than a pinging surface must be writing it.
+const UNEXPLAINED_GAP_MS = 90_000;
 
 type Surface = { app: "windows" | "mac" | "app" | "web"; version: string };
 
@@ -357,11 +361,12 @@ type Surface = { app: "windows" | "mac" | "app" | "web"; version: string };
  * Where a person is open right now, as a list, because one person can have the website and an app open together.
  *
  * Every surface writes the same lastActive, which says somebody is here but not where. So each one also pings the server, which
- * writes lastAppAt (an app: the platform and version come from its own headers) or lastWebAt (the website). Those two are what is
- * read first, and a surface that stopped pinging ages out by itself, which is how a closed app stops being shown.
+ * writes lastAppAt (an app: the platform and version come from its own headers) or lastWebAt (the website). A surface that is
+ * closed on purpose says so (lastAppLeftAt, lastWebLeftAt) and is gone at once; one that just stops pinging ages out.
  *
- * Only when neither has pinged lately (an app build from before the ping, or a person who has just left) does it fall back to the
- * older labels: the app's own stamp, then listening, which only apps do, then the website.
+ * Only when nothing is pinging AND the recent activity is not explained by a surface that was (an app build from before the ping,
+ * a stale browser tab) does it fall back to the older labels: the app's own stamp, then listening, which only apps do, then the
+ * website. An empty list means the person has gone and the row is dropped.
  */
 function surfacesOf(d: Record<string, unknown>, now: number): Surface[] {
   const out: Surface[] = [];
@@ -369,10 +374,16 @@ function surfacesOf(d: Record<string, unknown>, now: number): Surface[] {
   const platform = d.lastPlatform;
 
   const appAt = anyMs(d.lastAppAt);
-  if (appAt && now - appAt <= PRESENCE_WINDOW_MS && (platform === "windows" || platform === "mac")) out.push({ app: platform, version });
   const webAt = anyMs(d.lastWebAt);
-  if (webAt && now - webAt <= PRESENCE_WINDOW_MS) out.push({ app: "web", version: "" });
+  const here = (at: number | null, left: number | null) => !!at && now - at <= PRESENCE_WINDOW_MS && !(left && left >= at);
+
+  if (here(appAt, anyMs(d.lastAppLeftAt)) && (platform === "windows" || platform === "mac")) out.push({ app: platform, version });
+  if (here(webAt, anyMs(d.lastWebLeftAt))) out.push({ app: "web", version: "" });
   if (out.length > 0) return out;
+
+  const lastActive = anyMs(d.lastActive) ?? 0;
+  const explainedUntil = Math.max(appAt ?? 0, webAt ?? 0);
+  if (explainedUntil > 0 && lastActive - explainedUntil <= UNEXPLAINED_GAP_MS) return [];
 
   const seenAt = anyMs(d.lastAppSeenAt);
   if ((platform === "windows" || platform === "mac") && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) return [{ app: platform, version }];
@@ -431,13 +442,14 @@ async function liveView(db: Firestore, sinceMs: number) {
     }
   }
 
-  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, alertSnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, alertSnap, activitySnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
     systemsView(),
     safe("usage", db.collection("usage_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(150).get()),
     safe("signups", users.where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("downloads", db.collection("app_downloads").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("errors", db.collection("client_errors").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
     safe("alerts", db.collection("alert_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(30).get()),
+    safe("activity", db.collection("activity_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(40).get()),
     safe("online", users.where("lastActive", ">=", activeSince).orderBy("lastActive", "desc").limit(40).get()),
     safe("listening", users.where("lastListeningAt", ">=", activeSince).count().get()),
     safe("guests", db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get()),
@@ -508,27 +520,65 @@ async function liveView(db: Firestore, sinceMs: number) {
     });
   }
 
+  // What the server did for somebody that no billed answer records: a screen read prepared ahead of the question, an upload it
+  // had to turn away. Without these, using the app and getting a screen read left nothing on this page.
+  const activityDocs = activitySnap?.docs ?? [];
+  const activityIds = Array.from(new Set(
+    activityDocs.map((x) => x.data()).filter((x) => !x.guest && typeof x.identityId === "string" && x.identityId).map((x) => x.identityId as string),
+  )).slice(0, 20);
+  const emailOf = new Map<string, string>();
+  if (activityIds.length > 0) {
+    try {
+      const people = await db.getAll(...activityIds.map((uid) => users.doc(uid)));
+      for (const person of people) {
+        const email = person.data()?.email;
+        if (typeof email === "string") emailOf.set(person.id, email);
+      }
+    } catch {
+      // The label falls back to a short id.
+    }
+  }
+  for (const doc of activityDocs) {
+    const d = doc.data();
+    const at = anyMs(d.createdAt);
+    if (!at) continue;
+    const id = typeof d.identityId === "string" ? d.identityId : "";
+    const who = d.guest ? guestLabel(id) : emailOf.get(id) ?? (id ? id.slice(0, 8) : null);
+    const bad = d.kind === "rejected" || d.kind === "preread_failed";
+    events.push({
+      id: `p:${doc.id}`, kind: bad ? "error" : "screen", at, who,
+      detail: typeof d.detail === "string" ? d.detail.slice(0, 200) : "",
+      app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
+    });
+  }
+
   events.sort((a, b) => b.at - a.at);
 
   const online = (onlineSnap?.docs ?? []).map((doc) => {
     const d = doc.data();
     const lastListening = anyMs(d.lastListeningAt);
+    const appLeft = anyMs(d.lastAppLeftAt);
     const where = surfacesOf(d, now);
+    const appOpen = where.some((w) => w.app === "windows" || w.app === "mac");
+    // Listening is what the app says right now (it tells the server the moment a session starts or stops), or a minute of audio
+    // reported lately, unless the app has been closed since.
+    const reportedLately = lastListening !== null && lastListening >= activeSince.getTime() && !(appLeft && appLeft >= lastListening);
     return {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
       plan: typeof d.plan === "string" ? d.plan : "free",
       lastActive: anyMs(d.lastActive),
-      listening: lastListening !== null && lastListening >= activeSince.getTime(),
+      listening: (appOpen && d.appListening === true) || reportedLately,
       where,
     };
-  });
+  }).filter((u) => u.where.length > 0);
 
   return {
     now,
     events: events.slice(0, 200),
     online,
-    listeningNow: (listeningUsers?.data().count ?? 0) + (listeningGuests?.data().count ?? 0),
+    // Whichever is higher: the people the page can see listening now, or the count of recent audio reports (which includes guests).
+    listeningNow: Math.max(online.filter((u) => u.listening).length, (listeningUsers?.data().count ?? 0) + (listeningGuests?.data().count ?? 0)),
     systems,
     problems,
   };

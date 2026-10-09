@@ -21,12 +21,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     let exitHandler: (() => void) | null = null;
     let heartbeat: ReturnType<typeof setInterval> | null = null;
     let visHandler: (() => void) | null = null;
+    let leaveHandler: (() => void) | null = null;
 
     // Clear any timers/listeners from a previous auth state (e.g. token refresh)
     const cleanupListeners = () => {
       if (heartbeat)   { clearInterval(heartbeat); heartbeat = null; }
       if (visHandler)  { document.removeEventListener("visibilitychange", visHandler); visHandler = null; }
       if (exitHandler) { window.removeEventListener("beforeunload", exitHandler); exitHandler = null; }
+      if (leaveHandler) { window.removeEventListener("pagehide", leaveHandler); leaveHandler = null; }
     };
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -39,13 +41,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       // somebody is here but not where, so the server writes lastWebAt for the website and the admin page can tell them apart.
       // At most one every 20 s per tab, because coming back to a tab pings too and switching tabs quickly should not add up.
       let lastPingAt = 0;
+      let presenceToken: string | null = null;
       const pingPresence = () => {
         if (!PRESENCE_BASE || Date.now() - lastPingAt < 20_000) return;
         lastPingAt = Date.now();
         user.getIdToken()
+          .then((token) => { presenceToken = token; return token; })
           .then((token) => fetch(`${PRESENCE_BASE}/api/v1/presence`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, keepalive: true }))
           .catch(() => {});
       };
+
+      // Closing the tab says so, so the admin page shows it gone at once and not two minutes later. A reload sends this and then pings
+      // again on the new page, which puts it straight back. The token is the one the last ping used, because nothing can be awaited here.
+      leaveHandler = () => {
+        if (!PRESENCE_BASE || !presenceToken) return;
+        try { fetch(`${PRESENCE_BASE}/api/v1/presence`, { method: "DELETE", headers: { Authorization: `Bearer ${presenceToken}` }, keepalive: true }).catch(() => {}); } catch { /* closing anyway */ }
+      };
+      window.addEventListener("pagehide", leaveHandler);
 
       // Mark online immediately
       const markActive = () => { updateDoc(userRef, { lastActive: serverTimestamp() }).catch(() => {}); pingPresence(); };
