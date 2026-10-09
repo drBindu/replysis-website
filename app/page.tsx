@@ -27,7 +27,7 @@ const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
 // alongside every new signed release: it stays pinned rather than tracking
 // "latest" because a fresh unsigned or barely-reputable build could
 // otherwise start showing the warning again without anyone deciding that.
-const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.30/Replysis-win-Setup.exe";
+const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.31/Replysis-win-Setup.exe";
 const MAC_DOWNLOAD     = "https://github.com/drBindu/replysis-mac/releases/latest/download/InterviewCopilot-mac.dmg";
 
 /**
