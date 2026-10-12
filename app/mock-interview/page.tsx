@@ -715,6 +715,8 @@ export default function MockInterviewPage() {
   const listeningMeterRef = useRef<number | null>(null);
   const listeningAuthTokenRef = useRef("");
   const mediaRecorderRef   = useRef<MediaRecorder | null>(null);
+  // The microphone, opened while the token is fetched and the socket connects, until a recorder takes it over.
+  const earlyMicRef        = useRef<Promise<MediaStream> | null>(null);
   const smStartedRef       = useRef(false);
   const answerRef          = useRef("");
   const isRecordingRef     = useRef(false);
@@ -839,7 +841,14 @@ export default function MockInterviewPage() {
     reportListeningMinutes(minutes);
   }, [reportListeningMinutes]);
 
+  const releaseEarlyMic = () => {
+    const early = earlyMicRef.current;
+    earlyMicRef.current = null;
+    if (early) void early.then(stream => stream.getTracks().forEach(t => t.stop())).catch(() => {});
+  };
+
   const stopRecording = useCallback(() => {
+    releaseEarlyMic();
     clearSilenceTimer();
     accountForListening();
     if (wsConnectTimeoutRef.current !== null) {
@@ -883,6 +892,11 @@ export default function MockInterviewPage() {
         return;
       }
       listeningAuthTokenRef.current = idToken;
+      // Start opening the microphone now, alongside the token and the connection, so capture begins the moment
+      // recognition does instead of after a second permission and device start.
+      const early = navigator.mediaDevices.getUserMedia({ audio: true });
+      early.catch(() => { /* reported where it is used */ });
+      earlyMicRef.current = early;
       const tokenRes = await fetch("/api/mock-interview/stt-token", {
         method: "GET",
         cache: "no-store",
@@ -900,18 +914,21 @@ export default function MockInterviewPage() {
             : tokenRes.status === 429
               ? "Too many connection attempts. Please wait a moment and try again."
             : LISTENING_UNAVAILABLE);
+        releaseEarlyMic();
         return;
       }
       const tokenData = await tokenRes.json();
       if (tokenData.error) {
         console.error("[Replysis] Mock interview token rejected");
         setRecordingError(LISTENING_UNAVAILABLE);
+        releaseEarlyMic();
         return;
       }
       const token = tokenData.token ?? tokenData.key ?? tokenData.jwt;
       if (!token) {
         console.error("[Replysis] Mock interview token response contained no credential");
         setRecordingError(LISTENING_UNAVAILABLE);
+        releaseEarlyMic();
         return;
       }
 
@@ -941,7 +958,8 @@ export default function MockInterviewPage() {
         ws.send(JSON.stringify({
           message: "StartRecognition",
           audio_format: { type: "file" },
-          transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true },
+          // max_delay 1: final text in about 1.3 s after the speaker stops. The default (4 s) measured 4.4 s.
+          transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true, max_delay: 1 },
         }));
       };
 
@@ -956,7 +974,8 @@ export default function MockInterviewPage() {
           wsConnectTimeoutRef.current = null;
           smStartedRef.current = true;
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await (earlyMicRef.current ?? navigator.mediaDevices.getUserMedia({ audio: true }));
+            earlyMicRef.current = null;
             const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
             mediaRecorderRef.current = recorder;
             recorder.ondataavailable = async (ev) => {
@@ -965,7 +984,7 @@ export default function MockInterviewPage() {
                 if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) ws.send(audio);
               }
             };
-            recorder.start(250);
+            recorder.start(100);
             recordingStartedAtRef.current = Date.now();
             listeningStartedAtRef.current = Date.now();
             listeningMeterRef.current = window.setInterval(() => {
@@ -1018,6 +1037,7 @@ export default function MockInterviewPage() {
         stopRecording();
       };
     } catch (err) {
+      releaseEarlyMic();
       console.error("[Replysis] Mock interview recording failed to start:", (err as Error)?.name ?? "Error");
       setRecordingError(
         (err as Error)?.name === "NotAllowedError"
@@ -2096,7 +2116,7 @@ export default function MockInterviewPage() {
                           <p style={{ fontSize: 13, color: T.text, lineHeight: 1.7, fontWeight: 450 }}>
                             {answer}
                             {partial && (
-                              <span style={{ color: T.accent, opacity: 0.5, animation: "pulse 1s infinite" }}> {partial}</span>
+                              <span style={{ color: T.accent, opacity: 0.9 }}> {partial}</span>
                             )}
                           </p>
                         ) : (
