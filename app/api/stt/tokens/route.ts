@@ -567,7 +567,7 @@ const QUESTION_BACKEND_BASE = (
 ).replace(/\/$/, "");
 
 type BackendQuestionResult =
-  | { kind: "ok"; questions: string[] }
+  | { kind: "ok"; data: Record<string, any> }
   // The backend answered and said no. It has already refunded when it charged.
   | { kind: "refused"; status: number; error: string; message: string; creditsRefunded: boolean }
   // Not deployed there yet, not configured, or not reachable. Nothing was charged.
@@ -575,13 +575,15 @@ type BackendQuestionResult =
   // We stopped waiting. The backend settles inside this wait, so this is rare; no promise is made about the charge.
   | { kind: "timeout" };
 
-async function generateQuestionsViaBackend(
+// `action` is the endpoint under /api/v1/questions: generate, feedback or script. Each is charged and refunded by the backend.
+async function callQuestionBackend(
+  action: "generate" | "feedback" | "script",
   idToken: string,
-  payload: { resume: string; jd: string; count: unknown; difficulty: unknown },
+  payload: Record<string, unknown>,
 ): Promise<BackendQuestionResult> {
   let res: Response;
   try {
-    res = await fetch(`${QUESTION_BACKEND_BASE}/api/v1/questions/generate`, {
+    res = await fetch(`${QUESTION_BACKEND_BASE}/api/v1/questions/${action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
       body: JSON.stringify(payload),
@@ -597,13 +599,10 @@ async function generateQuestionsViaBackend(
   try { data = await res.json(); } catch { data = null; }
 
   if (res.ok) {
-    const questions: string[] = Array.isArray(data?.questions)
-      ? data.questions.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
-      : [];
-    return questions.length > 0
-      ? { kind: "ok", questions }
+    return data && typeof data === "object" && !Array.isArray(data)
+      ? { kind: "ok", data }
       : { kind: "refused", status: 502, error: "bad_output", creditsRefunded: false,
-          message: "The question service returned an empty set. Please try again." };
+          message: "The service returned an empty result. Please try again." };
   }
 
   // Only the endpoint's own answers carry this shape. Anything else (a proxy page, a 404 from an older backend,
@@ -1073,19 +1072,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ totalExperience: result.totalExperience, summary: result.summary });
     }
 
-    // ── GENERATE QUESTIONS: the backend does the work and the charging ──
-    // Handled before the website's own credit check so a set is never charged twice. The branch after this one is
-    // kept only for a deployment that has its own model key and a backend that does not have the endpoint yet.
-    if (mode === "generate_questions") {
-      const viaBackend = await generateQuestionsViaBackend(idToken, {
-        resume: sanitizeText(resume),
-        jd: sanitizeText(jd),
-        count: (body as Record<string, unknown>).count ?? (body as Record<string, unknown>).num_questions,
-        difficulty: (body as Record<string, unknown>).difficulty,
-      });
+    // ── MOCK INTERVIEW AI: the backend does the work and the charging ──
+    // The question set, the coaching on an answer, and a better-answer script are written by the backend, which holds the
+    // model keys and owns the credit balance, and which charges once and refunds itself. Handled before the website's own
+    // credit check so nothing is charged twice. The branch after this one stays only for a deployment that has its own model
+    // key and a backend that does not have the endpoint yet.
+    const MOCK_BACKEND_ACTIONS: Record<string, "generate" | "feedback" | "script"> = {
+      generate_questions: "generate",
+      generate_feedback:  "feedback",
+      generate_script:    "script",
+    };
+    const mockAction = MOCK_BACKEND_ACTIONS[mode];
+    if (mockAction) {
+      const b = body as Record<string, unknown>;
+      const payload: Record<string, unknown> = mockAction === "generate"
+        ? { resume: sanitizeText(resume), jd: sanitizeText(jd), count: b.count ?? b.num_questions, difficulty: b.difficulty }
+        : { resume: sanitizeText(resume), jd: sanitizeText(jd), question: sanitizeText(question), answer: sanitizeText(answer) };
+      const viaBackend = await callQuestionBackend(mockAction, idToken, payload);
+      const what = mockAction === "generate" ? "your questions" : "your feedback";
       if (viaBackend.kind === "ok") {
-        await logUsageAndIncrement(userEmail || "Unknown", "Questions-backend", { mode: "generate_questions", transcript: "", duration: duration || 0 });
-        return NextResponse.json({ questions: viaBackend.questions });
+        await logUsageAndIncrement(userEmail || "Unknown", `Mock-${mockAction}-backend`, { mode, transcript: "", duration: duration || 0 });
+        if (mockAction === "generate") {
+          const qs = Array.isArray(viaBackend.data.questions) ? viaBackend.data.questions : [];
+          if (qs.length === 0) {
+            return NextResponse.json({
+              error: "bad_output",
+              message: "The service returned an empty set. Please try again.",
+              questions: [],
+              creditsRefunded: false,
+            }, { status: 502 });
+          }
+          return NextResponse.json({ questions: qs });
+        }
+        return NextResponse.json(viaBackend.data);
       }
       if (viaBackend.kind === "refused") {
         return NextResponse.json({
@@ -1098,7 +1117,7 @@ export async function POST(req: Request) {
       if (viaBackend.kind === "timeout") {
         return NextResponse.json({
           error: "question_service_timeout",
-          message: "Preparing your questions took too long. Please try again in a moment.",
+          message: `Preparing ${what} took too long. Please try again in a moment.`,
           questions: [],
           creditsRefunded: false,
         }, { status: 504 });
@@ -1106,7 +1125,7 @@ export async function POST(req: Request) {
       if (!siteHasOwnQuestionModel(selectedModel)) {
         return NextResponse.json({
           error: "question_service_unavailable",
-          message: "The question service could not be reached, so your questions were not prepared. You were not charged. Please try again in a minute.",
+          message: `The service could not be reached, so ${what} could not be prepared. You were not charged. Please try again in a minute.`,
           questions: [],
           creditsRefunded: false,
         }, { status: 503 });
