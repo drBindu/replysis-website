@@ -984,9 +984,22 @@ export default function MockInterviewPage() {
 
       const connect = (provider: "deepgram" | "speechmatics") => {
         let wsClosedPrematurely = false;
-        const ws = provider === "deepgram"
-          ? new WebSocket(deepgramUrl, ["bearer", deepgramToken as string])
-          : new WebSocket(`wss://${smHost}/v2/en?jwt=${token}`);
+        let ws: WebSocket;
+        try {
+          ws = provider === "deepgram"
+            ? new WebSocket(deepgramUrl, ["bearer", deepgramToken as string])
+            : new WebSocket(`wss://${smHost}/v2/en?jwt=${token}`);
+        } catch (constructErr) {
+          // Some browsers throw at once when a connection is refused (iPhone Safari does for a blocked address) instead of
+          // firing an error event, so the backup has to be started from here too.
+          console.error(`[Replysis] Mock interview could not open the ${provider} connection: ${(constructErr as Error)?.name ?? "Error"}`);
+          if (provider === "deepgram" && token && !fellBack) {
+            fellBack = true;
+            connect("speechmatics");
+            return;
+          }
+          throw constructErr;
+        }
         ws.binaryType = "arraybuffer";
         wsRef.current = ws;
         sttKindRef.current = provider;
