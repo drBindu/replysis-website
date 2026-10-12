@@ -19,6 +19,7 @@ import {
 import { useToast } from "../../components/feedback/Toast";
 import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics";
 import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
+import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -715,6 +716,10 @@ export default function MockInterviewPage() {
   const listeningMeterRef = useRef<number | null>(null);
   const listeningAuthTokenRef = useRef("");
   const mediaRecorderRef   = useRef<MediaRecorder | null>(null);
+  // Raw microphone capture, and the audio context it runs in. The context is created from a tap (Start session, Tap to
+  // Answer, Next Question) because iPhones only let audio run after one.
+  const pcmCaptureRef      = useRef<PcmCapture | null>(null);
+  const audioContextRef    = useRef<AudioContext | null>(null);
   // The microphone, opened while the token is fetched and the socket connects, until a recorder takes it over.
   const earlyMicRef        = useRef<Promise<MediaStream> | null>(null);
   const smStartedRef       = useRef(false);
@@ -861,6 +866,8 @@ export default function MockInterviewPage() {
     if (ws?.readyState === WebSocket.OPEN)
       ws.send(JSON.stringify({ message: "EndOfStream" }));
     ws?.close();
+    pcmCaptureRef.current?.stop();
+    pcmCaptureRef.current = null;
     const recorder = mediaRecorderRef.current;
     if (recorder?.state === "recording") recorder.stop();
     recorder?.stream?.getTracks().forEach(t => t.stop());
@@ -957,7 +964,7 @@ export default function MockInterviewPage() {
         if (wsRef.current !== ws) return;
         ws.send(JSON.stringify({
           message: "StartRecognition",
-          audio_format: { type: "file" },
+          audio_format: { type: "raw", encoding: "pcm_s16le", sample_rate: PCM_SAMPLE_RATE },
           // max_delay 1: final text in about 1.3 s after the speaker stops. The default (4 s) measured 4.4 s.
           transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true, max_delay: 1 },
         }));
@@ -976,15 +983,12 @@ export default function MockInterviewPage() {
           try {
             const stream = await (earlyMicRef.current ?? navigator.mediaDevices.getUserMedia({ audio: true }));
             earlyMicRef.current = null;
-            const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-            mediaRecorderRef.current = recorder;
-            recorder.ondataavailable = async (ev) => {
-              if (ev.data.size > 0 && wsRef.current === ws && ws.readyState === WebSocket.OPEN && smStartedRef.current) {
-                const audio = await ev.data.arrayBuffer();
-                if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) ws.send(audio);
-              }
-            };
-            recorder.start(100);
+            const context = audioContextRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)();
+            audioContextRef.current = context;
+            if (context.state === "suspended") { try { await context.resume(); } catch { /* resumed by the next tap */ } }
+            pcmCaptureRef.current = startPcmCapture(context, stream, (pcm) => {
+              if (wsRef.current === ws && ws.readyState === WebSocket.OPEN && smStartedRef.current) ws.send(pcm);
+            });
             recordingStartedAtRef.current = Date.now();
             listeningStartedAtRef.current = Date.now();
             listeningMeterRef.current = window.setInterval(() => {
@@ -1000,7 +1004,9 @@ export default function MockInterviewPage() {
             }, 5_000);
             isRecordingRef.current = true; setIsRecording(true);
           } catch (mediaErr) {
-            setRecordingError(MIC_BLOCKED);
+            const denied = ["NotAllowedError", "SecurityError", "PermissionDeniedError"].includes((mediaErr as Error)?.name);
+            console.error(`[Replysis] Mock interview could not start capture: ${(mediaErr as Error)?.name ?? "Error"}`);
+            setRecordingError(denied ? MIC_BLOCKED : LISTENING_UNAVAILABLE);
             stopRecording();
           }
         }
@@ -1127,6 +1133,7 @@ export default function MockInterviewPage() {
 
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
+    unlockAudio();
     const next = index + 1;
     if (next >= questions.length) { accountForListening(true); setPhase("summary"); return; }
     setIndex(next);
@@ -1166,7 +1173,19 @@ export default function MockInterviewPage() {
   };
 
   // ── Generate questions ─────────────────────────────────────
+  // iPhones only let audio run after a tap, so the context is made and resumed from the taps that lead to listening.
+  const unlockAudio = () => {
+    try {
+      if (!audioContextRef.current) {
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) audioContextRef.current = new Ctx();
+      }
+      void audioContextRef.current?.resume();
+    } catch { /* listening will say so if it cannot start */ }
+  };
+
   const handleGenerate = async () => {
+    unlockAudio();
     // A resume is optional: without one the questions are written for the role.
     setIsGenerating(true);
     setSetupError(null);
@@ -1969,7 +1988,7 @@ export default function MockInterviewPage() {
                     <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
                       {!showFeedback ? (
                         <motion.button
-                          onClick={() => isRecording ? stopRecording() : startRecording()}
+                          onClick={() => { unlockAudio(); if (isRecording) stopRecording(); else void startRecording(); }}
                           disabled={isAnalyzing}
                           whileHover={!isAnalyzing ? { scale: 1.03 } : {}}
                           whileTap={!isAnalyzing ? { scale: 0.97 } : {}}
