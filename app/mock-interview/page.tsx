@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../../components/feedback/Toast";
 import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics";
+import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -28,6 +29,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 // several of them describe account configuration they cannot reach.
 const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Please try again.";
 const MIC_BLOCKED = "Microphone access is blocked. Allow microphone access and try again.";
+const SIGN_IN_REQUIRED = "Your sign-in has expired. Sign in again to use the microphone.";
+const NO_ANSWERS_LEFT = "You have no answers left. Add more answers to continue.";
 
 async function fetchCredits() {
   const token = await auth.currentUser?.getIdToken();
@@ -108,13 +111,17 @@ const AI_MODELS: AiModel[] = [
   // model name stayed and the provider changed again: the same id is served
   // by Cerebras now, and naming Groq here described a provider the product
   // no longer calls.
-  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Cerebras", badge: "Instant",     speed: "~0.15s", quality: "Great", creditsPerQ: 5, icon: "⚡", color: "#21924A" },
+  { id: "gpt-oss-120b",   name: "GPT-OSS 120B", provider: "Cerebras", badge: "Instant",     speed: "~0.15s", quality: "Great", creditsPerQ: CREDIT_ACTION_COSTS.mock_feedback, icon: "⚡", color: "#21924A" },
 ];
 
-const MIN_QUESTIONS          = 5;
-const MAX_QUESTIONS_FREE     = 10;
+const MIN_QUESTIONS          = 1;
+// Generating the question set costs one answer; feedback costs one per question.
+// The free mock cap must fit inside the same 25-credit one-time trial.
+const MAX_QUESTIONS_FREE     = Math.floor((PLAN_MONTHLY_CREDITS.free - CREDIT_ACTION_COSTS.question_generation) / CREDIT_ACTION_COSTS.mock_feedback);
 const MAX_QUESTIONS_PRO      = 50;
 const SILENCE_DELAY_MS       = 3500;
+// Auto mode: how long the score and the better answer stay up before the next question starts by itself.
+const AUTO_NEXT_SECONDS      = 12;
 
 const PLAN_MAX_QUESTIONS: Record<string, number> = {
   free: MAX_QUESTIONS_FREE, pro: MAX_QUESTIONS_PRO, max: MAX_QUESTIONS_PRO, lifetime: MAX_QUESTIONS_PRO, teams: MAX_QUESTIONS_PRO,
@@ -245,7 +252,12 @@ async function fetchAi(payload: Record<string, unknown>) {
     window.location.href = "/pricing";
     throw new Error("insufficient_credits");
   }
-  if (!res.ok) throw new Error(String(data.error ?? "API error"));
+  if (!res.ok) {
+    // The server's own sentence, when it sent one, so a person is told what actually happened.
+    throw Object.assign(new Error(String(data.error ?? "API error")), {
+      userMessage: typeof data.message === "string" && data.message ? data.message : undefined,
+    });
+  }
   return data;
 }
 
@@ -654,7 +666,7 @@ export default function MockInterviewPage() {
   const [resumeText,   setResumeText]   = useState("");
   const [jdText,       setJdText]       = useState("");
   const [selectedModel, setSelectedModel] = useState("gpt-oss-120b");
-  const [questionCount, setQuestionCount] = useState(10);
+  const [questionCount, setQuestionCount] = useState(MAX_QUESTIONS_FREE);
   const [showModelPicker,  setShowModelPicker]  = useState(false);
   const [showDiffPicker,   setShowDiffPicker]   = useState(false);
   const [difficulty, setDifficulty]             = useState<Difficulty>("mixed");
@@ -680,7 +692,11 @@ export default function MockInterviewPage() {
   const [isSpeaking,   setIsSpeaking]    = useState(false);
   const [isRecording,  setIsRecording]   = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
   const [ttsEnabled,   setTtsEnabled]    = useState(true);
+  const [autoMode,     setAutoMode]      = useState(true);
+  const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
+  const [feedbackFailed, setFeedbackFailed] = useState(false);
   const [sessionTime,  setSessionTime]   = useState(0);
   const [activeTab,    setActiveTab]     = useState<"transcript" | "history">("transcript");
   const [credits,      setCredits]       = useState<number | null>(null);
@@ -693,6 +709,11 @@ export default function MockInterviewPage() {
   const videoRef           = useRef<HTMLVideoElement>(null);
   const streamRef          = useRef<MediaStream | null>(null);
   const wsRef              = useRef<WebSocket | null>(null);
+  const wsConnectTimeoutRef = useRef<number | null>(null);
+  const listeningStartedAtRef = useRef<number | null>(null);
+  const unreportedListeningMsRef = useRef(0);
+  const listeningMeterRef = useRef<number | null>(null);
+  const listeningAuthTokenRef = useRef("");
   const mediaRecorderRef   = useRef<MediaRecorder | null>(null);
   const smStartedRef       = useRef(false);
   const answerRef          = useRef("");
@@ -707,6 +728,7 @@ export default function MockInterviewPage() {
   const activeModel       = AI_MODELS.find(m => m.id === selectedModel) ?? AI_MODELS[0];
   const activeDiff        = DIFFICULTY_OPTIONS.find(o => o.id === difficulty) ?? DIFFICULTY_OPTIONS[4];
   const estimatedCredits  = activeModel.creditsPerQ * questionCount;
+  const setupAndFeedbackCredits = CREDIT_ACTION_COSTS.question_generation + estimatedCredits;
   const maxQ              = PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
   const sliderPct         = Math.round(((questionCount - MIN_QUESTIONS) / Math.max(maxQ - MIN_QUESTIONS, 1)) * 100);
   const currentQ          = questions[index] ?? "Tell me about yourself.";
@@ -735,7 +757,7 @@ export default function MockInterviewPage() {
   useEffect(() => {
     if (!user) return;
     fetchCredits()
-      .then(d => { if (d?.plan) setUserPlan(d.plan); })
+      .then(d => { if (d?.plan) setUserPlan(d.plan); setCredits(d?.credits ?? d?.balance ?? null); })
       .catch(() => {});
   }, [user]);
 
@@ -789,19 +811,55 @@ export default function MockInterviewPage() {
   }, []);
 
   // ── Stop recording ────────────────────────────────────────
+  const reportListeningMinutes = useCallback((minutes: number) => {
+    const token = listeningAuthTokenRef.current;
+    if (minutes <= 0 || !token) return;
+    void fetch("/api/usage/listening", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ minutes }),
+      keepalive: true,
+    }).catch(() => {});
+  }, []);
+
+  const accountForListening = useCallback((finishSession = false) => {
+    if (listeningMeterRef.current !== null) {
+      window.clearInterval(listeningMeterRef.current);
+      listeningMeterRef.current = null;
+    }
+    if (listeningStartedAtRef.current !== null) {
+      unreportedListeningMsRef.current += Date.now() - listeningStartedAtRef.current;
+      listeningStartedAtRef.current = null;
+    }
+    const minutes = finishSession
+      ? Math.ceil(unreportedListeningMsRef.current / 60_000)
+      : Math.floor(unreportedListeningMsRef.current / 60_000);
+    if (minutes <= 0) return;
+    unreportedListeningMsRef.current = finishSession ? 0 : unreportedListeningMsRef.current - minutes * 60_000;
+    reportListeningMinutes(minutes);
+  }, [reportListeningMinutes]);
+
   const stopRecording = useCallback(() => {
     clearSilenceTimer();
+    accountForListening();
+    if (wsConnectTimeoutRef.current !== null) {
+      window.clearTimeout(wsConnectTimeoutRef.current);
+      wsConnectTimeoutRef.current = null;
+    }
     smStartedRef.current = false;
-    if (wsRef.current?.readyState === WebSocket.OPEN)
-      wsRef.current.send(JSON.stringify({ message: "EndOfStream" }));
-    wsRef.current?.close(); wsRef.current = null;
-    mediaRecorderRef.current?.stop();
-    mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
+    const ws = wsRef.current;
+    wsRef.current = null;
+    if (ws?.readyState === WebSocket.OPEN)
+      ws.send(JSON.stringify({ message: "EndOfStream" }));
+    ws?.close();
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state === "recording") recorder.stop();
+    recorder?.stream?.getTracks().forEach(t => t.stop());
     mediaRecorderRef.current = null;
     isRecordingRef.current = false;
     setIsRecording(false);
     setPartial("");
-  }, [clearSilenceTimer]);
+  }, [clearSilenceTimer, accountForListening]);
 
   // ── Reset silence timer ───────────────────────────────────
   const resetSilenceTimer = useCallback(() => {
@@ -819,10 +877,29 @@ export default function MockInterviewPage() {
     if (isRecordingRef.current || isAnalyzingRef.current || wsRef.current) return;
     setRecordingError(null);
     try {
-      const tokenRes = await fetch(`/api/stt/tokens?email=${encodeURIComponent(getEmail())}`, { method: "GET" });
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        setRecordingError(SIGN_IN_REQUIRED);
+        return;
+      }
+      listeningAuthTokenRef.current = idToken;
+      const tokenRes = await fetch("/api/mock-interview/stt-token", {
+        method: "GET",
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${idToken}` },
+        signal: AbortSignal.timeout(15_000),
+      });
       if (!tokenRes.ok) {
         console.error(`[Replysis] Mock interview token request failed status=${tokenRes.status}`);
-        setRecordingError(LISTENING_UNAVAILABLE);
+        const failure = await tokenRes.json().catch(() => ({}));
+        setRecordingError(tokenRes.status === 401 ? SIGN_IN_REQUIRED
+          : tokenRes.status === 402
+            ? failure?.reason === "audio-limit"
+              ? "Listening is unavailable for this account right now. Try again later or contact support."
+              : NO_ANSWERS_LEFT
+            : tokenRes.status === 429
+              ? "Too many connection attempts. Please wait a moment and try again."
+            : LISTENING_UNAVAILABLE);
         return;
       }
       const tokenData = await tokenRes.json();
@@ -846,43 +923,66 @@ export default function MockInterviewPage() {
 
       // Detect premature close (expired/invalid key)
       const connectTimeout = window.setTimeout(() => {
-        if (!smStartedRef.current) {
+        if (wsRef.current === ws && !smStartedRef.current) {
           wsClosedPrematurely = true;
           ws.close();
           console.error("[Replysis] Mock interview transcription refused the credential");
           setRecordingError(LISTENING_UNAVAILABLE);
-          isRecordingRef.current = false; setIsRecording(false); wsRef.current = null;
+          stopRecording();
         }
-      }, 5000);
+      // Cold provider sessions and slower networks can legitimately take more
+      // than five seconds. A short timeout falsely reported a bad credential
+      // even while the socket was still establishing recognition.
+      }, 12000);
+      wsConnectTimeoutRef.current = connectTimeout;
 
-      ws.onopen = () => ws.send(JSON.stringify({
-        message: "StartRecognition",
-        audio_format: { type: "file" },
-        transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true },
-      }));
+      ws.onopen = () => {
+        if (wsRef.current !== ws) return;
+        ws.send(JSON.stringify({
+          message: "StartRecognition",
+          audio_format: { type: "file" },
+          transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true },
+        }));
+      };
 
       ws.onmessage = async (e) => {
+        if (wsRef.current !== ws) return;
         if (typeof e.data !== "string") return;
         let msg: any;
         try { msg = JSON.parse(e.data); } catch { return; } // ignore any non-JSON frame instead of throwing
 
         if (msg.message === "RecognitionStarted") {
           window.clearTimeout(connectTimeout);
-          smStartedRef.current = true; isRecordingRef.current = true; setIsRecording(true);
-          recordingStartedAtRef.current = Date.now();
+          wsConnectTimeoutRef.current = null;
+          smStartedRef.current = true;
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
             mediaRecorderRef.current = recorder;
             recorder.ondataavailable = async (ev) => {
-              if (ev.data.size > 0 && ws.readyState === WebSocket.OPEN && smStartedRef.current)
-                ws.send(await ev.data.arrayBuffer());
+              if (ev.data.size > 0 && wsRef.current === ws && ws.readyState === WebSocket.OPEN && smStartedRef.current) {
+                const audio = await ev.data.arrayBuffer();
+                if (wsRef.current === ws && ws.readyState === WebSocket.OPEN) ws.send(audio);
+              }
             };
             recorder.start(250);
+            recordingStartedAtRef.current = Date.now();
+            listeningStartedAtRef.current = Date.now();
+            listeningMeterRef.current = window.setInterval(() => {
+              if (listeningStartedAtRef.current !== null) {
+                unreportedListeningMsRef.current += Date.now() - listeningStartedAtRef.current;
+                listeningStartedAtRef.current = Date.now();
+              }
+              const minutes = Math.floor(unreportedListeningMsRef.current / 60_000);
+              if (minutes > 0) {
+                unreportedListeningMsRef.current -= minutes * 60_000;
+                reportListeningMinutes(minutes);
+              }
+            }, 5_000);
+            isRecordingRef.current = true; setIsRecording(true);
           } catch (mediaErr) {
             setRecordingError(MIC_BLOCKED);
-            wsRef.current?.close(); wsRef.current = null;
-            isRecordingRef.current = false; setIsRecording(false); smStartedRef.current = false;
+            stopRecording();
           }
         }
         if (msg.message === "AddTranscript" && msg.metadata?.transcript) {
@@ -900,18 +1000,22 @@ export default function MockInterviewPage() {
         }
       };
       ws.onerror = () => {
+        if (wsRef.current !== ws) return;
         window.clearTimeout(connectTimeout);
+        wsConnectTimeoutRef.current = null;
         console.error("[Replysis] Mock interview transcription socket error");
         if (!wsClosedPrematurely) setRecordingError(LISTENING_UNAVAILABLE);
         stopRecording();
       };
       ws.onclose = (ev) => {
+        if (wsRef.current !== ws) return;
         window.clearTimeout(connectTimeout);
+        wsConnectTimeoutRef.current = null;
         if (!smStartedRef.current && !wsClosedPrematurely) {
           console.error(`[Replysis] Mock interview transcription closed before start code=${ev.code}`);
           setRecordingError(LISTENING_UNAVAILABLE);
         }
-        isRecordingRef.current = false; setIsRecording(false); smStartedRef.current = false; wsRef.current = null;
+        stopRecording();
       };
     } catch (err) {
       console.error("[Replysis] Mock interview recording failed to start:", (err as Error)?.name ?? "Error");
@@ -922,7 +1026,7 @@ export default function MockInterviewPage() {
       );
       isRecordingRef.current = false; setIsRecording(false);
     }
-  }, [stopRecording, resetSilenceTimer]);
+  }, [stopRecording, resetSilenceTimer, reportListeningMinutes]);
 
   // ── Submit answer ─────────────────────────────────────────
   const submitAnswer = useCallback(async (finalAns?: string) => {
@@ -944,7 +1048,6 @@ export default function MockInterviewPage() {
       { role: "interviewer", text: question },
       { role: "candidate",   text: ans },
     ];
-    setHistory(newHistory);
 
     // Build memory context from previous turns (injected into prompt)
     const contextBlock = buildContextBlock(history);
@@ -974,8 +1077,13 @@ export default function MockInterviewPage() {
         setFeedback(res as Feedback);
       }
       setScores(prev => [...prev, (res as Feedback)?.score ?? 0]);
-    } catch {
-      setFeedback({ score: 0, strengths: [], improvements: ["Error getting feedback. Please try again."], betterAnswerExample: "" });
+      setHistory(newHistory);
+      setFeedbackFailed(false);
+    } catch (err) {
+      // The server's own sentence when it sent one; the answer is kept so it can be tried again.
+      const detail = (err as { userMessage?: string } | null)?.userMessage;
+      setFeedbackFailed(true);
+      setFeedback({ score: 0, strengths: [], improvements: [detail ?? "Could not get feedback this time. Your answer is kept, so you can try again."], betterAnswerExample: "" });
     }
 
     isAnalyzingRef.current = false;
@@ -1000,18 +1108,57 @@ export default function MockInterviewPage() {
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
     const next = index + 1;
-    if (next >= questions.length) { setPhase("summary"); return; }
+    if (next >= questions.length) { accountForListening(true); setPhase("summary"); return; }
     setIndex(next);
     setAnswer(""); answerRef.current = "";
-    setPartial(""); setFeedback(null); setShowFeedback(false);
+    setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
     setTimeout(() => speakQuestion(questions[next]), 500);
+  };
+
+  // ── Auto mode: after the score and the better answer have been up for a while, the next question starts by itself ──
+  const nextQuestionRef = useRef<() => void>(() => {});
+  nextQuestionRef.current = nextQuestion;
+  useEffect(() => {
+    if (!autoMode || !showFeedback || isAnalyzing || feedbackFailed) { setAutoCountdown(null); return; }
+    let left = AUTO_NEXT_SECONDS;
+    setAutoCountdown(left);
+    const timer = window.setInterval(() => {
+      left -= 1;
+      if (left <= 0) { window.clearInterval(timer); setAutoCountdown(null); nextQuestionRef.current(); }
+      else setAutoCountdown(left);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [autoMode, showFeedback, isAnalyzing, feedbackFailed, index]);
+
+  useEffect(() => {
+    try { const saved = window.localStorage.getItem("replysis-mock-auto"); if (saved === "off") setAutoMode(false); } catch { /* private window */ }
+  }, []);
+  const toggleAutoMode = () => {
+    setAutoMode(prev => {
+      const next = !prev;
+      try { window.localStorage.setItem("replysis-mock-auto", next ? "on" : "off"); } catch { /* private window */ }
+      return next;
+    });
+  };
+  const retryFeedback = () => {
+    setShowFeedback(false); setFeedback(null); setFeedbackFailed(false);
+    void submitAnswerRef.current?.(answerRef.current);
   };
 
   // ── Generate questions ─────────────────────────────────────
   const handleGenerate = async () => {
-    if (!resumeText.trim()) return;
+    // A resume is optional: without one the questions are written for the role.
     setIsGenerating(true);
+    setSetupError(null);
     try {
+      const balance = await fetchCredits();
+      const available = Number(balance?.credits ?? balance?.balance ?? 0);
+      if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
+      setCredits(available);
+      if (available < setupAndFeedbackCredits) {
+        setSetupError(`This session needs ${answerCount(setupAndFeedbackCredits)} answers including question setup. Choose fewer questions or add answers.`);
+        return;
+      }
       const res = await fetchAi({
         mode: "generate_questions",
         resume: resumeText, jd: jdText, model: selectedModel,
@@ -1030,10 +1177,20 @@ export default function MockInterviewPage() {
       setTaggedQuestions(tagQuestions(final, difficulty));
       setPhase("ready");
     } catch (err) {
-      if (String(err) !== "Error: insufficient_credits")
+      if (String(err) !== "Error: insufficient_credits") {
+        const detail = (err as { userMessage?: string } | null)?.userMessage;
+        const timedOut = (err as { name?: string } | null)?.name === "TimeoutError";
+        setSetupError(
+          detail
+            ?? (timedOut
+              ? "Preparing your questions took too long. Please try again."
+              : "Could not check your balance or prepare questions. Please try again."),
+        );
         notifyFailure("ai", handleGenerate);
+      }
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
 
   // ── Verify resume ──────────────────────────────────────────
@@ -1048,11 +1205,31 @@ export default function MockInterviewPage() {
   };
 
   // ── Start interview ────────────────────────────────────────
-  const startInterview = () => {
+  const startInterview = async () => {
+    // Credits are charged per answer, not at session start. Do not invite a
+    // longer session than the verified balance can actually complete.
+    if (loadingCredits) return;
+    setLoadingCredits(true);
+    setSetupError(null);
+    try {
+      const balance = await fetchCredits();
+      const available = Number(balance?.credits ?? balance?.balance ?? 0);
+      if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
+      setCredits(available);
+      if (available < estimatedCredits) {
+        setSetupError("Not enough answers remain for this session. Return to setup and choose fewer questions, or add answers.");
+        return;
+      }
+    } catch {
+      setSetupError("Could not confirm your balance. Please try again.");
+      return;
+    } finally {
+      setLoadingCredits(false);
+    }
     setPhase("interview"); setIndex(0);
     setAnswer(""); answerRef.current = "";
     setScores([]); setHistory([]); setResponseDurations([]);
-    setFeedback(null); setShowFeedback(false); setSessionTime(0);
+    setFeedback(null); setShowFeedback(false); setFeedbackFailed(false); setSessionTime(0);
     setTimeout(() => speakQuestion(questions[0] ?? "Tell me about yourself."), 500);
   };
 
@@ -1092,10 +1269,11 @@ export default function MockInterviewPage() {
   useEffect(() => {
     return () => {
       stopRecording();
+      accountForListening(true);
       window.speechSynthesis.cancel();
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
-  }, [stopRecording]);
+  }, [stopRecording, accountForListening]);
 
   // ── Auth loading ──────────────────────────────────────────
   if (authLoading) {
@@ -1187,7 +1365,7 @@ export default function MockInterviewPage() {
                   </div>
                 )}
                 <button
-                  onClick={() => { stopRecording(); window.speechSynthesis.cancel(); setPhase("summary"); }}
+                  onClick={() => { stopRecording(); accountForListening(true); window.speechSynthesis.cancel(); setPhase("summary"); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
                     borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
@@ -1232,7 +1410,7 @@ export default function MockInterviewPage() {
                     Mock Interview
                   </h1>
                   <p style={{ fontSize: 13.5, color: T.textMid, lineHeight: 1.6, maxWidth: 420 }}>
-                    Paste your resume and optionally a job description. The interviewer will ask questions drawn from your actual experience.
+                    Add your resume and a job description if you have them. Without a resume, the interviewer asks questions for the role instead.
                   </p>
                 </div>
 
@@ -1245,8 +1423,8 @@ export default function MockInterviewPage() {
                         <FileText size={14} style={{ color: T.accent }} />
                       </div>
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Resume / CV</p>
-                        <p style={{ fontSize: 11, color: T.textFaint }}>Paste full text or upload .txt / .docx / .pdf</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Resume / CV (optional)</p>
+                        <p style={{ fontSize: 11, color: T.textFaint }}>Paste full text or upload .txt / .docx / .pdf. You can skip this.</p>
                       </div>
                     </div>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
@@ -1259,7 +1437,7 @@ export default function MockInterviewPage() {
                   <textarea
                     value={resumeText}
                     onChange={e => setResumeText(e.target.value)}
-                    placeholder="Paste your complete resume here: work experience, skills, education, achievements..."
+                    placeholder="Paste your resume here if you have one: work experience, skills, education, achievements. Or leave it empty."
                     style={{ width: "100%", height: 200, padding: "16px 18px", fontSize: 13, color: T.text,
                       background: "transparent", border: "none", outline: "none", resize: "none",
                       lineHeight: 1.65, boxSizing: "border-box", caretColor: T.accent }}
@@ -1423,7 +1601,7 @@ export default function MockInterviewPage() {
                       <span style={{ fontSize: 9.5, color: T.textFaint, fontWeight: 600 }}>{MIN_QUESTIONS}</span>
                       {userPlan !== "pro" && (
                         <span style={{ fontSize: 9, color: T.textFaint, fontWeight: 500 }}>
-                          {userPlan === "free" ? "Basic: up to 20, Pro: up to 50" : "Pro: up to 50"}
+                          {userPlan === "free" ? `Free: up to ${MAX_QUESTIONS_FREE}, Pro: up to ${MAX_QUESTIONS_PRO}` : `Pro: up to ${MAX_QUESTIONS_PRO}`}
                         </span>
                       )}
                       <span style={{ fontSize: 9.5, color: T.textFaint, fontWeight: 600 }}>{maxQ}</span>
@@ -1438,7 +1616,7 @@ export default function MockInterviewPage() {
                     {[
                       { label: "Est. Time", value: `~${Math.round(questionCount * 2.5)} min` },
                       { label: "Questions", value: `${questionCount}`                        },
-                      { label: "Answers",   value: `~${Math.max(1, Math.ceil(estimatedCredits / 5))}` },
+                      { label: "Answers needed", value: `${answerCount(setupAndFeedbackCredits)} including setup` },
                     ].map(({ label, value }) => (
                       <div key={label} style={{ textAlign: "center" }}>
                         <p style={{ fontSize: 15, fontWeight: 900, color: T.text, lineHeight: 1 }}>{value}</p>
@@ -1469,16 +1647,16 @@ export default function MockInterviewPage() {
                 {/* CTA */}
                 <motion.button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !resumeText.trim()}
-                  whileHover={!isGenerating && resumeText.trim() ? { scale: 1.01 } : {}}
-                  whileTap={!isGenerating && resumeText.trim() ? { scale: 0.99 } : {}}
+                  disabled={isGenerating}
+                  whileHover={!isGenerating ? { scale: 1.01 } : {}}
+                  whileTap={!isGenerating ? { scale: 0.99 } : {}}
                   style={{
                     width: "100%", padding: "13px 0", borderRadius: 12,
-                    fontSize: 13.5, fontWeight: 700, border: "none", cursor: resumeText.trim() ? "pointer" : "not-allowed",
-                    background: !resumeText.trim() || isGenerating
+                    fontSize: 13.5, fontWeight: 700, border: "none", cursor: isGenerating ? "not-allowed" : "pointer",
+                    background: isGenerating
                       ? T.border
                       : "#1C7A3E",
-                    color: !resumeText.trim() || isGenerating ? T.textFaint : "white",
+                    color: isGenerating ? T.textFaint : "white",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     transition: "background 0.15s",
                   }}>
@@ -1486,8 +1664,9 @@ export default function MockInterviewPage() {
                     ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Building {questionCount} questions...</>
                     : <>Start session</>}
                 </motion.button>
+                {setupError && <p role="alert" style={{ textAlign: "center", fontSize: 11, color: T.danger }}>{setupError}</p>}
                 <p style={{ textAlign: "center", fontSize: 10, color: T.textFaint }}>
-                  Audio stays on your device. Transcripts are not stored.
+                  Microphone audio streams securely to our transcription provider. See our Privacy Policy.
                 </p>
               </div>
             </motion.div>
@@ -1568,7 +1747,7 @@ export default function MockInterviewPage() {
                         <p style={{ fontSize: 20, fontWeight: 900, color: T.warn, lineHeight: 1.1, marginTop: 2 }}>
                           {loadingCredits
                             ? <Loader2 size={15} style={{ display: "inline", animation: "spin 1s linear infinite" }} />
-                            : credits !== null ? Math.ceil(credits / 5).toLocaleString() : "0"}
+                            : credits !== null ? answerCount(credits).toLocaleString() : "—"}
                         </p>
                       </div>
                     </div>
@@ -1576,7 +1755,7 @@ export default function MockInterviewPage() {
                       <p style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>This session needs</p>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
                         <Flame size={12} style={{ color: "#2E8B45" }} />
-                        <span style={{ fontSize: 14, fontWeight: 900, color: "#2E8B45" }}>~{Math.max(1, Math.ceil(estimatedCredits / 5))}</span>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#2E8B45" }}>~{Math.max(1, Math.ceil(estimatedCredits / ANSWER_CREDIT_COST))}</span>
                         <span style={{ fontSize: 11, color: T.textFaint }}>answers</span>
                       </div>
                       {credits !== null && credits < estimatedCredits && (
@@ -1599,7 +1778,7 @@ export default function MockInterviewPage() {
                       { label: "Questions",  value: `${questions.length} prepared`, sub: `of ${questionCount} requested`, ok: questions.length >= questionCount * 0.8 },
                       { label: "Camera",     value: cameraOn ? "Connected" : "Disabled", ok: cameraOn },
                       { label: "AI Voice",   value: ttsEnabled ? "Enabled" : "Muted",   ok: ttsEnabled },
-                      { label: "Microphone", value: "Ready",    ok: true },
+                      { label: "Microphone", value: "Checked when you answer", ok: true },
                       { label: "Memory AI",  value: `Last ${CONTEXT_HISTORY_TURNS} turns`, sub: "context-aware", ok: true },
                     ].map(({ label, value, sub, ok }) => (
                       <div key={label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1630,14 +1809,17 @@ export default function MockInterviewPage() {
                   </div>
 
                   <motion.button onClick={startInterview}
+                    disabled={loadingCredits}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     style={{ width: "100%", padding: "14px 0", borderRadius: 14, fontWeight: 800,
-                      fontSize: 15, border: "none", cursor: "pointer", color: "white",
+                      fontSize: 15, border: "none", cursor: loadingCredits ? "wait" : "pointer", color: "white",
+                      opacity: loadingCredits ? 0.55 : 1,
                       background: "linear-gradient(135deg, #1C7A3E, #21924A)",
                       boxShadow: "0 6px 24px rgba(31,138,62,0.30)",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                    <Play size={17} fill="white" /> Begin Interview
+                    <Play size={17} fill="white" /> {loadingCredits ? "Checking balance…" : "Begin Interview"}
                   </motion.button>
+                  {setupError && <p role="alert" style={{ textAlign: "center", fontSize: 11, color: T.danger }}>{setupError}</p>}
                 </div>
               </div>
             </motion.div>
@@ -1751,6 +1933,16 @@ export default function MockInterviewPage() {
                           <Icon size={16} />
                         </button>
                       ))}
+                      <button onClick={toggleAutoMode}
+                        title={autoMode ? "Auto is on: the next question starts by itself after your feedback" : "Auto is off: press Next Question yourself"}
+                        aria-pressed={autoMode}
+                        style={{ padding: "9px 12px", borderRadius: 10, transition: "all 0.15s", cursor: "pointer",
+                          fontSize: 12, fontWeight: 800,
+                          border: `1.5px solid ${autoMode ? T.success + "60" : T.border}`,
+                          background: autoMode ? T.successBg : T.card,
+                          color: autoMode ? T.success : T.textMid }}>
+                        Auto {autoMode ? "on" : "off"}
+                      </button>
                     </div>
 
                     {/* Main action button */}
@@ -1797,13 +1989,20 @@ export default function MockInterviewPage() {
                             boxShadow: `0 4px 16px ${T.success}40` }}>
                           {index + 1 >= questions.length
                             ? <><Award size={16} /> Finish & View Report</>
-                            : <><SkipForward size={16} /> Next Question</>}
+                            : <><SkipForward size={16} /> Next Question{autoCountdown !== null ? ` (${autoCountdown})` : ""}</>}
                         </motion.button>
                       )}
                     </div>
 
                     {/* Manual submit */}
-                    <div style={{ width: 40 }}>
+                    <div style={{ minWidth: 40 }}>
+                      {showFeedback && feedbackFailed && (
+                        <button onClick={retryFeedback} title="Get the feedback again"
+                          style={{ padding: "9px 12px", borderRadius: 10, border: `1.5px solid ${T.warn}60`,
+                            background: T.warnBg, color: T.warn, cursor: "pointer", fontSize: 12, fontWeight: 800 }}>
+                          Try again
+                        </button>
+                      )}
                       {answer.length > 5 && !showFeedback && (
                         <button onClick={() => submitAnswer()} disabled={isAnalyzing} title="Submit answer"
                           style={{ padding: "9px 10px", borderRadius: 10, border: `1.5px solid ${T.success}40`,

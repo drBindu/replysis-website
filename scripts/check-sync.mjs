@@ -96,12 +96,31 @@ const deduct = read(resolve(FRONT, "app/api/credits/deduct/route.ts"));
 const libCredits = read(resolve(FRONT, "app/lib/credits.ts"));
 const useCredits = read(resolve(FRONT, "app/lib/use-credits.ts"));
 const realInterview = read(resolve(FRONT, "app/real-interview/page.tsx"));
+const mockInterview = read(resolve(FRONT, "app/mock-interview/page.tsx"));
 const pricing = read(resolve(FRONT, "app/pricing/page.tsx"));
 const winMain = read(resolve(WIN, "MainWindow.xaml.cs"));
 const winCredits = read(resolve(WIN, "CreditsWindow.xaml.cs"));
 const winPlan = read(resolve(WIN, "PlanFacts.cs"));
 
 if (!java) warn("backend repo not found next to the website; server numbers were NOT checked");
+
+console.log("\nMock interview free trial and listening access");
+if (mockInterview) {
+  (/MAX_QUESTIONS_FREE\s*=\s*Math\.floor\(\(PLAN_MONTHLY_CREDITS\.free\s*-\s*CREDIT_ACTION_COSTS\.question_generation\)\s*\/\s*CREDIT_ACTION_COSTS\.mock_feedback\)/.test(mockInterview) ? ok : bad)(
+    "free mock question cap accounts for question-generation and feedback charges");
+  (/useState\(MAX_QUESTIONS_FREE\)/.test(mockInterview) ? ok : bad)(
+    "a new free mock interview does not default to more questions than its allowance");
+  (/available\s*<\s*setupAndFeedbackCredits/.test(mockInterview) ? ok : bad)(
+    "question generation checks the full session cost before charging for setup");
+  (/credits\s*<\s*estimatedCredits/.test(mockInterview) ? ok : bad)(
+    "mock preflight prevents a session that needs more answers than the account has");
+  (/answerCount\(credits\)/.test(mockInterview) && !/Math\.ceil\(credits\s*\/\s*5\)/.test(mockInterview) ? ok : bad)(
+    "the mock interview rounds available answers down rather than promising an unusable partial answer");
+  (/headers:\s*\{\s*Authorization:\s*`Bearer \$\{idToken\}`\s*\}/.test(mockInterview) ? ok : bad)(
+    "mock transcription requests send the signed-in Firebase token");
+  (/fetch\("\/api\/usage\/listening"/.test(mockInterview) ? ok : bad)(
+    "mock microphone use reports listening time to the shared website and Windows allowance");
+} else warn("mock interview page not found; its free limit and listening access were NOT checked");
 const importsFacts = (t) => !!t && /PLAN_MONTHLY_CREDITS\s+as\s+\w+\b[^}]*}\s*from\s*"[^"]*productFacts"/.test(t);
 if (!winMain) warn("Windows repo not found; app numbers were NOT checked");
 
@@ -152,6 +171,18 @@ const freeAnswers = fCredits && fCost ? Math.floor(fCredits.free / fCost) : null
 if (freeAnswers) ok(`a free account is ${fCredits.free} credits = ${freeAnswers} answers, once`);
 const startCost = facts ? num((facts.match(/live_transcription_start:\s*(\d+)/) || [])[1]) : null;
 (startCost === 0 ? ok : bad)(`starting a live session on the website is free (${startCost}), so 25 credits really are 5 answers`);
+
+// The mock interview's three paid actions are charged by the backend (QuestionController), so its prices must be
+// the website's own price list, never a second copy that can drift.
+console.log("\nMock interview prices the backend charges");
+const questionCtl = read(resolve(BACK, "src/main/java/com/replysis/backend/controller/QuestionController.java"));
+if (questionCtl && facts) {
+  for (const [javaName, factName] of [["QUESTION_SET_CREDITS", "question_generation"], ["FEEDBACK_CREDITS", "mock_feedback"], ["SCRIPT_CREDITS", "mock_script"]]) {
+    const j = num((questionCtl.match(new RegExp(javaName + "\\s*=\\s*(\\d+)")) || [])[1]);
+    const f = num((facts.match(new RegExp(factName + ":\\s*(\\d+)")) || [])[1]);
+    (j === f && !Number.isNaN(j) ? ok : bad)(`${factName.replace(/_/g, " ")} costs ${f} on the website and ${j} on the server`);
+  }
+} else warn("QuestionController not found; the mock interview prices the server charges were NOT checked");
 
 // ---------- 3. the hidden fair use limit (minutes of speech) --------------------
 console.log("\nFair use limit on listening (never shown to customers)");
@@ -333,7 +364,11 @@ if (java) {
 
 // ---------- 6. profit: the worst case of every plan -----------------------------
 console.log("\nProfit, worst case per plan (every credit used as an answer AND the whole fair use limit spent)");
-const STT_PER_MIN = 0.462 / 60;       // Deepgram nova-3, priced at the conservative pay as you go rate
+// The Windows app tries Deepgram first, but the website's live and mock
+// interviews currently use Speechmatics Enhanced. Profit checks must price
+// the more expensive active path, not silently assume every minute is Deepgram.
+// Public pay-as-you-go list rates (October 2026); negotiated rates may differ.
+const STT_PER_MIN = Math.max(0.462, 0.75) / 60;
 const ANSWER = 0.001;                 // one generated answer
 const MIN_MARGIN = 0.5;
 const rows = [];
