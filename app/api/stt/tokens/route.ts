@@ -558,6 +558,73 @@ async function refundCredits(uid: string, email: string, mode: string): Promise<
   }
 }
 
+// ── Question sets are written by the Replysis backend ──
+// The backend holds the model keys and owns the credit balance the Windows app shares, so this site, local or
+// deployed, needs no provider key of its own for the mock interview and cannot charge twice. It charges once,
+// and gives the charge back itself when it cannot deliver. Nothing here ever sees or forwards a provider key.
+const QUESTION_BACKEND_BASE = (
+  process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "https://replysis.com"
+).replace(/\/$/, "");
+
+type BackendQuestionResult =
+  | { kind: "ok"; questions: string[] }
+  // The backend answered and said no. It has already refunded when it charged.
+  | { kind: "refused"; status: number; error: string; message: string; creditsRefunded: boolean }
+  // Not deployed there yet, not configured, or not reachable. Nothing was charged.
+  | { kind: "unavailable" }
+  // We stopped waiting. The backend settles inside this wait, so this is rare; no promise is made about the charge.
+  | { kind: "timeout" };
+
+async function generateQuestionsViaBackend(
+  idToken: string,
+  payload: { resume: string; jd: string; count: unknown; difficulty: unknown },
+): Promise<BackendQuestionResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${QUESTION_BACKEND_BASE}/api/v1/questions/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+      signal: AbortSignal.timeout(32_000),
+    });
+  } catch (err: any) {
+    console.error(`[questions] backend not reachable type=${err?.name ?? "Error"}`);
+    return err?.name === "TimeoutError" || err?.name === "AbortError" ? { kind: "timeout" } : { kind: "unavailable" };
+  }
+
+  let data: any = null;
+  try { data = await res.json(); } catch { data = null; }
+
+  if (res.ok) {
+    const questions: string[] = Array.isArray(data?.questions)
+      ? data.questions.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
+      : [];
+    return questions.length > 0
+      ? { kind: "ok", questions }
+      : { kind: "refused", status: 502, error: "bad_output", creditsRefunded: false,
+          message: "The question service returned an empty set. Please try again." };
+  }
+
+  // Only the endpoint's own answers carry this shape. Anything else (a proxy page, a 404 from an older backend,
+  // a 502 while it restarts) never reached the charging code, so the person has not been charged.
+  const ours = data && typeof data.error === "string" && Array.isArray(data.questions);
+  if (!ours || data.error === "question_service_not_configured") return { kind: "unavailable" };
+
+  return {
+    kind: "refused",
+    status: res.status,
+    error: data.error,
+    message: typeof data.message === "string" && data.message ? data.message : "Could not prepare your questions. Please try again.",
+    creditsRefunded: data.creditsRefunded === true,
+  };
+}
+
+function siteHasOwnQuestionModel(modelId: string): boolean {
+  const { provider } = resolveModel(modelId);
+  return provider === "gemini" ? Boolean(process.env.GEMINI_API_KEY) : Boolean(process.env.CEREBRAS_API_KEY);
+}
+
 // ============================================================================
 // 6) DETERMINISTIC RESUME PARSER  (works with any common resume format)
 // ============================================================================
@@ -1004,6 +1071,46 @@ export async function POST(req: Request) {
         { mode: "verify_resume", transcript: "", duration: duration || 0 }
       );
       return NextResponse.json({ totalExperience: result.totalExperience, summary: result.summary });
+    }
+
+    // ── GENERATE QUESTIONS: the backend does the work and the charging ──
+    // Handled before the website's own credit check so a set is never charged twice. The branch after this one is
+    // kept only for a deployment that has its own model key and a backend that does not have the endpoint yet.
+    if (mode === "generate_questions") {
+      const viaBackend = await generateQuestionsViaBackend(idToken, {
+        resume: sanitizeText(resume),
+        jd: sanitizeText(jd),
+        count: (body as Record<string, unknown>).count ?? (body as Record<string, unknown>).num_questions,
+        difficulty: (body as Record<string, unknown>).difficulty,
+      });
+      if (viaBackend.kind === "ok") {
+        await logUsageAndIncrement(userEmail || "Unknown", "Questions-backend", { mode: "generate_questions", transcript: "", duration: duration || 0 });
+        return NextResponse.json({ questions: viaBackend.questions });
+      }
+      if (viaBackend.kind === "refused") {
+        return NextResponse.json({
+          error: viaBackend.error,
+          message: viaBackend.message,
+          questions: [],
+          creditsRefunded: viaBackend.creditsRefunded,
+        }, { status: viaBackend.status });
+      }
+      if (viaBackend.kind === "timeout") {
+        return NextResponse.json({
+          error: "question_service_timeout",
+          message: "Preparing your questions took too long. Please try again in a moment.",
+          questions: [],
+          creditsRefunded: false,
+        }, { status: 504 });
+      }
+      if (!siteHasOwnQuestionModel(selectedModel)) {
+        return NextResponse.json({
+          error: "question_service_unavailable",
+          message: "The question service could not be reached, so your questions were not prepared. You were not charged. Please try again in a minute.",
+          questions: [],
+          creditsRefunded: false,
+        }, { status: 503 });
+      }
     }
 
     // ── CREDIT CHECK ──
