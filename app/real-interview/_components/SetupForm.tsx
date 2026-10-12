@@ -229,7 +229,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
           <textarea
             value={cfg.resume}
             onChange={e => update("resume", e.target.value)}
-            placeholder="Paste your full resume text here… (optional. AI gives more generic answers without it)"
+            placeholder="Paste your resume here if you have one. Without it, answers are more general."
             rows={8}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 font-mono leading-relaxed outline-none focus:border-zinc-600 focus:ring-2 focus:ring-zinc-200 transition-all resize-none placeholder:text-slate-300"
           />

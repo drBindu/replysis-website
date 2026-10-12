@@ -253,20 +253,11 @@ export default function RealInterviewPage() {
                   transition={{ duration: 0.4 }}
                   className="mb-2"
                 >
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4"
-                    style={{ border: "1px solid rgba(31,138,62,0.22)", background: "rgba(31,138,62,0.08)", color: "#1C7A3E" }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-pulse" />
-                    Real-Time AI Interview Copilot
-                  </div>
-                  <h1 className="text-[2.4rem] font-black tracking-tight leading-[1.05] mb-3 text-slate-900">
-                    Start your<br />
-                    <span style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                      Interview Session
-                    </span>
+                  <h1 className="text-[2.2rem] font-bold tracking-tight leading-[1.1] mb-3 text-slate-900">
+                    Start your interview session
                   </h1>
-                  <p className="text-slate-500 text-[15px] font-medium leading-relaxed max-w-md">
-                    AI listens live and generates tailored suggestions with a sub-two-second response target.
-                    No resume required to start.
+                  <p className="text-slate-600 text-[15px] leading-relaxed max-w-md">
+                    Replysis listens to the interviewer and suggests what you can say. You do not need a resume to start.
                   </p>
                 </motion.div>
 
@@ -294,7 +285,7 @@ export default function RealInterviewPage() {
                 {/* How it works */}
                 <div className="rounded-2xl overflow-hidden shadow-sm" style={{ border: `1px solid ${BDR}`, background: PNL }}>
                   <div className="px-5 py-4" style={{ borderBottom: `1px solid ${BDR}` }}>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">How it works</p>
+                    <p className="text-[12px] font-semibold text-slate-500">How it works</p>
                   </div>
                   <div className="p-5 space-y-4">
                     {[
@@ -306,13 +297,13 @@ export default function RealInterviewPage() {
                       },
                       {
                         step: "02", title: "SPACE: Start listening",
-                        desc: "Mic turns on. Speak the question aloud or let the interviewer speak.",
+                        desc: "The microphone turns on. The question is picked up from the interviewer or from you.",
                         accentBg: "rgba(31,138,62,0.09)", accentBorder: "rgba(31,138,62,0.2)", accentText: "#1C7A3E",
                         kbd: "SPACE",
                       },
                       {
                         step: "03", title: "SPACE: Get your answer",
-                        desc: "AI streams a resume-grounded suggestion with a sub-two-second response target.",
+                        desc: "Replysis writes a suggested answer from your resume, usually within a second or two.",
                         accentBg: "rgba(33,146,74,0.09)", accentBorder: "rgba(33,146,74,0.2)", accentText: "#21924A",
                         kbd: "SPACE",
                       },
@@ -341,7 +332,7 @@ export default function RealInterviewPage() {
 
                 {/* What uses an answer. Starting a session costs nothing. */}
                 <div className="rounded-2xl p-5 shadow-sm" style={{ border: `1px solid ${BDR}`, background: PNL }}>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">What uses an answer</p>
+                  <p className="text-[12px] font-semibold text-slate-500 mb-3">What uses an answer</p>
                   <div className="space-y-2.5">
                     {[
                       { label: "Start transcription", cost: "Free", color: "#21924A" },
@@ -355,18 +346,18 @@ export default function RealInterviewPage() {
                       </div>
                     ))}
                   </div>
-                  {plan !== "pro" && (
+                  {(plan === "free" || plan === "pro") && (
                     <button onClick={() => router.push("/pricing")}
                       className="w-full mt-4 py-2.5 rounded-xl text-[12px] font-bold flex items-center justify-center gap-2 transition-all"
                       style={{ border: "1px solid rgba(31,138,62,0.25)", background: "rgba(31,138,62,0.07)", color: "#1C7A3E" }}>
-                      Upgrade to Pro for more answers <ArrowRight size={13} />
+                      {plan === "free" ? "Upgrade to Pro for more answers" : "Upgrade to Max for more answers"} <ArrowRight size={13} />
                     </button>
                   )}
                 </div>
 
                 {/* Shortcuts */}
                 <div className="rounded-2xl p-5 shadow-sm" style={{ border: `1px solid ${BDR}`, background: PNL }}>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Keyboard Shortcuts</p>
+                  <p className="text-[12px] font-semibold text-slate-500 mb-3">Keyboard Shortcuts</p>
                   <div className="space-y-2.5">
                     {[
                       { key: "SPACE", desc: "Listen / Generate answer" },

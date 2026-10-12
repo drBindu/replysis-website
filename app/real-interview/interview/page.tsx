@@ -16,7 +16,7 @@ import { useInterview }               from "../_hooks/useInterview";
 import { useSession }                 from "../_hooks/useSession";
 import { useAuth }                    from "../../../components/AuthProvider";
 import BrandIcon                     from "../../../components/BrandIcon";
-import { parseAnswer, isMicroAnswer } from "../_lib/formatAnswer";
+import { parseAnswer, isMicroAnswer, humanizeAnswer } from "../_lib/formatAnswer";
 import type { AppSettings }           from "../_lib/settings";
 import {
   MODELS, ANSWER_STYLES, loadSettings, saveSettings, DEFAULT_SETTINGS,
@@ -291,27 +291,23 @@ function AnswerRenderer({
     </div>
   );
 
-  // General mode keeps the teleprompter treatment; technical modes preserve
-  // structured sections even when a response contains no bullets.
+  // A short general answer is read aloud, so it sits at the top, left aligned, in a comfortable line length. It used to be
+  // centred in the middle of the box in very heavy type, which is how a quote is shown, not an answer to say.
   if (interviewMode === "general" && isMicroAnswer(answer)) return (
     <motion.div key={answer}
-      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      className="flex items-center justify-center min-h-[220px] px-8 py-10">
-      <div className="text-center max-w-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-6"
-          style={{ background: "rgba(31,138,62,0.08)", border: "1px solid rgba(31,138,62,0.15)" }}>
-          <div className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
-          <span className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">Suggested Response</span>
-        </div>
-        <p className="text-[24px] font-black text-slate-900 leading-[1.6] tracking-tight">
-          {answer}
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className="px-8 py-7">
+      <div className="max-w-3xl">
+        <p className="text-[12px] font-semibold text-slate-500 mb-3">Suggested response</p>
+        <p className="text-[22px] font-semibold text-slate-900 leading-[1.65] text-left whitespace-pre-wrap">
+          {humanizeAnswer(answer)}
         </p>
       </div>
     </motion.div>
   );
 
   // Structured bullet answer
-  const lines = parseAnswer(answer);
+  const lines = parseAnswer(interviewMode === "general" ? humanizeAnswer(answer) : answer);
   return (
     <motion.div key={answer.slice(0, 20)} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       className="space-y-2.5 py-2">

@@ -12,7 +12,7 @@ export const INTERVIEW_MODES: Array<{
     label: "General Interview",
     shortLabel: "General",
     description: "Behavioral, role-specific, and follow-up questions.",
-    output: "Natural, resume-grounded answers",
+    output: "Natural answers drawn from your resume",
   },
   {
     id: "coding",

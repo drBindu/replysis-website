@@ -61,6 +61,18 @@ export function cleanAnswer(raw: string): string {
 }
 
 // ─────────────────────────────────────────────
+// HUMANIZE  -  dashes used as punctuation read as machine written
+// "Great to be here – really looking forward" becomes "Great to be here, really looking forward".
+// Code and bullets are left alone: only long dashes, and a spaced hyphen between two words.
+// ─────────────────────────────────────────────
+export function humanizeAnswer(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/\s*[\u2013\u2014]\s*/g, ", ")
+    .replace(/(\w) - (\w)/g, "$1, $2");
+}
+
+// ─────────────────────────────────────────────
 // FORMAT FOR READING
 // Ensures blank line between each bullet
 // so eyes land cleanly on each point
