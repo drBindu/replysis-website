@@ -720,6 +720,8 @@ export default function MockInterviewPage() {
   // Answer, Next Question) because iPhones only let audio run after one.
   const pcmCaptureRef      = useRef<PcmCapture | null>(null);
   const audioContextRef    = useRef<AudioContext | null>(null);
+  // Which speech service the open socket belongs to, so it is closed the way that service expects.
+  const sttKindRef         = useRef<"deepgram" | "speechmatics">("speechmatics");
   // The microphone, opened while the token is fetched and the socket connects, until a recorder takes it over.
   const earlyMicRef        = useRef<Promise<MediaStream> | null>(null);
   const smStartedRef       = useRef(false);
@@ -864,7 +866,7 @@ export default function MockInterviewPage() {
     const ws = wsRef.current;
     wsRef.current = null;
     if (ws?.readyState === WebSocket.OPEN)
-      ws.send(JSON.stringify({ message: "EndOfStream" }));
+      ws.send(JSON.stringify(sttKindRef.current === "deepgram" ? { type: "CloseStream" } : { message: "EndOfStream" }));
     ws?.close();
     pcmCaptureRef.current?.stop();
     pcmCaptureRef.current = null;
@@ -931,117 +933,179 @@ export default function MockInterviewPage() {
         releaseEarlyMic();
         return;
       }
-      const token = tokenData.token ?? tokenData.key ?? tokenData.jwt;
-      if (!token) {
+      const token: string | undefined = tokenData.token ?? tokenData.key ?? tokenData.jwt;
+      const deepgramToken: string | undefined =
+        typeof tokenData.deepgramToken === "string" && tokenData.deepgramToken ? tokenData.deepgramToken : undefined;
+      if (!token && !deepgramToken) {
         console.error("[Replysis] Mock interview token response contained no credential");
         setRecordingError(LISTENING_UNAVAILABLE);
         releaseEarlyMic();
         return;
       }
 
-      let wsClosedPrematurely = false;
       const smHost = process.env.NEXT_PUBLIC_SPEECHMATICS_RT_HOST ?? "eu.rt.speechmatics.com";
-      const ws = new WebSocket(`wss://${smHost}/v2/en?jwt=${token}`);
-      ws.binaryType = "arraybuffer";
-      wsRef.current = ws;
+      // endpointing 200: final words about 0.4 s after the speaker stops (measured), the same setting the Windows app uses.
+      const deepgramUrl = "wss://api.deepgram.com/v1/listen?model=nova-3&language=en&encoding=linear16&sample_rate=16000&channels=1"
+        + "&interim_results=true&smart_format=true&punctuate=true&endpointing=200";
+      let fellBack = false;
 
-      // Detect premature close (expired/invalid key)
-      const connectTimeout = window.setTimeout(() => {
-        if (wsRef.current === ws && !smStartedRef.current) {
+      // Takes the microphone and starts sending it, and starts the listening meter. Both services use it.
+      const beginCapture = async (ws: WebSocket) => {
+        try {
+          const stream = await (earlyMicRef.current ?? navigator.mediaDevices.getUserMedia({ audio: true }));
+          earlyMicRef.current = null;
+          const context = audioContextRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)();
+          audioContextRef.current = context;
+          if (context.state === "suspended") { try { await context.resume(); } catch { /* resumed by the next tap */ } }
+          pcmCaptureRef.current = startPcmCapture(context, stream, (pcm) => {
+            if (wsRef.current === ws && ws.readyState === WebSocket.OPEN && smStartedRef.current) ws.send(pcm);
+          });
+          recordingStartedAtRef.current = Date.now();
+          listeningStartedAtRef.current = Date.now();
+          listeningMeterRef.current = window.setInterval(() => {
+            if (listeningStartedAtRef.current !== null) {
+              unreportedListeningMsRef.current += Date.now() - listeningStartedAtRef.current;
+              listeningStartedAtRef.current = Date.now();
+            }
+            const minutes = Math.floor(unreportedListeningMsRef.current / 60_000);
+            if (minutes > 0) {
+              unreportedListeningMsRef.current -= minutes * 60_000;
+              reportListeningMinutes(minutes);
+            }
+          }, 5_000);
+          isRecordingRef.current = true; setIsRecording(true);
+        } catch (mediaErr) {
+          const denied = ["NotAllowedError", "SecurityError", "PermissionDeniedError"].includes((mediaErr as Error)?.name);
+          console.error(`[Replysis] Mock interview could not start capture: ${(mediaErr as Error)?.name ?? "Error"}`);
+          setRecordingError(denied ? MIC_BLOCKED : LISTENING_UNAVAILABLE);
+          stopRecording();
+        }
+      };
+
+      const connect = (provider: "deepgram" | "speechmatics") => {
+        let wsClosedPrematurely = false;
+        const ws = provider === "deepgram"
+          ? new WebSocket(deepgramUrl, ["bearer", deepgramToken as string])
+          : new WebSocket(`wss://${smHost}/v2/en?jwt=${token}`);
+        ws.binaryType = "arraybuffer";
+        wsRef.current = ws;
+        sttKindRef.current = provider;
+
+        // Deepgram that cannot be reached or refuses us falls back to Speechmatics, as in the Windows app.
+        const fallBack = (): boolean => {
+          if (provider !== "deepgram" || fellBack || !token || smStartedRef.current) return false;
+          fellBack = true;
+          wsClosedPrematurely = true;
+          window.clearTimeout(connectTimeout);
+          wsConnectTimeoutRef.current = null;
+          wsRef.current = null;
+          try { ws.close(); } catch { /* already closed */ }
+          console.error("[Replysis] Mock interview: the first speech service was unavailable, using the backup");
+          connect("speechmatics");
+          return true;
+        };
+
+        // Detect premature close (expired/invalid key)
+        const connectTimeout = window.setTimeout(() => {
+          if (wsRef.current !== ws || smStartedRef.current) return;
+          if (fallBack()) return;
           wsClosedPrematurely = true;
           ws.close();
           console.error("[Replysis] Mock interview transcription refused the credential");
           setRecordingError(LISTENING_UNAVAILABLE);
           stopRecording();
-        }
-      // Cold provider sessions and slower networks can legitimately take more
-      // than five seconds. A short timeout falsely reported a bad credential
-      // even while the socket was still establishing recognition.
-      }, 12000);
-      wsConnectTimeoutRef.current = connectTimeout;
+        // Cold provider sessions and slower networks can legitimately take more than five seconds. A short timeout falsely
+        // reported a bad credential while the socket was still establishing recognition. The first choice is given less,
+        // because there is a backup behind it.
+        }, provider === "deepgram" && token ? 6000 : 12000);
+        wsConnectTimeoutRef.current = connectTimeout;
 
-      ws.onopen = () => {
-        if (wsRef.current !== ws) return;
-        ws.send(JSON.stringify({
-          message: "StartRecognition",
-          audio_format: { type: "raw", encoding: "pcm_s16le", sample_rate: PCM_SAMPLE_RATE },
-          // max_delay 1: final text in about 1.3 s after the speaker stops. The default (4 s) measured 4.4 s.
-          transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true, max_delay: 1 },
-        }));
-      };
+        ws.onopen = () => {
+          if (wsRef.current !== ws) return;
+          if (provider === "deepgram") {
+            // No handshake message: the socket being open is the service being ready.
+            window.clearTimeout(connectTimeout);
+            wsConnectTimeoutRef.current = null;
+            smStartedRef.current = true;
+            void beginCapture(ws);
+            return;
+          }
+          ws.send(JSON.stringify({
+            message: "StartRecognition",
+            audio_format: { type: "raw", encoding: "pcm_s16le", sample_rate: PCM_SAMPLE_RATE },
+            // max_delay 1: final text in about 1.3 s after the speaker stops. The default (4 s) measured 4.4 s.
+            transcription_config: { language: "en", operating_point: "enhanced", enable_partials: true, max_delay: 1 },
+          }));
+        };
 
-      ws.onmessage = async (e) => {
-        if (wsRef.current !== ws) return;
-        if (typeof e.data !== "string") return;
-        let msg: any;
-        try { msg = JSON.parse(e.data); } catch { return; } // ignore any non-JSON frame instead of throwing
+        ws.onmessage = async (e) => {
+          if (wsRef.current !== ws) return;
+          if (typeof e.data !== "string") return;
+          let msg: any;
+          try { msg = JSON.parse(e.data); } catch { return; } // ignore any non-JSON frame instead of throwing
 
-        if (msg.message === "RecognitionStarted") {
-          window.clearTimeout(connectTimeout);
-          wsConnectTimeoutRef.current = null;
-          smStartedRef.current = true;
-          try {
-            const stream = await (earlyMicRef.current ?? navigator.mediaDevices.getUserMedia({ audio: true }));
-            earlyMicRef.current = null;
-            const context = audioContextRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)();
-            audioContextRef.current = context;
-            if (context.state === "suspended") { try { await context.resume(); } catch { /* resumed by the next tap */ } }
-            pcmCaptureRef.current = startPcmCapture(context, stream, (pcm) => {
-              if (wsRef.current === ws && ws.readyState === WebSocket.OPEN && smStartedRef.current) ws.send(pcm);
-            });
-            recordingStartedAtRef.current = Date.now();
-            listeningStartedAtRef.current = Date.now();
-            listeningMeterRef.current = window.setInterval(() => {
-              if (listeningStartedAtRef.current !== null) {
-                unreportedListeningMsRef.current += Date.now() - listeningStartedAtRef.current;
-                listeningStartedAtRef.current = Date.now();
+          if (provider === "deepgram") {
+            if (msg.type === "Results") {
+              const text = String(msg.channel?.alternatives?.[0]?.transcript ?? "").trim();
+              if (!text) return;
+              if (msg.is_final) {
+                answerRef.current = (answerRef.current + " " + text).trim();
+                setAnswer(answerRef.current); setPartial(""); resetSilenceTimer();
+              } else {
+                setPartial(text); resetSilenceTimer();
               }
-              const minutes = Math.floor(unreportedListeningMsRef.current / 60_000);
-              if (minutes > 0) {
-                unreportedListeningMsRef.current -= minutes * 60_000;
-                reportListeningMinutes(minutes);
-              }
-            }, 5_000);
-            isRecordingRef.current = true; setIsRecording(true);
-          } catch (mediaErr) {
-            const denied = ["NotAllowedError", "SecurityError", "PermissionDeniedError"].includes((mediaErr as Error)?.name);
-            console.error(`[Replysis] Mock interview could not start capture: ${(mediaErr as Error)?.name ?? "Error"}`);
-            setRecordingError(denied ? MIC_BLOCKED : LISTENING_UNAVAILABLE);
+            } else if (msg.type === "Error") {
+              console.error(`[Replysis] Mock interview transcription error code=${msg.err_code ?? "unknown"}`);
+              if (fallBack()) return;
+              setRecordingError(LISTENING_UNAVAILABLE);
+              stopRecording();
+            }
+            return;
+          }
+
+          if (msg.message === "RecognitionStarted") {
+            window.clearTimeout(connectTimeout);
+            wsConnectTimeoutRef.current = null;
+            smStartedRef.current = true;
+            await beginCapture(ws);
+          }
+          if (msg.message === "AddTranscript" && msg.metadata?.transcript) {
+            answerRef.current = (answerRef.current + " " + msg.metadata.transcript).trim();
+            setAnswer(answerRef.current); setPartial(""); resetSilenceTimer();
+          }
+          if (msg.message === "AddPartialTranscript" && msg.metadata?.transcript) {
+            setPartial(msg.metadata.transcript); resetSilenceTimer();
+          }
+          if (msg.message === "Error") {
+            window.clearTimeout(connectTimeout);
+            console.error(`[Replysis] Mock interview transcription error type=${msg.type ?? "unknown"}`);
+            setRecordingError(LISTENING_UNAVAILABLE);
             stopRecording();
           }
-        }
-        if (msg.message === "AddTranscript" && msg.metadata?.transcript) {
-          answerRef.current = (answerRef.current + " " + msg.metadata.transcript).trim();
-          setAnswer(answerRef.current); setPartial(""); resetSilenceTimer();
-        }
-        if (msg.message === "AddPartialTranscript" && msg.metadata?.transcript) {
-          setPartial(msg.metadata.transcript); resetSilenceTimer();
-        }
-        if (msg.message === "Error") {
+        };
+        ws.onerror = () => {
+          if (wsRef.current !== ws) return;
+          if (fallBack()) return;
           window.clearTimeout(connectTimeout);
-          console.error(`[Replysis] Mock interview transcription error type=${msg.type ?? "unknown"}`);
-          setRecordingError(LISTENING_UNAVAILABLE);
+          wsConnectTimeoutRef.current = null;
+          console.error("[Replysis] Mock interview transcription socket error");
+          if (!wsClosedPrematurely) setRecordingError(LISTENING_UNAVAILABLE);
           stopRecording();
-        }
+        };
+        ws.onclose = (ev) => {
+          if (wsRef.current !== ws) return;
+          if (!smStartedRef.current && fallBack()) return;
+          window.clearTimeout(connectTimeout);
+          wsConnectTimeoutRef.current = null;
+          if (!smStartedRef.current && !wsClosedPrematurely) {
+            console.error(`[Replysis] Mock interview transcription closed before start code=${ev.code}`);
+            setRecordingError(LISTENING_UNAVAILABLE);
+          }
+          stopRecording();
+        };
       };
-      ws.onerror = () => {
-        if (wsRef.current !== ws) return;
-        window.clearTimeout(connectTimeout);
-        wsConnectTimeoutRef.current = null;
-        console.error("[Replysis] Mock interview transcription socket error");
-        if (!wsClosedPrematurely) setRecordingError(LISTENING_UNAVAILABLE);
-        stopRecording();
-      };
-      ws.onclose = (ev) => {
-        if (wsRef.current !== ws) return;
-        window.clearTimeout(connectTimeout);
-        wsConnectTimeoutRef.current = null;
-        if (!smStartedRef.current && !wsClosedPrematurely) {
-          console.error(`[Replysis] Mock interview transcription closed before start code=${ev.code}`);
-          setRecordingError(LISTENING_UNAVAILABLE);
-        }
-        stopRecording();
-      };
+
+      connect(deepgramToken ? "deepgram" : "speechmatics");
     } catch (err) {
       releaseEarlyMic();
       console.error("[Replysis] Mock interview recording failed to start:", (err as Error)?.name ?? "Error");

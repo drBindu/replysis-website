@@ -32,12 +32,15 @@ export async function GET(req: Request) {
     }
 
     const body = await response.json();
-    if (typeof body?.key !== "string" || !body.key) {
-      console.error("[mock STT] backend returned no Speechmatics token");
+    const speechmatics = typeof body?.key === "string" && body.key ? body.key : undefined;
+    const deepgram = typeof body?.deepgramToken === "string" && body.deepgramToken ? body.deepgramToken : undefined;
+    if (!speechmatics && !deepgram) {
+      console.error("[mock STT] backend returned no speech token");
       return NextResponse.json({ error: "Listening is unavailable." }, { status: 503 });
     }
 
-    return NextResponse.json({ token: body.key },
+    // Deepgram is the first choice and Speechmatics the backup, as in the Windows app. Both are short lived.
+    return NextResponse.json({ token: speechmatics, deepgramToken: deepgram },
       { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error(`[mock STT] backend unavailable type=${error instanceof Error ? error.name : "unknown"}`);
