@@ -298,20 +298,20 @@ export default function Home() {
           <div className="hidden md:block w-px h-5 bg-gray-200 flex-shrink-0" />
 
           {/* ── Auth cluster  -  always visible ── */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2">
             <CreditsBadge />
 
             {!user ? (
               <>
                 {/* Log in  -  clearly outlined so it reads as "secondary" */}
                 <button onClick={() => openAuth("signin")}
-                  className="px-3 sm:px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
+                  className="px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
                   Log in
                 </button>
 
                 {/* Get started  -  unmissable primary CTA */}
                 <button onClick={() => openAuth("signup")}
-                  className="group flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap relative overflow-hidden"
+                  className="group flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-bold text-white rounded-full transition-all active:scale-[0.97] whitespace-nowrap relative overflow-hidden"
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.38), 0 1px 3px rgba(31,138,62,0.20)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }} />
