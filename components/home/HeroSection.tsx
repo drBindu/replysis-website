@@ -77,6 +77,24 @@ export function OSDownloadButtons({ detectedOS, mounted, onDownload, size = "def
     </button>
   );
   if (!mounted) return <div className="flex gap-3">{storeBtn(true)}</div>;
+
+  // A phone cannot install the Windows or Mac app, so those buttons are of no use there and were what every visitor from a
+  // social post saw first. The free mock interview works in the phone's browser, so that leads; the apps are one line below.
+  const onPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(typeof navigator === "undefined" ? "" : navigator.userAgent);
+  if (onPhone) {
+    return (
+      <div className="flex flex-col gap-3">
+        <a href="/mock-interview"
+          className={`flex items-center justify-center font-semibold text-white border border-transparent transition-all active:scale-[0.97] ${cls}`}
+          style={{ background: "linear-gradient(135deg,#21924A,#21924A)", boxShadow: "0 6px 24px rgba(31,138,62,0.32)" }}>
+          <span>Try a mock interview, free</span>
+        </a>
+        <p className="text-[13px] leading-relaxed text-gray-500">
+          The Windows and Mac apps install from a computer. Open replysis.com there to download.
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       {/* Show ONLY the visitor's own OS. Only fall back to showing both
