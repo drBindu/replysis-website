@@ -8,6 +8,7 @@
 // ever sees a calm, plain-language message with one clear next action.
 
 import { useEffect, useRef } from "react";
+import { isStaleBuildError, reloadOnceForStaleBuild } from "../components/StaleBuildReload";
 
 export default function Error({
   error,
@@ -21,6 +22,8 @@ export default function Error({
   useEffect(() => {
     // Surface it for debugging without exposing internals to the user.
     console.error("[Replysis] Unhandled UI error:", error);
+    // An outdated tab asking for files from a previous release: reload once instead of showing an error.
+    if (isStaleBuildError(error)) reloadOnceForStaleBuild();
   }, [error]);
 
   useEffect(() => {
