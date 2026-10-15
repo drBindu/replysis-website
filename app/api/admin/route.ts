@@ -584,6 +584,54 @@ async function liveView(db: Firestore, sinceMs: number) {
   };
 }
 
+
+// Who opened the website, counted in the visitor's own browser (app/api/visit). Each document is one visitor for one UTC day.
+async function visitorsView(db: Firestore, days: number) {
+  const since = new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
+  const snap = await db.collection("site_visits").where("day", ">=", since).limit(40_000).get();
+  const perDay: Record<string, { visitors: number; pageviews: number }> = {};
+  const countries: Record<string, number> = {};
+  const landing: Record<string, number> = {};
+  const referrers: Record<string, number> = {};
+  const devices: Record<string, number> = { desktop: 0, mobile: 0 };
+  const today = new Date().toISOString().slice(0, 10);
+  let returningToday = 0;
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    const day = String(d.day || "");
+    if (!day) continue;
+    const row = (perDay[day] ||= { visitors: 0, pageviews: 0 });
+    row.visitors += 1;
+    row.pageviews += Number(d.pages) || 1;
+    if (day === today) {
+      countries[d.country || "??"] = (countries[d.country || "??"] || 0) + 1;
+      landing[d.landing || "/"] = (landing[d.landing || "/"] || 0) + 1;
+      referrers[d.referrer || "direct"] = (referrers[d.referrer || "direct"] || 0) + 1;
+      devices[d.device === "mobile" ? "mobile" : "desktop"] += 1;
+      if ((Number(d.pages) || 1) > 1) returningToday += 1;
+    }
+  }
+  const series: { day: string; visitors: number; pageviews: number }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    series.push({ day, visitors: perDay[day]?.visitors || 0, pageviews: perDay[day]?.pageviews || 0 });
+  }
+  const top = (m: Record<string, number>, n: number) =>
+    Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
+  return {
+    today: perDay[today] || { visitors: 0, pageviews: 0 },
+    yesterday: perDay[new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)] || { visitors: 0, pageviews: 0 },
+    multiPageToday: returningToday,
+    series,
+    countries: top(countries, 8),
+    landing: top(landing, 6),
+    referrers: top(referrers, 6),
+    devices,
+    truncated: snap.size >= 40_000,
+    note: "Counted in the visitor's browser. No cookies, no addresses kept; a visitor is one fingerprint per day.",
+  };
+}
+
 export async function GET(req: Request) {
   // The Live panel polls every few seconds and gets its own, larger allowance so it never starves the page's own reads.
   const isLive = new URL(req.url).searchParams.get("view") === "live";
@@ -613,6 +661,17 @@ export async function GET(req: Request) {
     } catch (error) {
       console.error("[admin] Live view failed", error);
       return NextResponse.json({ error: "Unable to load live activity" }, { status: 500 });
+    }
+  }
+
+  if (query.get("view") === "visitors") {
+    const requested = Number(query.get("days"));
+    const days = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 60) : 14;
+    try {
+      return NextResponse.json(await visitorsView(db, days));
+    } catch (error) {
+      console.error("[admin] Visitors view failed", error);
+      return NextResponse.json({ error: "Unable to load visitors" }, { status: 500 });
     }
   }
 
