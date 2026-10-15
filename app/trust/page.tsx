@@ -49,7 +49,7 @@ export default function TrustPage() {
           </p>
           <p className="hv2-fine">
             <Link href="/privacy" className="hv2-btn">Read the Privacy Policy</Link>
-            <a href="mailto:admin@varoxel.com" className="hv2-link" style={{ marginLeft: 22 }}>Ask a privacy question</a>
+            <a href="mailto:support@replysis.com" className="hv2-link" style={{ marginLeft: 22 }}>Ask a privacy question</a>
           </p>
           <p className="hv2-fine" style={{ marginTop: 22 }}>Updated August 13, 2026.</p>
         </div>

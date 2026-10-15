@@ -28,7 +28,7 @@ const GROUPS = [
   {
     title: "Support",
     links: [
-      { label: "Contact support", href: "mailto:admin@varoxel.com" },
+      { label: "Contact support", href: "mailto:support@replysis.com" },
       { label: "Get it on the Microsoft Store", href: "https://apps.microsoft.com/detail/9N13GQC3MKK9" },
       { label: "Download for macOS", href: "https://github.com/drBindu/replysis-mac/releases/latest/download/InterviewCopilot-mac.dmg" },
     ],

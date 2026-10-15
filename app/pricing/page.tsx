@@ -271,7 +271,7 @@ const FAQS = [
   },
   {
     q: "What if I want to stop paying?",
-    a: "Email admin@varoxel.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
+    a: "Email support@replysis.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
   },
 ];
 
@@ -698,7 +698,7 @@ export default function PricingPage() {
             {FAQS.map((f) => <FaqItem key={f.q} q={f.q} a={f.a} />)}
           </div>
           <p className="hv2-fine" style={{ marginTop: 28 }}>
-            Still have questions? <a href="mailto:admin@varoxel.com" style={{ color: "var(--green)", textUnderlineOffset: 3 }}>Email us</a> and we reply same day.
+            Still have questions? <a href="mailto:support@replysis.com" style={{ color: "var(--green)", textUnderlineOffset: 3 }}>Email us</a> and we reply same day.
           </p>
         </div>
       </section>

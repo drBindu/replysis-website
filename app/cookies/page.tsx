@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const LAST_UPDATED = "May 1, 2026";
-const CONTACT = "admin@varoxel.com";
+const CONTACT = "support@replysis.com";
 
 const COOKIES = [
   { name: "__session",      type: "Essential",  duration: "Session",  purpose: "Keeps you signed in during your browser session. Set by Firebase Authentication." },
