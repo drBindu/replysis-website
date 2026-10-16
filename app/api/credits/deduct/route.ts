@@ -138,6 +138,11 @@ export async function POST(req: Request) {
       let   purchasedCredits = Math.max(0, Number(userData.purchasedCredits ?? 0));
       let   used = Math.max(0, Number(userData.creditsUsed ?? 0));
 
+      // Inside bought interview minutes (India): the time is paid for, the answer is not charged.
+      if (Number(userData.minutesBalance ?? 0) > 0) {
+        return { success: true, remaining: -1, plan };
+      }
+
       // Owner/internal account: never charged.
       if (email === OWNER_EMAIL) {
         transaction.update(userRef, { creditsUsed: FieldValue.increment(cost) });

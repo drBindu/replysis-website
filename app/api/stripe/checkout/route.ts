@@ -12,6 +12,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
 import { isIndia } from "@/app/lib/buyer-country";
+import { validMinutes, rupeesFor } from "../../../../data/interviewMinutes";
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const MAX_REQUEST_BYTES = 16 * 1024;
@@ -109,7 +110,10 @@ export async function POST(req: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    const { plan, annual, uid, creditPack } = body;
+    const { plan, annual, uid, creditPack, minutes, autoAdd } = body;
+    if (minutes !== undefined) {
+      return buyMinutes(req, minutes, autoAdd === true, uid, verifiedUid, verifiedEmail);
+    }
     const selectedPack = creditPackById(creditPack);
     const isCreditPack = Boolean(selectedPack);
 
@@ -265,4 +269,80 @@ export async function POST(req: Request) {
     console.error("Checkout error:", err);
     return NextResponse.json({ error: "Unable to start checkout. Please try again." }, { status: 500 });
   }
+}
+
+/**
+ * Interview minutes, India only: Rs 5 a minute, any amount from 15 to 600 (owner, 2026-10-16).
+ *
+ * The amount is sent to Stripe as the exact rupee total, so one card covers every position of the slider
+ * without a Stripe price for each. The country is checked here, from the address, not taken from the page.
+ * With auto add chosen, the card is saved for later charges; UPI cannot be saved, so Stripe then offers cards.
+ */
+async function buyMinutes(req: Request, minutesInput: unknown, autoAdd: boolean, uid: unknown,
+                          verifiedUid: string, verifiedEmail: string | undefined) {
+  if (typeof uid !== "string" || uid !== verifiedUid) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const minutes = validMinutes(minutesInput);
+  if (minutes === null) {
+    return NextResponse.json({ error: "Choose between 15 and 600 minutes." }, { status: 400 });
+  }
+  if (!(await isIndia(req.headers))) {
+    return NextResponse.json({ error: "Interview minutes are available in India only." }, { status: 403 });
+  }
+  if (!STRIPE_SECRET || STRIPE_SECRET.length < 10) {
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  }
+  let customerId: string | null = null;
+  try {
+    const profile = await getFirestore().collection("users").doc(verifiedUid).get();
+    const existing = profile.data()?.stripeCustomerId;
+    customerId = typeof existing === "string" && existing.startsWith("cus_") ? existing : null;
+  } catch (error) {
+    console.error("[checkout] minutes: profile read failed", (error as Error)?.name ?? "Error");
+    return NextResponse.json({ error: "Billing account unavailable" }, { status: 503 });
+  }
+
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
+  const ALLOWED_ORIGINS = new Set([SITE_URL, "http://localhost:3000"]);
+  const requestOrigin = req.headers.get("origin") || "";
+  const origin = ALLOWED_ORIGINS.has(requestOrigin) ? requestOrigin : SITE_URL;
+
+  const params = new URLSearchParams();
+  params.append("mode", "payment");
+  params.append("line_items[0][price_data][currency]", "inr");
+  params.append("line_items[0][price_data][unit_amount]", String(rupeesFor(minutes) * 100));
+  params.append("line_items[0][price_data][product_data][name]", `Replysis interview minutes: ${minutes} minutes`);
+  params.append("line_items[0][quantity]", "1");
+  params.append("success_url", `${origin}/account?minutes=added`);
+  params.append("cancel_url", `${origin}/pricing?canceled=true`);
+  if (customerId) params.append("customer", customerId);
+  else {
+    params.append("customer_creation", "always");
+    if (verifiedEmail) params.append("customer_email", verifiedEmail);
+  }
+  if (autoAdd) params.append("payment_intent_data[setup_future_usage]", "off_session");
+  params.append("branding_settings[display_name]", "Replysis");
+  params.append("branding_settings[background_color]", "#F7FAF7");
+  params.append("branding_settings[button_color]", "#267B42");
+  params.append("submit_type", "pay");
+  params.append("metadata[uid]", verifiedUid);
+  params.append("metadata[purchaseType]", "minutes");
+  params.append("metadata[minutes]", String(minutes));
+  params.append("metadata[autoAdd]", autoAdd ? "1" : "0");
+  params.append("payment_intent_data[metadata][uid]", verifiedUid);
+  params.append("payment_intent_data[metadata][minutes]", String(minutes));
+
+  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  const session = await response.json();
+  if (session.error) {
+    console.error("Stripe error (minutes):", session.error?.code ?? session.error?.type);
+    return NextResponse.json({ error: "Unable to start checkout. Please try again." }, { status: 502 });
+  }
+  console.log(`[checkout] India minutes: ${minutes} min, Rs ${rupeesFor(minutes)}, auto add ${autoAdd}`);
+  return NextResponse.json({ url: session.url });
 }

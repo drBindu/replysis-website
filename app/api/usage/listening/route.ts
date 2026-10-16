@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { spendMinutes } from "../../../../data/interviewMinutes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -123,8 +124,12 @@ export async function POST(req: Request) {
       let used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
       if (resetAt && Date.now() >= resetAt) used = 0;
 
-      used += minutes;
-      if (snap.exists) tx.update(userRef, { audioMinutesUsed: used });
+      // Bought interview minutes (India) are spent first; only the rest counts toward the month.
+      const [balance, toMonth] = spendMinutes(Number(data.minutesBalance ?? 0), minutes);
+      used += toMonth;
+      if (snap.exists) tx.update(userRef, minutes > 0
+        ? { audioMinutesUsed: used, minutesBalance: balance }
+        : { audioMinutesUsed: used });
 
       return { used, allowance };
     });

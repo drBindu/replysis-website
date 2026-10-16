@@ -17,6 +17,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
 import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
+import { validMinutes } from "../../../../data/interviewMinutes";
 
 const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY    || "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -293,6 +294,51 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
   });
 }
 
+/**
+ * Adds bought interview minutes. Keyed on the checkout session, so a session is never added twice even if
+ * both the completed and the settled events arrive. With auto add chosen, the saved card is kept for it.
+ */
+async function addBoughtMinutes(session: any) {
+  const uid = session.metadata?.uid;
+  const minutes = validMinutes(Number(session.metadata?.minutes));
+  if (typeof uid !== "string" || !uid || minutes === null) throw new Error("Invalid minutes metadata");
+  const autoAdd = session.metadata?.autoAdd === "1";
+
+  let paymentMethod: string | null = null;
+  if (autoAdd && typeof session.payment_intent === "string" && STRIPE_SECRET) {
+    const res = await fetch(`https://api.stripe.com/v1/payment_intents/${session.payment_intent}`,
+      { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+    if (res.ok) {
+      const pi = await res.json();
+      if (typeof pi.payment_method === "string") paymentMethod = pi.payment_method;
+    }
+  }
+
+  const userRef = db!.collection("users").doc(uid);
+  const receiptRef = db!.collection("minute_purchases").doc(String(session.id));
+  await db!.runTransaction(async (tx) => {
+    const receipt = await tx.get(receiptRef);
+    if (receipt.exists) return;
+    const current = await tx.get(userRef);
+    if (!current.exists) throw new Error("Minutes purchaser not found");
+    tx.set(receiptRef, { uid, minutes, amount: session.amount_total ?? null, currency: session.currency ?? "inr",
+                         createdAt: FieldValue.serverTimestamp() });
+    const updates: Record<string, unknown> = {
+      minutesBalance: FieldValue.increment(minutes),
+      minutesBought: FieldValue.increment(minutes),
+      stripeCustomerId: session.customer ?? current.data()?.stripeCustomerId ?? null,
+      lastMinutesPurchaseAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    if (autoAdd && paymentMethod) {
+      updates.minutesAutoAdd = true;
+      updates.minutesPaymentMethod = paymentMethod;
+    }
+    tx.set(userRef, updates, { merge: true });
+  });
+  console.log(`MINUTES: ${uid} +${minutes}${autoAdd ? " (auto add on)" : ""}`);
+}
+
 // ── POST /api/stripe/webhook ─────────────────────────────────────
 export async function POST(req: Request) {
   // Must read raw body BEFORE any JSON parsing  -  Stripe verifies against raw bytes
@@ -344,6 +390,18 @@ export async function POST(req: Request) {
     : Math.floor(Date.now() / 1000);
 
   try {
+    // ── INTERVIEW MINUTES (India)  -  added once the money is in ───────
+    // A card is paid at completion. UPI can complete first and settle a moment later, which arrives
+    // as async_payment_succeeded; the minutes are added on whichever of the two says paid.
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && event.data?.object?.metadata?.purchaseType === "minutes") {
+      const session = event.data.object;
+      if (session.payment_status === "paid") await addBoughtMinutes(session);
+      else console.log(`[webhook] minutes checkout not paid yet (${session.payment_status})`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
     // ── CHECKOUT COMPLETED  -  user just paid ──────────────────────
     if (event.type === "checkout.session.completed") {
       const session      = event.data.object;

@@ -389,6 +389,7 @@ async function hasAudioTimeLeft(uid: string, email: string): Promise<boolean> {
     const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
     if (resetAt && Date.now() >= resetAt) return true;
 
+    if (Number(data.minutesBalance ?? 0) > 0) return true;   // bought interview minutes left
     const used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
     return used < audioAllowance(plan, data);
   } catch (err) {
@@ -433,6 +434,7 @@ async function hasCreditsToListen(
     const snap = await db.collection("users").doc(uid).get();
     if (!snap.exists) return { allowed: false };
     const data = snap.data() ?? {};
+    if (Number(data.minutesBalance ?? 0) > 0) return { allowed: true };   // bought interview minutes left
     const plan = typeof data.plan === "string" ? data.plan : "free";
     let credits = typeof data.credits === "number" ? data.credits : (PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free);
     const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
@@ -488,6 +490,8 @@ async function checkAndDeductCredits(
       const snap     = await tx.get(userRef);
       if (!snap.exists) return { allowed: false, remaining: 0 };
       const userData = snap.data() ?? {};
+      // Inside bought interview minutes (India) nothing is charged.
+      if (Number(userData.minutesBalance ?? 0) > 0) return { allowed: true, remaining: -1 };
       const plan     = userData.plan || "free";
       const cap      = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       let   credits  = typeof userData.credits === "number" ? userData.credits : cap;
@@ -541,6 +545,7 @@ async function refundCredits(uid: string, email: string, mode: string): Promise<
       const snapshot = await tx.get(userRef);
       if (!snapshot.exists) return;
       const data = snapshot.data() ?? {};
+      if (Number(data.minutesBalance ?? 0) > 0) return;   // nothing was charged inside bought minutes
       const plan = typeof data.plan === "string" ? data.plan : "free";
       const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       const credits = typeof data.credits === "number" ? data.credits : cap;

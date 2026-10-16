@@ -26,6 +26,7 @@ import { useAuth } from "../../components/AuthProvider";
 import { PageHeader } from "../../components/PageShell";
 import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, answerCount, type PlanId } from "../../data/productFacts";
 import AnswerPacks from "../../components/AnswerPacks";
+import InterviewMinutes from "../../components/InterviewMinutes";
 
 type AccountProfile = {
   displayName?: string;
@@ -100,6 +101,15 @@ export default function AccountPage() {
   const [portalError, setPortalError] = useState<string | null>(null);
   const [billingReturned, setBillingReturned] = useState(false);
   const [answersAdded, setAnswersAdded] = useState(false);
+  const [minutesAdded, setMinutesAdded] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("minutes") !== "added") return;
+    setMinutesAdded(true);
+    url.searchParams.delete("minutes");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -217,6 +227,15 @@ export default function AccountPage() {
       </section>
 
       <main className="mx-auto max-w-6xl space-y-8 px-5 py-8 pb-20 sm:px-6 sm:py-10">
+        {minutesAdded && (
+          <section role="status" className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
+            <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+            <div>
+              <h2 className="text-sm font-black">Payment received</h2>
+              <p className="mt-1 text-sm text-emerald-900/75">Your interview minutes are being added now. Refresh in a few seconds to see them.</p>
+            </div>
+          </section>
+        )}
         {answersAdded && (
           <section role="status" className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
             <Check className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
@@ -346,6 +365,8 @@ export default function AccountPage() {
             </a>
           </section>
         </div>
+
+        <InterviewMinutes user={user ?? null} where="account" />
 
         <AnswerPacks />
 

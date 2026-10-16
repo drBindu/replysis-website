@@ -11,6 +11,7 @@ import Link from "next/link";
 import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
+import InterviewMinutes from "../../components/InterviewMinutes";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
   answersFor, interviewsFor,
@@ -315,6 +316,8 @@ export default function PricingPage() {
   const [profile,  setProfile]  = useState<UserProfile | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
+  // Signing in from the minutes card keeps the buyer on this page, next to the slider they set.
+  const [stayAfterAuth, setStayAfterAuth] = useState(false);
   const [loading,  setLoading]  = useState<string | null>(null);
   // Always monthly while ANNUAL_ENABLED is false: nothing on the page can turn it on.
   const [annual,   setAnnual]   = useState(false);
@@ -417,6 +420,7 @@ export default function PricingPage() {
     const planToBuy = pendingPlan;
     setPendingPlan(null);
     if (planToBuy) void handleCheckout(planToBuy, signedInUser);
+    else if (stayAfterAuth) setStayAfterAuth(false);
     else window.location.href = "/real-interview";
   };
 
@@ -564,6 +568,15 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* ══ INDIA: PAY BY THE MINUTE ═══════════════════════════════════════ */}
+      {india && (
+        <section className="hv2-section" style={{ paddingTop: 24 }}>
+          <div className="hv2-wide">
+            <InterviewMinutes user={user} where="pricing" onNeedSignIn={() => { setPendingPlan(null); setStayAfterAuth(true); setShowAuth(true); }} />
+          </div>
+        </section>
+      )}
 
       {/* ══ WHAT EACH ACTION USES ═══════════════════════════════════════════ */}
       <section className="hv2-section">
