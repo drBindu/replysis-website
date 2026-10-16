@@ -333,9 +333,9 @@ export default function PricingPage() {
   const [previewIndia, setPreviewIndia] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    // ?preview=india shows the India page from anywhere, for checking it. Display only: the checkout still
+    // ?preview=india shows the India page on a developer machine only (owner: not for the public). Display only: the checkout still
     // decides rupees from the buyer's real address and refuses the minutes outside India.
-    if (new URLSearchParams(window.location.search).get("preview") === "india") { setIndia(true); setPreviewIndia(true); return; }
+    if (process.env.NODE_ENV !== "production" && new URLSearchParams(window.location.search).get("preview") === "india") { setIndia(true); setPreviewIndia(true); return; }
     fetch("/api/geo")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
