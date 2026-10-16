@@ -330,8 +330,12 @@ export default function PricingPage() {
   // $29.99 is ninety percent. If the two ever disagree, the charge wins and the
   // buyer sees a surprise, so both read the same source.
   const [india, setIndia] = useState(false);
+  const [previewIndia, setPreviewIndia] = useState(false);
   useEffect(() => {
     let cancelled = false;
+    // ?preview=india shows the India page from anywhere, for checking it. Display only: the checkout still
+    // decides rupees from the buyer's real address and refuses the minutes outside India.
+    if (new URLSearchParams(window.location.search).get("preview") === "india") { setIndia(true); setPreviewIndia(true); return; }
     fetch("/api/geo")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -481,6 +485,12 @@ export default function PricingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {previewIndia && (
+        <p className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xl">
+          Preview of the India page. Checkout uses your real location.
+        </p>
+      )}
 
       {/* ══ HEADING ═════════════════════════════════════════════════════════ */}
       <section className="hv2-hero" style={{ paddingTop: 112 }}>

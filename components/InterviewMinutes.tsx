@@ -33,6 +33,7 @@ export default function InterviewMinutes({ user, where, onNeedSignIn }: {
 
   useEffect(() => {
     let cancelled = false;
+    if (new URLSearchParams(window.location.search).get("preview") === "india") { setIndia(true); return; }
     fetch("/api/geo")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled && d?.country === "IN") setIndia(true); })
