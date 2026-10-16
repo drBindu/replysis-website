@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { User } from "firebase/auth";
 import {
-  AUTO_ADD_MINUTES, MAX_MINUTES, MIN_MINUTES, MINUTE_STEP, RUPEES_PER_MINUTE, rupeesFor,
+  AUTO_ADD_MINUTES, INDIA_PRO_RUPEES, MAX_MINUTES, MIN_MINUTES, MINUTE_STEP, perMinute, rupeesFor,
 } from "../data/interviewMinutes";
 
 type Status = { minutesBalance: number; autoAdd: boolean; savedCard: boolean };
@@ -117,8 +117,8 @@ export default function InterviewMinutes({ user, where, onNeedSignIn }: {
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Pay by the minute</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-            ₹{RUPEES_PER_MINUTE} for every minute the interviewer speaks. Answers inside your minutes are included.
-            No subscription.
+            Pay only for the minutes the interviewer speaks. The more you take, the less each minute costs, and every
+            amount costs less than Pro (₹{INDIA_PRO_RUPEES}). Answers inside your minutes are included. No subscription.
           </p>
         </div>
         {status && status.minutesBalance > 0 && (
@@ -134,7 +134,10 @@ export default function InterviewMinutes({ user, where, onNeedSignIn }: {
             {minutes} <span className="text-lg font-bold text-slate-500">minutes</span>
             {hours && <span className="ml-2 text-sm font-semibold text-slate-400">({hours})</span>}
           </p>
-          <p className="text-3xl font-black tracking-tight text-[#1C7A3E] tabular-nums">₹{rupeesFor(minutes).toLocaleString("en-IN")}</p>
+          <p className="text-right text-3xl font-black tracking-tight text-[#1C7A3E] tabular-nums">
+            ₹{rupeesFor(minutes).toLocaleString("en-IN")}
+            <span className="block text-xs font-semibold text-slate-500">₹{perMinute(minutes)} a minute</span>
+          </p>
         </div>
         <input
           type="range"
