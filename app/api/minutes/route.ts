@@ -3,9 +3,9 @@
 // GET                      -> { minutesBalance, autoAdd, savedCard }
 // POST { autoAdd: bool }   -> switches auto add on or off (on needs a card saved by an earlier purchase)
 // POST { action: "add" }   -> auto add: when 2 minutes or fewer are left, charges the saved card for
-//                             30 more minutes. If the bank wants the person to approve it (most Indian
+//                             15 more minutes. If the bank wants the person to approve it (most Indian
 //                             cards do, under RBI rules), answers { needsApproval, url } with a checkout
-//                             for the same 30 minutes instead, so one tap finishes it.
+//                             for the same 15 minutes instead, so one tap finishes it.
 
 import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
@@ -143,7 +143,7 @@ async function autoAdd(uid: string, userRef: FirebaseFirestore.DocumentReference
     return NextResponse.json({ ...claim.s, minutesBalance: claim.s.minutesBalance + AUTO_ADD_MINUTES, added: AUTO_ADD_MINUTES });
   }
 
-  // The bank wants the person to approve it. Hand back a checkout for the same 30 minutes: one tap.
+  // The bank wants the person to approve it. Hand back a checkout for the same 15 minutes: one tap.
   const code = pi?.error?.code ?? pi?.last_payment_error?.code ?? pi?.status ?? "failed";
   console.log(`[minutes] auto add needs the person: ${code}`);
   await userRef.update({ minutesAddStartedAt: 0 });

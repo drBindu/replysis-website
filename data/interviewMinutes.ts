@@ -31,7 +31,7 @@ export const PRICE_POINTS: ReadonlyArray<readonly [number, number]> = [
 export const MIN_MINUTES = 15;
 export const MAX_MINUTES = 600;
 export const MINUTE_STEP = 15;
-export const AUTO_ADD_MINUTES = 30;
+export const AUTO_ADD_MINUTES = 15;   // owner, 2026-10-16: 15, not 30
 /** Auto add starts when this many minutes or fewer are left, so the interview never stops. */
 export const AUTO_ADD_WHEN_LEFT = 2;
 
