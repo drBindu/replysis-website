@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebaseConfig";
-import AiRobot3D from "../../components/AiRobot3DSafe";
+import InterviewerTile from "../../components/InterviewerTile";
 import BrandIcon from "../../components/BrandIcon";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -1978,23 +1978,8 @@ export default function MockInterviewPage() {
 
                 {/* AI Robot area */}
                 <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
-                  justifyContent: "center", overflow: "hidden", background: "#f8f9fc" }}>
-                  <AiRobot3D isSpeaking={isSpeaking} />
-
-                  {/* Speaking badge */}
-                  <AnimatePresence>
-                    {isSpeaking && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                        style={{ position: "absolute", top: 14, left: 14, display: "flex", alignItems: "center",
-                          gap: 8, padding: "7px 12px", borderRadius: 10,
-                          background: "rgba(255,255,255,0.95)", border: `1px solid ${T.border}`,
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.06)", backdropFilter: "blur(8px)" }}>
-                        <PulseBars active={isSpeaking} />
-                        <span style={{ fontSize: 10, fontWeight: 800, color: T.accent,
-                          textTransform: "uppercase", letterSpacing: "0.1em" }}>AI Speaking</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
+                  <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"} question={currentQ} />
 
                   {/* Camera PiP */}
                   {cameraOn && (
