@@ -113,7 +113,7 @@ export default function VisitorsPanel() {
           <Globe2 size={16} className="text-emerald-300" />
           <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-emerald-300">Website visitors</h2>
         </div>
-        <span className="text-[11.5px] text-slate-500">Real people only. Scanners and bots are not counted. Days are UTC.</span>
+        <span className="text-[11.5px] text-slate-500">Real people only. Scanners and bots are not counted. Days are Chicago time (CST).</span>
       </div>
 
       {error && !data ? (

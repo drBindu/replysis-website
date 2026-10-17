@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { chicagoDay, chicagoDaysAgo } from "@/app/lib/chicago-day";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import {
@@ -585,16 +586,17 @@ async function liveView(db: Firestore, sinceMs: number) {
 }
 
 
-// Who opened the website, counted in the visitor's own browser (app/api/visit). Each document is one visitor for one UTC day.
+// Who opened the website, counted in the visitor's own browser (app/api/visit). Each document is one visitor for one day,
+// Chicago time (UTC before 2026-10-17).
 async function visitorsView(db: Firestore, days: number) {
-  const since = new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
+  const since = chicagoDaysAgo(days - 1);
   const snap = await db.collection("site_visits").where("day", ">=", since).limit(40_000).get();
   const perDay: Record<string, { visitors: number; pageviews: number }> = {};
   const countries: Record<string, number> = {};
   const landing: Record<string, number> = {};
   const referrers: Record<string, number> = {};
   const devices: Record<string, number> = { desktop: 0, mobile: 0 };
-  const today = new Date().toISOString().slice(0, 10);
+  const today = chicagoDay();
   let returningToday = 0;
   for (const doc of snap.docs) {
     const d = doc.data();
@@ -613,14 +615,14 @@ async function visitorsView(db: Firestore, days: number) {
   }
   const series: { day: string; visitors: number; pageviews: number }[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    const day = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    const day = chicagoDaysAgo(i);
     series.push({ day, visitors: perDay[day]?.visitors || 0, pageviews: perDay[day]?.pageviews || 0 });
   }
   const top = (m: Record<string, number>, n: number) =>
     Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, n).map(([name, count]) => ({ name, count }));
   return {
     today: perDay[today] || { visitors: 0, pageviews: 0 },
-    yesterday: perDay[new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)] || { visitors: 0, pageviews: 0 },
+    yesterday: perDay[chicagoDaysAgo(1)] || { visitors: 0, pageviews: 0 },
     multiPageToday: returningToday,
     series,
     countries: top(countries, 8),

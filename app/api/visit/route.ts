@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { chicagoDay } from "@/app/lib/chicago-day";
 import { createHash } from "node:crypto";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore";
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
   const firestore = db();
   if (!firestore) return new NextResponse(null, { status: 204 });
 
-  const day = new Date().toISOString().slice(0, 10);
+  const day = chicagoDay();   // the owner's day, Chicago time
   const id = createHash("sha256").update(`${ip}|${ua}|${day}|${SALT}`).digest("hex").slice(0, 20);
   const ref = firestore.collection("site_visits").doc(`${day}-${id}`);
   const country = ((await countryOf(req.headers).catch(() => null)) || "??").toUpperCase().slice(0, 2);
