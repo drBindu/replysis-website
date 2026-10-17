@@ -1,8 +1,8 @@
 export type InterviewQuestion = {
   id: string;
   company: "General" | "Amazon" | "Google" | "Meta" | "Microsoft" | "Apple";
-  role: "Software Engineering" | "Product" | "Data" | "Sales" | "Leadership";
-  category: "Behavioral" | "Coding" | "System Design" | "Role Knowledge";
+  role: "Software Engineering" | "Product" | "Data" | "Sales" | "Leadership" | "Any role" | "Freshers (India)";
+  category: "Behavioral" | "Coding" | "System Design" | "Role Knowledge" | "HR";
   difficulty: "Foundation" | "Intermediate" | "Advanced";
   question: string;
   focus: string;
@@ -47,4 +47,40 @@ export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id:"ap-2", company:"Apple", role:"Product", category:"Behavioral", difficulty:"Advanced", question:"Tell me about a detail most people overlooked that materially improved the product.", focus:"Craft, judgment, and customer impact" },
   { id:"ap-3", company:"Apple", role:"Data", category:"Role Knowledge", difficulty:"Advanced", question:"How would you evaluate an on-device model when privacy prevents centralized raw-data collection?", focus:"Privacy-preserving evaluation" },
   { id:"ap-4", company:"Apple", role:"Leadership", category:"Behavioral", difficulty:"Advanced", question:"Describe a time you protected product quality under intense schedule pressure.", focus:"Standards, trade-offs, and delivery" },
+  { id:"any-1", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Tell me about yourself.", focus:"A short story of who you are professionally, ending on why you are here" },
+  { id:"any-2", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"What is your greatest strength?", focus:"One real strength, proven with an example" },
+  { id:"any-3", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"What is your greatest weakness?", focus:"Honest self-awareness and visible progress" },
+  { id:"any-4", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Why do you want to work here?", focus:"Specific research and a real fit between you and the company" },
+  { id:"any-5", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Why should we hire you?", focus:"Matching your proof to what the role needs" },
+  { id:"any-6", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Where do you see yourself in five years?", focus:"Ambition that fits the role and the company" },
+  { id:"any-7", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Why are you leaving your current job?", focus:"A positive, honest reason without blame" },
+  { id:"any-8", company:"General", role:"Any role", category:"HR", difficulty:"Intermediate", question:"What are your salary expectations?", focus:"Researched range, flexibility and calm" },
+  { id:"any-9", company:"General", role:"Any role", category:"Behavioral", difficulty:"Intermediate", question:"Tell me about a time you failed.", focus:"Ownership and what changed afterwards" },
+  { id:"any-10", company:"General", role:"Any role", category:"Behavioral", difficulty:"Intermediate", question:"Tell me about a conflict with a coworker and how you handled it.", focus:"Listening, fairness and resolution" },
+  { id:"any-11", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"How do you handle pressure and tight deadlines?", focus:"A method for staying calm and delivering" },
+  { id:"any-12", company:"General", role:"Any role", category:"Behavioral", difficulty:"Intermediate", question:"Tell me about a time you showed leadership without having the title.", focus:"Initiative and influence" },
+  { id:"any-13", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"Describe a time you had to learn something new quickly.", focus:"Learning method and speed to usefulness" },
+  { id:"any-14", company:"General", role:"Any role", category:"HR", difficulty:"Intermediate", question:"Can you explain the gap in your resume?", focus:"A short, honest, confident explanation" },
+  { id:"any-15", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"What motivates you at work?", focus:"Real drivers that match the job" },
+  { id:"any-16", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"How do you prioritize when you have too many tasks?", focus:"A clear method, with an example" },
+  { id:"any-17", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"What is your biggest professional achievement?", focus:"Specific impact that you personally caused" },
+  { id:"any-18", company:"General", role:"Any role", category:"HR", difficulty:"Foundation", question:"Do you have any questions for us?", focus:"Thoughtful questions that show interest and judgment" },
+  { id:"any-19", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"How do you handle criticism and feedback?", focus:"Openness and a real example of changing" },
+  { id:"any-20", company:"General", role:"Any role", category:"Behavioral", difficulty:"Foundation", question:"Tell me about a time you worked in a team to reach a goal.", focus:"Your own contribution inside a shared result" },
+  { id:"fr-1", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"Please introduce yourself.", focus:"Education, skills, projects and goals in under a minute" },
+  { id:"fr-2", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"Why did you choose this course or branch?", focus:"A genuine reason and what you built from it" },
+  { id:"fr-3", company:"General", role:"Freshers (India)", category:"Role Knowledge", difficulty:"Foundation", question:"Tell me about your final year project.", focus:"Problem, your part, tools used and result" },
+  { id:"fr-4", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"Why should we hire a fresher like you?", focus:"Learning speed, energy and proof of initiative" },
+  { id:"fr-5", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"Are you willing to relocate or work in shifts?", focus:"An honest, clear answer about your limits" },
+  { id:"fr-6", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"What do you know about our company?", focus:"Short, specific research" },
+  { id:"fr-7", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"What are your expectations from your first job?", focus:"Learning, mentoring and contribution, not only salary" },
+  { id:"fr-8", company:"General", role:"Freshers (India)", category:"Behavioral", difficulty:"Foundation", question:"What did you do during your internship?", focus:"Concrete tasks, tools and what you learned" },
+  { id:"fr-9", company:"General", role:"Freshers (India)", category:"Role Knowledge", difficulty:"Foundation", question:"Explain object oriented programming with a real example.", focus:"Four ideas, explained simply with one example" },
+  { id:"fr-10", company:"General", role:"Freshers (India)", category:"Role Knowledge", difficulty:"Foundation", question:"What is the difference between a process and a thread?", focus:"Clear definitions and one practical contrast" },
+  { id:"fr-11", company:"General", role:"Freshers (India)", category:"Role Knowledge", difficulty:"Foundation", question:"What is the difference between a primary key and a foreign key?", focus:"Definitions plus a two table example" },
+  { id:"fr-12", company:"General", role:"Freshers (India)", category:"Coding", difficulty:"Foundation", question:"Write a program to check whether a string is a palindrome.", focus:"Simple approach, edge cases and complexity" },
+  { id:"fr-13", company:"General", role:"Freshers (India)", category:"Role Knowledge", difficulty:"Foundation", question:"What is the difference between SQL and NoSQL databases?", focus:"Structure, scaling and when to choose each" },
+  { id:"fr-14", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Foundation", question:"How do you keep up with new technology?", focus:"Real habits you can name" },
+  { id:"fr-15", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Intermediate", question:"What salary do you expect as a fresher?", focus:"Researched range and openness to the company's scale" },
+  { id:"fr-16", company:"General", role:"Freshers (India)", category:"HR", difficulty:"Intermediate", question:"Do you have any other offers right now?", focus:"Honesty without weakening your position" },
 ];

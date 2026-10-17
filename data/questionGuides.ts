@@ -42,6 +42,14 @@ export const CATEGORY_FRAMES: Record<string, { name: string; steps: string[] }> 
       "Finish with how it fails and how you would know: monitoring, retries, limits.",
     ],
   },
+  HR: {
+    name: "Honest, specific, brief",
+    steps: [
+      "Answer the question that was asked in your first sentence.",
+      "Back it with one specific example or fact, not a general claim.",
+      "Tie it to this role, and stop. A calm thirty to sixty seconds is enough.",
+    ],
+  },
   "Role Knowledge": {
     name: "Frame, evidence, recommendation",
     steps: [
@@ -402,5 +410,349 @@ export const QUESTION_GUIDES: Record<string, QuestionGuide> = {
       "Give the outcome and how the team felt about it afterwards.",
     ],
     mistake: "A story where you simply refused. The better answer shows you offered a way to keep the date and the standard.",
+  },
+  "any-1": {
+    testing: "Whether you can describe yourself professionally in a minute, and make it relevant to this job.",
+    outline: [
+      "Start with where you are now: your role and one thing you are proud of.",
+      "Add one or two earlier steps that led here, in a sentence each.",
+      "Finish with why you are interested in this role, using one detail from the job.",
+      "Keep it near a minute, and stop so the interviewer can ask for more.",
+    ],
+    mistake: "Starting from your childhood or reading out your resume. Begin with the present and make it relevant.",
+  },
+  "any-2": {
+    testing: "Whether you know your real strengths and can prove one.",
+    outline: [
+      "Pick one strength that the job needs, not a list of five.",
+      "Say it plainly in one sentence.",
+      "Prove it with a short example: what happened and what it led to.",
+      "Link it back to the role: this is how it helps your next team.",
+    ],
+    mistake: "Naming a generic quality like hard working with no example. Anyone can say it, so it proves nothing.",
+  },
+  "any-3": {
+    testing: "Whether you are honest about a real weakness and actively working on it.",
+    outline: [
+      "Choose a real weakness that is not essential for this job.",
+      "Say how it showed up once, briefly and without drama.",
+      "Describe what you are doing about it and the progress you have seen.",
+      "End on the improvement, not the problem.",
+    ],
+    mistake: "Giving a strength in disguise, like I work too hard. Interviewers hear it constantly and stop believing you.",
+  },
+  "any-4": {
+    testing: "Whether you have done your homework and see a real fit.",
+    outline: [
+      "Name one or two specific things about the company: a product, a goal, a value you have actually looked at.",
+      "Connect each to something you have done or want to do.",
+      "Say what you would bring, not only what you would get.",
+    ],
+    mistake: "Praising the company in general terms. Saying you admire the brand could be said about any company.",
+  },
+  "any-5": {
+    testing: "Whether you can match your proof to what this role needs.",
+    outline: [
+      "Name the top two or three things the job needs, from the description.",
+      "For each, give one piece of proof from your experience, with a result if you have it.",
+      "Close with why you will be productive quickly and want to stay.",
+    ],
+    mistake: "Listing qualities without evidence, or putting down other candidates. Talk only about what you offer.",
+  },
+  "any-6": {
+    testing: "Whether your ambition fits the role and you plan to stay and grow.",
+    outline: [
+      "Say what you want to be good at in five years, in terms of skills and impact.",
+      "Show how this role is a step towards it.",
+      "Mention that you would like to take on more responsibility as you earn it.",
+    ],
+    mistake: "Saying you want their job, or that you have no plan. Aim for specific and realistic.",
+  },
+  "any-7": {
+    testing: "Whether you leave on good terms and look forward, not back.",
+    outline: [
+      "Give a positive reason: you want to grow, take on bigger problems, or use a skill you cannot use now.",
+      "Mention something good about your current job, briefly.",
+      "Explain why this role is the next step.",
+    ],
+    mistake: "Criticising your manager or company. Even when it is true, it makes interviewers wonder what you would say about them.",
+  },
+  "any-8": {
+    testing: "Whether you know your market value and can talk about money calmly.",
+    outline: [
+      "Research the range for this role, location and level before the interview.",
+      "Give a range, with the lower end at a number you would accept.",
+      "Say that you care about the whole package and the role, and are open to talk.",
+      "If they push, ask what range they have budgeted.",
+    ],
+    mistake: "Naming a number too low out of nerves. It is hard to raise later.",
+  },
+  "any-9": {
+    testing: "Whether you own mistakes and learn from them.",
+    outline: [
+      "Choose a real failure with real stakes, not a disguised success.",
+      "Say what went wrong and your part in it, without blaming others.",
+      "Explain what you did to put it right.",
+      "Say what you do differently now, with an example of it working.",
+    ],
+    mistake: "Picking a tiny failure, or one that was someone else's fault.",
+  },
+  "any-10": {
+    testing: "Whether you can disagree and still work well with people.",
+    outline: [
+      "Describe the disagreement neutrally, without painting the other person as the villain.",
+      "Show you listened to their side first.",
+      "Explain what you did to find common ground or a decision.",
+      "Give the result, and the state of your working relationship afterwards.",
+    ],
+    mistake: "Saying you have never had a conflict. It sounds untrue, or like you avoid hard conversations.",
+  },
+  "any-11": {
+    testing: "Whether you have a method for pressure, not just endurance.",
+    outline: [
+      "Say how you stay calm: you break the work into steps and decide what matters most.",
+      "Give one example of a tight deadline you met.",
+      "Describe how you communicated early when something was at risk.",
+      "End with the result.",
+    ],
+    mistake: "Saying you thrive under pressure with no example. Show what you actually do.",
+  },
+  "any-12": {
+    testing: "Whether you take initiative and bring others with you.",
+    outline: [
+      "Describe a situation where something needed doing and nobody owned it.",
+      "Say how you stepped in and got people to follow, by explaining, asking and helping.",
+      "Give the result for the team.",
+      "Note what you learned about leading without authority.",
+    ],
+    mistake: "A story about giving orders. Leadership without a title is about influence and help.",
+  },
+  "any-13": {
+    testing: "Whether you pick up new things fast and apply them.",
+    outline: [
+      "Describe what you had to learn and why it was urgent.",
+      "Say how you learned: docs, a mentor, a small practice project.",
+      "Show how soon you were useful.",
+      "Mention how you keep that skill up.",
+    ],
+    mistake: "Describing the topic and skipping how you learned it. The method is the answer.",
+  },
+  "any-14": {
+    testing: "Whether you can explain a gap briefly and honestly.",
+    outline: [
+      "State the reason in a sentence or two: family, health, study, a job search or a career change.",
+      "Say what you did to stay current in that time, even small things.",
+      "Turn to the present: you are ready and excited for this role.",
+    ],
+    mistake: "Over-explaining or sounding defensive. A short, calm answer closes the topic.",
+  },
+  "any-15": {
+    testing: "Whether what drives you matches what the job gives.",
+    outline: [
+      "Name one or two real drivers, such as solving hard problems, helping customers or learning.",
+      "Give a moment from a past job when you felt it.",
+      "Show that this role offers the same.",
+    ],
+    mistake: "Saying money only. Money matters, but it does not tell them how you will work.",
+  },
+  "any-16": {
+    testing: "Whether you have a clear way of deciding what comes first.",
+    outline: [
+      "Say your method: urgency, impact and who is waiting on you.",
+      "Give an example of a week with too much to do and what you chose.",
+      "Explain how you told others what would wait and why.",
+    ],
+    mistake: "Saying you do everything at once. Prioritising means choosing what not to do.",
+  },
+  "any-17": {
+    testing: "Whether you can point to real impact that you caused.",
+    outline: [
+      "Pick an achievement that matters to the job you want.",
+      "Describe the problem and what you did, in the first person.",
+      "Give the result in numbers if you can: time saved, money earned, users reached.",
+      "Say what you learned or how you have used it since.",
+    ],
+    mistake: "Describing a team success without saying what you did. They are hiring you, not the team.",
+  },
+  "any-18": {
+    testing: "Whether you are curious about the role and judge what matters.",
+    outline: [
+      "Prepare three questions in advance: how success is measured in the first months, what the team's biggest challenge is, how feedback works.",
+      "Listen to what they say and ask one follow up.",
+      "Do not ask about pay or leave in a first round unless they raise it.",
+    ],
+    mistake: "Saying no, I think you covered everything. It signals low interest.",
+  },
+  "any-19": {
+    testing: "Whether you can take feedback without getting defensive and actually change.",
+    outline: [
+      "Say how you take it in: you listen, ask for an example and thank them.",
+      "Describe one piece of feedback that was hard to hear.",
+      "Show what you changed and the improvement it produced.",
+    ],
+    mistake: "Saying you take criticism well with no example. Show a real change.",
+  },
+  "any-20": {
+    testing: "Whether you contribute to a team and can describe your own part.",
+    outline: [
+      "Describe the goal and the team in a sentence.",
+      "Say what your role was and what you did, specifically.",
+      "Mention how the team worked together and one obstacle you got past.",
+      "Give the result for the team and for you.",
+    ],
+    mistake: "Using we for everything. Say what you did.",
+  },
+  "fr-1": {
+    testing: "Whether you can present your education, skills and goals clearly and confidently.",
+    outline: [
+      "Start with your name, your degree and college.",
+      "Mention one or two skills you have, backed by a project or internship.",
+      "Say what kind of work you want to start with.",
+      "Keep it under a minute, with a calm voice and eye contact.",
+    ],
+    mistake: "Reading out your name, age and hobbies like a form. Lead with skills and projects.",
+  },
+  "fr-2": {
+    testing: "Whether you chose your path with thought and have grown in it.",
+    outline: [
+      "Give your honest reason: what interested you, who or what influenced you.",
+      "Say what you have done in it beyond the syllabus: a project, a course, a club.",
+      "Connect it to the job you are applying for.",
+    ],
+    mistake: "Saying everyone told me to, or that you had no other option. Find the real positive thread.",
+  },
+  "fr-3": {
+    testing: "Whether you really understand and built your project.",
+    outline: [
+      "State the problem it solves in one sentence.",
+      "Say your own role if it was a team project, and the tools and languages used.",
+      "Explain how it works at a high level and one difficulty you solved.",
+      "Say what you would improve if you had more time.",
+    ],
+    mistake: "Describing a project you cannot explain in detail. Expect follow up questions on any tool you mention.",
+  },
+  "fr-4": {
+    testing: "Whether you can turn no experience into a reason to hire you.",
+    outline: [
+      "Say that you learn quickly, and give proof: a skill you taught yourself.",
+      "Mention projects, internships or certifications that show you can do real work.",
+      "Say you are willing to be trained and take feedback.",
+      "Close with enthusiasm for this company's work.",
+    ],
+    mistake: "Apologising for being a fresher. Show what you already do.",
+  },
+  "fr-5": {
+    testing: "Whether you are flexible and honest about what you can do.",
+    outline: [
+      "Give your direct answer first: yes, or yes with a condition.",
+      "If you have a real limit, say it calmly and early.",
+      "Show that you understand why the company asks.",
+    ],
+    mistake: "Saying yes to everything and then not meaning it. Be honest about limits.",
+  },
+  "fr-6": {
+    testing: "Whether you did even a little research.",
+    outline: [
+      "Say what the company does and who its customers are, in a sentence.",
+      "Mention one recent thing: a product, a news item or a project.",
+      "Connect it to why you want to work there.",
+    ],
+    mistake: "Saying you know it is a big company. Look at the website and their recent news the evening before.",
+  },
+  "fr-7": {
+    testing: "Whether your goals are about learning and contributing.",
+    outline: [
+      "Say you want to learn the work properly from experienced people.",
+      "Say you want to take on real responsibility and add value.",
+      "Mention growth over time, and that salary matters but is not your only goal.",
+    ],
+    mistake: "Putting salary and a quick promotion first.",
+  },
+  "fr-8": {
+    testing: "Whether your internship gave you real experience.",
+    outline: [
+      "Say the company, your role and how long it lasted.",
+      "Describe two or three specific tasks, with the tools you used.",
+      "Share one result or something you built.",
+      "Say what you learned about working in a team.",
+    ],
+    mistake: "Staying vague, like I learned a lot. Name what you did.",
+  },
+  "fr-9": {
+    testing: "Whether you understand the ideas, not just the words.",
+    outline: [
+      "Name the four ideas: encapsulation, abstraction, inheritance and polymorphism.",
+      "Use one running example, such as a Vehicle class with Car and Bike.",
+      "Say in one sentence what each idea does for that example.",
+      "Offer to write a short example if they would like.",
+    ],
+    mistake: "Reciting definitions from a book. An example shows you understand.",
+  },
+  "fr-10": {
+    testing: "Whether you know the basic concepts that operating systems questions start from.",
+    outline: [
+      "A process is a running program with its own memory.",
+      "A thread is a smaller unit of work inside a process, sharing that process's memory.",
+      "Say the effect: threads are lighter and communicate easily, but a bug in one can affect the others.",
+      "Give an example: a browser runs tabs as processes, and each tab uses threads for tasks.",
+    ],
+    mistake: "Saying they are the same. The memory sharing is the main difference.",
+  },
+  "fr-11": {
+    testing: "Whether you understand how tables relate.",
+    outline: [
+      "A primary key uniquely identifies each row in a table and cannot be empty.",
+      "A foreign key is a column that points to the primary key of another table, linking them.",
+      "Give an example: a Students table with student_id as the primary key, and an Enrollments table that holds student_id as a foreign key.",
+      "Mention that the foreign key keeps the data consistent.",
+    ],
+    mistake: "Defining them without an example. Two tables make it clear.",
+  },
+  "fr-12": {
+    testing: "Whether you can write a simple correct program and think of edge cases.",
+    outline: [
+      "Ask whether case and spaces should be ignored.",
+      "Use two pointers from both ends, comparing characters and moving inwards.",
+      "State the cost: O(n) time and O(1) extra space.",
+      "Test an empty string, one character, and an even and odd length string.",
+    ],
+    mistake: "Reversing the whole string and comparing. It works but uses extra space, and the two pointer approach shows more skill.",
+  },
+  "fr-13": {
+    testing: "Whether you understand the main trade-offs, not just the names.",
+    outline: [
+      "SQL databases store data in tables with a fixed structure and are strong for relationships and transactions.",
+      "NoSQL databases store data in flexible forms like documents or key value pairs and scale easily across many machines.",
+      "Choose SQL for structured data like banking, and NoSQL for large, changing data like activity feeds.",
+      "Say that many systems use both.",
+    ],
+    mistake: "Saying one is better. The right choice depends on the data and the needs.",
+  },
+  "fr-14": {
+    testing: "Whether you keep learning without being told.",
+    outline: [
+      "Name two or three real sources: a YouTube channel, a newsletter, documentation, a community.",
+      "Say how you practise: a small project or a weekend experiment.",
+      "Give a recent example of something you learned and used.",
+    ],
+    mistake: "Naming sources you cannot discuss. Be ready for a follow up on what you learned recently.",
+  },
+  "fr-15": {
+    testing: "Whether you have researched pay and are reasonable.",
+    outline: [
+      "Say you have researched what freshers in this role and city usually receive.",
+      "Give a range that is realistic and lets you say yes to a fair offer.",
+      "Say you are more interested in learning and growth at first, and trust the company to be fair.",
+    ],
+    mistake: "Giving a high number with no basis, or saying anything is fine. Both weaken you.",
+  },
+  "fr-16": {
+    testing: "Whether you are honest and keep your position strong.",
+    outline: [
+      "If you have none, say so and say that this role is your top choice.",
+      "If you do, say you are in process elsewhere, without naming a company if you prefer.",
+      "Say that this company is a strong option for you, and why.",
+    ],
+    mistake: "Inventing offers to seem in demand. It is easy to catch and costs trust.",
   },
 };

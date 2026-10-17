@@ -8,7 +8,7 @@ import { INTERVIEW_QUESTIONS } from "../../data/interviewQuestions";
 import { questionPath } from "../../data/questionSlugs";
 
 const companies = ["All", "General", "Amazon", "Google", "Meta", "Microsoft", "Apple"] as const;
-const roles = ["All", "Software Engineering", "Product", "Data", "Sales", "Leadership"] as const;
+const roles = ["All", "Any role", "Freshers (India)", "Software Engineering", "Product", "Data", "Sales", "Leadership"] as const;
 
 export default function QuestionBankPage() {
   const [query, setQuery] = useState("");

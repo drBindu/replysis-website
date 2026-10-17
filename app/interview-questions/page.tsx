@@ -7,11 +7,13 @@ import "../home-v2.css";
 
 export const metadata: Metadata = {
   title: "Interview Questions and How to Answer Them  -  Replysis",
-  description: "Practice interview questions for software, product, data, sales and leadership roles, each with an outline of a strong answer and the mistake to avoid.",
+  description: "Common interview questions for any role, India fresher interview questions, and role specific questions for software, product, data, sales and leadership, each with an outline of a strong answer and the mistake to avoid.",
   alternates: { canonical: "https://replysis.com/interview-questions" },
 };
 
-const ROLES = ["Software Engineering", "Product", "Data", "Sales", "Leadership"] as const;
+const HEADINGS: Record<string, string> = { "Any role": "Common questions for any role", "Freshers (India)": "Questions for freshers in India" };
+
+const ROLES = ["Any role", "Freshers (India)", "Software Engineering", "Product", "Data", "Sales", "Leadership"] as const;
 
 export default function InterviewQuestionsPage() {
   return (
@@ -36,7 +38,7 @@ export default function InterviewQuestionsPage() {
         return (
           <section key={role} className="hv2-section" style={{ paddingTop: 56 }}>
             <div className="hv2-wrap">
-              <h2 className="hv2-serif hv2-h2">{role}</h2>
+              <h2 className="hv2-serif hv2-h2">{HEADINGS[role] ?? role}</h2>
               <ul className="hv2-index">
                 {items.map((q) => (
                   <li key={q.id}>
