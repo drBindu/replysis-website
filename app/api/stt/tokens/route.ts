@@ -101,7 +101,7 @@ const MAX_REQUEST_BYTES = 256 * 1024;
 const MAX_MESSAGES = 24;
 const MAX_MESSAGE_CHARS = 6_000;
 const VALID_MODES = new Set([
-  "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up",
+  "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up", "suggest_answer",
 ]);
 
 function requestTooLarge(req: Request): boolean {
@@ -334,6 +334,7 @@ const CREDIT_COSTS: Record<string, number> = {
   generate_feedback:  CREDIT_ACTION_COSTS.mock_feedback,
   generate_questions: CREDIT_ACTION_COSTS.question_generation,
   follow_up:          0,   // the interviewer's short follow-up in a mock interview: part of the conversation, not charged
+  suggest_answer:     0,   // the suggested answer a candidate can reveal with the eye button in a mock interview
   realtime:           CREDIT_ACTION_COSTS.realtime_per_minute,
   stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
@@ -1204,7 +1205,7 @@ export async function POST(req: Request) {
     // ════════════════════════════════════════════════════
     // MODE: GENERATE SCRIPT
     // ════════════════════════════════════════════════════
-    if (mode === "generate_script") {
+    if (mode === "generate_script" || mode === "suggest_answer") {
       const safeResume = sanitizeText(resume);
       const safeJd     = sanitizeText(jd);
       const safeQ      = sanitizeText(question);

@@ -14,7 +14,7 @@ import {
   Zap, RotateCcw, Volume2, VolumeX, LayoutDashboard,
   Target, AlertCircle, PhoneOff, Shield, Star, TrendingUp,
   Clock, Award, Sparkles, ArrowRight, BarChart3, Cpu,
-  Coins, ChevronDown, Bolt, Flame, Gauge, LogIn,
+  Coins, ChevronDown, Bolt, Flame, Gauge, LogIn, Eye, EyeOff, Maximize2, Minimize2,
 } from "lucide-react";
 import { useToast } from "../../components/feedback/Toast";
 import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics";
@@ -736,6 +736,35 @@ export default function MockInterviewPage() {
     setFeedbackTiming(value);
     try { window.localStorage.setItem("replysis-mock-feedback", value); } catch { /* private window */ }
   };
+  // Full screen call view: only Maya and the candidate's own camera, like a real video interview, nothing else on screen
+  // (owner, 2026-10-17). Leaving full screen with Esc also leaves the call view.
+  const [callView, setCallView] = useState(false);
+  const toggleCallView = () => {
+    if (!callView) {
+      setCallView(true);
+      try { void document.documentElement.requestFullscreen?.().catch(() => { /* the view still fills the window */ }); } catch { /* not allowed here */ }
+    } else {
+      setCallView(false);
+      try { if (document.fullscreenElement) void document.exitFullscreen(); } catch { /* already left */ }
+    }
+  };
+  useEffect(() => {
+    const onChange = () => { if (!document.fullscreenElement) setCallView(false); };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  useEffect(() => { if (phase !== "interview") setCallView(false); }, [phase]);
+
+  // The suggested answer, shown only while the eye is on (remembered per browser), made once per question.
+  const [showSuggested, setShowSuggested] = useState(false);
+  useEffect(() => {
+    try { if (window.localStorage.getItem("replysis-mock-suggest") === "on") setShowSuggested(true); } catch { /* private window */ }
+  }, []);
+  const toggleSuggested = () => setShowSuggested(prev => {
+    try { window.localStorage.setItem("replysis-mock-suggest", prev ? "off" : "on"); } catch { /* private window */ }
+    return !prev;
+  });
+  const [suggestions, setSuggestions] = useState<Record<string, { text: string; loading: boolean; failed?: boolean }>>({});
   // Each question's feedback, kept for the report at the end, keyed by question number.
   const [turnFeedback, setTurnFeedback] = useState<Record<number, TurnFeedback>>({});
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
@@ -921,6 +950,28 @@ export default function MockInterviewPage() {
     setPartial("");
   }, [clearSilenceTimer, accountForListening]);
 
+  // ── Prepare listening while the question is spoken ───────
+  const listenPrepRef = useRef<{ at: number; idToken: string; response: Promise<Response> } | null>(null);
+  const prepareListening = useCallback(async () => {
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) return;
+      if (!earlyMicRef.current) {
+        const early = navigator.mediaDevices.getUserMedia({ audio: true });
+        early.catch(() => { /* reported where it is used */ });
+        earlyMicRef.current = early;
+      }
+      const response = fetch("/api/mock-interview/stt-token", {
+        method: "GET",
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${idToken}` },
+        signal: AbortSignal.timeout(15_000),
+      });
+      response.catch(() => { /* startRecording asks again */ });
+      listenPrepRef.current = { at: Date.now(), idToken, response };
+    } catch { /* startRecording does it the normal way */ }
+  }, []);
+
   // ── Reset silence timer ───────────────────────────────────
   const resetSilenceTimer = useCallback((finalSegment = false) => {
     clearSilenceTimer();
@@ -938,7 +989,11 @@ export default function MockInterviewPage() {
     if (isRecordingRef.current || isAnalyzingRef.current || wsRef.current) return;
     setRecordingError(null);
     try {
-      const idToken = await auth.currentUser?.getIdToken();
+      // Made while the question was being spoken (prepareListening), so listening starts the moment Maya stops.
+      const prepared = listenPrepRef.current;
+      listenPrepRef.current = null;
+      const fresh = prepared && Date.now() - prepared.at < 20_000 ? prepared : null;
+      const idToken = fresh?.idToken ?? await auth.currentUser?.getIdToken();
       if (!idToken) {
         setRecordingError(SIGN_IN_REQUIRED);
         return;
@@ -946,15 +1001,19 @@ export default function MockInterviewPage() {
       listeningAuthTokenRef.current = idToken;
       // Start opening the microphone now, alongside the token and the connection, so capture begins the moment
       // recognition does instead of after a second permission and device start.
-      const early = navigator.mediaDevices.getUserMedia({ audio: true });
-      early.catch(() => { /* reported where it is used */ });
-      earlyMicRef.current = early;
-      const tokenRes = await fetch("/api/mock-interview/stt-token", {
+      if (!earlyMicRef.current) {
+        const early = navigator.mediaDevices.getUserMedia({ audio: true });
+        early.catch(() => { /* reported where it is used */ });
+        earlyMicRef.current = early;
+      }
+      const askForToken = () => fetch("/api/mock-interview/stt-token", {
         method: "GET",
         cache: "no-store",
         headers: { Authorization: `Bearer ${idToken}` },
         signal: AbortSignal.timeout(15_000),
       });
+      // A key asked for early is used if it arrived; if that early request failed, ask again now.
+      const tokenRes = fresh ? await fresh.response.catch(askForToken) : await askForToken();
       if (!tokenRes.ok) {
         console.error(`[Replysis] Mock interview token request failed status=${tokenRes.status}`);
         const failure = await tokenRes.json().catch(() => ({}));
@@ -1312,6 +1371,7 @@ export default function MockInterviewPage() {
     if (!ttsEnabled) { if (listenAfter) setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
     faceRef.current?.stop();
+    if (listenAfter) void prepareListening();
     const mine = ++speakToken.current;
     const voice = await fetchVoice(text);
     if (mine !== speakToken.current) return;                 // a newer question started meanwhile
@@ -1320,7 +1380,7 @@ export default function MockInterviewPage() {
       await faceRef.current.speak(voice.pcm, voice.rate);
       if (mine !== speakToken.current) return;
       setIsSpeaking(false);
-      if (listenAfter) setTimeout(() => startRecording(), 600);
+      if (listenAfter) setTimeout(() => startRecording(), 120);
       return;
     }
     const utter = new SpeechSynthesisUtterance(text);
@@ -1331,12 +1391,29 @@ export default function MockInterviewPage() {
     utter.rate   = 0.95;
     utter.onstart = () => { setIsSpeaking(true); faceRef.current?.setTalking(true); };
     await new Promise<void>((resolve) => {
-      utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 800); resolve(); };
+      utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 150); resolve(); };
       utter.onerror = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 300); resolve(); };
       window.speechSynthesis.speak(utter);
     });
-  }, [ttsEnabled, startRecording, fetchVoice]);
+  }, [ttsEnabled, startRecording, fetchVoice, prepareListening]);
   const speakQuestion = useCallback((text: string) => speakLine(text, true), [speakLine]);
+
+  // ── Suggested answer for the current question, made when the eye is on ──
+  useEffect(() => {
+    if (!showSuggested || phase !== "interview") return;
+    const q = questions[index];
+    if (!q || suggestions[q]) return;
+    setSuggestions(prev => ({ ...prev, [q]: { text: "", loading: true } }));
+    void (async () => {
+      try {
+        const res = await fetchAi({ mode: "suggest_answer", question: q, answer: "", resume: resumeText, jd: jdText, model: selectedModel }) as { betterAnswerExample?: string };
+        const text = typeof res?.betterAnswerExample === "string" ? res.betterAnswerExample.trim() : "";
+        setSuggestions(prev => ({ ...prev, [q]: { text, loading: false, failed: !text } }));
+      } catch {
+        setSuggestions(prev => ({ ...prev, [q]: { text: "", loading: false, failed: true } }));
+      }
+    })();
+  }, [showSuggested, phase, questions, index, suggestions, resumeText, jdText, selectedModel]);
 
   // ── After an answer (real interview mode) ────────────────
   // Maya acknowledges straight away (the line is ready). Meanwhile she decides whether to ask one follow-up about what was
@@ -2153,13 +2230,15 @@ export default function MockInterviewPage() {
           ══════════════════════════════════════════════════════ */}
           {phase === "interview" && (
             <motion.div key="interview" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 18,
+              style={{ display: "grid", gridTemplateColumns: callView ? "1fr" : "1.1fr 1fr", gap: 18,
                 height: "calc(100vh - 112px)", minHeight: 580 }}
               className="interview-grid">
 
-              {/* LEFT: Interview room */}
-              <div style={{ display: "flex", flexDirection: "column", borderRadius: 18,
-                border: `1px solid ${T.border}`, overflow: "hidden", background: T.panel }}>
+              {/* LEFT: Interview room (the whole screen in call view) */}
+              <div style={callView
+                ? { display: "flex", flexDirection: "column", position: "fixed", inset: 0, zIndex: 200, background: "#0b0f12" }
+                : { display: "flex", flexDirection: "column", borderRadius: 18,
+                    border: `1px solid ${T.border}`, overflow: "hidden", background: T.panel }}>
                 {/* Room header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "11px 16px", borderBottom: `1px solid ${T.border}`, background: T.card }}>
@@ -2180,6 +2259,14 @@ export default function MockInterviewPage() {
                     <span style={{ fontSize: 11, fontWeight: 700, color: T.textMid }}>
                       {index + 1} / {totalQ}
                     </span>
+                    <button onClick={toggleCallView}
+                      title={callView ? "Exit full screen" : "Full screen: just you and the interviewer"}
+                      aria-label={callView ? "Exit full screen" : "Full screen"}
+                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 9px", borderRadius: 8, cursor: "pointer",
+                        fontSize: 11, fontWeight: 700, border: `1px solid ${T.border}`, background: T.panel, color: T.textMid }}>
+                      {callView ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                      {callView ? "Exit full screen" : "Full screen"}
+                    </button>
                   </div>
                 </div>
 
@@ -2189,11 +2276,27 @@ export default function MockInterviewPage() {
                   <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"}
                     faceRef={faceRef} />
 
-                  {/* Camera PiP */}
+                  {/* The candidate's own tile: small in the corner, larger at the bottom right in full screen */}
+                  {callView && !cameraOn && (
+                    <div style={{ position: "absolute", right: 20, bottom: 20, width: "24%", minWidth: 200, aspectRatio: "16/9",
+                      borderRadius: 14, border: "2px solid rgba(255,255,255,0.15)", background: "#1a2026",
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                      <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>You</span>
+                      <button onClick={toggleCamera}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, cursor: "pointer",
+                          fontSize: 11.5, fontWeight: 700, border: "1px solid rgba(255,255,255,0.25)", background: "transparent", color: "white" }}>
+                        <Camera size={13} /> Turn camera on
+                      </button>
+                    </div>
+                  )}
                   {cameraOn && (
-                    <div style={{ position: "absolute", top: 14, right: 14, width: 160, aspectRatio: "16/9",
-                      borderRadius: 12, overflow: "hidden", border: `2px solid ${T.border}`,
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
+                    <div style={callView
+                      ? { position: "absolute", right: 20, bottom: 20, width: "24%", minWidth: 200, aspectRatio: "16/9",
+                          borderRadius: 14, overflow: "hidden", border: "2px solid rgba(255,255,255,0.18)",
+                          boxShadow: "0 8px 30px rgba(0,0,0,0.45)", zIndex: 2 }
+                      : { position: "absolute", top: 14, right: 14, width: 160, aspectRatio: "16/9",
+                          borderRadius: 12, overflow: "hidden", border: `2px solid ${T.border}`,
+                          boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
                       <video ref={videoRef} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
                       <div style={{ position: "absolute", bottom: 5, left: 7, fontSize: 9, fontWeight: 700,
                         color: "white", background: "rgba(0,0,0,0.55)", padding: "2px 6px", borderRadius: 5 }}>
@@ -2339,8 +2442,8 @@ export default function MockInterviewPage() {
                 </div>
               </div>
 
-              {/* RIGHT: Analysis panel */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, height: "100%", overflow: "hidden" }}>
+              {/* RIGHT: Analysis panel (hidden in full screen) */}
+              <div style={{ display: callView ? "none" : "flex", flexDirection: "column", gap: 12, height: "100%", overflow: "hidden" }}>
                 {/* Question card */}
                 <div style={{ borderRadius: 14, border: `1px solid ${T.border}`, background: T.panel,
                   padding: "14px 16px", flexShrink: 0 }}>
@@ -2393,6 +2496,42 @@ export default function MockInterviewPage() {
                       {tab === "transcript" ? "Live Transcript" : "Conversation"}
                     </button>
                   ))}
+                </div>
+
+                {/* Suggested answer: hidden until the eye is turned on */}
+                <div style={{ borderRadius: 14, border: `1px solid ${showSuggested ? T.success + "45" : T.border}`,
+                  background: T.panel, flexShrink: 0, maxHeight: showSuggested ? "48%" : undefined,
+                  display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px" }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: T.text }}>Suggested answer</span>
+                    <button onClick={toggleSuggested} aria-pressed={showSuggested}
+                      aria-label={showSuggested ? "Hide the suggested answer" : "Show the suggested answer"}
+                      title={showSuggested ? "Hide the suggested answer" : "Show the suggested answer"}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 9, cursor: "pointer",
+                        fontSize: 11.5, fontWeight: 700,
+                        border: `1.5px solid ${showSuggested ? T.success + "60" : T.border}`,
+                        background: showSuggested ? T.successBg : T.card,
+                        color: showSuggested ? T.success : T.textMid }}>
+                      {showSuggested ? <Eye size={15} /> : <EyeOff size={15} />}
+                      {showSuggested ? "Showing" : "Hidden"}
+                    </button>
+                  </div>
+                  {showSuggested && (() => {
+                    const s = suggestions[currentQ];
+                    return (
+                      <div style={{ padding: "0 14px 14px", overflowY: "auto" }} className="light-scrollbar">
+                        {!s || s.loading ? (
+                          <p style={{ fontSize: 12.5, color: T.textFaint, display: "flex", alignItems: "center", gap: 7 }}>
+                            <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> Writing a suggested answer from your resume
+                          </p>
+                        ) : s.failed ? (
+                          <p style={{ fontSize: 12.5, color: T.textFaint }}>A suggested answer could not be made for this question.</p>
+                        ) : (
+                          <p style={{ fontSize: 14, color: T.text, lineHeight: 1.75, fontWeight: 500 }}>{s.text}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Tab content */}
