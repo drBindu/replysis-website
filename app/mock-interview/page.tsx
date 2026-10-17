@@ -21,6 +21,7 @@ import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics
 import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 import { pickInterviewerVoice } from "./interviewerVoice";
+import { useSimliAvatar } from "./useSimliAvatar";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -1143,6 +1144,7 @@ export default function MockInterviewPage() {
     if (measuredResponseSecs > 0) setResponseDurations(previous => [...previous, measuredResponseSecs]);
     stopRecording();
     window.speechSynthesis.cancel();
+    avatarSilence();
     isAnalyzingRef.current = true;
     setIsAnalyzing(true);
 
@@ -1198,9 +1200,27 @@ export default function MockInterviewPage() {
   useEffect(() => { submitAnswerRef.current = submitAnswer; }, [submitAnswer]);
 
   // ── TTS ───────────────────────────────────────────────────
-  const speakQuestion = useCallback((text: string) => {
+  // The live face: it speaks the question with its lips matching the voice. When it is not available (not connected, not
+  // configured, a limit reached) the browser's own woman's voice below speaks instead, so the interview always has a voice.
+  const avatar = useSimliAvatar(phase === "interview", (user as import("firebase/auth").User | null) ?? null);
+  const avatarSpeak = avatar.speak;
+  const avatarSilence = avatar.silence;
+  const avatarStatusRef = useRef(avatar.status);
+  useEffect(() => { avatarStatusRef.current = avatar.status; }, [avatar.status]);
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  const speakQuestion = useCallback(async (text: string) => {
     if (!ttsEnabled) { setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
+    if (avatarStatusRef.current === "ready") {
+      const seconds = await avatarSpeak(text, (userRef.current as import("firebase/auth").User | null) ?? null);
+      if (seconds != null) {
+        setIsSpeaking(true);
+        window.setTimeout(() => { setIsSpeaking(false); setTimeout(() => startRecording(), 800); }, seconds * 1000 + 500);
+        return;
+      }
+    }
     const utter = new SpeechSynthesisUtterance(text);
     // The interviewer is a woman, so she speaks with a woman's voice. Voices load a moment after the page, which is why this
     // asks each time instead of once.
@@ -1211,7 +1231,7 @@ export default function MockInterviewPage() {
     utter.onend   = () => { setIsSpeaking(false); setTimeout(() => startRecording(), 800); };
     utter.onerror = () => { setIsSpeaking(false); setTimeout(() => startRecording(), 300); };
     window.speechSynthesis.speak(utter);
-  }, [ttsEnabled, startRecording]);
+  }, [ttsEnabled, startRecording, avatarSpeak]);
 
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
@@ -1984,7 +2004,8 @@ export default function MockInterviewPage() {
                 {/* AI Robot area */}
                 <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
-                  <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"} question={currentQ} />
+                  <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"} question={currentQ}
+                    avatar={{ videoRef: avatar.videoRef, audioRef: avatar.audioRef, status: avatar.status }} />
 
                   {/* Camera PiP */}
                   {cameraOn && (

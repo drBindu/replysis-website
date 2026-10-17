@@ -28,10 +28,16 @@ const STATUS: Record<InterviewerState, string> = {
  * Until the footage exists, or if it cannot load, a portrait card with a speaking pulse takes its place, so the screen is
  * never empty or broken.
  */
-export default function InterviewerTile({ state, question, interviewer = DEFAULT_INTERVIEWER }: {
+export default function InterviewerTile({ state, question, interviewer = DEFAULT_INTERVIEWER, avatar }: {
   state: InterviewerState;
   question: string;
   interviewer?: Interviewer;
+  /** The live lip synced face. While its status is "ready" it covers the calm video; otherwise the calm video shows. */
+  avatar?: {
+    videoRef: React.RefObject<HTMLVideoElement>;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    status: "off" | "connecting" | "ready" | "failed";
+  };
 }) {
   const talking = useRef<HTMLVideoElement>(null);
   const listening = useRef<HTMLVideoElement>(null);
@@ -61,6 +67,16 @@ export default function InterviewerTile({ state, question, interviewer = DEFAULT
         onCanPlay={() => setTalkingReady(true)} onError={() => setTalkingReady(false)}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
           opacity: 0, transition: "opacity 0.35s ease" }} />   {/* off for now: its mouth and hands do not match the words (owner, 2026-10-17). It returns with a lip synced avatar. */}
+
+      {/* The live face. The elements exist from the start because the connection needs them to attach to. */}
+      {avatar && (
+        <>
+          <video ref={avatar.videoRef} autoPlay playsInline muted={false}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+              opacity: avatar.status === "ready" ? 1 : 0, transition: "opacity 0.4s ease" }} />
+          <audio ref={avatar.audioRef} autoPlay />
+        </>
+      )}
 
       {/* Portrait card while there is no footage */}
       {!footage && (
