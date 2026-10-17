@@ -101,7 +101,7 @@ const MAX_REQUEST_BYTES = 256 * 1024;
 const MAX_MESSAGES = 24;
 const MAX_MESSAGE_CHARS = 6_000;
 const VALID_MODES = new Set([
-  "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime",
+  "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up",
 ]);
 
 function requestTooLarge(req: Request): boolean {
@@ -333,6 +333,7 @@ const CREDIT_COSTS: Record<string, number> = {
   generate_script:    CREDIT_ACTION_COSTS.mock_script,
   generate_feedback:  CREDIT_ACTION_COSTS.mock_feedback,
   generate_questions: CREDIT_ACTION_COSTS.question_generation,
+  follow_up:          0,   // the interviewer's short follow-up in a mock interview: part of the conversation, not charged
   realtime:           CREDIT_ACTION_COSTS.realtime_per_minute,
   stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
@@ -1258,6 +1259,33 @@ export async function POST(req: Request) {
         });
       } catch {
         return await refundAndRespond({ score: 0, strengths: [], improvements: ["Error generating feedback. Please try again."], betterAnswerExample: "", resume_proof: "" });
+      }
+    }
+
+    // ════════════════════════════════════════════════════
+    // MODE: FOLLOW UP (mock interview): one short natural follow-up question, or none
+    // ════════════════════════════════════════════════════
+    if (mode === "follow_up") {
+      const safeQ = sanitizeText(question).slice(0, 1000);
+      const safeA = sanitizeText(answer).slice(0, 3000);
+      try {
+        const systemPrompt =
+          `You are Maya, a warm, professional interviewer on a live video call.\n` +
+          `Read the question and the candidate's spoken answer. If one natural follow-up would help, for example to get a ` +
+          `specific example, the result, a number, their own part in a team effort, or to clarify something vague, reply with ` +
+          `that ONE follow-up question, at most 18 words, in a spoken, friendly style that refers to something they actually said. ` +
+          `If the answer is already complete and specific, reply with exactly NONE.\n` +
+          `Start directly with the question: an acknowledgement has already been said, so no thanks or praise. ` +
+          `Never give feedback or scores, never repeat the original question, no quotation marks.`;
+        const userPrompt = `QUESTION:\n${safeQ}\n\nANSWER:\n${safeA}`;
+        const raw = String(await callLLM(selectedModel, systemPrompt, userPrompt, { temperature: 0.5, max_tokens: 60 })).trim();
+        const firstLine = raw.replace(/^["'\s]+|["'\s]+$/g, "").split("\n")[0].trim();
+        // Keep only the question itself if a short remark came before it ("That's impressive. How did...?").
+        const line = (firstLine.split(/(?<=[.!])\s+/).find((part) => part.includes("?")) ?? firstLine).trim();
+        const followUp = !line || /^none\b/i.test(line) || line.length > 200 || !line.includes("?") ? null : line;
+        return NextResponse.json({ followUp });
+      } catch {
+        return NextResponse.json({ followUp: null });
       }
     }
 

@@ -122,7 +122,12 @@ const MIN_QUESTIONS          = 1;
 // The free mock cap must fit inside the same 25-credit one-time trial.
 const MAX_QUESTIONS_FREE     = Math.floor((PLAN_MONTHLY_CREDITS.free - CREDIT_ACTION_COSTS.question_generation) / CREDIT_ACTION_COSTS.mock_feedback);
 const MAX_QUESTIONS_PRO      = 50;
-const SILENCE_DELAY_MS       = 3500;
+// The answer is taken after a short pause, like a person would: about a second when the last sentence is clearly finished
+// (it ends with a full stop or question mark and the answer has some length), a little over two seconds otherwise, so a
+// thinking pause in the middle of an answer is not cut off (owner, 2026-10-17: "respond as soon as the candidate stops").
+const SILENCE_DELAY_MS       = 2200;
+const SILENCE_DONE_MS        = 1100;
+const answerLooksFinished = (text: string) => /[.?!]\s*$/.test(text.trim()) && text.trim().split(/\s+/).length >= 12;
 // Auto mode: how long the score and the better answer stay up before the next question starts by itself.
 const AUTO_NEXT_SECONDS      = 12;
 
@@ -173,8 +178,11 @@ const ACKNOWLEDGEMENTS = [
   "That makes sense, thank you.", "Alright, thanks.", "Thanks for walking me through that.",
 ];
 const TRANSITIONS = ["Let's move on.", "Here's my next question.", "Okay, next one.", "Moving on."];
-const lineBefore = (next: number, total: number, acknowledge: boolean) =>
-  `${acknowledge ? ACKNOWLEDGEMENTS[(next - 1) % ACKNOWLEDGEMENTS.length] + " " : ""}${next === total - 1 ? "And my last question." : TRANSITIONS[(next - 1) % TRANSITIONS.length]}`;
+const textHash = (t: string) => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return Math.abs(h); };
+/** What Maya says just before a question: depends only on the question and whether it is the last, so it can be prepared early. */
+const nextLineFor = (question: string, isLast: boolean) =>
+  `${isLast ? "And my last question." : TRANSITIONS[textHash(question) % TRANSITIONS.length]} ${question}`;
+const ackFor = (answered: number) => ACKNOWLEDGEMENTS[answered % ACKNOWLEDGEMENTS.length];
 
 type FeedbackTiming = "end" | "each";
 type TurnFeedback = { question: string; answer: string; feedback: Feedback | null; failed?: boolean };
@@ -694,6 +702,10 @@ export default function MockInterviewPage() {
   // ── Interview State ──────────────────────────────────────────
   const [questions,    setQuestions]    = useState<string[]>([]);
   const [index,        setIndex]        = useState(0);
+  // Read by code that runs after an answer, which must see the current list (follow-ups are inserted into it).
+  const questionsRef = useRef<string[]>([]);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+  const followUpsAsked = useRef(0);
   const [answer,       setAnswer]       = useState("");
   const [partial,      setPartial]      = useState("");
   const [feedback,     setFeedback]     = useState<Feedback | null>(null);
@@ -910,14 +922,15 @@ export default function MockInterviewPage() {
   }, [clearSilenceTimer, accountForListening]);
 
   // ── Reset silence timer ───────────────────────────────────
-  const resetSilenceTimer = useCallback(() => {
+  const resetSilenceTimer = useCallback((finalSegment = false) => {
     clearSilenceTimer();
+    const wait = finalSegment && answerLooksFinished(answerRef.current) ? SILENCE_DONE_MS : SILENCE_DELAY_MS;
     silenceTimerRef.current = window.setTimeout(() => {
       if (answerRef.current.trim().length > 10) {
         stopRecording();
         submitAnswerRef.current?.(answerRef.current);
       }
-    }, SILENCE_DELAY_MS);
+    }, wait);
   }, [clearSilenceTimer, stopRecording]);
 
   // ── Start recording (Speechmatics) ────────────────────────
@@ -1093,9 +1106,9 @@ export default function MockInterviewPage() {
               if (!text) return;
               if (msg.is_final) {
                 answerRef.current = (answerRef.current + " " + text).trim();
-                setAnswer(answerRef.current); setPartial(""); resetSilenceTimer();
+                setAnswer(answerRef.current); setPartial(""); resetSilenceTimer(true);
               } else {
-                setPartial(text); resetSilenceTimer();
+                setPartial(text); resetSilenceTimer(false);
               }
             } else if (msg.type === "Error") {
               console.error(`[Replysis] Mock interview transcription error code=${msg.err_code ?? "unknown"}`);
@@ -1114,10 +1127,10 @@ export default function MockInterviewPage() {
           }
           if (msg.message === "AddTranscript" && msg.metadata?.transcript) {
             answerRef.current = (answerRef.current + " " + msg.metadata.transcript).trim();
-            setAnswer(answerRef.current); setPartial(""); resetSilenceTimer();
+            setAnswer(answerRef.current); setPartial(""); resetSilenceTimer(true);
           }
           if (msg.message === "AddPartialTranscript" && msg.metadata?.transcript) {
-            setPartial(msg.metadata.transcript); resetSilenceTimer();
+            setPartial(msg.metadata.transcript); resetSilenceTimer(false);
           }
           if (msg.message === "Error") {
             window.clearTimeout(connectTimeout);
@@ -1228,7 +1241,7 @@ export default function MockInterviewPage() {
       });
       isAnalyzingRef.current = false;
       setIsAnalyzing(false);
-      nextQuestionRef.current();
+      void continueAfterAnswerRef.current(qIndex, question, ans);
       return;
     }
 
@@ -1255,7 +1268,19 @@ export default function MockInterviewPage() {
   const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
   const speakToken = useRef(0);
 
-  const fetchVoice = useCallback(async (text: string): Promise<{ pcm: Int16Array; rate: number } | null> => {
+  // Voices already made, by text. Maya's next line is prepared while the candidate is still answering, so it plays the
+  // moment they stop instead of after a round trip to the voice service.
+  const voiceCache = useRef(new Map<string, Promise<{ pcm: Int16Array; rate: number } | null>>());
+  const fetchVoice = useCallback((text: string): Promise<{ pcm: Int16Array; rate: number } | null> => {
+    const cached = voiceCache.current.get(text);
+    if (cached) return cached;
+    const made = fetchVoiceNow(text);
+    voiceCache.current.set(text, made);
+    if (voiceCache.current.size > 24) voiceCache.current.delete(voiceCache.current.keys().next().value as string);
+    void made.then((v) => { if (!v) voiceCache.current.delete(text); });   // a failure is not remembered
+    return made;
+  }, []);
+  const fetchVoiceNow = async (text: string): Promise<{ pcm: Int16Array; rate: number } | null> => {
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) return null;
@@ -1272,7 +1297,16 @@ export default function MockInterviewPage() {
     } catch {
       return null;
     }
-  }, []);
+  };
+
+  /** While question i is being answered: make the acknowledgement and the next line (or the goodbye) ready. */
+  const prepareAfter = (i: number) => {
+    if (!ttsEnabled) return;
+    const list = questionsRef.current;
+    void fetchVoice(ackFor(i));
+    if (i + 1 < list.length) void fetchVoice(nextLineFor(list[i + 1], i + 1 === list.length - 1));
+    else void fetchVoice(INTERVIEW_CLOSING);
+  };
 
   const speakLine = useCallback(async (text: string, listenAfter: boolean) => {
     if (!ttsEnabled) { if (listenAfter) setTimeout(() => startRecording(), 300); return; }
@@ -1304,6 +1338,52 @@ export default function MockInterviewPage() {
   }, [ttsEnabled, startRecording, fetchVoice]);
   const speakQuestion = useCallback((text: string) => speakLine(text, true), [speakLine]);
 
+  // ── After an answer (real interview mode) ────────────────
+  // Maya acknowledges straight away (the line is ready). Meanwhile she decides whether to ask one follow-up about what was
+  // just said, like a real interviewer: for a fair share of questions, never after the last one, never twice in a row.
+  // A follow-up is inserted as the next question, so it gets its own feedback in the report.
+  const requestFollowUp = async (question: string, answer: string): Promise<string | null> => {
+    try {
+      const result = await Promise.race([
+        fetchAi({ mode: "follow_up", question, answer, model: selectedModel }) as Promise<{ followUp?: string | null }>,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
+      ]);
+      return result && typeof result.followUp === "string" && result.followUp.trim() ? result.followUp.trim() : null;
+    } catch {
+      return null;
+    }
+  };
+  const followUpIndexes = useRef(new Set<number>());
+  const continueAfterAnswer = async (i: number, question: string, answer: string) => {
+    const list = questionsRef.current;
+    const isLast = i >= list.length - 1;
+    const wasFollowUp = followUpIndexes.current.has(i);
+    const baseCount = list.length - followUpIndexes.current.size;
+    const mayFollow = !isLast && !wasFollowUp && answer.split(/\s+/).length >= 12
+      && followUpsAsked.current < Math.max(1, Math.ceil(baseCount / 2));
+    const followUpPromise = mayFollow ? requestFollowUp(question, answer) : Promise.resolve(null);
+    if (!isLast) await speakLine(ackFor(i), false);
+    const followUp = await followUpPromise;
+    if (followUp) {
+      followUpsAsked.current += 1;
+      const updated = [...list.slice(0, i + 1), followUp, ...list.slice(i + 1)];
+      // Indexes after the insert move down by one.
+      followUpIndexes.current = new Set([...followUpIndexes.current].map((x) => (x > i ? x + 1 : x)));
+      followUpIndexes.current.add(i + 1);
+      questionsRef.current = updated;
+      setQuestions(updated);
+      setIndex(i + 1);
+      setAnswer(""); answerRef.current = "";
+      setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
+      void speakQuestion(followUp);
+      prepareAfter(i + 1);
+      return;
+    }
+    nextQuestionRef.current();
+  };
+  const continueAfterAnswerRef = useRef(continueAfterAnswer);
+  continueAfterAnswerRef.current = continueAfterAnswer;
+
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
     unlockAudio();
@@ -1320,8 +1400,7 @@ export default function MockInterviewPage() {
     setIndex(next);
     setAnswer(""); answerRef.current = "";
     setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
-    const lead = lineBefore(next, questions.length, feedbackTimingRef.current === "end");
-    setTimeout(() => speakQuestion(`${lead} ${questions[next]}`), 400);
+    setTimeout(() => { void speakQuestion(nextLineFor(questions[next], next === questions.length - 1)); prepareAfter(next); }, 150);
   };
 
   // ── Auto mode: after the score and the better answer have been up for a while, the next question starts by itself ──
@@ -1452,7 +1531,10 @@ export default function MockInterviewPage() {
     setScores([]); setHistory([]); setResponseDurations([]);
     setFeedback(null); setShowFeedback(false); setFeedbackFailed(false); setSessionTime(0);
     setTurnFeedback({});
-    setTimeout(() => speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`), 500);
+    followUpsAsked.current = 0;
+    followUpIndexes.current = new Set();
+    questionsRef.current = questions;
+    setTimeout(() => { void speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`); prepareAfter(0); }, 500);
   };
 
   // ── File upload ────────────────────────────────────────────
@@ -1856,7 +1938,7 @@ export default function MockInterviewPage() {
                     {[
                       "Quiet room gives better transcription results",
                       "Keep answers to 1-3 minutes; use STAR for behavioral questions",
-                      "3.5 s of silence auto-submits your answer",
+                      "A short pause after you finish sends your answer",
                     ].map((tip, i) => (
                       <li key={i} style={{ display: "flex", gap: 8, fontSize: 11.5, color: T.textMid, lineHeight: 1.5 }}>
                         <span style={{ marginTop: 2, width: 4, height: 4, borderRadius: "50%", flexShrink: 0, background: T.textFaint, display: "inline-block" }} />
@@ -2104,7 +2186,7 @@ export default function MockInterviewPage() {
                 {/* AI Robot area */}
                 <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
-                  <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"} question={currentQ}
+                  <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"}
                     faceRef={faceRef} />
 
                   {/* Camera PiP */}
@@ -2248,7 +2330,7 @@ export default function MockInterviewPage() {
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                           <div style={{ width: 6, height: 6, borderRadius: "50%", background: T.danger, animation: "pulse 1.2s infinite" }} />
                           <span style={{ fontSize: 11, color: T.textMid }}>
-                            Recording · Auto-submits after {SILENCE_DELAY_MS / 1000}s of silence
+                            Recording. Your answer is sent when you pause
                           </span>
                         </div>
                       </motion.div>

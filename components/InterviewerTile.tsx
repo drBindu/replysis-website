@@ -27,9 +27,10 @@ const STATUS: Record<InterviewerState, string> = {
  * The face is TalkingFace: one photo whose mouth follows the spoken audio and which blinks and moves slightly. The name tag
  * says it is an AI interviewer. If the face cannot load, a portrait card with a speaking ring takes its place.
  */
-export default function InterviewerTile({ state, question, interviewer = DEFAULT_INTERVIEWER, faceRef }: {
+export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEWER, faceRef }: {
   state: InterviewerState;
-  question: string;
+  /** Kept for callers; the question is not shown on the face (owner: no captions). */
+  question?: string;
   interviewer?: Interviewer;
   /** Lets the interview speak through the face. */
   faceRef?: RefObject<TalkingFaceHandle | null>;
@@ -70,15 +71,6 @@ export default function InterviewerTile({ state, question, interviewer = DEFAULT
         </span>
       </div>
 
-      {/* Subtitle: what is being asked */}
-      {state !== "thinking" && (
-        <div aria-live="polite" style={{ position: "absolute", left: 14, right: 14, bottom: 12, display: "flex", justifyContent: "center" }}>
-          <p style={{ margin: 0, maxWidth: "92%", textAlign: "center", color: "white", fontSize: 13.5, fontWeight: 600, lineHeight: 1.45,
-            background: "rgba(0,0,0,0.6)", padding: "7px 14px", borderRadius: 10 }}>
-            {question}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
