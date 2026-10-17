@@ -1,5 +1,5 @@
 /**
- * Interview minutes for India, bought in any amount from 15 to 600 minutes: Rs 5 a minute at the smallest, cheaper per
+ * Interview minutes for India, bought in any amount from 15 to 600 minutes: Rs 4 a minute at the smallest, cheaper per
  * minute as the amount grows, every amount under the Pro price (owner, 2026-10-16).
  *
  * A minute is a minute of the interviewer speaking, the same meter the app already reports once a minute.
@@ -8,24 +8,24 @@
  *
  * Shown and sold only to India; the checkout checks the country again on the server.
  */
-/** The smallest amount is Rs 5 a minute; every larger amount is cheaper per minute (owner, 2026-10-16). */
-export const RUPEES_PER_MINUTE = 5;
+/** The smallest amount is Rs 4 a minute (owner lowered it from 5); every larger amount is cheaper per minute. */
+export const RUPEES_PER_MINUTE = 4;
 /** India Pro is Rs 699 a month. Every amount of minutes costs less than that (owner, 2026-10-16). */
 export const INDIA_PRO_RUPEES = 699;
 
 /**
  * Prices at fixed points, minutes to rupees. Between two points the price follows a straight line,
- * rounded to a whole rupee. 15 minutes is Rs 5 a minute; 600 minutes is Rs 649, about Rs 1.08 a minute,
+ * rounded to a whole rupee. 15 minutes is Rs 4 a minute; 600 minutes is Rs 649, about Rs 1.08 a minute,
  * still under Pro. Cost check: a minute of speech plus its answers costs us about Rs 0.75, so the top
  * amount keeps about 30% even if every minute is speech.
  */
 export const PRICE_POINTS: ReadonlyArray<readonly [number, number]> = [
-  [15, 75],
-  [30, 140],
-  [60, 249],
-  [120, 399],
-  [180, 499],
-  [300, 599],
+  [15, 60],
+  [30, 115],
+  [60, 215],
+  [120, 349],
+  [180, 449],
+  [300, 549],
   [600, 649],
 ];
 export const MIN_MINUTES = 15;
