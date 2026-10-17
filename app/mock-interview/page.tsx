@@ -164,6 +164,21 @@ const renderSafe = (val: unknown): string => {
   return String(val);
 };
 
+// What the interviewer says around the questions, so it sounds like a person running an interview rather than a list
+// being read out (owner, 2026-10-17: "make it a real mock interview, the AI speaks like a real person").
+const INTERVIEW_INTRO = "Hi, I'm Maya, and I'll be your interviewer today. Thanks for making the time. Let's get started.";
+const INTERVIEW_CLOSING = "That's all the questions I have for you today. Thank you, you did well to get through it. Your feedback is ready on the screen.";
+const ACKNOWLEDGEMENTS = [
+  "Thanks, that's helpful.", "Got it, thank you.", "Okay, thanks for sharing that.",
+  "That makes sense, thank you.", "Alright, thanks.", "Thanks for walking me through that.",
+];
+const TRANSITIONS = ["Let's move on.", "Here's my next question.", "Okay, next one.", "Moving on."];
+const lineBefore = (next: number, total: number, acknowledge: boolean) =>
+  `${acknowledge ? ACKNOWLEDGEMENTS[(next - 1) % ACKNOWLEDGEMENTS.length] + " " : ""}${next === total - 1 ? "And my last question." : TRANSITIONS[(next - 1) % TRANSITIONS.length]}`;
+
+type FeedbackTiming = "end" | "each";
+type TurnFeedback = { question: string; answer: string; feedback: Feedback | null; failed?: boolean };
+
 const formatTime = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
@@ -698,6 +713,19 @@ export default function MockInterviewPage() {
   const [setupError, setSetupError] = useState<string | null>(null);
   const [ttsEnabled,   setTtsEnabled]    = useState(true);
   const [autoMode,     setAutoMode]      = useState(true);
+  // Feedback after each question, or all of it at the end like a real interview (the default). Remembered per browser.
+  const [feedbackTiming, setFeedbackTiming] = useState<FeedbackTiming>("end");
+  const feedbackTimingRef = useRef<FeedbackTiming>("end");
+  useEffect(() => { feedbackTimingRef.current = feedbackTiming; }, [feedbackTiming]);
+  useEffect(() => {
+    try { const saved = window.localStorage.getItem("replysis-mock-feedback"); if (saved === "each" || saved === "end") setFeedbackTiming(saved); } catch { /* private window */ }
+  }, []);
+  const chooseFeedbackTiming = (value: FeedbackTiming) => {
+    setFeedbackTiming(value);
+    try { window.localStorage.setItem("replysis-mock-feedback", value); } catch { /* private window */ }
+  };
+  // Each question's feedback, kept for the report at the end, keyed by question number.
+  const [turnFeedback, setTurnFeedback] = useState<Record<number, TurnFeedback>>({});
   const [autoCountdown, setAutoCountdown] = useState<number | null>(null);
   const [feedbackFailed, setFeedbackFailed] = useState(false);
   const [sessionTime,  setSessionTime]   = useState(0);
@@ -1158,39 +1186,60 @@ export default function MockInterviewPage() {
     // Build memory context from previous turns (injected into prompt)
     const contextBlock = buildContextBlock(history);
 
-    try {
-      const isTooShort = ans.split(/\s+/).length < 5;
-      const mode = isTooShort ? "generate_script" : "generate_feedback";
-      const res = await fetchAi({
-        mode,
-        question,
-        answer:              ans,
-        resume:              resumeText,
-        jd:                  jdText,
-        model:               selectedModel,
-        conversationHistory: newHistory,
-        contextBlock,        // memory context for the AI prompt
-      }) as Feedback & { betterAnswerExample?: string };
-
-      if (isTooShort) {
-        setFeedback({
-          score:              0,
-          strengths:          [],
-          improvements:       ["Your answer was too short. Aim for 2 to 3 full sentences with specific examples."],
-          betterAnswerExample: res?.betterAnswerExample ?? "",
-        });
-      } else {
-        setFeedback(res as Feedback);
+    const qIndex = index;
+    const runFeedback = async (): Promise<{ feedback: Feedback; failed: boolean }> => {
+      try {
+        const isTooShort = ans.split(/\s+/).length < 5;
+        const mode = isTooShort ? "generate_script" : "generate_feedback";
+        const res = await fetchAi({
+          mode,
+          question,
+          answer:              ans,
+          resume:              resumeText,
+          jd:                  jdText,
+          model:               selectedModel,
+          conversationHistory: newHistory,
+          contextBlock,        // memory context for the AI prompt
+        }) as Feedback & { betterAnswerExample?: string };
+        if (isTooShort) {
+          return { failed: false, feedback: {
+            score:              0,
+            strengths:          [],
+            improvements:       ["Your answer was too short. Aim for 2 to 3 full sentences with specific examples."],
+            betterAnswerExample: res?.betterAnswerExample ?? "",
+          } as Feedback };
+        }
+        return { failed: false, feedback: res as Feedback };
+      } catch (err) {
+        // The server's own sentence when it sent one; the answer is kept so it can be tried again.
+        const detail = (err as { userMessage?: string } | null)?.userMessage;
+        return { failed: true, feedback: { score: 0, strengths: [], improvements: [detail ?? "Could not get feedback this time. Your answer is kept, so you can try again."], betterAnswerExample: "" } as Feedback };
       }
-      setScores(prev => [...prev, (res as Feedback)?.score ?? 0]);
+    };
+
+    if (feedbackTimingRef.current === "end") {
+      // Like a real interview: no feedback screen between questions. The interviewer moves on straight away, and this
+      // question's feedback is prepared in the background for the report at the end.
       setHistory(newHistory);
-      setFeedbackFailed(false);
-    } catch (err) {
-      // The server's own sentence when it sent one; the answer is kept so it can be tried again.
-      const detail = (err as { userMessage?: string } | null)?.userMessage;
-      setFeedbackFailed(true);
-      setFeedback({ score: 0, strengths: [], improvements: [detail ?? "Could not get feedback this time. Your answer is kept, so you can try again."], betterAnswerExample: "" });
+      setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: null } }));
+      void runFeedback().then(({ feedback: fb, failed }) => {
+        setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: fb, failed } }));
+        if (!failed) setScores(prev => [...prev, fb?.score ?? 0]);
+      });
+      isAnalyzingRef.current = false;
+      setIsAnalyzing(false);
+      nextQuestionRef.current();
+      return;
     }
+
+    const { feedback: fb, failed } = await runFeedback();
+    setFeedback(fb);
+    setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: fb, failed } }));
+    if (!failed) {
+      setScores(prev => [...prev, fb?.score ?? 0]);
+      setHistory(newHistory);
+    }
+    setFeedbackFailed(failed);
 
     isAnalyzingRef.current = false;
     setIsAnalyzing(false);
@@ -1225,8 +1274,8 @@ export default function MockInterviewPage() {
     }
   }, []);
 
-  const speakQuestion = useCallback(async (text: string) => {
-    if (!ttsEnabled) { setTimeout(() => startRecording(), 300); return; }
+  const speakLine = useCallback(async (text: string, listenAfter: boolean) => {
+    if (!ttsEnabled) { if (listenAfter) setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
     faceRef.current?.stop();
     const mine = ++speakToken.current;
@@ -1237,7 +1286,7 @@ export default function MockInterviewPage() {
       await faceRef.current.speak(voice.pcm, voice.rate);
       if (mine !== speakToken.current) return;
       setIsSpeaking(false);
-      setTimeout(() => startRecording(), 600);
+      if (listenAfter) setTimeout(() => startRecording(), 600);
       return;
     }
     const utter = new SpeechSynthesisUtterance(text);
@@ -1247,20 +1296,32 @@ export default function MockInterviewPage() {
     if (browserVoice) { utter.voice = browserVoice; utter.lang = browserVoice.lang; }
     utter.rate   = 0.95;
     utter.onstart = () => { setIsSpeaking(true); faceRef.current?.setTalking(true); };
-    utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); setTimeout(() => startRecording(), 800); };
-    utter.onerror = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); setTimeout(() => startRecording(), 300); };
-    window.speechSynthesis.speak(utter);
+    await new Promise<void>((resolve) => {
+      utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 800); resolve(); };
+      utter.onerror = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 300); resolve(); };
+      window.speechSynthesis.speak(utter);
+    });
   }, [ttsEnabled, startRecording, fetchVoice]);
+  const speakQuestion = useCallback((text: string) => speakLine(text, true), [speakLine]);
 
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
     unlockAudio();
     const next = index + 1;
-    if (next >= questions.length) { accountForListening(true); setPhase("summary"); return; }
+    if (next >= questions.length) {
+      accountForListening(true);
+      if (feedbackTimingRef.current === "end" && ttsEnabled) {
+        void speakLine(INTERVIEW_CLOSING, false).then(() => setPhase("summary"));
+      } else {
+        setPhase("summary");
+      }
+      return;
+    }
     setIndex(next);
     setAnswer(""); answerRef.current = "";
     setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
-    setTimeout(() => speakQuestion(questions[next]), 500);
+    const lead = lineBefore(next, questions.length, feedbackTimingRef.current === "end");
+    setTimeout(() => speakQuestion(`${lead} ${questions[next]}`), 400);
   };
 
   // ── Auto mode: after the score and the better answer have been up for a while, the next question starts by itself ──
@@ -1390,7 +1451,8 @@ export default function MockInterviewPage() {
     setAnswer(""); answerRef.current = "";
     setScores([]); setHistory([]); setResponseDurations([]);
     setFeedback(null); setShowFeedback(false); setFeedbackFailed(false); setSessionTime(0);
-    setTimeout(() => speakQuestion(questions[0] ?? "Tell me about yourself."), 500);
+    setTurnFeedback({});
+    setTimeout(() => speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`), 500);
   };
 
   // ── File upload ────────────────────────────────────────────
@@ -1890,6 +1952,25 @@ export default function MockInterviewPage() {
                         <Icon size={15} /> {label}
                       </button>
                     ))}
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <p style={{ fontSize: 11.5, fontWeight: 700, color: T.textMid, marginBottom: 7 }}>Feedback on your answers</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {([["end", "At the end"], ["each", "After each question"]] as const).map(([value, label]) => (
+                        <button key={value} onClick={() => chooseFeedbackTiming(value)} aria-pressed={feedbackTiming === value}
+                          style={{ padding: "10px 0", borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+                            border: `1.5px solid ${feedbackTiming === value ? T.success + "60" : T.border}`,
+                            background: feedbackTiming === value ? T.successBg : T.card,
+                            color: feedbackTiming === value ? T.success : T.textMid }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 11, color: T.textFaint, marginTop: 6, lineHeight: 1.5 }}>
+                      {feedbackTiming === "end"
+                        ? "Like a real interview: no interruptions. Every question's areas to improve are in your report at the end."
+                        : "See your score and areas to improve right after each answer."}
+                    </p>
                   </div>
                 </div>
 
@@ -2457,6 +2538,48 @@ export default function MockInterviewPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Question by question: what to improve in each answer */}
+              {Object.keys(turnFeedback).length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+                  <p style={{ fontSize: 13, fontWeight: 800, color: T.text }}>Question by question</p>
+                  {Object.entries(turnFeedback).sort((a, b) => Number(a[0]) - Number(b[0])).map(([key, turn]) => (
+                    <div key={key} style={{ borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, padding: 16 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 800, color: T.text, lineHeight: 1.5 }}>
+                        {Number(key) + 1}. {turn.question}
+                      </p>
+                      <p style={{ fontSize: 11.5, color: T.textFaint, marginTop: 6, lineHeight: 1.55 }}>
+                        Your answer: {turn.answer.length > 280 ? `${turn.answer.slice(0, 280)}...` : turn.answer}
+                      </p>
+                      {!turn.feedback ? (
+                        <p style={{ fontSize: 11.5, color: T.textMid, marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                          <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> Preparing feedback for this answer
+                        </p>
+                      ) : (
+                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                          {!turn.failed && typeof turn.feedback.score === "number" && turn.feedback.score > 0 && (
+                            <p style={{ fontSize: 11.5, fontWeight: 800, color: T.success }}>Score {turn.feedback.score}/10</p>
+                          )}
+                          {(turn.feedback.improvements ?? []).length > 0 && (
+                            <div>
+                              <p style={{ fontSize: 11, fontWeight: 800, color: T.textMid, marginBottom: 4 }}>Areas to improve</p>
+                              {(turn.feedback.improvements ?? []).map((item, i) => (
+                                <p key={i} style={{ fontSize: 11.5, color: T.textMid, lineHeight: 1.55 }}>{i + 1}. {item}</p>
+                              ))}
+                            </div>
+                          )}
+                          {turn.feedback.betterAnswerExample && (
+                            <div>
+                              <p style={{ fontSize: 11, fontWeight: 800, color: T.textMid, marginBottom: 4 }}>A stronger answer</p>
+                              <p style={{ fontSize: 11.5, color: T.textMid, lineHeight: 1.6 }}>{turn.feedback.betterAnswerExample}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Actions */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
