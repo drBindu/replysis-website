@@ -20,6 +20,7 @@ import { useToast } from "../../components/feedback/Toast";
 import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics";
 import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
+import { pickInterviewerVoice } from "./interviewerVoice";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -1201,6 +1202,10 @@ export default function MockInterviewPage() {
     if (!ttsEnabled) { setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
+    // The interviewer is a woman, so she speaks with a woman's voice. Voices load a moment after the page, which is why this
+    // asks each time instead of once.
+    const voice = pickInterviewerVoice(window.speechSynthesis.getVoices());
+    if (voice) { utter.voice = voice; utter.lang = voice.lang; }
     utter.rate   = 0.95;
     utter.onstart = () => setIsSpeaking(true);
     utter.onend   = () => { setIsSpeaking(false); setTimeout(() => startRecording(), 800); };
