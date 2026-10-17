@@ -21,7 +21,7 @@ import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics
 import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 import { pickInterviewerVoice } from "./interviewerVoice";
-import { useSimliAvatar } from "./useSimliAvatar";
+import type { TalkingFaceHandle } from "../../components/TalkingFace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -1200,46 +1200,57 @@ export default function MockInterviewPage() {
   useEffect(() => { submitAnswerRef.current = submitAnswer; }, [submitAnswer]);
 
   // ── TTS ───────────────────────────────────────────────────
-  // The live face: it speaks the question with its lips matching the voice. When it is not available (not connected, not
-  // configured, a limit reached) the browser's own woman's voice below speaks instead, so the interview always has a voice.
-  const avatar = useSimliAvatar(phase === "interview", (user as import("firebase/auth").User | null) ?? null);
-  const avatarSpeak = avatar.speak;
-  const avatarSilence = avatar.silence;
-  const avatarStatusRef = useRef(avatar.status);
-  useEffect(() => { avatarStatusRef.current = avatar.status; }, [avatar.status]);
-  const userRef = useRef(user);
-  useEffect(() => { userRef.current = user; }, [user]);
+  // Maya's face speaks the question: the voice comes from our server as audio, so her mouth can follow it exactly. If that
+  // voice cannot be had, the browser's own woman's voice speaks and the face makes a general talking movement instead.
+  const faceRef = useRef<TalkingFaceHandle | null>(null);
+  const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
+  const speakToken = useRef(0);
+
+  const fetchVoice = useCallback(async (text: string): Promise<{ pcm: Int16Array; rate: number } | null> => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return null;
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return null;
+      const rate = Number(res.headers.get("X-Sample-Rate")) || 24000;
+      const bytes = await res.arrayBuffer();
+      if (bytes.byteLength < 2) return null;
+      return { pcm: new Int16Array(bytes, 0, Math.floor(bytes.byteLength / 2)), rate };
+    } catch {
+      return null;
+    }
+  }, []);
 
   const speakQuestion = useCallback(async (text: string) => {
     if (!ttsEnabled) { setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
-    // The face needs a few seconds to connect when the interview starts. The first question waits for it (up to 8 seconds)
-    // instead of being spoken by the browser voice a moment before the face appears.
-    if (avatarStatusRef.current === "off" || avatarStatusRef.current === "connecting") {
-      const giveUp = Date.now() + 8000;
-      while ((avatarStatusRef.current === "off" || avatarStatusRef.current === "connecting") && Date.now() < giveUp) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-    }
-    if (avatarStatusRef.current === "ready") {
-      const seconds = await avatarSpeak(text, (userRef.current as import("firebase/auth").User | null) ?? null);
-      if (seconds != null) {
-        setIsSpeaking(true);
-        window.setTimeout(() => { setIsSpeaking(false); setTimeout(() => startRecording(), 800); }, seconds * 1000 + 500);
-        return;
-      }
+    faceRef.current?.stop();
+    const mine = ++speakToken.current;
+    const voice = await fetchVoice(text);
+    if (mine !== speakToken.current) return;                 // a newer question started meanwhile
+    if (voice && faceRef.current) {
+      setIsSpeaking(true);
+      await faceRef.current.speak(voice.pcm, voice.rate);
+      if (mine !== speakToken.current) return;
+      setIsSpeaking(false);
+      setTimeout(() => startRecording(), 600);
+      return;
     }
     const utter = new SpeechSynthesisUtterance(text);
     // The interviewer is a woman, so she speaks with a woman's voice. Voices load a moment after the page, which is why this
     // asks each time instead of once.
-    const voice = pickInterviewerVoice(window.speechSynthesis.getVoices());
-    if (voice) { utter.voice = voice; utter.lang = voice.lang; }
+    const browserVoice = pickInterviewerVoice(window.speechSynthesis.getVoices());
+    if (browserVoice) { utter.voice = browserVoice; utter.lang = browserVoice.lang; }
     utter.rate   = 0.95;
-    utter.onstart = () => setIsSpeaking(true);
-    utter.onend   = () => { setIsSpeaking(false); setTimeout(() => startRecording(), 800); };
-    utter.onerror = () => { setIsSpeaking(false); setTimeout(() => startRecording(), 300); };
+    utter.onstart = () => { setIsSpeaking(true); faceRef.current?.setTalking(true); };
+    utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); setTimeout(() => startRecording(), 800); };
+    utter.onerror = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); setTimeout(() => startRecording(), 300); };
     window.speechSynthesis.speak(utter);
-  }, [ttsEnabled, startRecording, avatarSpeak]);
+  }, [ttsEnabled, startRecording, fetchVoice]);
 
   // ── Navigation ────────────────────────────────────────────
   const nextQuestion = () => {
@@ -2013,7 +2024,7 @@ export default function MockInterviewPage() {
                 <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
                   <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"} question={currentQ}
-                    avatar={{ videoRef: avatar.videoRef, audioRef: avatar.audioRef, status: avatar.status }} />
+                    faceRef={faceRef} />
 
                   {/* Camera PiP */}
                   {cameraOn && (

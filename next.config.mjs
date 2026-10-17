@@ -33,7 +33,7 @@ const nextConfig = {
       "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com",
       "media-src 'self' blob:",
       "worker-src 'self' blob:",
-      "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://api.stripe.com https://mp.speechmatics.com https://*.speechmatics.com wss://*.speechmatics.com https://api.deepgram.com wss://api.deepgram.com https://*.simli.ai wss://*.simli.ai https://*.livekit.cloud wss://*.livekit.cloud https://cloud-api.livekit.io",
+      "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://api.stripe.com https://mp.speechmatics.com https://*.speechmatics.com wss://*.speechmatics.com https://api.deepgram.com wss://api.deepgram.com",
       "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com https://*.stripe.com",
     ].join("; ");
 
