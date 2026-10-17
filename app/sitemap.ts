@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/pricing', priority: 0.9 },
     { path: '/trust', priority: 0.6 },
     { path: '/question-bank', priority: 0.8 },
+    { path: '/interview-questions', priority: 0.8 },
     { path: '/proof', priority: 0.6 },
     { path: '/terms', priority: 0.3 },
     { path: '/privacy', priority: 0.3 },

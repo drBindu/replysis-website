@@ -13,6 +13,7 @@ const GROUPS = [
       { label: "Pricing", href: "/pricing" },
       { label: "Mock interview", href: "/mock-interview" },
       { label: "Question bank", href: "/question-bank" },
+      { label: "How to answer", href: "/interview-questions" },
     ],
   },
   {
