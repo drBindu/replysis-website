@@ -62,3 +62,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Live face unavailable" }, { status: 502 });
   }
 }
+
+/** The browser reports why the face did not connect, so a failure on someone's computer shows up in the server log. */
+export async function PUT(req: Request) {
+  const uid = await verifiedUid(req);
+  if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!rateLimit(`simli-report:${uid}`, 10, 60 * 60_000).ok) return NextResponse.json({ ok: true });
+  const body = await req.json().catch(() => null);
+  const reason = typeof body?.reason === "string" ? body.reason.replace(/[^\w .:,()/-]/g, "").slice(0, 160) : "unknown";
+  console.warn(`[simli] face did not connect in the browser: ${reason}`);
+  return NextResponse.json({ ok: true });
+}

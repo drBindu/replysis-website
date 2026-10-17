@@ -38,6 +38,19 @@ export function useSimliAvatar(active: boolean, user: User | null) {
     let cancelled = false;
     let client: typeof clientRef.current = null;
     setStatus("connecting");
+    // Why it failed, sent to the server log once, so a failure on someone's computer is not a guess.
+    let reported = false;
+    const fail = (reason: string) => {
+      if (cancelled) return;
+      setStatus("failed");
+      if (reported) return;
+      reported = true;
+      void user.getIdToken().then((t) => fetch("/api/simli/session", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ reason }),
+      })).catch(() => { /* reporting is best effort */ });
+    };
 
     (async () => {
       try {
@@ -50,8 +63,8 @@ export function useSimliAvatar(active: boolean, user: User | null) {
         const simli = new SimliClient(sessionToken, videoRef.current, audioRef.current, null, LogLevel.ERROR, "livekit");
         simli.on("speaking", () => setAvatarSpeaking(true));
         simli.on("silent", () => setAvatarSpeaking(false));
-        simli.on("error", () => { if (!cancelled) setStatus("failed"); });
-        simli.on("startup_error", () => { if (!cancelled) setStatus("failed"); });
+        simli.on("error", (detail) => fail(`error: ${detail}`));
+        simli.on("startup_error", (message) => fail(`startup_error: ${message}`));
         simli.on("stop", () => { if (!cancelled) setStatus("failed"); });
         // Waiting for ever for a face would leave the interview silent: give it 15 seconds.
         await Promise.race([
@@ -62,8 +75,8 @@ export function useSimliAvatar(active: boolean, user: User | null) {
         client = simli;
         clientRef.current = simli;
         setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("failed");
+      } catch (e) {
+        fail(`start: ${(e as Error)?.message ?? "unknown"}`);
       }
     })();
 
