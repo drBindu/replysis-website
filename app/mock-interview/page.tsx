@@ -1213,6 +1213,14 @@ export default function MockInterviewPage() {
   const speakQuestion = useCallback(async (text: string) => {
     if (!ttsEnabled) { setTimeout(() => startRecording(), 300); return; }
     window.speechSynthesis.cancel();
+    // The face needs a few seconds to connect when the interview starts. The first question waits for it (up to 8 seconds)
+    // instead of being spoken by the browser voice a moment before the face appears.
+    if (avatarStatusRef.current === "off" || avatarStatusRef.current === "connecting") {
+      const giveUp = Date.now() + 8000;
+      while ((avatarStatusRef.current === "off" || avatarStatusRef.current === "connecting") && Date.now() < giveUp) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }
     if (avatarStatusRef.current === "ready") {
       const seconds = await avatarSpeak(text, (userRef.current as import("firebase/auth").User | null) ?? null);
       if (seconds != null) {
