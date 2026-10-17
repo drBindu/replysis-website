@@ -56,11 +56,11 @@ export default function InterviewerTile({ state, question, interviewer = DEFAULT
       <video ref={listening} src={`${base}/listening.mp4`} poster={`${base}/poster.jpg`} muted loop playsInline autoPlay preload="auto"
         onCanPlay={() => setListeningReady(true)} onError={() => setListeningReady(false)}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
-          opacity: footage && !speaking ? 1 : 0, transition: "opacity 0.35s ease" }} />
+          opacity: footage ? 1 : 0, transition: "opacity 0.35s ease" }} />
       <video ref={talking} src={`${base}/talking.mp4`} poster={`${base}/poster.jpg`} muted loop playsInline autoPlay preload="auto"
         onCanPlay={() => setTalkingReady(true)} onError={() => setTalkingReady(false)}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
-          opacity: footage && speaking ? 1 : 0, transition: "opacity 0.35s ease" }} />
+          opacity: 0, transition: "opacity 0.35s ease" }} />   {/* off for now: its mouth and hands do not match the words (owner, 2026-10-17). It returns with a lip synced avatar. */}
 
       {/* Portrait card while there is no footage */}
       {!footage && (
