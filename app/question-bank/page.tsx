@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bookmark, BookOpen, Building2, Search, Sparkles, Target } from "lucide-react";
 import BrandIcon from "../../components/BrandIcon";
 import { INTERVIEW_QUESTIONS } from "../../data/interviewQuestions";
+import { questionPath } from "../../data/questionSlugs";
 
 const companies = ["All", "General", "Amazon", "Google", "Meta", "Microsoft", "Apple"] as const;
 const roles = ["All", "Software Engineering", "Product", "Data", "Sales", "Leadership"] as const;
@@ -56,8 +57,8 @@ export default function QuestionBankPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {filtered.map(item => <article key={item.id} className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
             <div className="flex items-start justify-between gap-4"><div className="flex flex-wrap gap-2"><span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600"><Building2 size={10}/>{item.company}</span><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-800">{item.category}</span><span className="rounded-full bg-amber-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-amber-800">{item.difficulty}</span></div><button onClick={()=>toggleSaved(item.id)} aria-label="Bookmark question" className={`rounded-xl border p-2 ${saved.includes(item.id)?"border-emerald-300 bg-emerald-50 text-emerald-800":"border-slate-200 text-slate-400"}`}><Bookmark size={15} fill={saved.includes(item.id)?"currentColor":"none"}/></button></div>
-            <h2 className="mt-5 text-[17px] font-black leading-snug text-slate-900">{item.question}</h2>
-            <div className="mt-5 flex items-start gap-2 border-t border-slate-100 pt-4"><Target size={14} className="mt-0.5 shrink-0 text-emerald-700"/><div><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">What to demonstrate</p><p className="mt-1 text-xs font-semibold text-slate-600">{item.focus}</p></div></div>
+            <h2 className="mt-5 text-[17px] font-black leading-snug text-slate-900"><Link href={questionPath(item)} className="hover:text-emerald-800">{item.question}</Link></h2>
+            <div className="mt-5 flex items-start gap-2 border-t border-slate-100 pt-4"><Target size={14} className="mt-0.5 shrink-0 text-emerald-700"/><div><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">What to demonstrate</p><p className="mt-1 text-xs font-semibold text-slate-600">{item.focus}</p><Link href={questionPath(item)} className="mt-2 inline-block text-xs font-black text-emerald-800 hover:underline">How to answer this</Link></div></div>
           </article>)}
         </div>
         {filtered.length===0 && <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-white p-14 text-center"><Sparkles className="mx-auto text-slate-300"/><p className="mt-4 font-black">No exact match</p><p className="mt-1 text-sm text-slate-500">Clear a filter or try a broader skill.</p></div>}

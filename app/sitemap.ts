@@ -2,6 +2,9 @@ import type { MetadataRoute } from 'next'
 
 // Served at https://replysis.com/sitemap.xml — the list of pages we want Google to
 // index. Submit this URL in Google Search Console to speed up indexing.
+import { INTERVIEW_QUESTIONS } from '../data/interviewQuestions'
+import { questionPath } from '../data/questionSlugs'
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = 'https://replysis.com'
   const now = new Date()
@@ -17,7 +20,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/privacy', priority: 0.3 },
     { path: '/cookies', priority: 0.3 },
   ]
-  return pages.map((p) => ({
+  const guides = INTERVIEW_QUESTIONS.map((q) => ({ path: questionPath(q), priority: 0.7 }))
+  return [...pages, ...guides].map((p) => ({
     url: `${base}${p.path}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
