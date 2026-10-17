@@ -45,7 +45,7 @@ export function useSimliAvatar(active: boolean, user: User | null) {
         const res = await fetch("/api/simli/session", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`session ${res.status}`);
         const { sessionToken } = await res.json();
-        const { SimliClient, LogLevel } = await import("simli-client");
+        const { SimliClient, LogLevel } = await import("simli-client/dist/client")   /* not the package index: its import of ./Client has the wrong letter case and fails on Linux */;
         if (cancelled || !videoRef.current || !audioRef.current) return;
         const simli = new SimliClient(sessionToken, videoRef.current, audioRef.current, null, LogLevel.ERROR, "livekit");
         simli.on("speaking", () => setAvatarSpeaking(true));
