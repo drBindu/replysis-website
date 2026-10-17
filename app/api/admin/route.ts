@@ -722,6 +722,10 @@ export async function GET(req: Request) {
       listeningGuests,
       winDownloads,
       macDownloads,
+      internalCount,
+      internalPaid,
+      internalPro,
+      internalMax,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -737,6 +741,12 @@ export async function GET(req: Request) {
       db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get(),
       downloads.where("os", "==", "win").count().get(),
       downloads.where("os", "==", "mac").count().get(),
+      // Accounts the owner marked as their own or a friend's. They stay in the list but are left out of the
+      // customer numbers, so the page shows how many real strangers use and pay for the product.
+      users.where("internal", "==", true).count().get(),
+      users.where("internal", "==", true).where("plan", "in", ["pro", "max", "lifetime", "teams"]).count().get(),
+      users.where("internal", "==", true).where("plan", "==", "pro").count().get(),
+      users.where("internal", "==", true).where("plan", "==", "max").count().get(),
     ]);
 
     const hasMore = userPage.docs.length > requestedPageSize;
@@ -767,6 +777,11 @@ export async function GET(req: Request) {
         totalUsageMinutes: Math.round((Number(usage.data().totalDurationSeconds) || 0) / 60),
         winDownloads: winDownloads.data().count,
         macDownloads: macDownloads.data().count,
+        internalUsers: internalCount.data().count,
+        realUsers: Math.max(0, userCount.data().count - internalCount.data().count),
+        realPaid: Math.max(0, paidCount.data().count - internalPaid.data().count),
+        realPro: Math.max(0, proCount.data().count - internalPro.data().count),
+        realMax: Math.max(0, maxCount.data().count - internalMax.data().count),
       },
       page: {
         nextCursor: hasMore ? listedDocs.at(-1)?.id ?? null : null,
@@ -821,6 +836,25 @@ export async function POST(req: Request) {
           userId,
           { plan: current.plan ?? "free", credits: Number(current.credits) || 0 },
           { plan, credits },
+        ));
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "setInternal") {
+      const internal = body.internal;
+      if (typeof internal !== "boolean") throw new HttpError(400, "Invalid value");
+      await db.runTransaction(async (transaction) => {
+        const existing = await transaction.get(userRef);
+        if (!existing.exists) throw new HttpError(404, "User not found");
+        const current = existing.data() ?? {};
+        transaction.update(userRef, { internal });
+        transaction.set(auditRef, auditData(
+          principal,
+          "setInternal",
+          userId,
+          { internal: current.internal === true },
+          { internal },
         ));
       });
       return NextResponse.json({ success: true });

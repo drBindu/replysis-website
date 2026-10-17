@@ -5,6 +5,7 @@ import ClientLayout from "./client-layout";
 import { AuthProvider } from "../components/AuthProvider";
 import StaleBuildReload from "../components/StaleBuildReload";
 import VisitBeacon from "../components/VisitBeacon";
+import ReferralCapture from "../components/ReferralCapture";
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -49,6 +50,7 @@ export default function RootLayout({
         <StaleBuildReload />
         <VisitBeacon />
         <AuthProvider>
+          <ReferralCapture />
           <ClientLayout>
             {children}
           </ClientLayout>

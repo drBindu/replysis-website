@@ -35,11 +35,13 @@ type AdminMetrics = {
   users: number; paidUsers: number; proUsers: number; maxUsers: number;
   liveUsers: number; listeningNow: number; totalUsageMinutes: number;
   winDownloads: number; macDownloads: number;
+  internalUsers: number; realUsers: number; realPaid: number; realPro: number; realMax: number;
 };
 
 const EMPTY_METRICS: AdminMetrics = {
   users: 0, paidUsers: 0, proUsers: 0, maxUsers: 0,
   liveUsers: 0, listeningNow: 0, totalUsageMinutes: 0, winDownloads: 0, macDownloads: 0,
+  internalUsers: 0, realUsers: 0, realPaid: 0, realPro: 0, realMax: 0,
 };
 
 type UsageRow = {
@@ -326,6 +328,11 @@ export default function AdminPage() {
         totalUsageMinutes: Number(m.totalUsageMinutes) || 0,
         winDownloads: Number(m.winDownloads) || 0,
         macDownloads: Number(m.macDownloads) || 0,
+        internalUsers: Number(m.internalUsers) || 0,
+        realUsers: Number(m.realUsers) || 0,
+        realPaid: Number(m.realPaid) || 0,
+        realPro: Number(m.realPro) || 0,
+        realMax: Number(m.realMax) || 0,
       });
       setNextCursor(typeof data.page?.nextCursor === "string" ? data.page.nextCursor : null);
 
@@ -391,6 +398,10 @@ export default function AdminPage() {
     if (await runAdminAction("updatePlan", { userId, plan, credits })) fetchAll(true, currentCursor);
   }
 
+  async function toggleInternal(userId: string, internal: boolean) {
+    if (await runAdminAction("setInternal", { userId, internal })) fetchAll(true, currentCursor);
+  }
+
   async function handleManualCredits(userId: string) {
     if (await runAdminAction("updateCredits", { userId, credits: newCreditValue })) {
       setEditingCredits(null);
@@ -446,7 +457,8 @@ export default function AdminPage() {
     });
   }, [users, search, sortBy, usageFor]);
 
-  const mrr = metrics.proUsers * PLAN_PRICE_USD.pro + metrics.maxUsers * PLAN_PRICE_USD.max;
+  // Revenue and customer counts leave out accounts marked as the owner's or a friend's.
+  const mrr = metrics.realPro * PLAN_PRICE_USD.pro + metrics.realMax * PLAN_PRICE_USD.max;
   const totals = usage?.totals;
   const refundRate = totals && totals.events > 0
     ? (totals.refunds / totals.events) * 100
@@ -568,10 +580,10 @@ export default function AdminPage() {
         {/* Money and people */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Monthly revenue" value={money(mrr)}
-               sub={`${num(metrics.proUsers)} Pro, ${num(metrics.maxUsers)} Max`}
+               sub={`${num(metrics.realPro)} Pro, ${num(metrics.realMax)} Max${metrics.internalUsers ? ", yours and friends left out" : ""}`}
                icon={<TrendingUp size={12} />} tone={mrr > 0 ? "good" : "plain"} />
-          <Kpi label="Users" value={num(metrics.users)}
-               sub={`${num(metrics.paidUsers)} paying`} icon={<Users size={12} />} />
+          <Kpi label="Real users" value={num(metrics.realUsers)}
+               sub={`${num(metrics.realPaid)} paying, ${num(metrics.internalUsers)} marked as yours or friends`} icon={<Users size={12} />} />
           <Kpi label="Listening now" value={num(metrics.listeningNow)}
                sub={`of ${num(SPEECH_SESSION_LIMIT)} at once, ${num(metrics.liveUsers)} apps open`}
                icon={<Activity size={12} />}
@@ -961,6 +973,14 @@ export default function AdminPage() {
                               </div>
 
                               <div>
+                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Counted as</div>
+                                <button onClick={() => toggleInternal(user.id, user.internal !== true)}
+                                  className={`mb-4 rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition ${
+                                    user.internal === true
+                                      ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
+                                      : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}>
+                                  {user.internal === true ? "Yours or a friend's (left out of the numbers). Click to count as a real user" : "Real user. Click to mark as yours or a friend's"}
+                                </button>
                                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Change plan</div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {/* Only the plans actually sold. "lifetime" and

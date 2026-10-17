@@ -27,6 +27,7 @@ import { PageHeader } from "../../components/PageShell";
 import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, answerCount, type PlanId } from "../../data/productFacts";
 import AnswerPacks from "../../components/AnswerPacks";
 import InterviewMinutes from "../../components/InterviewMinutes";
+import InviteFriends from "../../components/InviteFriends";
 
 type AccountProfile = {
   displayName?: string;
@@ -365,6 +366,8 @@ export default function AccountPage() {
             </a>
           </section>
         </div>
+
+        <InviteFriends />
 
         <InterviewMinutes user={user ?? null} where="account" />
 
