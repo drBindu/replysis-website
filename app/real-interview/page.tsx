@@ -146,7 +146,7 @@ export default function RealInterviewPage() {
   // Java backend. All of them read the same audioMinutesUsed field, so one
   // allowance covers the website and the desktop apps together.
   const audioAllowance =
-    ({ free: 15, pro: 900, max: 1800, lifetime: 1800, teams: 6000 } as Record<string, number>)[plan] ?? 15;
+    ({ free: 10, pro: 900, max: 1800, lifetime: 1800, teams: 6000 } as Record<string, number>)[plan] ?? 10;
   const audioMinutesLeft = Math.max(0, audioAllowance - audioMinutesUsed);
 
   const handleStart = (cfg: InterviewConfig) => {

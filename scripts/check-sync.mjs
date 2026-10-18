@@ -42,7 +42,7 @@ const AGREED = {
   answerCost: 5,
   credits: { free: 25, pro: 2500, max: 7500 },           // 5 answers once, 500 a month, 1,500 a month
   monthlyUsd: { pro: 34.99, max: 79.99 },
-  fuseMinutes: { free: 15, pro: 900, max: 1800 },        // hidden fair use guard, in minutes of speech
+  fuseMinutes: { free: 10, pro: 900, max: 1800 },        // hidden fair use guard, in minutes of speech (free 15 -> 10, owner 2026-10-18: no warnings)
 };
 
 // ---------- extraction ----------------------------------------------------------
@@ -399,7 +399,7 @@ for (const plan of ["free", "pro", "max"]) {
 {
   const RUPEE = 85;
   const inr = { pro: 699, max: 1299 };
-  const audioIndia = { pro: 360, max: 720 };
+  const audioIndia = { pro: 240, max: 420 };
   for (const plan of ["pro", "max"]) {
     if (!fCredits) break;
     const answers = Math.floor(fCredits[plan] / (fCost || 5));

@@ -61,7 +61,7 @@ export const PLAN_MONTHLY_AUDIO_MINUTES = {
   // about $0.54, so ten thousand free users spending a fifth of an hour each
   // is a five-figure rupee bill every month with no revenue behind it.
   // Fifteen minutes is still enough to sit in a real call and watch it work.
-  free:        15,   //  15 minutes
+  free:        10,   //  10 minutes (worst case under 15 cents, 2026-10-18)
   pro:        900,   // 15 hours
   max:      1_800,   // 30 hours
   lifetime: 1_800,
@@ -90,8 +90,8 @@ export const INDIA_PLAN_ALLOWANCE = {
   // that matters (the answers are what is metered), a smaller number bought nothing except
   // a renewal that handed a rupee subscriber the dollar amount anyway. The rupee prices
   // are unchanged (Rs 699 and Rs 1,299), and at about Rs 0.34 an answer both keep over half.
-  pro: { credits: 2_500, audioMinutes: 360 },   //  6 hours
-  max: { credits: 7_500, audioMinutes: 720 },   // 12 hours
+  pro: { credits: 2_500, audioMinutes: 240 },   //  4 hours (half the price kept in the worst case, 2026-10-18)
+  max: { credits: 7_500, audioMinutes: 420 },   //  7 hours
 } as const;
 
 export type PlanId = keyof typeof PLAN_MONTHLY_CREDITS;
