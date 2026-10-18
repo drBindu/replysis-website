@@ -3,7 +3,7 @@
  * minute as the amount grows, every amount under the Pro price (owner, 2026-10-16).
  *
  * A minute is a minute of the interviewer speaking, the same meter the app already reports once a minute.
- * While minutes are left, answers inside them use no answers from the plan. Auto add, when switched on,
+ * While minutes are left, live interview answers use no answers from the plan; mock interviews and resume tools always do. Auto add, when switched on,
  * buys AUTO_ADD_MINUTES more with the saved card as the balance runs out.
  *
  * Shown and sold only to India; the checkout checks the country again on the server.

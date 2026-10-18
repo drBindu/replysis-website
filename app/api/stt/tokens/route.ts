@@ -339,6 +339,8 @@ const CREDIT_COSTS: Record<string, number> = {
   stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
 const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
+// The one mode bought interview minutes pay for: an answer during a live interview (owner, 2026-10-18).
+const LIVE_MODE = "realtime";
 
 // Listening time, the cost credits never saw.
 //
@@ -492,8 +494,8 @@ async function checkAndDeductCredits(
       const snap     = await tx.get(userRef);
       if (!snap.exists) return { allowed: false, remaining: 0 };
       const userData = snap.data() ?? {};
-      // Inside bought interview minutes (India) nothing is charged.
-      if (Number(userData.minutesBalance ?? 0) > 0) return { allowed: true, remaining: -1 };
+      // Bought interview minutes (India) pay for live interview answers only; mock interview modes are charged.
+      if (mode === LIVE_MODE && Number(userData.minutesBalance ?? 0) > 0) return { allowed: true, remaining: -1 };
       const plan     = userData.plan || "free";
       const cap      = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       let   credits  = typeof userData.credits === "number" ? userData.credits : cap;
@@ -547,7 +549,7 @@ async function refundCredits(uid: string, email: string, mode: string): Promise<
       const snapshot = await tx.get(userRef);
       if (!snapshot.exists) return;
       const data = snapshot.data() ?? {};
-      if (Number(data.minutesBalance ?? 0) > 0) return;   // nothing was charged inside bought minutes
+      if (mode === LIVE_MODE && Number(data.minutesBalance ?? 0) > 0) return;   // nothing was charged inside bought minutes
       const plan = typeof data.plan === "string" ? data.plan : "free";
       const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
       const credits = typeof data.credits === "number" ? data.credits : cap;

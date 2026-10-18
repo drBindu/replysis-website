@@ -897,7 +897,7 @@ export default function MockInterviewPage() {
     void fetch("/api/usage/listening", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ minutes }),
+      body: JSON.stringify({ minutes, purpose: "mock" }),
       keepalive: true,
     }).catch(() => {});
   }, []);

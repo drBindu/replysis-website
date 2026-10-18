@@ -94,8 +94,11 @@ export async function POST(req: Request) {
     // that reports badly must never end up cheaper than one that reports
     // properly, which is what rounding a broken payload down would reward.
     let minutes = 1;
+    // A mock interview is practice: its listening counts toward the month and never uses bought minutes.
+    let live = true;
     try {
       const body = await req.json();
+      live = body?.purpose !== "mock";
       const raw = Number(body?.minutes);
       if (Number.isFinite(raw)) minutes = Math.max(0, Math.min(120, Math.trunc(raw)));
     } catch {
@@ -125,7 +128,8 @@ export async function POST(req: Request) {
       if (resetAt && Date.now() >= resetAt) used = 0;
 
       // Bought interview minutes (India) are spent first; only the rest counts toward the month.
-      const [balance, toMonth] = spendMinutes(Number(data.minutesBalance ?? 0), minutes);
+      const owned = Math.max(0, Number(data.minutesBalance ?? 0));
+      const [balance, toMonth] = live ? spendMinutes(owned, minutes) : [owned, minutes];
       used += toMonth;
       if (snap.exists) tx.update(userRef, minutes > 0
         ? { audioMinutesUsed: used, minutesBalance: balance }

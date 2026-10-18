@@ -118,7 +118,7 @@ export default function InterviewMinutes({ user, where, onNeedSignIn }: {
           <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Pay by the minute</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
             Pay only for the minutes the interviewer speaks. The more you take, the less each minute costs, and every
-            amount costs less than Pro (₹{INDIA_PRO_RUPEES}). Answers inside your minutes are included. No subscription.
+            amount costs less than Pro (₹{INDIA_PRO_RUPEES}). No subscription.
           </p>
         </div>
         {status && status.minutesBalance > 0 && (
@@ -127,6 +127,17 @@ export default function InterviewMinutes({ user, where, onNeedSignIn }: {
           </p>
         )}
       </div>
+
+      <ul className="mt-5 grid gap-2 text-sm leading-6 sm:grid-cols-2" aria-label="What minutes cover">
+        <li className="rounded-xl bg-emerald-50 px-4 py-3 text-slate-700">
+          <span className="font-bold text-[#1C7A3E]">✓ Live interviews</span><br />
+          In the Windows app and on the website. Every answer during the interview is included.
+        </li>
+        <li className="rounded-xl bg-slate-50 px-4 py-3 text-slate-700">
+          <span className="font-bold text-slate-900">✕ Mock interviews and resume tools</span><br />
+          Not covered by minutes. They use answers from your plan.
+        </li>
+      </ul>
 
       <div className="mt-7">
         <div className="flex items-baseline justify-between">

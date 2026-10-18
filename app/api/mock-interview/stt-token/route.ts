@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const response = await fetch(`${backendBase}/api/v1/stt/key`, {
+    const response = await fetch(`${backendBase}/api/v1/stt/key?purpose=mock`, {
       method: "GET",
       headers: { Authorization: authorization },
       cache: "no-store",
