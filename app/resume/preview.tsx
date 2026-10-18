@@ -378,23 +378,20 @@ export default function ResumePreview({
   return (
     <div ref={wrapperRef} style={{
       flex: 1, overflowY: "auto", overflowX: "hidden", position: "relative",
-      background: "#e8e5e0",
-      backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
+      background: "#eceae5",
     }}>
       {measureClone}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "14px 0" }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 7, padding: "5px 14px",
-          borderRadius: 20, background: T.bgPanel, border: `1.5px solid ${T.border}`,
+          borderRadius: 20, background: T.bgPanel, border: `1px solid ${T.border}`,
           fontSize: 11, color: T.textSecondary, fontWeight: 600, boxShadow: T.shadow,
         }}>
           <span style={{
             width: 7, height: 7, borderRadius: "50%", background: T.success,
-            boxShadow: `0 0 0 3px ${T.successLight}`, animation: "pulse 2s infinite",
           }} />
-          Live Preview
+          Preview, updates as you type
         </div>
       </div>
 
@@ -447,7 +444,7 @@ export default function ResumePreview({
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 10,
           padding: "6px 14px", borderRadius: 20,
-          background: T.bgPanel, border: `1.5px solid ${T.border}`,
+          background: T.bgPanel, border: `1px solid ${T.border}`,
           fontSize: 10, color: T.textTertiary, fontWeight: 600,
           boxShadow: T.shadowMd, pointerEvents: "all",
         }}>

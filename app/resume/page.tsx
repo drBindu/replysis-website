@@ -57,12 +57,12 @@ const DEFAULT_ORDER: SectionId[] = [
 ];
 
 const SECTION_META: Record<SectionId, { label: string; Icon: any; color: string; bg: string }> = {
-  summary:        { label: "Summary",        Icon: FileText,      color: "#2E8B45", bg: "rgba(31,138,62,0.08)"  },
-  skills:         { label: "Skills",         Icon: Wrench,        color: "#d97706", bg: "rgba(217,119,6,0.08)"   },
-  experience:     { label: "Experience",     Icon: Briefcase,     color: "#1C7A3E", bg: "rgba(37,99,235,0.08)"   },
-  projects:       { label: "Projects",       Icon: Code,          color: "#21924A", bg: "rgba(31,138,62,0.08)"  },
-  education:      { label: "Education",      Icon: GraduationCap, color: "#21924A", bg: "rgba(31,138,62,0.08)"   },
-  certifications: { label: "Certifications", Icon: Award,         color: "#21924A", bg: "rgba(31,138,62,0.08)"  },
+  summary:        { label: "Summary",        Icon: FileText,      color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"  },
+  skills:         { label: "Skills",         Icon: Wrench,        color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"   },
+  experience:     { label: "Experience",     Icon: Briefcase,     color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"   },
+  projects:       { label: "Projects",       Icon: Code,          color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"  },
+  education:      { label: "Education",      Icon: GraduationCap, color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"   },
+  certifications: { label: "Certifications", Icon: Award,         color: "#1c7a3e", bg: "rgba(28,122,62,0.07)"  },
 };
 
 const AI_PROVIDERS: {
@@ -120,10 +120,10 @@ const FONTS = [
   { key: "sourcecodemono", label: "Source Code Pro",  family: '"Source Code Pro", monospace',                               cat: "Mono",  url: "https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;700&display=swap" },
 ];
 
+// Accent colours a recruiter would take seriously, each one once (duplicates broke React keys).
 const COLORS = [
-  "#1e40af","#1C7A3E","#21924A","#0d9488","#21924A","#1C7A3E",
-  "#854d0e","#dc2626","#be123c","#db2777","#c026d3","#2E8B45",
-  "#21924A","#1C7A3E","#475569","#1e293b","#000000",
+  "#1C7A3E","#0f5132","#0d9488","#1e40af","#1e3a5f","#475569",
+  "#1e293b","#000000","#7c2d12","#854d0e","#9f1239","#6b21a8",
 ];
 
 const PAPER: Record<string, { w: number; h: number; label: string }> = {
@@ -135,31 +135,31 @@ const PAPER: Record<string, { w: number; h: number; label: string }> = {
    THEME
 ════════════════════════════════════════════════════════════════ */
 const T = {
-  bg:           "#f8f7f5",
+  bg:           "#f4f2ee",
   bgPanel:      "#ffffff",
   bgHeader:     "#ffffff",
-  border:       "#e8e4df",
-  borderStrong: "#d4cfc9",
-  textPrimary:  "#1a1714",
-  textSecondary:"#6b6460",
-  textTertiary: "#a09893",
-  accent:       "#2d5be3",
-  accentHover:  "#2148c7",
-  accentLight:  "rgba(45,91,227,0.08)",
-  success:      "#1C7A3E",
-  successLight: "rgba(21,128,61,0.08)",
-  warning:      "#d97706",
-  warningLight: "rgba(217,119,6,0.08)",
-  danger:       "#dc2626",
-  dangerLight:  "rgba(220,38,38,0.08)",
-  purple:       "#21924A",
-  purpleLight:  "rgba(31,138,62,0.08)",
-  shadow:       "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-  shadowMd:     "0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
-  shadowLg:     "0 8px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)",
-  radius:       "8px",
-  radiusMd:     "10px",
-  radiusLg:     "14px",
+  border:       "#e7e3dc",
+  borderStrong: "#d6d0c6",
+  textPrimary:  "#1a1f1c",
+  textSecondary:"#5e655f",
+  textTertiary: "#959b95",
+  accent:       "#1c7a3e",
+  accentHover:  "#166232",
+  accentLight:  "rgba(28,122,62,0.08)",
+  success:      "#1c7a3e",
+  successLight: "rgba(28,122,62,0.08)",
+  warning:      "#b45309",
+  warningLight: "rgba(180,83,9,0.08)",
+  danger:       "#c2410c",
+  dangerLight:  "rgba(194,65,12,0.08)",
+  purple:       "#1c7a3e",
+  purpleLight:  "rgba(28,122,62,0.08)",
+  shadow:       "0 1px 2px rgba(26,31,28,0.05)",
+  shadowMd:     "0 6px 20px rgba(26,31,28,0.08)",
+  shadowLg:     "0 16px 40px rgba(26,31,28,0.12)",
+  radius:       "10px",
+  radiusMd:     "12px",
+  radiusLg:     "16px",
 };
 
 /* ════════════════════════════════════════════════════════════════
@@ -208,8 +208,8 @@ function scanATS(resumeData: any, jdText: string) {
 ════════════════════════════════════════════════════════════════ */
 const Inp = ({ value, onChange, placeholder = "", type = "text" }: any) => (
   <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-    style={{ width:"100%", background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radius,
-      padding:"7px 10px", fontSize:13, color:T.textPrimary, outline:"none", transition:"all 0.15s", fontFamily:"inherit" }}
+    style={{ width:"100%", background:T.bgPanel, border:`1px solid ${T.border}`, borderRadius:T.radius,
+      padding:"10px 12px", fontSize:14, color:T.textPrimary, outline:"none", transition:"all 0.15s", fontFamily:"inherit" }}
     onFocus={e => { e.target.style.borderColor=T.accent; e.target.style.boxShadow=`0 0 0 3px ${T.accentLight}`; }}
     onBlur={e  => { e.target.style.borderColor=T.border; e.target.style.boxShadow="none"; }}
   />
@@ -217,8 +217,8 @@ const Inp = ({ value, onChange, placeholder = "", type = "text" }: any) => (
 
 const Textarea = ({ value, onChange, placeholder = "", rows = 3 }: any) => (
   <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows}
-    style={{ width:"100%", background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radius,
-      padding:"8px 10px", fontSize:13, color:T.textPrimary, outline:"none", transition:"all 0.15s",
+    style={{ width:"100%", background:T.bgPanel, border:`1px solid ${T.border}`, borderRadius:T.radius,
+      padding:"10px 12px", fontSize:14, color:T.textPrimary, outline:"none", transition:"all 0.15s",
       resize:"vertical", lineHeight:1.6, fontFamily:"inherit" }}
     onFocus={e => { (e.target as any).style.borderColor=T.accent; (e.target as any).style.boxShadow=`0 0 0 3px ${T.accentLight}`; }}
     onBlur={e  => { (e.target as any).style.borderColor=T.border;  (e.target as any).style.boxShadow="none"; }}
@@ -226,13 +226,12 @@ const Textarea = ({ value, onChange, placeholder = "", rows = 3 }: any) => (
 );
 
 const Label = ({ children }: any) => (
-  <div style={{ fontSize:10, color:T.textTertiary, fontWeight:700, textTransform:"uppercase",
-    letterSpacing:"0.1em", marginBottom:5 }}>{children}</div>
+  <div style={{ fontSize:12.5, color:T.textSecondary, fontWeight:600, marginBottom:6 }}>{children}</div>
 );
 
 const SectionCard = ({ children }: any) => (
-  <div style={{ background:T.bgPanel, border:`1.5px solid ${T.border}`, borderRadius:T.radiusMd,
-    padding:14, marginBottom:10, boxShadow:T.shadow }}>{children}</div>
+  <div style={{ background:T.bgPanel, border:`1px solid ${T.border}`, borderRadius:T.radiusMd,
+    padding:16, marginBottom:12 }}>{children}</div>
 );
 
 const Divider = () => <div style={{ height:1, background:T.border, margin:"14px 0" }} />;
@@ -274,11 +273,9 @@ function WordCountBadge({ text }: { text: string }) {
 }
 
 const ProBadge = () => (
-  <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:9, fontWeight:800,
-    padding:"2px 7px", borderRadius:20, letterSpacing:"0.08em", textTransform:"uppercase",
-    background:"linear-gradient(135deg, #f59e0b, #d97706)", color:"#fff",
-    boxShadow:"0 1px 6px rgba(245,158,11,0.3)" }}>
-    <Crown size={8} /> Pro
+  <span style={{ display:"inline-flex", alignItems:"center", fontSize:11, fontWeight:700,
+    padding:"2px 8px", borderRadius:20, background:T.accentLight, color:T.accent }}>
+    Pro
   </span>
 );
 
@@ -296,7 +293,7 @@ function AiProviderSelector({ value, onChange }: { value: AiProvider; onChange: 
           return (
             <button key={p.id} onClick={() => onChange(p.id)}
               style={{ padding:"10px 4px", borderRadius:T.radiusMd,
-                border:`1.5px solid ${isActive ? p.color : T.border}`,
+                border:`1px solid ${isActive ? p.color : T.border}`,
                 background: isActive ? p.light : T.bg,
                 cursor:"pointer", transition:"all 0.15s",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:3,
@@ -310,12 +307,12 @@ function AiProviderSelector({ value, onChange }: { value: AiProvider; onChange: 
         })}
       </div>
       <div style={{ padding:"8px 12px", borderRadius:T.radius,
-        background: active.light, border:`1.5px solid ${active.color}30`,
+        background: active.light, border:`1px solid ${active.color}30`,
         display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ fontSize:14 }}>{active.icon}</span>
         <div>
           <span style={{ fontSize:11, fontWeight:700, color: active.color }}>{active.label} {active.model}</span>
-          <span style={{ fontSize:11, color:T.textSecondary }}> · {active.desc}</span>
+          <span style={{ fontSize:11, color:T.textSecondary }}>: {active.desc}</span>
         </div>
       </div>
     </div>
@@ -335,7 +332,7 @@ function CreditUsageToast({ action, cost, remaining, max, isUnlimited, onDone }:
       initial={{ opacity:0, y:20, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }}
       exit={{ opacity:0, y:10, scale:0.95 }} transition={{ duration:0.2 }}
       style={{ position:"fixed", bottom:24, right:24, zIndex:9999, background:T.bgPanel,
-        border:`1.5px solid ${T.border}`, borderRadius:T.radiusMd, padding:"12px 16px",
+        border:`1px solid ${T.border}`, borderRadius:T.radiusMd, padding:"12px 16px",
         boxShadow:T.shadowLg, display:"flex", alignItems:"center", gap:12, minWidth:280 }}>
       <div style={{ width:36, height:36, borderRadius:T.radius, flexShrink:0,
         background:isUnlimited ? T.purpleLight : T.accentLight,
@@ -373,26 +370,15 @@ function CreditMeter({ credits=0, max=PLAN_CONFIG.free.totalCredits, isUnlimited
   const color = isUnlimited ? T.purple : pct>50 ? T.success : pct>20 ? T.warning : T.danger;
   const label = isUnlimited ? "Monthly plan answers" : `${answerCount(credits)} / ${answerCount(max)} answers left`;
   return (
-    <Tooltip tip={`${label} · Click to see usage`} side="bottom">
+    <Tooltip tip="See what used your answers" side="bottom">
       <button onClick={onOpenHistory}
-        style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 10px", borderRadius:T.radiusMd,
-          background:T.bg, border:`1.5px solid ${T.border}`, cursor:"pointer", transition:"all 0.15s" }}
-        onMouseEnter={e=>(e.currentTarget as any).style.borderColor=T.borderStrong}
-        onMouseLeave={e=>(e.currentTarget as any).style.borderColor=T.border}>
-        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          {isUnlimited ? <Crown size={13} style={{ color:T.purple }} /> : <Coins size={13} style={{ color }} />}
-          <span style={{ fontSize:12, fontWeight:800, color, fontVariantNumeric:"tabular-nums" }}>
-            {isUnlimited ? "∞" : answerCount(credits)}
-          </span>
-        </div>
-        {!isUnlimited && (
-          <div style={{ width:48, height:4, borderRadius:3, background:T.border, overflow:"hidden" }}>
-            <motion.div initial={{ width:0 }} animate={{ width:`${pct}%` }} transition={{ duration:0.8 }}
-              style={{ height:"100%", borderRadius:3, background:color }} />
-          </div>
-        )}
-        <span style={{ fontSize:9, fontWeight:800, color:T.textTertiary, textTransform:"uppercase", letterSpacing:"0.08em" }}>
-          {isUnlimited ? "Pro" : plan}
+        style={{ display:"flex", alignItems:"center", gap:7, padding:"0 12px", height:38, borderRadius:T.radius,
+          background:"transparent", border:"none", cursor:"pointer", transition:"background 0.15s", color:T.textSecondary }}
+        onMouseEnter={e=>(e.currentTarget as any).style.background=T.bg}
+        onMouseLeave={e=>(e.currentTarget as any).style.background="transparent"}>
+        <Coins size={15} style={{ color: isUnlimited ? T.accent : color }} />
+        <span style={{ fontSize:13.5, fontWeight:600, fontVariantNumeric:"tabular-nums" }}>
+          {isUnlimited ? "Unlimited answers" : <><b style={{ color:T.textPrimary }}>{answerCount(credits)}</b> answers left</>}
         </span>
       </button>
     </Tooltip>
@@ -419,9 +405,9 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
       <motion.div initial={{ x:340 }} animate={{ x:0 }} exit={{ x:340 }}
         transition={{ type:"spring", stiffness:300, damping:30 }}
         onClick={e=>e.stopPropagation()}
-        style={{ width:340, height:"100vh", background:T.bgPanel, borderLeft:`1.5px solid ${T.border}`,
+        style={{ width:340, height:"100vh", background:T.bgPanel, borderLeft:`1px solid ${T.border}`,
           display:"flex", flexDirection:"column", boxShadow:"-8px 0 32px rgba(0,0,0,0.1)" }}>
-        <div style={{ padding:"18px 20px 14px", borderBottom:`1.5px solid ${T.border}`, flexShrink:0 }}>
+        <div style={{ padding:"18px 20px 14px", borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <div style={{ width:34, height:34, borderRadius:T.radius, background:T.accentLight,
@@ -438,7 +424,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
             </button>
           </div>
           <div style={{ padding:"14px 16px", borderRadius:T.radiusMd,
-            background:isUnlimited?T.purpleLight:T.bg, border:`1.5px solid ${isUnlimited?T.purple+"30":T.border}` }}>
+            background:isUnlimited?T.purpleLight:T.bg, border:`1px solid ${isUnlimited?T.purple+"30":T.border}` }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:11, color:T.textTertiary, fontWeight:600, marginBottom:2 }}>Current Balance</div>
@@ -460,7 +446,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
             )}
           </div>
         </div>
-        <div style={{ padding:"14px 20px", borderBottom:`1.5px solid ${T.border}`, flexShrink:0 }}>
+        <div style={{ padding:"14px 20px", borderBottom:`1px solid ${T.border}`, flexShrink:0 }}>
           <div style={{ fontSize:10, fontWeight:800, color:T.textTertiary, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:10 }}>What uses an answer</div>
           <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
             {[
@@ -495,7 +481,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
               {[...history].reverse().map((h,i) => (
                 <motion.div key={i} initial={{ opacity:0, x:10 }} animate={{ opacity:1, x:0 }} transition={{ delay:i*0.04 }}
                   style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px",
-                    borderRadius:T.radiusMd, background:T.bg, border:`1.5px solid ${T.border}` }}>
+                    borderRadius:T.radiusMd, background:T.bg, border:`1px solid ${T.border}` }}>
                   <div style={{ width:30, height:30, borderRadius:T.radius, flexShrink:0,
                     display:"flex", alignItems:"center", justifyContent:"center",
                     background:h.cost===0?T.successLight:T.accentLight }}>
@@ -514,10 +500,10 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
           )}
         </div>
         {!isUnlimited && (
-          <div style={{ padding:"14px 20px", borderTop:`1.5px solid ${T.border}`, flexShrink:0 }}>
+          <div style={{ padding:"14px 20px", borderTop:`1px solid ${T.border}`, flexShrink:0 }}>
             <button onClick={onUpgrade}
               style={{ width:"100%", padding:"11px 0", borderRadius:T.radiusMd, border:"none",
-                background:`linear-gradient(135deg, ${T.accent}, ${T.purple})`,
+                background:T.accent,
                 color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                 boxShadow:"0 4px 14px rgba(45,91,227,0.3)" }}>
@@ -545,7 +531,7 @@ function PaywallModal({ action, cost, remaining, onClose }: {
       <motion.div initial={{ scale:0.85, y:20 }} animate={{ scale:1, y:0 }} exit={{ scale:0.85, y:20 }}
         onClick={e=>e.stopPropagation()}
         style={{ background:T.bgPanel, borderRadius:T.radiusLg, padding:32, width:380,
-          border:`1.5px solid ${T.border}`, boxShadow:T.shadowLg, textAlign:"center" }}>
+          border:`1px solid ${T.border}`, boxShadow:T.shadowLg, textAlign:"center" }}>
         <div style={{ width:56, height:56, borderRadius:"50%", background:T.dangerLight,
           display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
           <Coins size={24} style={{ color:T.danger }} />
@@ -559,13 +545,13 @@ function PaywallModal({ action, cost, remaining, onClose }: {
         </p>
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={onClose}
-            style={{ flex:1, padding:"10px 0", borderRadius:T.radiusMd, border:`1.5px solid ${T.border}`,
+            style={{ flex:1, padding:"10px 0", borderRadius:T.radiusMd, border:`1px solid ${T.border}`,
               background:T.bg, color:T.textSecondary, fontSize:13, fontWeight:700, cursor:"pointer" }}>
             Cancel
           </button>
           <button onClick={() => window.location.href="/pricing"}
             style={{ flex:2, padding:"10px 0", borderRadius:T.radiusMd, border:"none",
-              background:`linear-gradient(135deg, ${T.accent}, ${T.purple})`,
+              background:T.accent,
               color:"#fff", fontSize:13, fontWeight:800, cursor:"pointer",
               boxShadow:"0 4px 14px rgba(45,91,227,0.3)",
               display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
@@ -595,7 +581,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
       <motion.div initial={{ scale:0.9, y:20 }} animate={{ scale:1, y:0 }} exit={{ scale:0.9, y:20 }}
         onClick={e=>e.stopPropagation()}
         style={{ background:T.bgPanel, borderRadius:T.radiusLg, padding:28, width:380,
-          border:`1.5px solid ${T.border}`, boxShadow:T.shadowLg }}>
+          border:`1px solid ${T.border}`, boxShadow:T.shadowLg }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <div style={{ width:32, height:32, borderRadius:T.radius, background:T.accentLight,
@@ -692,8 +678,8 @@ export default function ResumePage() {
   }, [credits, isUnlimited, planMax]);
 
   /* ── Draggable split pane ── */
-  const DEFAULT_SIDEBAR_WIDTH = 300;
-  const MIN_SIDEBAR_WIDTH = 300;
+  const DEFAULT_SIDEBAR_WIDTH = 380;
+  const MIN_SIDEBAR_WIDTH = 340;
   const MAX_SIDEBAR_WIDTH = 600;
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     // localStorage can throw when storage is disabled/blocked (some privacy
@@ -1073,106 +1059,67 @@ export default function ResumePage() {
       background:T.bg, fontFamily:"'Plus Jakarta Sans', system-ui, sans-serif", color:T.textPrimary }}>
 
       {/* ══ HEADER ══ */}
-      <header style={{ height:52, flexShrink:0, background:T.bgHeader, borderBottom:`1.5px solid ${T.border}`,
-        display:"flex", alignItems:"center", paddingLeft:16, paddingRight:20,
-        boxShadow:"0 1px 0 rgba(0,0,0,0.04)", zIndex:100 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <a href="/" style={{ display:"flex", alignItems:"center", justifyContent:"center",
-            width:32, height:32, borderRadius:T.radius, background:T.bg, border:`1.5px solid ${T.border}`,
-            color:T.textSecondary, textDecoration:"none", transition:"all 0.15s" }}
-            onMouseEnter={e=>(e.currentTarget as any).style.borderColor=T.borderStrong}
-            onMouseLeave={e=>(e.currentTarget as any).style.borderColor=T.border}>
-            <Home size={14} />
-          </a>
-          <ChevronRight size={12} style={{ color:T.textTertiary }} />
-          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 10px", borderRadius:T.radius, background:T.accentLight }}>
-            <div style={{ width:22, height:22, borderRadius:6, background:T.accent, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <FileText size={11} style={{ color:"#fff" }} />
-            </div>
-            <span style={{ fontSize:13, fontWeight:700, color:T.accent }}>Resume Builder</span>
-            <ProBadge />
-          </div>
+      <header style={{ height:60, flexShrink:0, background:T.bgHeader, borderBottom:`1px solid ${T.border}`,
+        display:"flex", alignItems:"center", gap:12, padding:"0 20px", zIndex:100 }}>
+        <a href="/" aria-label="Back to Replysis" style={{ display:"flex", alignItems:"center", justifyContent:"center",
+          width:36, height:36, borderRadius:T.radius, color:T.textSecondary, textDecoration:"none" }}
+          onMouseEnter={e=>(e.currentTarget as any).style.background=T.bg}
+          onMouseLeave={e=>(e.currentTarget as any).style.background="none"}>
+          <Home size={17} />
+        </a>
+        <div style={{ display:"flex", flexDirection:"column", lineHeight:1.25, minWidth:0 }}>
+          <span style={{ fontSize:15, fontWeight:700, color:T.textPrimary }}>Resume builder</span>
+          <span style={{ fontSize:12, color:T.textTertiary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+            {resumeData.personalInfo?.name && resumeData.personalInfo.name !== MASTER_RESUME.personalInfo?.name ? `${resumeData.personalInfo.name}'s resume` : "Your resume"}
+          </span>
         </div>
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:14 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ fontSize:11, fontWeight:600, color:T.textTertiary }}>Profile completeness</div>
-            <div style={{ width:120, height:5, borderRadius:3, background:T.border, overflow:"hidden" }}>
-              <motion.div initial={{ width:0 }} animate={{ width:`${Math.round((completedSections/totalSections)*100)}%` }} transition={{ duration:0.6, ease:"easeOut" }}
-                style={{ height:"100%", borderRadius:3, background:completedSections===totalSections?`linear-gradient(90deg,${T.success},#22c55e)`:`linear-gradient(90deg,${T.accent},#2E8B45)` }} />
-            </div>
-            <span style={{ fontSize:11, fontWeight:700, color:T.textPrimary }}>{completedSections}/{totalSections}</span>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:20, background:T.bg, border:`1px solid ${T.border}` }}>
-            <AlignLeft size={11} style={{ color:T.textTertiary }} />
-            <WordCountBadge text={JSON.stringify(resumeData)} />
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:20, background:T.bg, border:`1px solid ${T.border}` }}>
-            <span style={{ fontSize:11 }}>{AI_PROVIDERS.find(p=>p.id===aiProvider)?.icon}</span>
-            <span style={{ fontSize:10, fontWeight:700, color:T.textSecondary }}>{AI_PROVIDERS.find(p=>p.id===aiProvider)?.label}</span>
-          </div>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <CreditMeter credits={credits} max={planMax} isUnlimited={isUnlimited} plan={plan} onOpenHistory={() => setShowCreditDrawer(true)} />
-          <div style={{ width:1, height:24, background:T.border, margin:"0 4px" }} />
-          <Tooltip tip="Keyboard shortcuts (⌘/)" side="bottom">
-            <button onClick={() => setShowShortcuts(true)}
-              style={{ display:"flex", alignItems:"center", justifyContent:"center", width:32, height:32, borderRadius:T.radius,
-                border:`1.5px solid ${T.border}`, background:"none", cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
-              onMouseEnter={e=>{(e.currentTarget as any).style.background=T.bg;(e.currentTarget as any).style.color=T.textPrimary;}}
-              onMouseLeave={e=>{(e.currentTarget as any).style.background="none";(e.currentTarget as any).style.color=T.textTertiary;}}>
-              <Keyboard size={14} />
-            </button>
-          </Tooltip>
-          <Tooltip tip="Save (⌘S)" side="bottom">
-            <button onClick={handleSave}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"0 14px", height:32, borderRadius:T.radius,
-                border:"none", cursor:"pointer", fontSize:12, fontWeight:700, transition:"all 0.15s",
-                background:saveStatus==="saved"?T.success:saveStatus==="saving"?T.accent:saveStatus==="error"?T.danger:T.bg,
-                color:saveStatus!=="idle"?"#fff":T.textSecondary,
-                boxShadow:saveStatus!=="idle"?T.shadow:"none",
-                outline:`1.5px solid ${saveStatus==="idle"?T.border:"transparent"}` }}>
-              {saveStatus==="saving" ? <Loader2 size={13} style={{ animation:"spin 1s linear infinite" }} /> : <Save size={13} />}
-              <span>{saveStatus==="saved"?"Saved!":saveStatus==="error"?"Error":"Save"}</span>
-            </button>
-          </Tooltip>
-
-          {/* ══ EXPORT PDF BUTTON ══ */}
-          <Tooltip tip="Export PDF (⌘P)" side="bottom">
-            <button onClick={handleExportPDF} disabled={isPrinting}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"0 14px", height:32, borderRadius:T.radius,
-                border:"none", cursor:isPrinting?"wait":"pointer", fontSize:12, fontWeight:700, transition:"all 0.15s",
-                background:isPrinting?T.accentLight:T.accent, color:isPrinting?T.accent:"#fff",
-                boxShadow:isPrinting?"none":"0 2px 8px rgba(45,91,227,0.3)", opacity:isPrinting?0.7:1 }}>
-              {isPrinting ? <Loader2 size={13} style={{ animation:"spin 1s linear infinite" }} /> : <Download size={13} />}
-              <span>{isPrinting?"Exporting…":"Export PDF"}</span>
-            </button>
-          </Tooltip>
-
-          {/* ══ EXPORT WORD BUTTON ══ */}
-          <Tooltip tip="Export Word (.docx)" side="bottom">
-            <button onClick={handleExportWord} disabled={isExportingWord}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"0 14px", height:32, borderRadius:T.radius,
-                border:`1.5px solid ${T.border}`, cursor:isExportingWord?"wait":"pointer",
-                fontSize:12, fontWeight:700, transition:"all 0.15s",
-                background:isExportingWord?T.bg:T.bgPanel,
-                color:isExportingWord?T.textTertiary:T.textSecondary,
-                opacity:isExportingWord?0.7:1 }}>
-              {isExportingWord ? <Loader2 size={13} style={{ animation:"spin 1s linear infinite" }} /> : <FileText size={13} />}
-              <span>{isExportingWord?"Exporting…":"Word"}</span>
-            </button>
-          </Tooltip>
-        </div>
+        <div style={{ flex:1 }} />
+        <CreditMeter credits={credits} max={planMax} isUnlimited={isUnlimited} plan={plan} onOpenHistory={() => setShowCreditDrawer(true)} />
+        <Tooltip tip="Save (Ctrl S)" side="bottom">
+          <button onClick={handleSave}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"0 14px", height:38, borderRadius:T.radius,
+              border:`1px solid ${saveStatus==="error"?T.danger:T.border}`, cursor:"pointer", fontSize:13.5, fontWeight:600,
+              background:T.bgPanel, color:saveStatus==="error"?T.danger:T.textPrimary, transition:"background 0.15s" }}
+            onMouseEnter={e=>(e.currentTarget as any).style.background=T.bg}
+            onMouseLeave={e=>(e.currentTarget as any).style.background=T.bgPanel}>
+            {saveStatus==="saving" ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} />
+              : saveStatus==="saved" ? <CheckCircle2 size={15} style={{ color:T.accent }} /> : <Save size={15} />}
+            <span>{saveStatus==="saved"?"Saved":saveStatus==="error"?"Try again":saveStatus==="saving"?"Saving":"Save"}</span>
+          </button>
+        </Tooltip>
+        <Tooltip tip="Download as Word (.docx)" side="bottom">
+          <button onClick={handleExportWord} disabled={isExportingWord}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"0 14px", height:38, borderRadius:T.radius,
+              border:`1px solid ${T.border}`, cursor:isExportingWord?"wait":"pointer", fontSize:13.5, fontWeight:600,
+              background:T.bgPanel, color:T.textPrimary, opacity:isExportingWord?0.6:1 }}
+            onMouseEnter={e=>(e.currentTarget as any).style.background=T.bg}
+            onMouseLeave={e=>(e.currentTarget as any).style.background=T.bgPanel}>
+            {isExportingWord ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} /> : <FileText size={15} />}
+            <span>{isExportingWord?"Preparing":"Word"}</span>
+          </button>
+        </Tooltip>
+        <Tooltip tip="Download as PDF (Ctrl P)" side="bottom">
+          <button onClick={handleExportPDF} disabled={isPrinting}
+            style={{ display:"flex", alignItems:"center", gap:7, padding:"0 18px", height:38, borderRadius:T.radius,
+              border:"none", cursor:isPrinting?"wait":"pointer", fontSize:13.5, fontWeight:700,
+              background:T.accent, color:"#fff", opacity:isPrinting?0.7:1, transition:"background 0.15s" }}
+            onMouseEnter={e=>(e.currentTarget as any).style.background=T.accentHover}
+            onMouseLeave={e=>(e.currentTarget as any).style.background=T.accent}>
+            {isPrinting ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} /> : <Download size={15} />}
+            <span>{isPrinting?"Preparing PDF":"Download PDF"}</span>
+          </button>
+        </Tooltip>
       </header>
 
       {/* ══ BODY ══ */}
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
         {/* ══ LEFT RAIL ══ */}
-        <nav style={{ width:64, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center",
-          paddingTop:16, paddingBottom:16, gap:4, borderRight:`1.5px solid ${T.border}`, background:T.bgPanel, zIndex:20 }}>
+        <nav style={{ width:76, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center",
+          paddingTop:16, paddingBottom:16, gap:4, borderRight:`1px solid ${T.border}`, background:T.bgPanel, zIndex:20 }}>
           <Tooltip tip={sidebarCollapsed?"Expand sidebar (⌘B)":"Collapse sidebar (⌘B)"} side="right">
             <button onClick={() => setSidebarCollapsed(c => !c)}
-              style={{ width:36, height:36, borderRadius:T.radius, border:`1.5px solid ${T.border}`,
+              style={{ width:36, height:36, borderRadius:T.radius, border:`1px solid ${T.border}`,
                 background:sidebarCollapsed?T.accentLight:T.bg, cursor:"pointer",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 color:sidebarCollapsed?T.accent:T.textTertiary, transition:"all 0.15s", marginBottom:8 }}>
@@ -1181,10 +1128,10 @@ export default function ResumePage() {
           </Tooltip>
           <div style={{ width:"100%", padding:"0 8px", display:"flex", flexDirection:"column", gap:3 }}>
             {([
-              { id:"edit"  as TabId, icon:User,        label:"Edit",  tip:"Edit Resume (⌘1)",   badge:null },
-              { id:"ai"    as TabId, icon:BrainCircuit, label:"AI",    tip:"AI Engine (⌘2)",     badge:"new" },
-              { id:"style" as TabId, icon:Palette,      label:"Style", tip:"Design Studio (⌘3)", badge:null },
-              { id:"ats"   as TabId, icon:Target,       label:"ATS",   tip:"ATS Scanner (⌘4)",   badge:atsResult?String(atsResult.score+"%"):null },
+              { id:"edit"  as TabId, icon:User,        label:"Content", tip:"Your content (Ctrl 1)",       badge:null },
+              { id:"ai"    as TabId, icon:BrainCircuit, label:"Tailor",  tip:"Tailor to a job (Ctrl 2)",    badge:null },
+              { id:"style" as TabId, icon:Palette,      label:"Design",  tip:"Template and fonts (Ctrl 3)", badge:null },
+              { id:"ats"   as TabId, icon:Target,       label:"ATS",     tip:"ATS keyword check (Ctrl 4)",  badge:atsResult?String(atsResult.score+"%"):null },
             ] as const).map(t => {
               const active = activeTab === t.id;
               return (
@@ -1192,7 +1139,7 @@ export default function ResumePage() {
                   <button onClick={() => setActiveTab(t.id)}
                     style={{ position:"relative", width:"100%", display:"flex", flexDirection:"column",
                       alignItems:"center", gap:3, padding:"8px 0", borderRadius:T.radius,
-                      border:`1.5px solid ${active?T.accentLight:"transparent"}`,
+                      border:`1px solid ${active?T.accentLight:"transparent"}`,
                       background:active?T.accentLight:"none", cursor:"pointer", transition:"all 0.15s",
                       color:active?T.accent:T.textTertiary }}>
                     {active && (
@@ -1200,12 +1147,12 @@ export default function ResumePage() {
                         style={{ position:"absolute", left:0, top:"50%", transform:"translateY(-50%)",
                           width:3, height:22, borderRadius:"0 3px 3px 0", background:T.accent }} />
                     )}
-                    <t.icon size={16} />
-                    <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.05em" }}>{t.label}</span>
+                    <t.icon size={18} />
+                    <span style={{ fontSize:11, fontWeight:600 }}>{t.label}</span>
                     {t.badge && (
                       <div style={{ position:"absolute", top:4, right:4, padding:"1px 5px", borderRadius:8,
                         fontSize:8, fontWeight:800, letterSpacing:"0.05em",
-                        background:t.badge==="new"?T.accent:T.success, color:"#fff" }}>
+                        background:T.accentLight, color:T.accent }}>
                         {t.badge}
                       </div>
                     )}
@@ -1244,42 +1191,34 @@ export default function ResumePage() {
             <motion.div
               initial={{ width:0, opacity:0 }} animate={{ width:sidebarWidth, opacity:1 }} exit={{ width:0, opacity:0 }}
               transition={{ duration:0.22, ease:"easeInOut" }}
-              style={{ flexShrink:0, borderRight:`1.5px solid ${T.border}`, overflow:"hidden",
+              style={{ flexShrink:0, borderRight:`1px solid ${T.border}`, overflow:"hidden",
                 display:"flex", flexDirection:"column", background:T.bgPanel,
                 minWidth:MIN_SIDEBAR_WIDTH, maxWidth:MAX_SIDEBAR_WIDTH }}>
-              <div style={{ padding:"14px 18px 12px", borderBottom:`1.5px solid ${T.border}`, flexShrink:0 }}>
+              <div style={{ padding:"18px 20px 14px", flexShrink:0 }}>
                 <AnimatePresence mode="wait">
                   <motion.div key={activeTab} initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:6 }} transition={{ duration:0.13 }}>
                     <EntPanelHeader activeTab={activeTab} />
                   </motion.div>
                 </AnimatePresence>
               </div>
-              <div id="editor-sidebar" style={{ flex:1, padding:14, overflowY:"auto" }}>
+              <div id="editor-sidebar" style={{ flex:1, padding:"4px 16px 20px", overflowY:"auto" }}>
                 <AnimatePresence mode="wait">
                   <motion.div key={activeTab} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:8 }} transition={{ duration:0.16 }}>
 
                     {/* ══ EDIT TAB ══ */}
                     {activeTab === "edit" && (
                       <>
-                        <div style={{ padding:"10px 12px", borderRadius:T.radiusMd, background:T.bg, border:`1.5px solid ${T.border}`, marginBottom:14 }}>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:T.textSecondary }}>Section completion</span>
-                            <span style={{ fontSize:11, fontWeight:800, color:T.accent }}>{Math.round((completedSections/totalSections)*100)}%</span>
-                          </div>
-                          <div style={{ width:"100%", height:5, borderRadius:3, background:T.border, overflow:"hidden" }}>
-                            <motion.div animate={{ width:`${Math.round((completedSections/totalSections)*100)}%` }} transition={{ duration:0.5 }}
-                              style={{ height:"100%", borderRadius:3, background:completedSections===totalSections?T.success:T.accent }} />
-                          </div>
-                        </div>
-                        <div style={{ fontSize:10, color:T.textTertiary, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:8, paddingLeft:2 }}>Content Sections</div>
+                        <p style={{ fontSize:13, lineHeight:1.55, color:T.textSecondary, margin:"2px 2px 14px" }}>
+                          Open a section to edit it. The preview updates as you type, and clicking any part of it brings you here.
+                        </p>
 
                         {/* ══ ACCORDION NAV ══ */}
                         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                           {[
-                            { id:"personal",       label:"Personal Info",  Icon:User,        color:T.accent,        bg:T.accentLight },
+                            { id:"personal",       label:"Personal info",  Icon:User,        color:T.accent,        bg:T.accentLight },
                             ...sectionOrder.map(id => ({ id, ...SECTION_META[id] })),
-                            ...customSections.map(cs => ({ id:cs.id, label:cs.title, Icon:Plus, color:"#A04E2C", bg:"rgba(33,146,74,0.08)" })),
-                            { id:"order",          label:"Section Order",  Icon:Layers,      color:T.textSecondary, bg:"rgba(107,100,96,0.07)" },
+                            ...customSections.map(cs => ({ id:cs.id, label:cs.title, Icon:Plus, color:T.accent, bg:T.accentLight })),
+                            { id:"order",          label:"Section order",  Icon:Layers,      color:T.textSecondary, bg:"rgba(107,100,96,0.07)" },
                           ].map(item => {
                             const active = editSection === item.id;
                             const done   = (item.id !== "order" && !item.id.startsWith("custom_")) ? sectionComplete(item.id as any) : true;
@@ -1288,20 +1227,20 @@ export default function ResumePage() {
                                 {/* ── Section header button ── */}
                                 <button
                                   onClick={() => setEditSection(active ? "" : item.id)}
-                                  style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 10px",
+                                  style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"12px 12px",
                                     borderRadius: active ? `${T.radius} ${T.radius} 0 0` : T.radius,
                                     cursor:"pointer",
-                                    border:`1.5px solid ${active ? item.color+"40" : "transparent"}`,
-                                    borderBottom: active ? "none" : `1.5px solid transparent`,
+                                    border:`1px solid ${active ? item.color+"40" : "transparent"}`,
+                                    borderBottom: active ? "none" : `1px solid transparent`,
                                     background:active ? item.bg : "none",
                                     color:active ? item.color : T.textSecondary,
-                                    fontSize:12, fontWeight:600, transition:"all 0.15s", textAlign:"left" }}
+                                    fontSize:14, fontWeight:600, transition:"all 0.15s", textAlign:"left" }}
                                   onMouseEnter={e=>{if(!active){(e.currentTarget as any).style.background=item.bg;(e.currentTarget as any).style.color=item.color;}}}
                                   onMouseLeave={e=>{if(!active){(e.currentTarget as any).style.background="none";(e.currentTarget as any).style.color=T.textSecondary;}}}>
-                                  <div style={{ width:26, height:26, borderRadius:7, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                                  <div style={{ width:32, height:32, borderRadius:9, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
                                     background:active ? item.color+"20" : T.bg,
                                     border:`1px solid ${active ? item.color+"40" : T.border}` }}>
-                                    <item.Icon size={13} style={{ color:item.color }} />
+                                    <item.Icon size={15} style={{ color:item.color }} />
                                   </div>
                                   <span style={{ flex:1 }}>{item.label}</span>
                                   {item.id !== "order" && !item.id.startsWith("custom_") && <CompletionDot complete={done} />}
@@ -1320,11 +1259,11 @@ export default function ResumePage() {
                                       exit={{ height:0, opacity:0 }}
                                       transition={{ duration:0.22, ease:"easeInOut" }}
                                       style={{ overflow:"hidden",
-                                        border:`1.5px solid ${item.color}40`,
+                                        border:`1px solid ${item.color}40`,
                                         borderTop:"none",
                                         borderRadius:`0 0 ${T.radius} ${T.radius}`,
                                         background:T.bgPanel }}>
-                                      <div style={{ padding:"14px 12px 12px" }}>
+                                      <div style={{ padding:"16px 14px 14px" }}>
 
                                         {/* PERSONAL INFO */}
                                         {item.id === "personal" && (
@@ -1349,9 +1288,9 @@ export default function ResumePage() {
                                                 {(resumeData.personalInfo?.customLinks||[]).map((link:any,i:number)=>(
                                                   <div key={i} style={{ display:"flex", gap:5 }}>
                                                     <input value={link.label||""} onChange={e=>updateCustomLink(i,"label",e.target.value)} placeholder="Label"
-                                                      style={{ width:"35%", background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radius, padding:"7px 9px", fontSize:12, color:T.textPrimary, outline:"none" }} />
+                                                      style={{ width:"35%", background:T.bg, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:"7px 9px", fontSize:12, color:T.textPrimary, outline:"none" }} />
                                                     <input value={link.url||""} onChange={e=>updateCustomLink(i,"url",e.target.value)} placeholder="https://..."
-                                                      style={{ flex:1, background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radius, padding:"7px 9px", fontSize:12, color:T.textPrimary, outline:"none" }} />
+                                                      style={{ flex:1, background:T.bg, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:"7px 9px", fontSize:12, color:T.textPrimary, outline:"none" }} />
                                                     <button onClick={()=>removeCustomLink(i)} style={{ padding:6, border:"none", background:"none", cursor:"pointer", color:T.textTertiary }}
                                                       onMouseEnter={e=>(e.currentTarget as any).style.color=T.danger} onMouseLeave={e=>(e.currentTarget as any).style.color=T.textTertiary}>
                                                       <Trash2 size={13} />
@@ -1359,7 +1298,7 @@ export default function ResumePage() {
                                                   </div>
                                                 ))}
                                               </div>
-                                              <AddButton onClick={addCustomLink} label="Add Link" color={T.accent} />
+                                              <AddButton onClick={addCustomLink} label="Add link" color={T.accent} />
                                             </div>
                                           </>
                                         )}
@@ -1371,7 +1310,7 @@ export default function ResumePage() {
                                               <WordCountBadge text={resumeData.summary||""} />
                                               <button onClick={handleGenerateSummary} disabled={loading}
                                                 style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:T.radius,
-                                                  border:`1.5px solid ${T.accent}30`, background:T.accentLight, color:T.accent,
+                                                  border:`1px solid ${T.accent}30`, background:T.accentLight, color:T.accent,
                                                   fontSize:11, fontWeight:700, cursor:"pointer", transition:"all 0.15s", opacity:loading?0.5:1 }}>
                                                 {loading&&aiAction==="summary" ? <Loader2 size={11} style={{ animation:"spin 1s linear infinite" }} /> : <Wand2 size={11} />}
                                                 AI Generate
@@ -1414,14 +1353,14 @@ export default function ResumePage() {
                                                         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                                                           <Tooltip tip="AI rewrite (1 answer)" side="right">
                                                             <button onClick={()=>handleRewriteBullet("experience",i,bi)} disabled={rewritingBullet===`experience-${i}-${bi}`}
-                                                              style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
+                                                              style={{ padding:5, border:`1px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                               onMouseEnter={e=>{(e.currentTarget as any).style.color=T.purple;(e.currentTarget as any).style.borderColor=T.purple+"50";}}
                                                               onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.borderColor=T.border;}}>
                                                               {rewritingBullet===`experience-${i}-${bi}` ? <Loader2 size={12} style={{ animation:"spin 1s linear infinite" }} /> : <Wand2 size={12} />}
                                                             </button>
                                                           </Tooltip>
                                                           <button onClick={()=>removeBullet("experience",i,bi)}
-                                                            style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
+                                                            style={{ padding:5, border:`1px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                             onMouseEnter={e=>{(e.currentTarget as any).style.color=T.danger;(e.currentTarget as any).style.borderColor=T.danger+"40";}}
                                                             onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.borderColor=T.border;}}>
                                                             <Trash2 size={12} />
@@ -1430,11 +1369,11 @@ export default function ResumePage() {
                                                       </div>
                                                     ))}
                                                   </div>
-                                                  <AddButton onClick={()=>addBullet("experience",i)} label="Add Bullet" color="#1C7A3E" small />
+                                                  <AddButton onClick={()=>addBullet("experience",i)} label="Add bullet point" color="#1C7A3E" small />
                                                 </SectionCard></div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addExperience} label="Add Experience" color="#1C7A3E" />
+                                            <AddButton onClick={addExperience} label="Add experience" color="#1C7A3E" />
                                           </>
                                         )}
 
@@ -1464,14 +1403,14 @@ export default function ResumePage() {
                                                         <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                                                           <Tooltip tip="AI rewrite (1 answer)" side="right">
                                                             <button onClick={()=>handleRewriteBullet("projects",i,bi)} disabled={rewritingBullet===`projects-${i}-${bi}`}
-                                                              style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
+                                                              style={{ padding:5, border:`1px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                               onMouseEnter={e=>{(e.currentTarget as any).style.color=T.purple;(e.currentTarget as any).style.borderColor=T.purple+"50";}}
                                                               onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.borderColor=T.border;}}>
                                                               {rewritingBullet===`projects-${i}-${bi}` ? <Loader2 size={12} style={{ animation:"spin 1s linear infinite" }} /> : <Wand2 size={12} />}
                                                             </button>
                                                           </Tooltip>
                                                           <button onClick={()=>removeBullet("projects",i,bi)}
-                                                            style={{ padding:5, border:`1.5px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
+                                                            style={{ padding:5, border:`1px solid ${T.border}`, borderRadius:6, background:T.bg, cursor:"pointer", color:T.textTertiary, transition:"all 0.15s" }}
                                                             onMouseEnter={e=>{(e.currentTarget as any).style.color=T.danger;(e.currentTarget as any).style.borderColor=T.danger+"40";}}
                                                             onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.borderColor=T.border;}}>
                                                             <Trash2 size={12} />
@@ -1480,11 +1419,11 @@ export default function ResumePage() {
                                                       </div>
                                                     ))}
                                                   </div>
-                                                  <AddButton onClick={()=>addBullet("projects",i)} label="Add Bullet" color={T.purple} small />
+                                                  <AddButton onClick={()=>addBullet("projects",i)} label="Add bullet point" color={T.purple} small />
                                                 </SectionCard></div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addProject} label="Add Project" color={T.purple} />
+                                            <AddButton onClick={addProject} label="Add project" color={T.purple} />
                                           </>
                                         )}
 
@@ -1510,7 +1449,7 @@ export default function ResumePage() {
                                                 </SectionCard></div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addEducation} label="Add Education" color={T.success} />
+                                            <AddButton onClick={addEducation} label="Add education" color={T.success} />
                                           </>
                                         )}
 
@@ -1532,7 +1471,7 @@ export default function ResumePage() {
                                                 </SectionCard></div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addSkillCategory} label="Add Category" color={T.warning} />
+                                            <AddButton onClick={addSkillCategory} label="Add category" color={T.warning} />
                                           </>
                                         )}
 
@@ -1543,7 +1482,7 @@ export default function ResumePage() {
                                               {(resumeData.certifications||[]).map((c:any,i:number)=>(
                                                 <div key={i} style={{ display:"flex", gap:5 }}>
                                                   <Inp value={typeof c==="string"?c:c?.name||""} onChange={(e:any)=>updateCertification(i,e.target.value)} placeholder="AWS Certified - Amazon (2024)" />
-                                                  <button onClick={()=>removeCertification(i)} style={{ padding:6, border:`1.5px solid ${T.border}`, borderRadius:T.radius, background:T.bg, cursor:"pointer", color:T.textTertiary, flexShrink:0, transition:"all 0.15s" }}
+                                                  <button onClick={()=>removeCertification(i)} style={{ padding:6, border:`1px solid ${T.border}`, borderRadius:T.radius, background:T.bg, cursor:"pointer", color:T.textTertiary, flexShrink:0, transition:"all 0.15s" }}
                                                     onMouseEnter={e=>{(e.currentTarget as any).style.color=T.danger;(e.currentTarget as any).style.borderColor=T.danger+"40";}}
                                                     onMouseLeave={e=>{(e.currentTarget as any).style.color=T.textTertiary;(e.currentTarget as any).style.borderColor=T.border;}}>
                                                     <Trash2 size={12} />
@@ -1551,7 +1490,7 @@ export default function ResumePage() {
                                                 </div>
                                               ))}
                                             </div>
-                                            <AddButton onClick={addCertification} label="Add Certification" color="#21924A" />
+                                            <AddButton onClick={addCertification} label="Add certification" color="#21924A" />
                                           </>
                                         )}
 
@@ -1565,7 +1504,7 @@ export default function ResumePage() {
                                                 <input value={cs.title} onChange={e=>updateCustomSectionTitle(cs.id, e.target.value)}
                                                   placeholder="Section Title"
                                                   style={{ background:"none", border:"none", outline:"none", fontSize:13, fontWeight:700,
-                                                    color:T.textPrimary, fontFamily:"inherit", borderBottom:`1.5px solid #A04E2C40`, paddingBottom:2 }} />
+                                                    color:T.textPrimary, fontFamily:"inherit", borderBottom:`1px solid #A04E2C40`, paddingBottom:2 }} />
                                                 <button onClick={()=>removeCustomSection(cs.id)}
                                                   style={{ padding:"3px 8px", borderRadius:T.radius, border:`1px solid ${T.danger}30`,
                                                     background:T.dangerLight, color:T.danger, fontSize:10, fontWeight:700, cursor:"pointer" }}>
@@ -1592,7 +1531,7 @@ export default function ResumePage() {
                                                   </SectionCard>
                                                 ))}
                                               </div>
-                                              <AddButton onClick={()=>addCustomSectionItem(cs.id)} label="Add Entry" color="#A04E2C" />
+                                              <AddButton onClick={()=>addCustomSectionItem(cs.id)} label="Add entry" color="#A04E2C" />
                                             </>
                                           );
                                         })()}
@@ -1606,7 +1545,7 @@ export default function ResumePage() {
                                                 const m = SECTION_META[id];
                                                 return (
                                                   <div key={id} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 10px",
-                                                    background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radiusMd }}>
+                                                    background:T.bg, border:`1px solid ${T.border}`, borderRadius:T.radiusMd }}>
                                                     <GripVertical size={13} style={{ color:T.textTertiary }} />
                                                     <div style={{ width:22, height:22, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center",
                                                       background:m.color+"15", border:`1px solid ${m.color}25` }}>
@@ -1642,7 +1581,7 @@ export default function ResumePage() {
                         {/* Add Custom Section button */}
                         <button onClick={addCustomSection}
                           style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 10px",
-                            borderRadius:T.radius, cursor:"pointer", border:`1.5px dashed #A04E2C40`,
+                            borderRadius:T.radius, cursor:"pointer", border:`1px dashed #A04E2C40`,
                             background:"rgba(33,146,74,0.04)", color:"#A04E2Ccc",
                             fontSize:11, fontWeight:700, transition:"all 0.13s", marginTop:8 }}
                           onMouseEnter={e=>{(e.currentTarget as any).style.background="rgba(33,146,74,0.10)";(e.currentTarget as any).style.borderColor="#A04E2C80";(e.currentTarget as any).style.color="#A04E2C";}}
@@ -1658,7 +1597,7 @@ export default function ResumePage() {
                         {!isUnlimited && credits < 25 && (
                           <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }}
                             style={{ padding:"10px 12px", borderRadius:T.radiusMd, marginBottom:14,
-                              background:T.dangerLight, border:`1.5px solid ${T.danger}25`,
+                              background:T.dangerLight, border:`1px solid ${T.danger}25`,
                               display:"flex", alignItems:"center", gap:10 }}>
                             <AlertCircle size={14} style={{ color:T.danger, flexShrink:0 }} />
                             <div>
@@ -1672,68 +1611,42 @@ export default function ResumePage() {
                             </button>
                           </motion.div>
                         )}
-                        <AiProviderSelector value={aiProvider} onChange={setAiProvider} />
-                        <div style={{ padding:14, borderRadius:T.radiusMd, marginBottom:16,
-                          background:"linear-gradient(135deg,rgba(45,91,227,0.06),rgba(31,138,62,0.06))",
-                          border:`1.5px solid ${T.accent}20` }}>
-                          <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
-                            <div style={{ width:32, height:32, borderRadius:T.radius, background:T.accentLight,
-                              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                              <Zap size={14} style={{ color:T.accent }} />
-                            </div>
-                            <div>
-                              <div style={{ fontSize:13, fontWeight:700, color:T.textPrimary, marginBottom:3 }}>AI Resume Tailoring</div>
-                              <p style={{ fontSize:11, color:T.textSecondary, lineHeight:1.55 }}>
-                                Paste a job description or just keywords (e.g. "Java backend") and AI will tailor your resume accordingly.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                          <Label>Job Description or Keywords</Label>
-                          <WordCountBadge text={jd} />
-                        </div>
+                        <Label>Job post or keywords</Label>
                         <Textarea value={jd} onChange={(e:any)=>setJd(e.target.value)}
-                          placeholder="Paste a full JD or just type keywords like 'Java backend microservices'…" rows={12} />
-                        <div style={{ marginTop:10, marginBottom:12, padding:"8px 12px", borderRadius:T.radiusMd,
-                          background:T.bg, border:`1.5px solid ${T.border}`,
-                          display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <Coins size={12} style={{ color:T.accent }} />
-                            <span style={{ fontSize:11, fontWeight:600, color:T.textSecondary }}>AI Tailor costs</span>
-                          </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:13, fontWeight:800, color:T.accent }}>4 answers</span>
-                            <span style={{ fontSize:10, color:T.textTertiary }}>· {isUnlimited?"∞ left":`${answerCount(credits)} left`}</span>
-                          </div>
-                        </div>
-                        <button onClick={handleTailor} disabled={loading||!jd}
-                          style={{ width:"100%", padding:"12px 0", borderRadius:T.radiusMd, border:"none",
-                            fontSize:13, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                            cursor:loading||!jd?"not-allowed":"pointer", transition:"all 0.15s",
-                            background:loading||!jd?T.accentLight:T.accent,
-                            color:loading||!jd?T.accent:"#fff",
-                            boxShadow:!loading&&jd?"0 3px 12px rgba(45,91,227,0.25)":"none", opacity:!jd?0.5:1 }}>
+                          placeholder={"Paste the job post here. Even a few words work, for example: Java backend developer, Spring Boot, AWS"} rows={11} />
+                        <p style={{ fontSize:12.5, color:T.textTertiary, margin:"8px 2px 14px", lineHeight:1.5 }}>
+                          Your summary, skills and bullet points are rewritten for this job. Nothing is made up, and you can undo it.
+                        </p>
+                        <button onClick={handleTailor} disabled={loading||!jd.trim()}
+                          style={{ width:"100%", height:46, borderRadius:T.radius, border:"none",
+                            fontSize:14.5, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                            cursor:loading||!jd.trim()?"not-allowed":"pointer", transition:"background 0.15s",
+                            background:!jd.trim()?T.border:T.accent, color:!jd.trim()?T.textTertiary:"#fff" }}
+                          onMouseEnter={e=>{ if (!loading && jd.trim()) (e.currentTarget as any).style.background=T.accentHover; }}
+                          onMouseLeave={e=>{ if (!loading && jd.trim()) (e.currentTarget as any).style.background=T.accent; }}>
                           {loading&&aiAction==="tailoring"
-                            ? <><Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} /> Tailoring your resume…</>
-                            : <><Sparkles size={15} /> Tailor Resume to JD</>}
+                            ? <><Loader2 size={16} style={{ animation:"spin 1s linear infinite" }} /> Tailoring your resume</>
+                            : <><Sparkles size={16} /> Tailor my resume</>}
                         </button>
+                        <p style={{ textAlign:"center", fontSize:12, color:T.textTertiary, marginTop:8 }}>
+                          Uses 4 answers{isUnlimited ? "" : `. You have ${answerCount(credits)}.`}
+                        </p>
                         {showDiff && prevResume && (
                           <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }}
                             style={{ marginTop:14, padding:14, background:T.successLight,
-                              border:`1.5px solid ${T.success}25`, borderRadius:T.radiusMd }}>
+                              border:`1px solid ${T.success}25`, borderRadius:T.radiusMd }}>
                             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
                               <CheckCircle2 size={14} style={{ color:T.success }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:T.success }}>Resume Tailored!</span>
+                              <span style={{ fontSize:13.5, fontWeight:700, color:T.success }}>Your resume is tailored</span>
                             </div>
-                            <p style={{ fontSize:11, color:T.textSecondary, lineHeight:1.55, marginBottom:12 }}>Your resume has been rewritten to match the job description.</p>
+                            <p style={{ fontSize:12.5, color:T.textSecondary, lineHeight:1.55, marginBottom:12 }}>Check the preview. Keep it, or undo to go back to your previous version.</p>
                             <div style={{ display:"flex", gap:7 }}>
                               <button onClick={()=>{ setResumeData(prevResume); setShowDiff(false); }}
-                                style={{ flex:1, padding:"8px 0", borderRadius:T.radius, border:`1.5px solid ${T.danger}30`, background:T.dangerLight, color:T.danger, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                style={{ flex:1, padding:"8px 0", borderRadius:T.radius, border:`1px solid ${T.danger}30`, background:T.dangerLight, color:T.danger, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                 <RotateCcw size={11} /> Undo
                               </button>
                               <button onClick={()=>setShowDiff(false)}
-                                style={{ flex:1, padding:"8px 0", borderRadius:T.radius, border:`1.5px solid ${T.success}30`, background:T.successLight, color:T.success, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                style={{ flex:1, padding:"8px 0", borderRadius:T.radius, border:`1px solid ${T.success}30`, background:T.successLight, color:T.success, fontSize:11, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                 <CheckCircle2 size={11} /> Keep
                               </button>
                             </div>
@@ -1753,7 +1666,7 @@ export default function ResumePage() {
                               return (
                                 <button key={t.id} onClick={()=>setTemplateId(t.id)}
                                   style={{ position:"relative", textAlign:"left", cursor:"pointer",
-                                    borderRadius:T.radiusMd, border:`1.5px solid ${isSelected?ac:T.border}`,
+                                    borderRadius:T.radiusMd, border:`1px solid ${isSelected?ac:T.border}`,
                                     overflow:"hidden", background:T.bgPanel, padding:0,
                                     transform:isSelected?"translateY(-1px)":"none",
                                     boxShadow:isSelected?`0 4px 14px ${ac}22`:T.shadow, transition:"all 0.15s" }}>
@@ -1784,11 +1697,11 @@ export default function ResumePage() {
                             ))}
                           </div>
                           <input type="color" value={ac} onChange={e=>setAccentColor(e.target.value)}
-                            style={{ width:"100%", height:32, background:"none", border:`1.5px solid ${T.border}`, borderRadius:T.radius, cursor:"pointer", padding:2 }} />
+                            style={{ width:"100%", height:32, background:"none", border:`1px solid ${T.border}`, borderRadius:T.radius, cursor:"pointer", padding:2 }} />
                         </div>
                         <div style={{ marginBottom:18 }}>
                           <Label>Font Family</Label>
-                          <div style={{ display:"flex", gap:3, marginBottom:8, background:T.bg, borderRadius:T.radius, border:`1.5px solid ${T.border}`, padding:3 }}>
+                          <div style={{ display:"flex", gap:3, marginBottom:8, background:T.bg, borderRadius:T.radius, border:`1px solid ${T.border}`, padding:3 }}>
                             {(["all","Serif","Sans","Mono"] as const).map(cat=>(
                               <button key={cat} onClick={()=>setFontFilter(cat)}
                                 style={{ flex:1, padding:"5px 0", borderRadius:5, border:"none", cursor:"pointer", fontSize:10, fontWeight:700, transition:"all 0.15s",
@@ -1797,7 +1710,7 @@ export default function ResumePage() {
                               </button>
                             ))}
                           </div>
-                          <div style={{ maxHeight:160, overflowY:"auto", borderRadius:T.radiusMd, border:`1.5px solid ${T.border}`, background:T.bgPanel }}>
+                          <div style={{ maxHeight:160, overflowY:"auto", borderRadius:T.radiusMd, border:`1px solid ${T.border}`, background:T.bgPanel }}>
                             {FONTS.filter(f=>fontFilter==="all"||f.cat===fontFilter).map(f=>(
                               <button key={f.key} onClick={()=>setFontKey(f.key)}
                                 style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -1831,7 +1744,7 @@ export default function ResumePage() {
                           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
                             {(["narrow","normal","wide"] as const).map(m=>(
                               <button key={m} onClick={()=>setMarginPreset(m)}
-                                style={{ padding:"8px 0", borderRadius:T.radius, border:`1.5px solid ${marginPreset===m?T.accent+"50":T.border}`,
+                                style={{ padding:"8px 0", borderRadius:T.radius, border:`1px solid ${marginPreset===m?T.accent+"50":T.border}`,
                                   background:marginPreset===m?T.accentLight:T.bg, color:marginPreset===m?T.accent:T.textSecondary,
                                   fontSize:11, fontWeight:700, cursor:"pointer", textTransform:"capitalize", transition:"all 0.15s" }}>
                                 {m}
@@ -1844,7 +1757,7 @@ export default function ResumePage() {
                           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
                             {(["a4","letter"] as const).map(k=>(
                               <button key={k} onClick={()=>setPaperSize(k)}
-                                style={{ padding:"8px 0", borderRadius:T.radius, border:`1.5px solid ${paperSize===k?T.accent+"50":T.border}`,
+                                style={{ padding:"8px 0", borderRadius:T.radius, border:`1px solid ${paperSize===k?T.accent+"50":T.border}`,
                                   background:paperSize===k?T.accentLight:T.bg, color:paperSize===k?T.accent:T.textSecondary,
                                   fontSize:11, fontWeight:700, cursor:"pointer", textTransform:"uppercase", transition:"all 0.15s" }}>
                                 {k}
@@ -1858,37 +1771,24 @@ export default function ResumePage() {
                     {/* ══ ATS TAB ══ */}
                     {activeTab === "ats" && (
                       <>
-                        <div style={{ padding:14, borderRadius:T.radiusMd, marginBottom:16, background:T.warningLight, border:`1.5px solid ${T.warning}25` }}>
-                          <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
-                            <div style={{ width:32, height:32, borderRadius:T.radius, background:T.warningLight,
-                              display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, border:`1.5px solid ${T.warning}30` }}>
-                              <BarChart3 size={14} style={{ color:T.warning }} />
-                            </div>
-                            <div>
-                              <div style={{ fontSize:13, fontWeight:700, color:T.textPrimary, marginBottom:3 }}>ATS Keyword Scanner</div>
-                              <p style={{ fontSize:11, color:T.textSecondary, lineHeight:1.55 }}>Paste a job description and see how well your resume matches its keywords.</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                          <Label>Job Description</Label>
-                          <WordCountBadge text={jd} />
-                        </div>
-                        <Textarea value={jd} onChange={(e:any)=>setJd(e.target.value)} placeholder="Paste Job Description here…" rows={8} />
-                        <button onClick={runATS} disabled={!jd}
-                          style={{ width:"100%", marginTop:10, padding:"11px 0", borderRadius:T.radiusMd, border:"none",
-                            fontSize:13, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                            cursor:!jd?"not-allowed":"pointer", transition:"all 0.15s", opacity:!jd?0.5:1,
-                            background:T.warningLight, color:T.warning, outline:`1.5px solid ${T.warning}30` }}>
-                          <BarChart3 size={15} /> Scan Keywords
+                        <Label>Job post</Label>
+                        <Textarea value={jd} onChange={(e:any)=>setJd(e.target.value)}
+                          placeholder="Paste the job post here. The same text you used for Tailor works." rows={9} />
+                        <button onClick={runATS} disabled={!jd.trim()}
+                          style={{ width:"100%", marginTop:12, height:46, borderRadius:T.radius, border:"none",
+                            fontSize:14.5, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                            cursor:!jd.trim()?"not-allowed":"pointer", transition:"background 0.15s",
+                            background:!jd.trim()?T.border:T.accent, color:!jd.trim()?T.textTertiary:"#fff" }}>
+                          <BarChart3 size={16} /> Check keywords
                         </button>
+                        <p style={{ textAlign:"center", fontSize:12, color:T.textTertiary, marginTop:8 }}>Free, uses no answers</p>
                         {atsResult && (
                           <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} style={{ marginTop:14, display:"flex", flexDirection:"column", gap:12 }}>
-                            <div style={{ textAlign:"center", padding:"18px 0", background:T.bg, border:`1.5px solid ${T.border}`, borderRadius:T.radiusMd }}>
+                            <div style={{ textAlign:"center", padding:"18px 0", background:T.bg, border:`1px solid ${T.border}`, borderRadius:T.radiusMd }}>
                               <div style={{ fontSize:48, fontWeight:900, lineHeight:1, color:atsResult.score>=70?T.success:atsResult.score>=40?T.warning:T.danger }}>
                                 {atsResult.score}%
                               </div>
-                              <div style={{ fontSize:11, color:T.textTertiary, marginTop:5 }}>ATS Match · {atsResult.found.length}/{atsResult.total} keywords</div>
+                              <div style={{ fontSize:11, color:T.textTertiary, marginTop:5 }}>ATS match: {atsResult.found.length} of {atsResult.total} keywords</div>
                               <div style={{ width:"70%", height:5, borderRadius:3, background:T.border, margin:"12px auto 0", overflow:"hidden" }}>
                                 <motion.div initial={{ width:0 }} animate={{ width:`${atsResult.score}%` }} transition={{ duration:0.8 }}
                                   style={{ height:"100%", borderRadius:3, background:atsResult.score>=70?T.success:atsResult.score>=40?T.warning:T.danger }} />
@@ -1896,7 +1796,7 @@ export default function ResumePage() {
                             </div>
                             {atsResult.found.length > 0 && (
                               <div>
-                                <div style={{ fontSize:10, color:T.success, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:7 }}>Found ({atsResult.found.length})</div>
+                                <div style={{ fontSize:13, color:T.success, fontWeight:700, marginBottom:8 }}>On your resume ({atsResult.found.length})</div>
                                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                                   {atsResult.found.map((k:string)=>(
                                     <span key={k} style={{ padding:"3px 8px", borderRadius:20, fontSize:10, fontWeight:600, background:T.successLight, color:T.success, border:`1px solid ${T.success}25` }}>{k}</span>
@@ -1906,7 +1806,7 @@ export default function ResumePage() {
                             )}
                             {atsResult.missing.length > 0 && (
                               <div>
-                                <div style={{ fontSize:10, color:T.danger, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:7 }}>Missing ({atsResult.missing.length})</div>
+                                <div style={{ fontSize:13, color:T.danger, fontWeight:700, marginBottom:8 }}>Missing from your resume ({atsResult.missing.length})</div>
                                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                                   {atsResult.missing.map((k:string)=>(
                                     <span key={k} style={{ padding:"3px 8px", borderRadius:20, fontSize:10, fontWeight:600, background:T.dangerLight, color:T.danger, border:`1px solid ${T.danger}25` }}>{k}</span>
@@ -1929,7 +1829,7 @@ export default function ResumePage() {
         {/* ══ DRAGGABLE DIVIDER ══ */}
         {!sidebarCollapsed && (
           <div onMouseDown={handleDividerMouseDown} onDoubleClick={handleDividerDoubleClick}
-            title="Drag to resize · Double-click to reset"
+            title="Drag to resize. Double click to reset"
             style={{ width:5, flexShrink:0, position:"relative", display:"flex", alignItems:"center", justifyContent:"center",
               cursor:"col-resize", zIndex:30, background:T.border, transition:"background 0.15s" }}
             onMouseEnter={e=>(e.currentTarget as any).style.background=T.accent+"60"}
@@ -2049,23 +1949,17 @@ export default function ResumePage() {
    SUB-COMPONENTS
 ════════════════════════════════════════════════════════════════ */
 function EntPanelHeader({ activeTab }: { activeTab: TabId }) {
-  const map: Record<TabId, { icon: React.ReactNode; title: string; sub: string }> = {
-    edit:  { icon:<User size={14} style={{ color:T.accent }} />,        title:"Resume Editor",  sub:"Edit your content"    },
-    ai:    { icon:<BrainCircuit size={14} style={{ color:T.purple }} />, title:"AI Engine",      sub:"AI-powered tailoring" },
-    style: { icon:<Palette size={14} style={{ color:T.success }} />,    title:"Design Studio",  sub:"Customize your look"  },
-    ats:   { icon:<Target size={14} style={{ color:T.warning }} />,      title:"ATS Scanner",    sub:"Match job keywords"   },
+  const map: Record<TabId, { title: string; sub: string }> = {
+    edit:  { title:"Your content",    sub:"Everything that goes on the page" },
+    ai:    { title:"Tailor to a job", sub:"Paste a job post and AI rewrites your resume for it" },
+    style: { title:"Design",          sub:"Template, fonts and spacing" },
+    ats:   { title:"ATS check",       sub:"See which keywords from the job are missing" },
   };
-  const { icon, title, sub } = map[activeTab];
+  const { title, sub } = map[activeTab];
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-      <div style={{ width:32, height:32, borderRadius:T.radius, background:T.bg,
-        border:`1.5px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-        {icon}
-      </div>
-      <div>
-        <div style={{ fontSize:13, fontWeight:700, color:T.textPrimary }}>{title}</div>
-        <div style={{ fontSize:10, color:T.textTertiary }}>{sub}</div>
-      </div>
+    <div>
+      <div style={{ fontSize:17, fontWeight:700, color:T.textPrimary }}>{title}</div>
+      <div style={{ fontSize:13, color:T.textTertiary, marginTop:2 }}>{sub}</div>
     </div>
   );
 }
@@ -2082,17 +1976,17 @@ function EntSectionContent({ title, icon, action, children }: { title:React.Reac
   );
 }
 
-function AddButton({ onClick, label, color, small=false }: { onClick:()=>void; label:string; color:string; small?:boolean }) {
+function AddButton({ onClick, label, small=false }: { onClick:()=>void; label:string; color?:string; small?:boolean }) {
   return (
     <button onClick={onClick}
-      style={{ width:"100%", padding:small?"6px 0":"9px 0", marginTop:small?6:10,
-        borderRadius:T.radius, border:`1.5px dashed ${color}40`,
-        background:color+"08", color:color+"cc",
-        fontSize:small?10:12, fontWeight:700, cursor:"pointer",
-        display:"flex", alignItems:"center", justifyContent:"center", gap:5, transition:"all 0.15s" }}
-      onMouseEnter={e=>{(e.currentTarget as any).style.background=color+"14";(e.currentTarget as any).style.borderColor=color+"70";(e.currentTarget as any).style.color=color;}}
-      onMouseLeave={e=>{(e.currentTarget as any).style.background=color+"08";(e.currentTarget as any).style.borderColor=color+"40";(e.currentTarget as any).style.color=color+"cc";}}>
-      <Plus size={small?11:13} /> {label}
+      style={{ width:"100%", padding:small?"8px 0":"11px 0", marginTop:small?8:12,
+        borderRadius:T.radius, border:`1px dashed ${T.borderStrong}`,
+        background:"transparent", color:T.textSecondary,
+        fontSize:small?12:13.5, fontWeight:600, cursor:"pointer",
+        display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all 0.15s" }}
+      onMouseEnter={e=>{(e.currentTarget as any).style.borderColor=T.accent;(e.currentTarget as any).style.color=T.accent;(e.currentTarget as any).style.background=T.accentLight;}}
+      onMouseLeave={e=>{(e.currentTarget as any).style.borderColor=T.borderStrong;(e.currentTarget as any).style.color=T.textSecondary;(e.currentTarget as any).style.background="transparent";}}>
+      <Plus size={small?13:15} /> {label}
     </button>
   );
 }
