@@ -491,6 +491,9 @@ export interface TemplateSections {
    and job 1 on page 2  -  instead of moving the entire section when
    even one entry overflows, which caused the huge gaps.
 ================================================================ */
+// Bullets that always stay with their job's title line, so a job never starts at the bottom of a page alone.
+const HEAD_BULLETS = 2;
+
 function buildGranularSections(
   ctx: StyleCtx,
   SHComp: any,
@@ -547,19 +550,29 @@ function buildGranularSections(
       // Each job entry as its own packer unit
       data.experience.forEach((exp: any, i: number) => {
         const isFirst = i === 0;
-        const node = expRenderer
-          ? expRenderer(exp, i, isFirst)
-          : (
-            <div style={{ marginTop: isFirst ? 0 : 12, marginBottom: i === data.experience.length - 1 ? sg : 0 }}>
+        const isLast = i === data.experience.length - 1;
+        if (expRenderer) { out.push({ key: `experience:${i}`, node: expRenderer(exp, i, isFirst) }); return; }
+        // A long job is split so it can continue on the next page. As one block, a job too tall for the space
+        // left jumped to the next page whole and left half a page empty (owner's own resume, 2026-10-20).
+        const bl: string[] = (Array.isArray(exp.bullets) ? exp.bullets : []).filter(Boolean);
+        const head = bl.slice(0, HEAD_BULLETS), rest = bl.slice(HEAD_BULLETS);
+        out.push({
+          key: `experience:${i}`,
+          node: (
+            <div style={{ marginTop: isFirst ? 0 : 12, marginBottom: isLast && rest.length === 0 ? sg : 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={tx(fs, "#111827", { fontWeight: 700 })}>{exp.company}{exp.role ? `  -  ${exp.role}` : ""}</span>
                 <span style={tx(8.5, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{exp.period}</span>
               </div>
               {exp.location && <div style={tx(8.5, "#9ca3af", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{exp.location}</div>}
-              <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(exp.bullets)}</ul>
+              {head.length > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(head)}</ul>}
             </div>
-          );
-        out.push({ key: `experience:${i}`, node });
+          ),
+        });
+        rest.forEach((b, j) => out.push({
+          key: `experience:${i}:b${j + HEAD_BULLETS}`,
+          node: <ul style={{ margin: isLast && j === rest.length - 1 ? `0 0 ${sg}px` : 0, paddingLeft: 16, listStyle: "disc" }}>{bul([b])}</ul>,
+        }));
       });
     }
 
@@ -570,19 +583,26 @@ function buildGranularSections(
       });
       data.projects.forEach((proj: any, i: number) => {
         const isFirst = i === 0;
+        const isLast = i === data.projects.length - 1;
+        const bl: string[] = (Array.isArray(proj.bullets) ? proj.bullets : []).filter(Boolean);
+        const head = bl.slice(0, HEAD_BULLETS), rest = bl.slice(HEAD_BULLETS);
         out.push({
           key: `projects:${i}`,
           node: (
-            <div style={{ marginTop: isFirst ? 0 : 10, marginBottom: i === data.projects.length - 1 ? sg : 0 }}>
+            <div style={{ marginTop: isFirst ? 0 : 10, marginBottom: isLast && rest.length === 0 ? sg : 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={tx(fs, ac, { fontWeight: 700 })}>{proj.title || proj.name}</span>
                 {proj.period && <span style={tx(8.5, "#6b7280")}>{proj.period}</span>}
               </div>
               {proj.tech && <div style={tx(8.5, "#6b7280", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{proj.tech}</div>}
-              {(proj.bullets?.length ?? 0) > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(proj.bullets)}</ul>}
+              {head.length > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(head)}</ul>}
             </div>
           ),
         });
+        rest.forEach((b, j) => out.push({
+          key: `projects:${i}:b${j + HEAD_BULLETS}`,
+          node: <ul style={{ margin: isLast && j === rest.length - 1 ? `0 0 ${sg}px` : 0, paddingLeft: 16, listStyle: "disc" }}>{bul([b])}</ul>,
+        }));
       });
     }
 
