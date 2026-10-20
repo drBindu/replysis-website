@@ -107,6 +107,7 @@ export default function ResumePreview({
 
   const [mounted, setMounted] = useState(false);
   const [scale, setScale]     = useState(0.75);
+  const [compact, setCompact] = useState(false);
 
   useEffect(() => {
     const div = document.createElement("div");
@@ -143,7 +144,10 @@ export default function ResumePreview({
   useEffect(() => {
     const calc = () => {
       if (!wrapperRef.current) return;
-      const available = wrapperRef.current.getBoundingClientRect().width - 80;
+      const w = wrapperRef.current.getBoundingClientRect().width;
+      setCompact(w > 0 && w < 600);
+      // Phones get a thin margin; 80px of padding left the page at half size on a 390px screen.
+      const available = w - (w < 600 ? 24 : 80);
       setScale(Math.min(Math.max(available / paper.w, 0.3), 1));
     };
     calc();
@@ -438,7 +442,7 @@ export default function ResumePreview({
       </div>
 
       <div style={{
-        position: "sticky", bottom: 14, display: "flex", justifyContent: "flex-end",
+        position: "sticky", bottom: 14, display: compact ? "none" : "flex", justifyContent: "flex-end",
         paddingRight: 14, zIndex: 20, pointerEvents: "none",
       }}>
         <div style={{

@@ -14,7 +14,7 @@ import {
   Plus, Trash2, Award, Briefcase, GraduationCap, Code, Wrench,
   ChevronUp, ChevronDown, GripVertical, Layers, Link as LinkIcon,
   Loader2, Zap, Target, BarChart3,
-  CheckCircle2, Wand2, Home, Upload,
+  CheckCircle2, Wand2, Home, Upload, Eye, PenLine,
   BrainCircuit,
   PanelLeftClose, PanelLeftOpen, Keyboard, Coins, AlignLeft,
   AlertCircle, ChevronRight,
@@ -620,6 +620,16 @@ export default function ResumePage() {
   const [resumeData,     setResumeData]     = useState<any>(MASTER_RESUME);
   const [prevResume,     setPrevResume]     = useState<any>(null);
   const [sectionOrder,   setSectionOrder]   = useState<SectionId[]>(DEFAULT_ORDER);
+  // Phones: the editor and the preview take turns on the full width. The desktop layout squeezed into 390px and the
+  // page collapsed to its header (found 2026-10-20).
+  const [narrow, setNarrow] = useState(false);
+  const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
+  useEffect(() => {
+    const check = () => setNarrow(window.innerWidth < 900);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const [customSections, setCustomSections] = useState<{id:string;title:string;items:{title:string;subtitle:string;date:string;description:string}[]}[]>([]);
 
   // Scroll sidebar to the content area whenever the active section changes
@@ -934,7 +944,7 @@ export default function ResumePage() {
         throw failure;
       }
       setResumeData(await response.json());
-      setShowDiff(true); setActiveTab("edit");
+      setShowDiff(true);   // stays on Tailor, where the result and Undo are; it used to jump away and hide both
       recordCreditUsage("AI Tailor Resume", "resume_tailor", 20);
     } catch (e: any) {
       console.error("[Replysis] Resume tailoring failed:", e?.status ?? e?.name ?? "Error");
@@ -1158,7 +1168,7 @@ export default function ResumePage() {
 
       {/* ══ HEADER ══ */}
       <header style={{ height:60, flexShrink:0, background:T.bgHeader, borderBottom:`1px solid ${T.border}`,
-        display:"flex", alignItems:"center", gap:12, padding:"0 20px", zIndex:100 }}>
+        display:"flex", alignItems:"center", gap: narrow ? 8 : 12, padding: narrow ? "0 10px" : "0 20px", zIndex:100 }}>
         <a href="/" aria-label="Back to Replysis" style={{ display:"flex", alignItems:"center", justifyContent:"center",
           width:36, height:36, borderRadius:T.radius, color:T.textSecondary, textDecoration:"none" }}
           onMouseEnter={e=>(e.currentTarget as any).style.background=T.bg}
@@ -1166,13 +1176,13 @@ export default function ResumePage() {
           <Home size={17} />
         </a>
         <div style={{ display:"flex", flexDirection:"column", lineHeight:1.25, minWidth:0 }}>
-          <span style={{ fontSize:15, fontWeight:700, color:T.textPrimary }}>Resume builder</span>
-          <span style={{ fontSize:12, color:T.textTertiary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+          <span style={{ fontSize:15, fontWeight:700, color:T.textPrimary, whiteSpace:"nowrap" }}>Resume builder</span>
+          <span style={{ fontSize:12, color:T.textTertiary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display: narrow ? "none" : "block" }}>
             {resumeData.personalInfo?.name && resumeData.personalInfo.name !== MASTER_RESUME.personalInfo?.name ? `${resumeData.personalInfo.name}'s resume` : "Your resume"}
           </span>
         </div>
         <div style={{ flex:1 }} />
-        <CreditMeter credits={credits} max={planMax} isUnlimited={isUnlimited} plan={plan} onOpenHistory={() => setShowCreditDrawer(true)} />
+        {!narrow && <CreditMeter credits={credits} max={planMax} isUnlimited={isUnlimited} plan={plan} onOpenHistory={() => setShowCreditDrawer(true)} />}
         <Tooltip tip="Save (Ctrl S)" side="bottom">
           <button onClick={handleSave}
             style={{ display:"flex", alignItems:"center", gap:7, padding:"0 14px", height:38, borderRadius:T.radius,
@@ -1185,7 +1195,7 @@ export default function ResumePage() {
             <span>{saveStatus==="saved"?"Saved":saveStatus==="error"?"Try again":saveStatus==="saving"?"Saving":"Save"}</span>
           </button>
         </Tooltip>
-        <Tooltip tip="Download as Word (.docx)" side="bottom">
+        {!narrow && <Tooltip tip="Download as Word (.docx)" side="bottom">
           <button onClick={handleExportWord} disabled={isExportingWord}
             style={{ display:"flex", alignItems:"center", gap:7, padding:"0 14px", height:38, borderRadius:T.radius,
               border:`1px solid ${T.border}`, cursor:isExportingWord?"wait":"pointer", fontSize:13.5, fontWeight:600,
@@ -1195,7 +1205,7 @@ export default function ResumePage() {
             {isExportingWord ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} /> : <FileText size={15} />}
             <span>{isExportingWord?"Preparing":"Word"}</span>
           </button>
-        </Tooltip>
+        </Tooltip>}
         <Tooltip tip="Download as PDF (Ctrl P)" side="bottom">
           <button onClick={handleExportPDF} disabled={isPrinting}
             style={{ display:"flex", alignItems:"center", gap:7, padding:"0 18px", height:38, borderRadius:T.radius,
@@ -1204,7 +1214,7 @@ export default function ResumePage() {
             onMouseEnter={e=>(e.currentTarget as any).style.background=T.accentHover}
             onMouseLeave={e=>(e.currentTarget as any).style.background=T.accent}>
             {isPrinting ? <Loader2 size={15} style={{ animation:"spin 1s linear infinite" }} /> : <Download size={15} />}
-            <span>{isPrinting?"Preparing PDF":"Download PDF"}</span>
+            <span>{isPrinting ? "Preparing" : narrow ? "PDF" : "Download PDF"}</span>
           </button>
         </Tooltip>
       </header>
@@ -1213,7 +1223,7 @@ export default function ResumePage() {
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
         {/* ══ LEFT RAIL ══ */}
-        <nav style={{ width:76, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center",
+        <nav style={{ width: narrow ? 62 : 76, flexShrink:0, display: narrow && mobileView === "preview" ? "none" : "flex", flexDirection:"column", alignItems:"center",
           paddingTop:16, paddingBottom:16, gap:4, borderRight:`1px solid ${T.border}`, background:T.bgPanel, zIndex:20 }}>
           <Tooltip tip={sidebarCollapsed?"Expand sidebar (⌘B)":"Collapse sidebar (⌘B)"} side="right">
             <button onClick={() => setSidebarCollapsed(c => !c)}
@@ -1287,11 +1297,11 @@ export default function ResumePage() {
         <AnimatePresence>
           {!sidebarCollapsed && (
             <motion.div
-              initial={{ width:0, opacity:0 }} animate={{ width:sidebarWidth, opacity:1 }} exit={{ width:0, opacity:0 }}
+              initial={{ width:0, opacity:0 }} animate={{ width: narrow ? "auto" : sidebarWidth, opacity:1 }} exit={{ width:0, opacity:0 }}
               transition={{ duration:0.22, ease:"easeInOut" }}
-              style={{ flexShrink:0, borderRight:`1px solid ${T.border}`, overflow:"hidden",
-                display:"flex", flexDirection:"column", background:T.bgPanel,
-                minWidth:MIN_SIDEBAR_WIDTH, maxWidth:MAX_SIDEBAR_WIDTH }}>
+              style={{ flexShrink: narrow ? 1 : 0, flex: narrow ? 1 : undefined, borderRight:`1px solid ${T.border}`, overflow:"hidden",
+                display: narrow && mobileView === "preview" ? "none" : "flex", flexDirection:"column", background:T.bgPanel,
+                minWidth: narrow ? 0 : MIN_SIDEBAR_WIDTH, maxWidth: narrow ? "none" : MAX_SIDEBAR_WIDTH }}>
               <div style={{ padding:"18px 20px 14px", flexShrink:0 }}>
                 <AnimatePresence mode="wait">
                   <motion.div key={activeTab} initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:6 }} transition={{ duration:0.13 }}>
@@ -1941,7 +1951,7 @@ export default function ResumePage() {
         </AnimatePresence>
 
         {/* ══ DRAGGABLE DIVIDER ══ */}
-        {!sidebarCollapsed && (
+        {!sidebarCollapsed && !narrow && (
           <div onMouseDown={handleDividerMouseDown} onDoubleClick={handleDividerDoubleClick}
             title="Drag to resize. Double click to reset"
             style={{ width:5, flexShrink:0, position:"relative", display:"flex", alignItems:"center", justifyContent:"center",
@@ -1955,6 +1965,15 @@ export default function ResumePage() {
         )}
 
         {/* ══ PREVIEW PANEL ══ */}
+        {narrow && (
+          <button onClick={() => setMobileView(v => v === "edit" ? "preview" : "edit")}
+            style={{ position:"fixed", bottom:18, left:"50%", transform:"translateX(-50%)", zIndex:200,
+              display:"flex", alignItems:"center", gap:8, height:46, padding:"0 22px", borderRadius:23, border:"none",
+              background:T.accent, color:"#fff", fontSize:14.5, fontWeight:700, boxShadow:T.shadowLg, cursor:"pointer" }}>
+            {mobileView === "edit" ? <><Eye size={17} /> Preview</> : <><PenLine size={17} /> Edit</>}
+          </button>
+        )}
+        <div style={{ display: narrow && mobileView === "edit" ? "none" : "flex", flex:1, minWidth:0 }}>
         <ResumePreview
           paper={paper}
           paperSize={paperSize}
@@ -2012,6 +2031,7 @@ export default function ResumePage() {
             }, 160);
           }}
         />
+        </div>
       </div>
 
       {/* ══ MODALS ══ */}
