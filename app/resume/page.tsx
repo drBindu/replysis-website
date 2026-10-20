@@ -213,19 +213,80 @@ function resumeChecks(d: any): { ok: boolean; todo: string; section: string }[] 
   ];
 }
 
+// Keyword check (rebuilt 2026-10-20). The old one searched the raw JSON for each word, so "ml" counted as found inside
+// "html", field names like "skills" always matched, and "artificial intelligence" was two unrelated words.
+// Now: only the resume's own text, whole words only, and common long and short forms count as the same keyword.
+const ATS_SYNONYMS: [string, string[]][] = [
+  ["AI", ["artificial intelligence", "ai"]],
+  ["ML", ["machine learning", "ml"]],
+  ["AI/ML", ["ai/ml", "ai ml"]],
+  ["GenAI", ["generative ai", "genai", "gen ai"]],
+  ["LLM", ["large language models", "large language model", "llms", "llm"]],
+  ["NLP", ["natural language processing", "nlp"]],
+  ["Deep learning", ["deep learning", "dl"]],
+  ["Computer vision", ["computer vision"]],
+  ["Data science", ["data science"]],
+  ["Kubernetes", ["kubernetes", "k8s"]],
+  ["JavaScript", ["javascript", "js"]],
+  ["TypeScript", ["typescript", "ts"]],
+  ["Node.js", ["node.js", "nodejs", "node"]],
+  ["React", ["react.js", "reactjs", "react"]],
+  ["CI/CD", ["ci/cd", "cicd", "continuous integration"]],
+  ["AWS", ["amazon web services", "aws"]],
+  ["GCP", ["google cloud platform", "google cloud", "gcp"]],
+  ["Azure", ["microsoft azure", "azure"]],
+  ["PostgreSQL", ["postgresql", "postgres"]],
+  ["REST APIs", ["rest apis", "rest api", "restful", "rest"]],
+  ["Microservices", ["microservices", "microservice"]],
+];
+
+function resumeText(d: any): string {
+  const out: string[] = [];
+  const walk = (v: any) => {
+    if (typeof v === "string") out.push(v);
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === "object") Object.values(v).forEach(walk);
+  };
+  walk(d);
+  return " " + out.join(" \n ").toLowerCase() + " ";
+}
+
+const escapeRe = (x: string) => x.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+const hasWord = (text: string, term: string) => new RegExp(`(^|[^a-z0-9+#])${escapeRe(term)}(?![a-z0-9+#])`).test(text);
+
 function scanATS(resumeData: any, jdText: string) {
   if (!jdText.trim()) return { score: 0, found: [], missing: [], total: 0 };
-  const resumeFlat = JSON.stringify(resumeData).toLowerCase();
-  const stopWords = new Set(["the","a","an","and","or","but","in","on","at","to","for","of","with","by","from","is","are","was","were","be","been","being","have","has","had","do","does","did","will","would","could","should","may","might","can","shall","this","that","these","those","i","you","we","they","he","she","it","my","your","our","their","his","her","its","me","us","them","who","which","what","where","when","how","why","not","no","all","each","every","both","few","more","most","other","some","such","than","too","very","just","about","above","after","again","also","as","because","before","between","during","into","through","under","until","up","over","out","if","so","then","here","there","only","own","same","while","any","new","now","way","well","work","years","experience","role","team","company","using","etc","per","via","including","across","within","strong","ability","looking","join","responsible","requirements","qualifications","preferred","required","minimum","plus","knowledge","understanding","familiarity"]);
-  const jdWords = jdText.toLowerCase().replace(/[^a-z0-9\s+#.]/g, " ").split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+  const resume = resumeText(resumeData);
+  let jd = " " + jdText.toLowerCase() + " ";
+  const concepts: { label: string; forms: string[] }[] = [];
+  for (const [label, forms] of ATS_SYNONYMS) {
+    if (forms.some(f => hasWord(jd, f))) {
+      concepts.push({ label, forms });
+      for (const f of forms) jd = jd.replace(new RegExp(`(^|[^a-z0-9+#])${escapeRe(f)}(?![a-z0-9+#])`, "g"), "$1 ");
+    }
+  }
+  // "AI/ML" in a job post means both; check AI and ML on their own so either half can be found.
+  const aiml = concepts.findIndex(c => c.label === "AI/ML");
+  if (aiml >= 0) {
+    concepts.splice(aiml, 1);
+    for (const l of ["AI", "ML"]) if (!concepts.some(c => c.label === l)) concepts.push({ label: l, forms: ATS_SYNONYMS.find(x => x[0] === l)![1] });
+  }
+  const stopWords = new Set(["the","a","an","and","or","but","in","on","at","to","for","of","with","by","from","is","are","was","were","be","been","being","have","has","had","do","does","did","will","would","could","should","may","might","can","shall","this","that","these","those","i","you","we","they","he","she","it","my","your","our","their","his","her","its","me","us","them","who","which","what","where","when","how","why","not","no","all","each","every","both","few","more","most","other","some","such","than","too","very","just","about","above","after","again","also","as","because","before","between","during","into","through","under","until","up","over","out","if","so","then","here","there","only","own","same","while","any","new","now","way","well","work","years","year","experience","role","team","company","using","etc","per","via","including","across","within","strong","ability","looking","join","responsible","requirements","qualifications","preferred","required","minimum","plus","knowledge","understanding","familiarity","good","great","excellent","must","nice","have","job","position","candidate","candidates","skills","skill","we're","you'll","working","build","building",
+    // job titles and levels are not keywords anyone can add as a skill
+    "senior","junior","lead","principal","staff","mid","level","engineer","engineers","developer","developers","manager","intern","associate","specialist","architect","sr","jr","remote","hybrid","onsite","full","time","part","hiring"]);
+  const words = jd.replace(/[^a-z0-9\s+#.]/g, " ").split(/\s+/).map(w => w.replace(/^\.+|\.+$/g, ""))
+    .filter(w => w.length > 1 && !stopWords.has(w) && !/^\d+$/.test(w));
   const freq: Record<string, number> = {};
-  jdWords.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
-  const keywords = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([w]) => w);
-  const unique = [...new Set(keywords)];
-  const found   = unique.filter(k => resumeFlat.includes(k));
-  const missing = unique.filter(k => !resumeFlat.includes(k));
-  const score   = unique.length > 0 ? Math.round((found.length / unique.length) * 100) : 0;
-  return { score, found, missing, total: unique.length };
+  words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+  const CASE: Record<string, string> = { tensorflow:"TensorFlow", pytorch:"PyTorch", "scikit-learn":"scikit-learn", sql:"SQL", nosql:"NoSQL", mongodb:"MongoDB",
+    mysql:"MySQL", graphql:"GraphQL", fastapi:"FastAPI", github:"GitHub", gitlab:"GitLab", html:"HTML", css:"CSS", api:"API", apis:"APIs", ios:"iOS", devops:"DevOps", mlops:"MLOps", openai:"OpenAI", langchain:"LangChain" };
+  const nice = (w: string) => CASE[w] ?? (w.length <= 3 && /^[a-z]+$/.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1));
+  const singles = Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([w]) => ({ label: nice(w), forms: [w] }));
+  const all = [...concepts, ...singles].slice(0, 40);
+  const found   = all.filter(c => c.forms.some(f => hasWord(resume, f))).map(c => c.label);
+  const missing = all.filter(c => !c.forms.some(f => hasWord(resume, f))).map(c => c.label);
+  const score   = all.length > 0 ? Math.round((found.length / all.length) * 100) : 0;
+  return { score, found, missing, total: all.length };
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1009,6 +1070,19 @@ export default function ResumePage() {
   };
 
   const runATS = () => { setAtsResult(scanATS(resumeData, jd)); };
+  // A missing keyword the person really has goes into their skills, and the score updates at once.
+  const addSkillFromAts = (k: string) => {
+    const next = JSON.parse(JSON.stringify(resumeData));
+    const cats: any[] = Array.isArray(next.skillCategories) ? next.skillCategories : (next.skillCategories = []);
+    let cat = cats.find(c => /^(other|additional) skills$/i.test(String(c?.name || "").trim()));
+    if (!cat) { cat = { name: "Other skills", skills: "" }; cats.push(cat); }
+    const list = String(cat.skills || "").split(",").map((x: string) => x.trim()).filter(Boolean);
+    if (!list.some(x => x.toLowerCase() === k.toLowerCase())) list.push(k);
+    cat.skills = list.join(", ");
+    setResumeData(next);
+    setAtsResult(scanATS(next, jd));
+    notify({ tone: "success", title: `${k} added to your skills`, body: "It is under Other skills. Move it or remove it in the Skills section." });
+  };
   useEffect(() => { if (activeTab==="ats" && jd) runATS(); }, [activeTab]);
 
   /* ── Keeping the resume ──
@@ -2000,7 +2074,7 @@ export default function ResumePage() {
                                 <div style={{ fontSize:13, color:T.success, fontWeight:700, marginBottom:8 }}>On your resume ({atsResult.found.length})</div>
                                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                                   {atsResult.found.map((k:string)=>(
-                                    <span key={k} style={{ padding:"3px 8px", borderRadius:20, fontSize:10, fontWeight:600, background:T.successLight, color:T.success, border:`1px solid ${T.success}25` }}>{k}</span>
+                                    <span key={k} style={{ padding:"4px 9px", borderRadius:20, fontSize:11.5, fontWeight:600, background:T.successLight, color:T.success, border:`1px solid ${T.success}25` }}>{k}</span>
                                   ))}
                                 </div>
                               </div>
@@ -2010,9 +2084,29 @@ export default function ResumePage() {
                                 <div style={{ fontSize:13, color:T.danger, fontWeight:700, marginBottom:8 }}>Missing from your resume ({atsResult.missing.length})</div>
                                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                                   {atsResult.missing.map((k:string)=>(
-                                    <span key={k} style={{ padding:"3px 8px", borderRadius:20, fontSize:10, fontWeight:600, background:T.dangerLight, color:T.danger, border:`1px solid ${T.danger}25` }}>{k}</span>
+                                    <button key={k} onClick={() => addSkillFromAts(k)} title={`Add ${k} to your skills`}
+                                      style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"4px 9px", borderRadius:20, fontSize:11.5, fontWeight:600, cursor:"pointer",
+                                        background:T.dangerLight, color:T.danger, border:`1px solid ${T.danger}25` }}>
+                                      <Plus size={11} /> {k}
+                                    </button>
                                   ))}
                                 </div>
+                                <p style={{ fontSize:12, color:T.textTertiary, lineHeight:1.5, margin:"8px 2px 0" }}>
+                                  Have one of these? Tap it to add it to your skills. Only add what you can talk about in the interview.
+                                </p>
+                              </div>
+                            )}
+                            {atsResult.score < 80 && (
+                              <div style={{ padding:14, borderRadius:T.radiusMd, border:`1px solid ${T.border}`, background:T.bgPanel }}>
+                                <div style={{ fontSize:13.5, fontWeight:700, color:T.textPrimary, marginBottom:4 }}>Raise your match</div>
+                                <p style={{ fontSize:12.5, color:T.textSecondary, lineHeight:1.55, margin:"0 0 10px" }}>
+                                  Tailor rewrites your summary, title and bullets for this job, using the same job post. It never adds experience you do not have.
+                                </p>
+                                <button onClick={() => setActiveTab("ai")}
+                                  style={{ width:"100%", height:40, borderRadius:T.radius, border:"none", background:T.accent, color:"#fff",
+                                    fontSize:13.5, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                                  <Sparkles size={15} /> Tailor for this job
+                                </button>
                               </div>
                             )}
                           </motion.div>
