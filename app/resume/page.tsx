@@ -1,5 +1,5 @@
 ﻿"use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MASTER_RESUME } from "../../data/masterResume";
 import mammoth from "mammoth";
@@ -980,15 +980,29 @@ export default function ResumePage() {
       if (!r.ok) throw Object.assign(new Error("import_failed"), { status: r.status });
       const parsed = await r.json();
       setPrevResume(JSON.parse(JSON.stringify(resumeData)));
+      // Nothing from the sample resume may leak in: a missing field stays empty, never "your.email@example.com".
+      const { otherSections, ...rest } = parsed;
+      const blankInfo = { name:"", headline:"", email:"", phone:"", location:"", linkedin:"", github:"", portfolio:"", customLinks:[] };
       setResumeData({
-        ...MASTER_RESUME, ...parsed,
-        personalInfo: { ...MASTER_RESUME.personalInfo, ...(parsed.personalInfo || {}), customLinks: parsed.personalInfo?.customLinks || [] },
+        ...rest,
+        summary: typeof parsed.summary === "string" ? parsed.summary : "",
+        // A resume with no title line gets its latest role as the title, never the sample's placeholder.
+        personalInfo: { ...blankInfo, ...(parsed.personalInfo || {}), customLinks: parsed.personalInfo?.customLinks || [],
+          headline: parsed.personalInfo?.headline || parsed.experience?.[0]?.role || "" },
         skillCategories: Array.isArray(parsed.skillCategories) ? parsed.skillCategories : [],
         experience: Array.isArray(parsed.experience) ? parsed.experience : [],
         projects: Array.isArray(parsed.projects) ? parsed.projects : [],
         education: Array.isArray(parsed.education) ? parsed.education : [],
         certifications: Array.isArray(parsed.certifications) ? parsed.certifications.filter(Boolean) : [],
       });
+      // Sections with no standard box (Awards, Languages, Volunteering...) arrive as their own sections.
+      const stamp = Date.now();
+      setCustomSections((Array.isArray(otherSections) ? otherSections : [])
+        .filter((cs: any) => cs && Array.isArray(cs.items) && cs.items.length > 0)
+        .map((cs: any, i: number) => ({
+          id: `custom_${stamp}_${i}`, title: String(cs.title || "More"),
+          items: cs.items.map((it: any) => ({ title: String(it?.title || ""), subtitle: String(it?.subtitle || ""), date: String(it?.date || ""), description: String(it?.description || "") })),
+        })));
       notify({ tone: "success", title: "Your resume is in", body: "Check each section on the left. Ctrl+Z puts back what was here before." });
     } catch (err: any) {
       notifyFailure(err?.status ? classifyFailure(err.status) : "upload");
@@ -1196,7 +1210,7 @@ export default function ResumePage() {
     try {
       const html = buildPrintHTML(templateId, {
         ff, ac, fs, lh: lineHeight, sg: sectionGap,
-        pagePad, data: resumeData, sectionOrder,
+        pagePad, data: printData, sectionOrder: printOrder,
         fontUrl: fontObj.url, paperSize,
       });
 
@@ -1240,7 +1254,7 @@ export default function ResumePage() {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${wordToken}` },
         body: JSON.stringify({
-          data: resumeData,
+          data: printData,
           styles: { ac, fs, lh: lineHeight },
         }),
       });
@@ -1264,7 +1278,10 @@ export default function ResumePage() {
   };
 
   /* ── Style context passed to preview ── */
-  const styleCtx = { ff, ac, fs, lh:lineHeight, sg:sectionGap, pagePad, data:resumeData, sectionOrder };
+  // Custom sections ride along with the resume so the preview, PDF and Word all print them.
+  const printData = useMemo(() => ({ ...resumeData, customSections }), [resumeData, customSections]);
+  const printOrder = useMemo(() => [...sectionOrder, ...customSections.map(c => c.id)], [sectionOrder, customSections]);
+  const styleCtx = { ff, ac, fs, lh:lineHeight, sg:sectionGap, pagePad, data:printData, sectionOrder:printOrder };
 
   /* ════════════════════════════════════════════════════════════════
      RENDER

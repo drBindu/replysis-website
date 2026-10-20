@@ -509,6 +509,29 @@ function buildGranularSections(
   const knownSections = ["summary", "skills", "experience", "projects", "education", "certifications"];
 
   for (const secId of sectionOrder) {
+    // Custom sections (Awards, Languages, Volunteering...) never printed: they were in the editor only (2026-10-20).
+    if (secId.startsWith("custom_")) {
+      const cs = (data.customSections || []).find((c: any) => c.id === secId);
+      const items = (cs?.items || []).filter((it: any) => it.title || it.subtitle || it.description);
+      if (!cs || items.length === 0) continue;
+      out.push({ key: `${secId}:heading`, node: <div style={{ marginBottom: 0 }}><SHComp title={cs.title || "More"} /></div> });
+      items.forEach((it: any, i: number) => out.push({
+        key: `${secId}:${i}`,
+        node: (
+          <div style={{ marginTop: i === 0 ? 0 : 8, marginBottom: i === items.length - 1 ? sg : 0 }}>
+            {(it.title || it.date) && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={tx(fs, "#111827", { fontWeight: 700 })}>{it.title}</span>
+                {it.date && <span style={tx(10, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{it.date}</span>}
+              </div>
+            )}
+            {it.subtitle && <div style={tx(10, "#6b7280", { fontStyle: "italic", marginTop: 1 })}>{it.subtitle}</div>}
+            {it.description && <div style={tx(fs, "#374151", { marginTop: 2, lineHeight: lh, whiteSpace: "pre-line" })}>{it.description}</div>}
+          </div>
+        ),
+      }));
+      continue;
+    }
     if (!knownSections.includes(secId)) {
       console.warn(`buildGranularSections: unknown section "${secId}" in sectionOrder, skipping`);
     }
@@ -531,7 +554,7 @@ function buildGranularSections(
           <div style={{ marginBottom: sg }}>
             <SHComp title="Technical Skills" />
             {data.skillCategories.map((cat: any, i: number) => (
-              <div key={i} style={{ marginTop: i === 0 ? 0 : 3 }}>
+              <div key={i} style={{ marginTop: i === 0 ? 0 : 3, lineHeight: lh }}>
                 <span style={tx(fs, "#111827", { fontWeight: 700 })}>{cat.name}:</span>{" "}
                 <span style={tx(fs, "#374151")}>{cat.skills}</span>
               </div>
@@ -678,7 +701,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <>
         <div style={{ textAlign: "center", paddingBottom: 12, marginBottom: 4 }}>
           <div style={tx(26, "#0f172a", { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-          <div style={tx(10, "#64748b", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em" })}>{pi.headline || "Your Headline"}</div>
+          <div style={tx(10, "#64748b", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em" })}>{pi.headline}</div>
           <div style={tx(10.5, "#374151", { marginTop: 5 })}>{contact || "email · phone · location"}</div>
           <LinksRow />
         </div>
@@ -704,7 +727,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ marginBottom: 18 }}>
         <div style={tx(30, "#0f172a", { fontWeight: 200, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(10, ac, { marginTop: 5, fontWeight: 600, letterSpacing: "0.06em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, ac, { marginTop: 5, fontWeight: 600, letterSpacing: "0.06em" })}>{pi.headline}</div>
         <div style={{ height: 1, backgroundColor: "#e2e8f0", margin: "10px 0" }} />
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
           <div style={tx(10.5, "#374151")}>{contact}</div>
@@ -728,7 +751,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ padding: "26px 34px 22px", backgroundColor: ac, marginLeft: `-${parsePagePad(pagePad)[1]}px`, marginRight: `-${parsePagePad(pagePad)[1]}px`, marginTop: `-${parsePagePad(pagePad)[0]}px`, marginBottom: 18 }}>
         <div style={tx(26, "#ffffff", { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.03em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(10, "#ffffff", { marginTop: 5, opacity: 0.85, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#ffffff", { marginTop: 5, opacity: 0.85, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline}</div>
         <div style={tx(10.5, "#ffffff", { marginTop: 6, opacity: 0.9 })}>{contact}</div>
         {links.length > 0 && <div style={tx(10.5, "#ffffff", { marginTop: 3, opacity: 0.85 })}>{links.join("  ·  ")}</div>}
       </div>
@@ -755,7 +778,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       }}>
         <div style={tx(28, "#ffffff", { fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
         <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.3)", width: "60px", margin: "10px auto 0" }} />
-        <div style={tx(10, "#ffffff", { marginTop: 8, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#ffffff", { marginTop: 8, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline}</div>
         <div style={tx(10.5, "#ffffff", { marginTop: 6, opacity: 0.9 })}>{contact}</div>
         {links.length > 0 && <div style={tx(10.5, "#ffffff", { marginTop: 3, opacity: 0.85 })}>{links.join("  |  ")}</div>}
       </div>
@@ -802,7 +825,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ marginBottom: 16, paddingLeft: 4 }}>
         <div style={tx(26, ac, { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(10, "#475569", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#475569", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline}</div>
         <div style={{ height: 1, backgroundColor: "#cbd5e1", margin: "10px 0" }} />
         <div style={tx(10.5, "#374151")}>{contact}</div>
         <LinksRow color="#475569" />
@@ -832,7 +855,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
         marginTop: `-${padVe}px`, marginBottom: 22,
       }}>
         <div style={tx(26, "#f8fafc", { fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(10, "#94a3b8", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#94a3b8", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline}</div>
         <div style={{ height: 1.5, backgroundColor: ac, width: 40, marginTop: 10, marginBottom: 8 }} />
         <div style={tx(10.5, "#475569")}>{contact}</div>
         {links.length > 0 && <div style={tx(10.5, "#475569", { marginTop: 3 })}>{links.join("  ·  ")}</div>}
@@ -859,7 +882,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
           <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: ac }} />
           <div style={{ height: 1, backgroundColor: "#d1d5db", width: 60 }} />
         </div>
-        <div style={tx(10, "#4b5563", { fontWeight: 500, fontStyle: "italic" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#4b5563", { fontWeight: 500, fontStyle: "italic" })}>{pi.headline}</div>
         <div style={tx(10.5, "#374151", { marginTop: 5 })}>{contact}</div>
         <LinksRow />
       </div>
@@ -1052,6 +1075,19 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
   const shTech = (title: string) =>
     `<div class="r-sht-wrap"><div class="r-sht">${title}</div><div class="r-sht-line"></div></div>`;
 
+  const customHtml = (id: string, SHfn: (t: string) => string = sh): string => {
+    if (!id.startsWith("custom_")) return "";
+    const cs = (data.customSections || []).find((c: any) => c.id === id);
+    const items = (cs?.items || []).filter((it: any) => it.title || it.subtitle || it.description);
+    if (!cs || items.length === 0) return "";
+    return `<div class="r-sec">${SHfn(cs.title || "More")}${items.map((it: any, i: number) =>
+      `<div class="${i ? "r-proj-gap" : ""}">
+        ${it.title || it.date ? `<div class="r-row"><span class="r-bold">${it.title || ""}</span>${it.date ? `<span class="r-meta">${it.date}</span>` : ""}</div>` : ""}
+        ${it.subtitle ? `<div class="r-location">${it.subtitle}</div>` : ""}
+        ${it.description ? `<div class="r-body" style="white-space:pre-line">${it.description}</div>` : ""}
+      </div>`).join("")}</div>`;
+  };
+
   const SEC = {
     summary: (SHfn: (t: string) => string = sh) =>
       data.summary
@@ -1114,7 +1150,7 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
   };
 
   const ordered = (SHfn: any = sh) =>
-    sectionOrder.map(id => (SEC as any)[id]?.(SHfn) || "").join("");
+    sectionOrder.map(id => (SEC as any)[id]?.(SHfn) || customHtml(id, SHfn)).join("");
 
   const css = `
     *, *::before, *::after {
@@ -1198,7 +1234,7 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     .r-list      { margin:4px 0 0;padding-left:16px;list-style:disc }
     .r-cert-list { margin-top:5px }
     .r-bullet    { font-size:${fs}px;color:#374151;line-height:${lh};margin-bottom:2px;display:list-item }
-    .r-skill-row { margin-top:3px }
+    .r-skill-row { margin-top:3px;line-height:${lh} }
     .r-skill-row:first-of-type { margin-top:0 }
     .r-entry-gap { margin-top:12px }
     .r-proj-gap  { margin-top:10px }
@@ -1424,7 +1460,7 @@ ${fontLink}
   if (templateId === "faang") {
     const faangSections = sectionOrder.map(id => {
       if (id === "experience") return (SEC as any)["experience_faang"]?.(shPlain) || "";
-      return (SEC as any)[id]?.(shPlain) || "";
+      return (SEC as any)[id]?.(shPlain) || customHtml(id, shPlain);
     }).join("");
     return shell(`<div class="r-pad">
       <div class="r-faang-hdr">
