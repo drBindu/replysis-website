@@ -34,7 +34,7 @@ export const TEMPLATE_LIST: { id: TemplateId; name: string; desc: string; ats: b
 ───────────────────────────────────────────────────────────────── */
 export function getTemplateThumbnail(id: TemplateId, accent = "#1C7A3E"): string {
   const W = 100, H = 141;
-  const g = "#e5e7eb", dg = "#d1d5db", mg = "#9ca3af", lg = "#f3f4f6";
+  const g = "#e5e7eb", dg = "#d1d5db", mg = "#6b7280", lg = "#f3f4f6";
   const ac = accent;
 
   const r = (x: number, y: number, w: number, h: number, fill: string, rx = 0) =>
@@ -562,9 +562,9 @@ function buildGranularSections(
             <div style={{ marginTop: isFirst ? 0 : 12, marginBottom: isLast && rest.length === 0 ? sg : 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={tx(fs, "#111827", { fontWeight: 700 })}>{exp.company}{exp.role ? `  -  ${exp.role}` : ""}</span>
-                <span style={tx(8.5, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{exp.period}</span>
+                <span style={tx(10, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{exp.period}</span>
               </div>
-              {exp.location && <div style={tx(8.5, "#9ca3af", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{exp.location}</div>}
+              {exp.location && <div style={tx(10, "#6b7280", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{exp.location}</div>}
               {head.length > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(head)}</ul>}
             </div>
           ),
@@ -592,9 +592,9 @@ function buildGranularSections(
             <div style={{ marginTop: isFirst ? 0 : 10, marginBottom: isLast && rest.length === 0 ? sg : 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={tx(fs, ac, { fontWeight: 700 })}>{proj.title || proj.name}</span>
-                {proj.period && <span style={tx(8.5, "#6b7280")}>{proj.period}</span>}
+                {proj.period && <span style={tx(10, "#6b7280")}>{proj.period}</span>}
               </div>
-              {proj.tech && <div style={tx(8.5, "#6b7280", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{proj.tech}</div>}
+              {proj.tech && <div style={tx(10, "#6b7280", { fontStyle: "italic", marginTop: 1, marginBottom: 3 })}>{proj.tech}</div>}
               {head.length > 0 && <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(head)}</ul>}
             </div>
           ),
@@ -621,7 +621,7 @@ function buildGranularSections(
                 <div style={tx(fs, "#111827", { fontWeight: 700 })}>{edu.school || edu.institution || "Unknown School"}</div>
                 <div style={tx(fs - 0.5, "#374151", { marginTop: 2 })}>{edu.degree || ""}{edu.gpa ? `  -  GPA: ${edu.gpa}` : ""}</div>
               </div>
-              <span style={tx(8.5, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{edu.period || edu.year || ""}</span>
+              <span style={tx(10, "#6b7280", { whiteSpace: "nowrap", marginLeft: 10 })}>{edu.period || edu.year || ""}</span>
             </div>
           ),
         });
@@ -678,9 +678,9 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <>
         <div style={{ textAlign: "center", paddingBottom: 12, marginBottom: 4 }}>
           <div style={tx(26, "#0f172a", { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-          <div style={tx(9, "#64748b", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em" })}>{pi.headline || "Your Headline"}</div>
-          <div style={tx(8.5, "#6b7280", { marginTop: 5 })}>{contact || "email · phone · location"}</div>
-          <LinksRow size={8} color="#9ca3af" />
+          <div style={tx(10, "#64748b", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em" })}>{pi.headline || "Your Headline"}</div>
+          <div style={tx(10.5, "#374151", { marginTop: 5 })}>{contact || "email · phone · location"}</div>
+          <LinksRow />
         </div>
         <div style={{ marginBottom: 16 }}>
           <div style={{ height: 2, backgroundColor: ac }} />
@@ -704,11 +704,11 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ marginBottom: 18 }}>
         <div style={tx(30, "#0f172a", { fontWeight: 200, letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(9.5, ac, { marginTop: 5, fontWeight: 600, letterSpacing: "0.06em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, ac, { marginTop: 5, fontWeight: 600, letterSpacing: "0.06em" })}>{pi.headline || "Your Headline"}</div>
         <div style={{ height: 1, backgroundColor: "#e2e8f0", margin: "10px 0" }} />
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
-          <div style={tx(8.5, "#6b7280")}>{contact}</div>
-          <LinksRow size={8.5} />
+          <div style={tx(10.5, "#374151")}>{contact}</div>
+          <LinksRow />
         </div>
       </div>
     );
@@ -728,9 +728,9 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ padding: "26px 34px 22px", backgroundColor: ac, marginLeft: `-${parsePagePad(pagePad)[1]}px`, marginRight: `-${parsePagePad(pagePad)[1]}px`, marginTop: `-${parsePagePad(pagePad)[0]}px`, marginBottom: 18 }}>
         <div style={tx(26, "#ffffff", { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.03em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(9, "#ffffff", { marginTop: 5, opacity: 0.85, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
-        <div style={tx(8.5, "#ffffff", { marginTop: 6, opacity: 0.75 })}>{contact}</div>
-        {links.length > 0 && <div style={tx(8, "#ffffff", { marginTop: 3, opacity: 0.65 })}>{links.join("  ·  ")}</div>}
+        <div style={tx(10, "#ffffff", { marginTop: 5, opacity: 0.85, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10.5, "#ffffff", { marginTop: 6, opacity: 0.9 })}>{contact}</div>
+        {links.length > 0 && <div style={tx(10.5, "#ffffff", { marginTop: 3, opacity: 0.85 })}>{links.join("  ·  ")}</div>}
       </div>
     );
     return {
@@ -755,9 +755,9 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       }}>
         <div style={tx(28, "#ffffff", { fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
         <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.3)", width: "60px", margin: "10px auto 0" }} />
-        <div style={tx(9.5, "#ffffff", { marginTop: 8, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
-        <div style={tx(8.5, "#ffffff", { marginTop: 6, opacity: 0.75 })}>{contact}</div>
-        {links.length > 0 && <div style={tx(8, "#ffffff", { marginTop: 3, opacity: 0.6 })}>{links.join("  |  ")}</div>}
+        <div style={tx(10, "#ffffff", { marginTop: 8, opacity: 0.9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10.5, "#ffffff", { marginTop: 6, opacity: 0.9 })}>{contact}</div>
+        {links.length > 0 && <div style={tx(10.5, "#ffffff", { marginTop: 3, opacity: 0.85 })}>{links.join("  |  ")}</div>}
       </div>
     );
     return {
@@ -777,12 +777,12 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: `1.5px solid ${ac}`, paddingBottom: 8, marginBottom: 10 }}>
         <div>
           <div style={tx(22, "#0f172a", { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.02em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-          <div style={tx(8.5, ac, { fontWeight: 600, marginTop: 3 })}>{pi.headline || "Headline"}</div>
+          <div style={tx(10, ac, { fontWeight: 600, marginTop: 3 })}>{pi.headline || "Headline"}</div>
         </div>
         <div style={{ textAlign: "right" as const }}>
-          <div style={tx(8, "#4b5563")}>{pi.email}</div>
-          <div style={tx(8, "#4b5563")}>{pi.phone}{pi.location ? `  ·  ${pi.location}` : ""}</div>
-          {links.length > 0 && <div style={tx(7.5, "#9ca3af")}>{links[0]}</div>}
+          <div style={tx(10, "#4b5563")}>{pi.email}</div>
+          <div style={tx(10, "#4b5563")}>{pi.phone}{pi.location ? `  ·  ${pi.location}` : ""}</div>
+          {links.length > 0 && <div style={tx(9, "#6b7280")}>{links[0]}</div>}
         </div>
       </div>
     );
@@ -802,10 +802,10 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ marginBottom: 16, paddingLeft: 4 }}>
         <div style={tx(26, ac, { fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(9.5, "#475569", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#475569", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
         <div style={{ height: 1, backgroundColor: "#cbd5e1", margin: "10px 0" }} />
-        <div style={tx(8.5, "#6b7280")}>{contact}</div>
-        <LinksRow size={8} color="#94a3b8" />
+        <div style={tx(10.5, "#374151")}>{contact}</div>
+        <LinksRow color="#475569" />
       </div>
     );
     return {
@@ -832,10 +832,10 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
         marginTop: `-${padVe}px`, marginBottom: 22,
       }}>
         <div style={tx(26, "#f8fafc", { fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.1 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(9, "#94a3b8", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10, "#94a3b8", { marginTop: 5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" })}>{pi.headline || "Your Headline"}</div>
         <div style={{ height: 1.5, backgroundColor: ac, width: 40, marginTop: 10, marginBottom: 8 }} />
-        <div style={tx(8.5, "#94a3b8")}>{contact}</div>
-        {links.length > 0 && <div style={tx(8, "#64748b", { marginTop: 3 })}>{links.join("  ·  ")}</div>}
+        <div style={tx(10.5, "#475569")}>{contact}</div>
+        {links.length > 0 && <div style={tx(10.5, "#475569", { marginTop: 3 })}>{links.join("  ·  ")}</div>}
       </div>
     );
     return {
@@ -859,9 +859,9 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
           <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: ac }} />
           <div style={{ height: 1, backgroundColor: "#d1d5db", width: 60 }} />
         </div>
-        <div style={tx(9, "#4b5563", { fontWeight: 500, fontStyle: "italic" })}>{pi.headline || "Your Headline"}</div>
-        <div style={tx(8.5, "#6b7280", { marginTop: 5 })}>{contact}</div>
-        <LinksRow size={8} color="#9ca3af" />
+        <div style={tx(10, "#4b5563", { fontWeight: 500, fontStyle: "italic" })}>{pi.headline || "Your Headline"}</div>
+        <div style={tx(10.5, "#374151", { marginTop: 5 })}>{contact}</div>
+        <LinksRow />
       </div>
     );
     return {
@@ -881,8 +881,8 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <div style={{ marginBottom: 12, borderBottom: "1px solid #111827", paddingBottom: 10 }}>
         <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", fontFamily: "Arial, sans-serif", textTransform: "uppercase", letterSpacing: "0.02em" }}>{pi.name || "Your Name"}</div>
         <div style={{ fontSize: 10, color: "#374151", fontFamily: "Arial, sans-serif", marginTop: 4 }}>{pi.headline}</div>
-        <div style={{ fontSize: 9, color: "#374151", fontFamily: "Arial, sans-serif", marginTop: 4 }}>{contact}</div>
-        {links.length > 0 && <div style={{ fontSize: 9, color: "#374151", fontFamily: "Arial, sans-serif", marginTop: 2 }}>{links.join("  |  ")}</div>}
+        <div style={{ fontSize: 10.5, color: "#374151", fontFamily: "Arial, sans-serif", marginTop: 4 }}>{contact}</div>
+        {links.length > 0 && <div style={{ fontSize: 10.5, color: "#374151", fontFamily: "Arial, sans-serif", marginTop: 2 }}>{links.join("  |  ")}</div>}
       </div>
     );
     return {
@@ -902,7 +902,7 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", fontFamily: "Calibri, Arial, sans-serif" }}>{pi.name || "Your Name"}</div>
         <div style={{ fontSize: 10, color: "#374151", fontFamily: "Calibri, Arial, sans-serif", marginTop: 3 }}>{pi.headline}</div>
-        <div style={{ fontSize: 9.5, color: "#6b7280", fontFamily: "Calibri, Arial, sans-serif", marginTop: 4 }}>{contact}{links.length > 0 ? "  |  " + links.join("  |  ") : ""}</div>
+        <div style={{ fontSize: 10.5, color: "#6b7280", fontFamily: "Calibri, Arial, sans-serif", marginTop: 4 }}>{contact}{links.length > 0 ? "  |  " + links.join("  |  ") : ""}</div>
       </div>
     );
     return {
@@ -924,8 +924,8 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
         <div style={tx(10, ac, { marginTop: 4, fontWeight: 600 })}>{pi.headline || "Software Engineer"}</div>
         <div style={{ height: 1, backgroundColor: "#e2e8f0", margin: "8px 0" }} />
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const }}>
-          <span style={tx(8.5, "#64748b")}>{contact}</span>
-          {links.map((l, i) => <span key={i} style={tx(8.5, ac)}>{l}</span>)}
+          <span style={tx(10.5, "#475569")}>{contact}</span>
+          {links.map((l, i) => <span key={i} style={tx(10, ac)}>{l}</span>)}
         </div>
       </div>
     );
@@ -946,11 +946,11 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
       <div style={{ marginTop: isFirst ? 0 : 14, marginBottom: i === (data.experience?.length ?? 1) - 1 ? sg : 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <span style={tx(fs, "#111827", { fontWeight: 700 })}>{exp.company}</span>
-          <span style={tx(8.5, "#6b7280", { whiteSpace: "nowrap" })}>{exp.period}</span>
+          <span style={tx(10, "#6b7280", { whiteSpace: "nowrap" })}>{exp.period}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <span style={tx(fs - 0.5, "#374151", { fontStyle: "italic" })}>{exp.role}</span>
-          {exp.location && <span style={tx(8.5, "#9ca3af")}>{exp.location}</span>}
+          {exp.location && <span style={tx(10, "#6b7280")}>{exp.location}</span>}
         </div>
         <ul style={{ margin: "4px 0 0", paddingLeft: 16, listStyle: "disc" }}>{bul(exp.bullets)}</ul>
       </div>
@@ -959,8 +959,8 @@ export function renderPreviewSections(templateId: TemplateId, ctx: StyleCtx): Te
     const header = (
       <div style={{ marginBottom: 14, borderBottom: "1.5px solid #111827", paddingBottom: 10 }}>
         <div style={tx(22, "#111827", { fontWeight: 700, lineHeight: 1.15 })}>{pi.name || "Your Name"}</div>
-        <div style={tx(9.5, "#374151", { marginTop: 3 })}>{pi.headline}</div>
-        <div style={tx(8.5, "#6b7280", { marginTop: 4 })}>{contact}{links.length > 0 ? "  |  " + links.join("  |  ") : ""}</div>
+        <div style={tx(10, "#374151", { marginTop: 3 })}>{pi.headline}</div>
+        <div style={tx(10.5, "#374151", { marginTop: 4 })}>{contact}{links.length > 0 ? "  |  " + links.join("  |  ") : ""}</div>
       </div>
     );
 
@@ -1138,48 +1138,48 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     .r-name-faang{ font-size:22px;font-weight:700;line-height:1.15;color:#111827 }
     .r-name-tech { font-size:24px;font-weight:800;letter-spacing:0.01em;line-height:1.1;color:#0f172a }
 
-    .r-headline     { font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:#64748b;margin-top:5px }
-    .r-headline-ac  { font-size:9.5px;font-weight:600;letter-spacing:0.06em;color:${ac};margin-top:5px }
-    .r-headline-wh  { font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#ffffff;margin-top:5px }
-    .r-headline-it  { font-size:9px;font-weight:500;font-style:italic;color:#4b5563 }
-    .r-headline-sub { font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#475569;margin-top:5px }
-    .r-headline-gr  { font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-top:5px }
-    .r-headline-ac2 { font-size:8.5px;font-weight:600;color:${ac};margin-top:3px }
+    .r-headline     { font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:#64748b;margin-top:5px }
+    .r-headline-ac  { font-size:10px;font-weight:600;letter-spacing:0.06em;color:${ac};margin-top:5px }
+    .r-headline-wh  { font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#ffffff;margin-top:5px }
+    .r-headline-it  { font-size:10px;font-weight:500;font-style:italic;color:#4b5563 }
+    .r-headline-sub { font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#475569;margin-top:5px }
+    .r-headline-gr  { font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-top:5px }
+    .r-headline-ac2 { font-size:10px;font-weight:600;color:${ac};margin-top:3px }
     .r-headline-plain{ font-size:10px;color:#374151;margin-top:4px;font-family:Arial,sans-serif }
     .r-headline-tech{ font-size:10px;font-weight:600;color:${ac};margin-top:4px }
-    .r-headline-faang{ font-size:9.5px;color:#374151;margin-top:3px }
+    .r-headline-faang{ font-size:10px;color:#374151;margin-top:3px }
 
-    .r-contact   { font-size:8.5px;color:#6b7280;margin-top:5px }
-    .r-links     { font-size:8px;color:#9ca3af;margin-top:3px }
-    .r-contact-wh{ font-size:8.5px;color:#ffffff;margin-top:6px }
-    .r-links-wh  { font-size:8px;color:#ffffff;margin-top:3px }
-    .r-contact-gr{ font-size:8.5px;color:#94a3b8 }
-    .r-links-gr  { font-size:8px;color:#64748b;margin-top:3px }
-    .r-contact-plain{ font-size:9px;color:#374151;margin-top:4px;font-family:Arial,sans-serif }
-    .r-links-plain{ font-size:9px;color:#374151;margin-top:2px;font-family:Arial,sans-serif }
-    .r-contact-faang{ font-size:8.5px;color:#6b7280;margin-top:4px }
-    .r-links-bar { font-size:8px;color:#6b7280;margin-top:2px }
+    .r-contact   { font-size:10.5px;color:#374151;margin-top:5px }
+    .r-links     { font-size:10.5px;color:#374151;margin-top:3px }
+    .r-contact-wh{ font-size:10.5px;color:#ffffff;margin-top:6px }
+    .r-links-wh  { font-size:10.5px;color:#ffffff;margin-top:3px }
+    .r-contact-gr{ font-size:10.5px;color:#475569 }
+    .r-links-gr  { font-size:10.5px;color:#475569;margin-top:3px }
+    .r-contact-plain{ font-size:10px;color:#374151;margin-top:4px;font-family:Arial,sans-serif }
+    .r-links-plain{ font-size:10px;color:#374151;margin-top:2px;font-family:Arial,sans-serif }
+    .r-contact-faang{ font-size:10.5px;color:#374151;margin-top:4px }
+    .r-links-bar { font-size:10.5px;color:#374151;margin-top:2px }
 
     .r-sh-wrap  { margin-bottom:6px }
-    .r-sh       { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:${ac};margin-bottom:3px }
+    .r-sh       { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:${ac};margin-bottom:3px }
     .r-sh-line  { height:1px;background:${ac};width:100% }
 
     .r-shl-wrap { margin-bottom:5px;display:flex;align-items:center;gap:10px }
-    .r-shl      { font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:${ac};white-space:nowrap }
+    .r-shl      { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:${ac};white-space:nowrap }
     .r-shl-hr   { flex:1;height:1px;background:#d1d5db }
 
-    .r-shf      { font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:0.14em;color:${ac};border-bottom:1px solid ${ac};padding-bottom:2px;margin-bottom:5px }
+    .r-shf      { font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.14em;color:${ac};border-bottom:1px solid ${ac};padding-bottom:2px;margin-bottom:5px }
 
     .r-shp-wrap { margin-bottom:6px }
-    .r-shp      { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#111827;margin-bottom:3px;font-family:Arial,sans-serif }
+    .r-shp      { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#111827;margin-bottom:3px;font-family:Arial,sans-serif }
     .r-shp-line { height:1px;background:#111827;width:100% }
 
     .r-shm-wrap { margin-bottom:5px }
-    .r-shm      { font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#374151;margin-bottom:3px }
+    .r-shm      { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#374151;margin-bottom:3px }
     .r-shm-line { height:0.5px;background:#374151;width:100% }
 
     .r-sht-wrap { margin-bottom:6px }
-    .r-sht      { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:${ac};margin-bottom:3px }
+    .r-sht      { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:${ac};margin-bottom:3px }
     .r-sht-line { height:1px;background:#e2e8f0;width:100% }
 
     .r-sec       { margin-bottom:${sg}px }
@@ -1188,9 +1188,9 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     .r-sm        { font-size:${fs - 0.5}px;color:#374151;margin-top:2px }
     .r-bold      { font-weight:700;color:#111827 }
     .r-accent    { color:${ac} }
-    .r-meta      { font-size:8.5px;color:#6b7280;white-space:nowrap;margin-left:10px }
-    .r-location  { font-size:8.5px;color:#9ca3af;font-style:italic;margin-top:1px;margin-bottom:3px }
-    .r-tech      { font-size:8.5px;color:#6b7280;font-style:italic;margin-top:1px;margin-bottom:3px }
+    .r-meta      { font-size:10px;color:#6b7280;white-space:nowrap;margin-left:10px }
+    .r-location  { font-size:10px;color:#6b7280;font-style:italic;margin-top:1px;margin-bottom:3px }
+    .r-tech      { font-size:10px;color:#6b7280;font-style:italic;margin-top:1px;margin-bottom:3px }
     .r-italic    { font-style:italic }
     .r-dim       { color:#374151 }
 
@@ -1240,12 +1240,12 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
 
     .r-comp-hdr     { display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid ${ac};padding-bottom:8px;margin-bottom:10px }
     .r-comp-contact { text-align:right }
-    .r-comp-email   { font-size:8px;color:#4b5563 }
-    .r-comp-link    { font-size:7.5px;color:#9ca3af }
+    .r-comp-email   { font-size:10px;color:#4b5563 }
+    .r-comp-link    { font-size:9px;color:#6b7280 }
 
     .r-faang-hdr    { border-bottom:1.5px solid #111827;padding-bottom:10px;margin-bottom:14px }
     .r-tech-contact { display:flex;gap:16px;flex-wrap:wrap }
-    .r-tech-lnk     { font-size:8.5px;color:${ac} }
+    .r-tech-lnk     { font-size:10px;color:${ac} }
 
     @page { ${pageCSS} }
     /* Page breaks. With no rules at all the renderer broke anywhere, and a
