@@ -3,7 +3,7 @@ import React, {
   useRef, useEffect, useState, useMemo, useLayoutEffect,
 } from "react";
 import { createPortal } from "react-dom";
-import { Keyboard, Pencil } from "lucide-react";
+import { Keyboard, Pencil, Minus, Plus } from "lucide-react";
 import {
   TEMPLATE_LIST,
   renderPreviewSections,
@@ -87,6 +87,11 @@ function getSectionLabel(key: string): string {
   return `Edit ${label}`;
 }
 
+const zoomBtn: React.CSSProperties = {
+  width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center",
+  border: "none", borderRadius: 6, background: "none", cursor: "pointer", color: "inherit", fontSize: 11, fontWeight: 700,
+};
+
 export default function ResumePreview({
   paper, paperSize, templateId, styleCtx, fontObj, onShowShortcuts, onSectionClick,
 }: ResumePreviewProps) {
@@ -108,6 +113,8 @@ export default function ResumePreview({
   const [mounted, setMounted] = useState(false);
   const [scale, setScale]     = useState(0.75);
   const [compact, setCompact] = useState(false);
+  const [zoom, setZoom]       = useState<number | null>(null);   // null follows the window (fit)
+  const eff = zoom ?? scale;
 
   useEffect(() => {
     const div = document.createElement("div");
@@ -399,11 +406,12 @@ export default function ResumePreview({
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 60 }}>
+      {/* The box takes the zoomed size, so a page zoomed past the window scrolls sideways instead of being cut off. */}
+      <div style={{ paddingBottom: 60, overflowX: "auto" }}>
+        <div style={{ width: paper.w * eff, height: totalUnscaledH * eff, margin: "0 auto" }}>
         <div style={{
           width: paper.w, height: totalUnscaledH,
-          transform: `scale(${scale})`, transformOrigin: "top center",
-          marginBottom: `${-totalUnscaledH * (1 - scale)}px`,
+          transform: `scale(${eff})`, transformOrigin: "top left",
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: PAGE_GAP }}>
             {plan.map(page => (
@@ -439,6 +447,7 @@ export default function ResumePreview({
             ))}
           </div>
         </div>
+        </div>
       </div>
 
       <div style={{
@@ -452,15 +461,14 @@ export default function ResumePreview({
           fontSize: 10, color: T.textTertiary, fontWeight: 600,
           boxShadow: T.shadowMd, pointerEvents: "all",
         }}>
-          <span>{Math.round(scale * 100)}%</span>
-          <span style={{ width: 1, height: 14, background: T.border }} />
-          <span>{paperSize.toUpperCase()}</span>
+          <button aria-label="Zoom out" onClick={() => setZoom(z => Math.max(0.4, Math.round(((z ?? scale) - 0.1) * 10) / 10))} style={zoomBtn}><Minus size={12} /></button>
+          <button onClick={() => setZoom(null)} aria-label="Fit to window" title="Fit to window"
+            style={{ ...zoomBtn, width: "auto", padding: "0 4px", fontVariantNumeric: "tabular-nums", color: zoom === null ? T.textTertiary : T.success }}>
+            {Math.round(eff * 100)}%
+          </button>
+          <button aria-label="Zoom in" onClick={() => setZoom(z => Math.min(1.6, Math.round(((z ?? scale) + 0.1) * 10) / 10))} style={zoomBtn}><Plus size={12} /></button>
           <span style={{ width: 1, height: 14, background: T.border }} />
           <span>{pageCount === 1 ? "1 page" : `${pageCount} pages`}</span>
-          <span style={{ width: 1, height: 14, background: T.border }} />
-          <span>{TEMPLATE_LIST.find(t => t.id === templateId)?.name}</span>
-          <span style={{ width: 1, height: 14, background: T.border }} />
-          <span>{fontObj.label}</span>
           <span style={{ width: 1, height: 14, background: T.border }} />
           <Tooltip tip="Keyboard shortcuts (⌘/)" side="top">
             <button onClick={onShowShortcuts} style={{

@@ -189,6 +189,30 @@ async function fetchAi(payload: any) {
 /* ════════════════════════════════════════════════════════════════
    ATS SCANNER
 ════════════════════════════════════════════════════════════════ */
+// Resume strength: plain checks a recruiter makes in the first seconds. Each one says what to do and which section does it.
+function resumeChecks(d: any): { ok: boolean; todo: string; section: string }[] {
+  const p = d?.personalInfo || {};
+  const jobs: any[] = Array.isArray(d?.experience) ? d.experience : [];
+  const bullets: string[] = [...jobs, ...(Array.isArray(d?.projects) ? d.projects : [])]
+    .flatMap((x: any) => Array.isArray(x?.bullets) ? x.bullets : []).filter((b: any) => typeof b === "string" && b.trim());
+  const words = String(d?.summary || "").trim().split(/\s+/).filter(Boolean).length;
+  const skills = (Array.isArray(d?.skillCategories) ? d.skillCategories : [])
+    .flatMap((c: any) => String(c?.skills || "").split(",")).map((x: string) => x.trim()).filter(Boolean).length;
+  const realJobs = jobs.filter(j => j?.company && !/^(company name|previous company)$/i.test(String(j.company).trim()));
+  const edu: any[] = Array.isArray(d?.education) ? d.education : [];
+  return [
+    { ok: !!p.name && !/^your full name$/i.test(String(p.name).trim()), todo: "Add your name", section: "personal" },
+    { ok: !!p.email && !/example\.com$/i.test(String(p.email).trim()) && !!p.phone && !/000.?0000/.test(p.phone), todo: "Add your email and phone", section: "personal" },
+    { ok: !!p.linkedin && !/yourprofile|\/in\/you$/i.test(p.linkedin), todo: "Add your LinkedIn link", section: "personal" },
+    { ok: words >= 30 && words <= 110, todo: words < 30 ? "Write a summary of 3 or 4 sentences" : "Shorten your summary to about 4 sentences", section: "summary" },
+    { ok: realJobs.length > 0, todo: "Add your work experience", section: "experience" },
+    { ok: jobs.length > 0 && jobs.every(j => (j?.bullets || []).filter((b: string) => b?.trim()).length >= 3), todo: "Give each job at least 3 bullet points", section: "experience" },
+    { ok: bullets.length > 0 && bullets.filter(b => /\d/.test(b)).length * 2 >= bullets.length, todo: "Put a real number in more bullets (users, time, money)", section: "experience" },
+    { ok: skills >= 8, todo: "List at least 8 skills", section: "skills" },
+    { ok: edu.some(e => e?.school && !/^university name$/i.test(String(e.school).trim())), todo: "Add your education", section: "education" },
+  ];
+}
+
 function scanATS(resumeData: any, jdText: string) {
   if (!jdText.trim()) return { score: 0, found: [], missing: [], total: 0 };
   const resumeFlat = JSON.stringify(resumeData).toLowerCase();
@@ -663,6 +687,8 @@ export default function ResumePage() {
   const [atsResult,         setAtsResult]         = useState<any>(null);
   const [rewritingBullet,   setRewritingBullet]   = useState<string|null>(null);
   const [saveStatus,        setSaveStatus]        = useState<"idle"|"saving"|"saved"|"error">("idle");
+  // What the header says about saving: changes waiting, saving, saved to the account, or kept on this computer only.
+  const [sync, setSync] = useState<"none"|"pending"|"saving"|"saved"|"local">("none");
   const [isPrinting,        setIsPrinting]        = useState(false);
   const [isExportingWord,   setIsExportingWord]   = useState(false);
   const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
@@ -1034,7 +1060,8 @@ export default function ResumePage() {
 
   const saveToAccount = async (silent: boolean) => {
     const token = await auth.currentUser?.getIdToken().catch(() => "") ?? "";
-    if (!token) return false;
+    if (!token) { setSync("local"); return false; }
+    setSync("saving");
     const r = await fetch(`${API_BASE}/api/v1/resume/save`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ fullName: resumeData.personalInfo?.name, headline: resumeData.personalInfo?.headline,
@@ -1043,6 +1070,7 @@ export default function ResumePage() {
         data: JSON.stringify(snapshot()) }),
     });
     if (!silent) setSaveStatus(r.ok ? "saved" : "error");
+    setSync(r.ok ? "saved" : "local");
     return r.ok;
   };
 
@@ -1053,7 +1081,8 @@ export default function ResumePage() {
     const local = setTimeout(() => {
       try { localStorage.setItem(draftKey(uid), JSON.stringify({ savedAt: Date.now(), snap: snapshot() })); } catch { /* full or private */ }
     }, 500);
-    const remote = setTimeout(() => { void saveToAccount(true).catch(() => {}); }, 4000);
+    setSync("pending");
+    const remote = setTimeout(() => { void saveToAccount(true).catch(() => setSync("local")); }, 4000);
     return () => { clearTimeout(local); clearTimeout(remote); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeData, sectionOrder, customSections, accentColor, fontSize, fontKey, lineHeight, sectionGap, marginPreset, paperSize, templateId]);
@@ -1177,8 +1206,15 @@ export default function ResumePage() {
         </a>
         <div style={{ display:"flex", flexDirection:"column", lineHeight:1.25, minWidth:0 }}>
           <span style={{ fontSize:15, fontWeight:700, color:T.textPrimary, whiteSpace:"nowrap" }}>Resume builder</span>
-          <span style={{ fontSize:12, color:T.textTertiary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display: narrow ? "none" : "block" }}>
-            {resumeData.personalInfo?.name && resumeData.personalInfo.name !== MASTER_RESUME.personalInfo?.name ? `${resumeData.personalInfo.name}'s resume` : "Your resume"}
+          <span style={{ fontSize:12, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display: narrow ? "none" : "flex", alignItems:"center", gap:5,
+            color: sync === "local" ? T.warning : T.textTertiary }}>
+            {sync === "pending" || sync === "saving"
+              ? <><Loader2 size={11} style={{ animation:"spin 1s linear infinite" }} /> Saving</>
+              : sync === "saved"
+              ? <><CheckCircle2 size={11} style={{ color:T.success }} /> Saved to your account</>
+              : sync === "local"
+              ? <><AlertCircle size={11} /> Saved on this computer only</>
+              : (resumeData.personalInfo?.name && resumeData.personalInfo.name !== MASTER_RESUME.personalInfo?.name ? `${resumeData.personalInfo.name}'s resume` : "Your resume")}
           </span>
         </div>
         <div style={{ flex:1 }} />
@@ -1332,6 +1368,38 @@ export default function ResumePage() {
                             <div style={{ fontSize:12.5, color:T.textTertiary, marginTop:1 }}>PDF, Word or text. We fill in every section for you.</div>
                           </div>
                         </button>
+                        {(() => {
+                          const checks = resumeChecks(resumeData);
+                          const passed = checks.filter(c => c.ok).length;
+                          const pct = Math.round(passed / checks.length * 100);
+                          const tone = pct >= 85 ? T.success : pct >= 55 ? T.warning : T.danger;
+                          const todo = checks.filter(c => !c.ok);
+                          return (
+                            <div style={{ marginBottom:16, padding:"14px 14px 10px", borderRadius:T.radiusMd, border:`1px solid ${T.border}`, background:T.bgPanel, boxShadow:T.shadow }}>
+                              <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:8 }}>
+                                <span style={{ fontSize:14, fontWeight:700, color:T.textPrimary }}>Resume strength</span>
+                                <span style={{ fontSize:20, fontWeight:800, color:tone, fontVariantNumeric:"tabular-nums" }}>{pct}%</span>
+                              </div>
+                              <div style={{ height:6, borderRadius:3, background:T.bg, overflow:"hidden", marginBottom:10 }}>
+                                <motion.div initial={false} animate={{ width:`${pct}%` }} transition={{ duration:0.5 }} style={{ height:"100%", borderRadius:3, background:tone }} />
+                              </div>
+                              {todo.length === 0
+                                ? <div style={{ fontSize:12.5, color:T.textSecondary, paddingBottom:4 }}>Everything a recruiter looks for first is here.</div>
+                                : todo.slice(0, 3).map(c => (
+                                  <button key={c.todo} onClick={() => setEditSection(c.section)}
+                                    style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"7px 4px", border:"none", background:"none",
+                                      cursor:"pointer", fontSize:12.5, color:T.textSecondary, textAlign:"left", borderRadius:6 }}
+                                    onMouseEnter={e=>{(e.currentTarget as any).style.background=T.bg;(e.currentTarget as any).style.color=T.textPrimary;}}
+                                    onMouseLeave={e=>{(e.currentTarget as any).style.background="none";(e.currentTarget as any).style.color=T.textSecondary;}}>
+                                    <span style={{ width:6, height:6, borderRadius:3, background:tone, flexShrink:0 }} />
+                                    <span style={{ flex:1 }}>{c.todo}</span>
+                                    <ChevronRight size={13} style={{ color:T.textTertiary }} />
+                                  </button>
+                                ))}
+                              {todo.length > 3 && <div style={{ fontSize:11.5, color:T.textTertiary, padding:"4px 4px 2px" }}>{todo.length - 3} more after these</div>}
+                            </div>
+                          );
+                        })()}
                         <p style={{ fontSize:13, lineHeight:1.55, color:T.textSecondary, margin:"2px 2px 14px" }}>
                           Open a section to edit it. The preview updates as you type, and clicking any part of it brings you here.
                         </p>
@@ -1763,6 +1831,15 @@ export default function ResumePage() {
                               <CheckCircle2 size={14} style={{ color:T.success }} />
                               <span style={{ fontSize:13.5, fontWeight:700, color:T.success }}>Your resume is tailored</span>
                             </div>
+                            {(() => {
+                              const before = scanATS(prevResume, jd).score, after = scanATS(resumeData, jd).score;
+                              return after > before ? (
+                                <div style={{ display:"flex", alignItems:"center", gap:8, margin:"4px 0 10px", fontSize:13, color:T.textPrimary, fontWeight:600 }}>
+                                  <TrendingUp size={15} style={{ color:T.success }} />
+                                  Job match went from {before}% to {after}%
+                                </div>
+                              ) : null;
+                            })()}
                             <p style={{ fontSize:12.5, color:T.textSecondary, lineHeight:1.55, marginBottom:12 }}>Check the preview. Keep it, or undo to go back to your previous version.</p>
                             <div style={{ display:"flex", gap:7 }}>
                               <button onClick={()=>{ setResumeData(prevResume); setShowDiff(false); }}
