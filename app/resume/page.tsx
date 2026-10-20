@@ -745,6 +745,7 @@ export default function ResumePage() {
   const [loading,           setLoading]           = useState(false);
   const [aiAction,          setAiAction]          = useState("");
   const [showDiff,          setShowDiff]          = useState(false);
+  const [tailorMode,        setTailorMode]        = useState<"full"|"honest">("full");
   const [tailorFit,         setTailorFit]         = useState<{ strengths?: string[]; gaps?: string[] } | null>(null);
   const [atsResult,         setAtsResult]         = useState<any>(null);
   const [rewritingBullet,   setRewritingBullet]   = useState<string|null>(null);
@@ -1021,7 +1022,7 @@ export default function ResumePage() {
       const response = await fetch(`${API_BASE}/api/v1/resume/tailor`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
-        body: JSON.stringify({ jd, masterResume: resumeData, provider: aiProvider }),
+        body: JSON.stringify({ jd, masterResume: resumeData, provider: aiProvider, mode: tailorMode }),
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -1884,8 +1885,18 @@ export default function ResumePage() {
                         <Label>Job post or keywords</Label>
                         <Textarea value={jd} onChange={(e:any)=>setJd(e.target.value)}
                           placeholder={"Paste the job post here. Even a few words work, for example: Java backend developer, Spring Boot, AWS"} rows={11} />
-                        <p style={{ fontSize:12.5, color:T.textTertiary, margin:"8px 2px 14px", lineHeight:1.5 }}>
-                          Your summary, skills and bullet points are rewritten for this job. Nothing is made up, and you can undo it.
+                        <div role="radiogroup" aria-label="How much to change" style={{ display:"flex", gap:6, margin:"12px 0 8px", padding:4, borderRadius:T.radius, background:T.bg, border:`1px solid ${T.border}` }}>
+                          {([["full","Full match"],["honest","Keep it true"]] as const).map(([m,label]) => (
+                            <button key={m} role="radio" aria-checked={tailorMode===m} onClick={() => setTailorMode(m)}
+                              style={{ flex:1, height:34, borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                                background: tailorMode===m ? T.bgPanel : "transparent", color: tailorMode===m ? T.textPrimary : T.textTertiary,
+                                boxShadow: tailorMode===m ? T.shadow : "none" }}>{label}</button>
+                          ))}
+                        </div>
+                        <p style={{ fontSize:12.5, color:T.textTertiary, margin:"0 2px 14px", lineHeight:1.5 }}>
+                          {tailorMode === "full"
+                            ? "Rewrites everything for this job: title, summary, skills, every bullet and your role titles. Companies, dates, numbers and education stay as they are. Read every line before you send it."
+                            : "Rewords and reorders what is already there for this job. Nothing new is added. You can undo it."}
                         </p>
                         <button onClick={handleTailor} disabled={loading||!jd.trim()}
                           style={{ width:"100%", height:46, borderRadius:T.radius, border:"none",
@@ -1930,14 +1941,16 @@ export default function ResumePage() {
                             ) : null}
                             {tailorFit?.gaps?.length ? (
                               <div style={{ margin:"4px 0 12px", padding:"10px 12px", borderRadius:T.radius, background:T.bgPanel, border:`1px solid ${T.border}` }}>
-                                <div style={{ fontSize:12.5, fontWeight:700, color:T.textPrimary, marginBottom:4 }}>This job also asks for</div>
+                                <div style={{ fontSize:12.5, fontWeight:700, color:T.textPrimary, marginBottom:4 }}>{tailorMode === "full" ? "Be ready to talk about" : "This job also asks for"}</div>
                                 {tailorFit.gaps.slice(0, 4).map(x => (
                                   <div key={x} style={{ display:"flex", gap:7, fontSize:12.5, color:T.textSecondary, lineHeight:1.5 }}>
                                     <AlertCircle size={13} style={{ color:T.warning, flexShrink:0, marginTop:3 }} /> {x}
                                   </div>
                                 ))}
                                 <div style={{ fontSize:11.5, color:T.textTertiary, marginTop:6, lineHeight:1.5 }}>
-                                  Tailor never adds experience you do not have. If you have these, add them in Content and tailor again.
+                                  {tailorMode === "full"
+                                    ? "These were reframed for the job. Keep only what you can back up in the interview."
+                                    : "Keep it true never adds experience you do not have. If you have these, add them in Content and tailor again."}
                                 </div>
                               </div>
                             ) : null}
