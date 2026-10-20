@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MASTER_RESUME } from "../../data/masterResume";
 import mammoth from "mammoth";
 import { auth } from "../firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   TEMPLATE_LIST, buildPrintHTML, getTemplateThumbnail,
   type TemplateId,
@@ -13,7 +14,7 @@ import {
   Plus, Trash2, Award, Briefcase, GraduationCap, Code, Wrench,
   ChevronUp, ChevronDown, GripVertical, Layers, Link as LinkIcon,
   Loader2, Zap, Target, BarChart3,
-  CheckCircle2, Wand2, Home,
+  CheckCircle2, Wand2, Home, Upload,
   BrainCircuit,
   PanelLeftClose, PanelLeftOpen, Keyboard, Coins, AlignLeft,
   AlertCircle, ChevronRight,
@@ -843,31 +844,59 @@ export default function ResumePage() {
     }));
 
   /* ── File import ── */
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+  // Upload an existing resume: the file is read here, then organised into the sections word for word on the server.
+  // There was no upload control on the page at all, and the old reader dumped everything into Summary (2026-10-20).
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const readResumeFile = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "txt") return await file.text();
+    if (ext === "docx" || ext === "doc") {
+      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      return result.value ?? "";
+    }
+    if (ext === "pdf") {
+      const pdfjsLib = await loadPdfJs();
+      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), useSystemFonts: true, disableFontFace: true }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const content = await (await pdf.getPage(i)).getTextContent();
+        text += content.items.map((item: any) => item.str).join(" ") + "\n";
+      }
+      return text;
+    }
+    return "";
+  };
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;
+    setImporting(true);
     try {
-      if (ext==="txt") { setResumeData({ ...MASTER_RESUME, summary: await file.text() }); }
-      else if (ext==="docx"||ext==="doc") {
-        const buf = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: buf });
-        if (result.value?.trim()) setResumeData({ ...MASTER_RESUME, summary: result.value });
-        else notifyFailure("upload");
-      } else if (ext==="pdf") {
-        const buf = await file.arrayBuffer();
-        const pdfjsLib = await loadPdfJs();
-        const pdf = await pdfjsLib.getDocument({ data:buf, useSystemFonts:true, disableFontFace:true }).promise;
-        let text = "";
-        for (let i=1; i<=pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item:any) => item.str).join(" ") + "\n";
-        }
-        if (text.trim()) setResumeData({ ...MASTER_RESUME, summary: text });
-        else notifyFailure("upload");
-      } else { notifyFailure("upload"); }
-    } catch { notifyFailure("upload"); }
-    e.target.value = "";
+      const text = (await readResumeFile(file)).trim();
+      if (text.length < 40) { notifyFailure("upload"); return; }
+      const token = (await auth.currentUser?.getIdToken().catch(() => "")) ?? "";
+      if (!token) { notifyFailure("sessionExpired"); return; }
+      const r = await fetch(`${API_BASE}/api/v1/resume/import`, {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text: text.slice(0, 30000) }),
+      });
+      if (!r.ok) throw Object.assign(new Error("import_failed"), { status: r.status });
+      const parsed = await r.json();
+      setPrevResume(JSON.parse(JSON.stringify(resumeData)));
+      setResumeData({
+        ...MASTER_RESUME, ...parsed,
+        personalInfo: { ...MASTER_RESUME.personalInfo, ...(parsed.personalInfo || {}), customLinks: parsed.personalInfo?.customLinks || [] },
+        skillCategories: Array.isArray(parsed.skillCategories) ? parsed.skillCategories : [],
+        experience: Array.isArray(parsed.experience) ? parsed.experience : [],
+        projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+        education: Array.isArray(parsed.education) ? parsed.education : [],
+        certifications: Array.isArray(parsed.certifications) ? parsed.certifications.filter(Boolean) : [],
+      });
+      notify({ tone: "success", title: "Your resume is in", body: "Check each section on the left. Ctrl+Z puts back what was here before." });
+    } catch (err: any) {
+      notifyFailure(err?.status ? classifyFailure(err.status) : "upload");
+    } finally {
+      setImporting(false);
+    }
   };
 
   /* ── AI TAILOR ── */
@@ -946,6 +975,79 @@ export default function ResumePage() {
   const runATS = () => { setAtsResult(scanATS(resumeData, jd)); };
   useEffect(() => { if (activeTab==="ats" && jd) runATS(); }, [activeTab]);
 
+  /* ── Keeping the resume ──
+     The page used to open on the template every time: Save sent only a few fields (experience, projects and education
+     were never stored) and nothing was ever loaded back (found 2026-10-20). Now the whole builder is one snapshot:
+     kept on this computer as you type, saved to the account a few seconds after you stop, and opened again next time,
+     whichever copy is newer. */
+  const snapshot = () => ({
+    v: 1, resumeData, sectionOrder, customSections, accentColor, fontSize, fontKey, lineHeight, sectionGap,
+    marginPreset, paperSize, templateId,
+  });
+  const applySnapshot = (d: any) => {
+    if (!d || typeof d !== "object" || !d.resumeData) return false;
+    setResumeData(d.resumeData);
+    if (Array.isArray(d.sectionOrder)) setSectionOrder(d.sectionOrder);
+    if (Array.isArray(d.customSections)) setCustomSections(d.customSections);
+    if (typeof d.accentColor === "string") setAccentColor(d.accentColor);
+    if (typeof d.fontSize === "number") setFontSize(d.fontSize);
+    if (typeof d.fontKey === "string") setFontKey(d.fontKey);
+    if (typeof d.lineHeight === "number") setLineHeight(d.lineHeight);
+    if (typeof d.sectionGap === "number") setSectionGap(d.sectionGap);
+    if (d.marginPreset) setMarginPreset(d.marginPreset);
+    if (d.paperSize) setPaperSize(d.paperSize);
+    if (d.templateId) setTemplateId(d.templateId);
+    return true;
+  };
+  const restoredRef = useRef(false);          // nothing is saved until the person's own copy has been opened
+  const uidRef = useRef<string | null>(null);
+  const draftKey = (uid: string) => `replysis-resume-draft-${uid}`;
+
+  useEffect(() => onAuthStateChanged(auth, async (u) => {
+    if (!u || uidRef.current === u.uid) return;
+    uidRef.current = u.uid;
+    let local: { savedAt: number; snap: any } | null = null;
+    try { local = JSON.parse(localStorage.getItem(draftKey(u.uid)) || "null"); } catch { /* private window */ }
+    let server: { savedAt: number; snap: any } | null = null;
+    try {
+      const token = await u.getIdToken();
+      const r = await fetch(`${API_BASE}/api/v1/resume/mine`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.status === 200) {
+        const body = await r.json();
+        server = { savedAt: Date.parse(body.updatedAt) || 0, snap: JSON.parse(body.data) };
+      }
+    } catch { /* the copy on this computer still opens */ }
+    const pick = local && (!server || local.savedAt > server.savedAt) ? local : server;
+    if (pick) applySnapshot(pick.snap);
+    restoredRef.current = true;
+  }), []);
+
+  const saveToAccount = async (silent: boolean) => {
+    const token = await auth.currentUser?.getIdToken().catch(() => "") ?? "";
+    if (!token) return false;
+    const r = await fetch(`${API_BASE}/api/v1/resume/save`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fullName: resumeData.personalInfo?.name, headline: resumeData.personalInfo?.headline,
+        email: resumeData.personalInfo?.email, phone: resumeData.personalInfo?.phone, summary: resumeData.summary,
+        skillCategories: JSON.stringify(resumeData.skillCategories || []), accentColor, fontSize,
+        data: JSON.stringify(snapshot()) }),
+    });
+    if (!silent) setSaveStatus(r.ok ? "saved" : "error");
+    return r.ok;
+  };
+
+  // As you type: a copy on this computer at once, and the account a few seconds after you stop.
+  useEffect(() => {
+    if (!restoredRef.current || !uidRef.current) return;
+    const uid = uidRef.current;
+    const local = setTimeout(() => {
+      try { localStorage.setItem(draftKey(uid), JSON.stringify({ savedAt: Date.now(), snap: snapshot() })); } catch { /* full or private */ }
+    }, 500);
+    const remote = setTimeout(() => { void saveToAccount(true).catch(() => {}); }, 4000);
+    return () => { clearTimeout(local); clearTimeout(remote); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeData, sectionOrder, customSections, accentColor, fontSize, fontKey, lineHeight, sectionGap, marginPreset, paperSize, templateId]);
+
   /* ── Save ── */
   const handleSave = async () => {
     setSaveStatus("saving");
@@ -957,11 +1059,7 @@ export default function ResumePage() {
     if (!saveToken) { setSaveStatus("error"); notifyFailure("sessionExpired"); setTimeout(() => setSaveStatus("idle"), 2500); return; }
 
     try {
-      const r = await fetch(`${API_BASE}/api/v1/resume/save`, {
-        method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${saveToken}`},
-        body: JSON.stringify({ fullName:resumeData.personalInfo?.name, headline:resumeData.personalInfo?.headline, email:resumeData.personalInfo?.email, phone:resumeData.personalInfo?.phone, summary:resumeData.summary, skills:JSON.stringify(resumeData.skillCategories||[]), experience:JSON.stringify(resumeData.experience||[]), projects:JSON.stringify(resumeData.projects||[]), accentColor:ac, fontSize:fs }),
-      });
-      setSaveStatus(r.ok ? "saved" : "error");
+      await saveToAccount(false);
     } catch { setSaveStatus("error"); }
     finally { setTimeout(() => setSaveStatus("idle"), 2500); }
   };
@@ -1208,6 +1306,22 @@ export default function ResumePage() {
                     {/* ══ EDIT TAB ══ */}
                     {activeTab === "edit" && (
                       <>
+                        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt" onChange={handleFile} style={{ display:"none" }} />
+                        <button onClick={() => fileInputRef.current?.click()} disabled={importing}
+                          style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"14px 14px", marginBottom:14,
+                            borderRadius:T.radiusMd, border:`1px dashed ${T.borderStrong}`, background:T.bg, cursor:importing?"wait":"pointer",
+                            textAlign:"left", transition:"border-color 0.15s, background 0.15s" }}
+                          onMouseEnter={e=>{(e.currentTarget as any).style.borderColor=T.accent;(e.currentTarget as any).style.background=T.accentLight;}}
+                          onMouseLeave={e=>{(e.currentTarget as any).style.borderColor=T.borderStrong;(e.currentTarget as any).style.background=T.bg;}}>
+                          <div style={{ width:38, height:38, borderRadius:10, background:T.bgPanel, border:`1px solid ${T.border}`,
+                            display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            {importing ? <Loader2 size={17} style={{ color:T.accent, animation:"spin 1s linear infinite" }} /> : <Upload size={17} style={{ color:T.accent }} />}
+                          </div>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:700, color:T.textPrimary }}>{importing ? "Reading your resume" : "Upload your resume"}</div>
+                            <div style={{ fontSize:12.5, color:T.textTertiary, marginTop:1 }}>PDF, Word or text. We fill in every section for you.</div>
+                          </div>
+                        </button>
                         <p style={{ fontSize:13, lineHeight:1.55, color:T.textSecondary, margin:"2px 2px 14px" }}>
                           Open a section to edit it. The preview updates as you type, and clicking any part of it brings you here.
                         </p>
