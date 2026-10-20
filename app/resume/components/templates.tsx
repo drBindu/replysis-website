@@ -515,9 +515,13 @@ function buildGranularSections(
       const items = (cs?.items || []).filter((it: any) => it.title || it.subtitle || it.description);
       if (!cs || items.length === 0) continue;
       out.push({ key: `${secId}:heading`, node: <div style={{ marginBottom: 0 }}><SHComp title={cs.title || "More"} /></div> });
+      // A line with nothing but its text (a language, an award) prints as a plain bullet, not a bold heading.
+      const plain = (it: any) => it.title && !it.subtitle && !it.date && !it.description;
       items.forEach((it: any, i: number) => out.push({
         key: `${secId}:${i}`,
-        node: (
+        node: plain(it) ? (
+          <ul style={{ margin: `${i === 0 ? 0 : 2}px 0 ${i === items.length - 1 ? sg : 0}px`, paddingLeft: 16, listStyle: "disc" }}>{bul([it.title])}</ul>
+        ) : (
           <div style={{ marginTop: i === 0 ? 0 : 8, marginBottom: i === items.length - 1 ? sg : 0 }}>
             {(it.title || it.date) && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -1081,6 +1085,7 @@ export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
     const items = (cs?.items || []).filter((it: any) => it.title || it.subtitle || it.description);
     if (!cs || items.length === 0) return "";
     return `<div class="r-sec">${SHfn(cs.title || "More")}${items.map((it: any, i: number) =>
+      it.title && !it.subtitle && !it.date && !it.description ? `<ul class="r-list">${bul([it.title])}</ul>` :
       `<div class="${i ? "r-proj-gap" : ""}">
         ${it.title || it.date ? `<div class="r-row"><span class="r-bold">${it.title || ""}</span>${it.date ? `<span class="r-meta">${it.date}</span>` : ""}</div>` : ""}
         ${it.subtitle ? `<div class="r-location">${it.subtitle}</div>` : ""}
