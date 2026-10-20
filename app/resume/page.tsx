@@ -745,6 +745,7 @@ export default function ResumePage() {
   const [loading,           setLoading]           = useState(false);
   const [aiAction,          setAiAction]          = useState("");
   const [showDiff,          setShowDiff]          = useState(false);
+  const [tailorFit,         setTailorFit]         = useState<{ strengths?: string[]; gaps?: string[] } | null>(null);
   const [atsResult,         setAtsResult]         = useState<any>(null);
   const [rewritingBullet,   setRewritingBullet]   = useState<string|null>(null);
   const [saveStatus,        setSaveStatus]        = useState<"idle"|"saving"|"saved"|"error">("idle");
@@ -1030,7 +1031,10 @@ export default function ResumePage() {
         failure.status = response.status;
         throw failure;
       }
-      setResumeData(await response.json());
+      // The answer carries an honest fit report next to the resume; it is shown, never saved into the resume.
+      const { fit, ...tailored } = await response.json();
+      setResumeData(tailored);
+      setTailorFit(fit && (Array.isArray(fit.strengths) || Array.isArray(fit.gaps)) ? fit : null);
       setShowDiff(true);   // stays on Tailor, where the result and Undo are; it used to jump away and hide both
       recordCreditUsage("Resume tailored", "resume_tailor", 20);
     } catch (e: any) {
@@ -1914,6 +1918,29 @@ export default function ResumePage() {
                                 </div>
                               ) : null;
                             })()}
+                            {tailorFit?.strengths?.length ? (
+                              <div style={{ margin:"4px 0 10px" }}>
+                                <div style={{ fontSize:12.5, fontWeight:700, color:T.textPrimary, marginBottom:4 }}>What matches this job</div>
+                                {tailorFit.strengths.slice(0, 4).map(x => (
+                                  <div key={x} style={{ display:"flex", gap:7, fontSize:12.5, color:T.textSecondary, lineHeight:1.5 }}>
+                                    <CheckCircle2 size={13} style={{ color:T.success, flexShrink:0, marginTop:3 }} /> {x}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                            {tailorFit?.gaps?.length ? (
+                              <div style={{ margin:"4px 0 12px", padding:"10px 12px", borderRadius:T.radius, background:T.bgPanel, border:`1px solid ${T.border}` }}>
+                                <div style={{ fontSize:12.5, fontWeight:700, color:T.textPrimary, marginBottom:4 }}>This job also asks for</div>
+                                {tailorFit.gaps.slice(0, 4).map(x => (
+                                  <div key={x} style={{ display:"flex", gap:7, fontSize:12.5, color:T.textSecondary, lineHeight:1.5 }}>
+                                    <AlertCircle size={13} style={{ color:T.warning, flexShrink:0, marginTop:3 }} /> {x}
+                                  </div>
+                                ))}
+                                <div style={{ fontSize:11.5, color:T.textTertiary, marginTop:6, lineHeight:1.5 }}>
+                                  Tailor never adds experience you do not have. If you have these, add them in Content and tailor again.
+                                </div>
+                              </div>
+                            ) : null}
                             <p style={{ fontSize:12.5, color:T.textSecondary, lineHeight:1.55, marginBottom:12 }}>Check the preview. Keep it, or undo to go back to your previous version.</p>
                             <div style={{ display:"flex", gap:7 }}>
                               <button onClick={()=>{ setResumeData(prevResume); setShowDiff(false); }}
