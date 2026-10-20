@@ -430,7 +430,7 @@ function CreditUsageToast({ action, cost, remaining, max, isUnlimited, onDone }:
           {isUnlimited ? "Plan answers active" : `${answersLabel(cost)} used`}
         </div>
         <div style={{ fontSize:11, color:T.textSecondary, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-          {action} {isUnlimited ? "✓" : `· ${answerCount(remaining)} left`}
+          {action}{isUnlimited ? "" : `. ${answerCount(remaining)} left`}
         </div>
         {!isUnlimited && (
           <div style={{ marginTop:5, height:3, borderRadius:3, background:T.border, overflow:"hidden" }}>
@@ -1032,7 +1032,7 @@ export default function ResumePage() {
       }
       setResumeData(await response.json());
       setShowDiff(true);   // stays on Tailor, where the result and Undo are; it used to jump away and hide both
-      recordCreditUsage("AI Tailor Resume", "resume_tailor", 20);
+      recordCreditUsage("Resume tailored", "resume_tailor", 20);
     } catch (e: any) {
       console.error("[Replysis] Resume tailoring failed:", e?.status ?? e?.name ?? "Error");
       if (e?.name === "AbortError") notifyFailure("timeout", handleTailor);
@@ -1050,7 +1050,7 @@ export default function ResumePage() {
     setRewritingBullet(key);
     try {
       const data = await fetchAi({ mode:"rewrite_bullet", bullet:resumeData[section][itemIdx].bullets[bulletIdx], resume:JSON.stringify(resumeData), jd:jd||"N/A", provider:aiProvider });
-      if (data?.rewritten||data?.bullet) { updateBullet(section,itemIdx,bulletIdx,data.rewritten||data.bullet); recordCreditUsage("AI Rewrite Bullet","mock_script",5); }
+      if (data?.rewritten||data?.bullet) { updateBullet(section,itemIdx,bulletIdx,data.rewritten||data.bullet); recordCreditUsage("Bullet rewritten","mock_script",5); }
     } catch { /* silent */ }
     setRewritingBullet(null);
   };
@@ -1061,7 +1061,7 @@ export default function ResumePage() {
     setLoading(true); setAiAction("summary");
     try {
       const data = await fetchAi({ mode:"generate_summary", resume:JSON.stringify(resumeData), jd:jd||"N/A", provider:aiProvider });
-      if (data?.summary) { set(d=>({...d,summary:data.summary})); recordCreditUsage("AI Generate Summary","mock_script",5); }
+      if (data?.summary) { set(d=>({...d,summary:data.summary})); recordCreditUsage("Summary written","mock_script",5); }
     } catch (err) {
       console.error("[Replysis] Summary generation failed:", (err as Error)?.name ?? "Error");
       notifyFailure("ai");
