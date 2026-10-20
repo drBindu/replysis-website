@@ -969,7 +969,7 @@ export default function ResumePage() {
     const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;
     setImporting(true);
     try {
-      const text = (await readResumeFile(file)).trim();
+      const text = (await readResumeFile(file).catch(() => { throw Object.assign(new Error("unreadable"), { unreadable: true }); })).trim();
       if (text.length < 40) { notifyFailure("upload"); return; }
       const token = (await auth.currentUser?.getIdToken().catch(() => "")) ?? "";
       if (!token) { notifyFailure("sessionExpired"); return; }
@@ -1005,7 +1005,8 @@ export default function ResumePage() {
         })));
       notify({ tone: "success", title: "Your resume is in", body: "Check each section on the left. Ctrl+Z puts back what was here before." });
     } catch (err: any) {
-      notifyFailure(err?.status ? classifyFailure(err.status) : "upload");
+      // Only a file we could not read is the file's fault. A blocked or dropped request says what really happened.
+      notifyFailure(err?.unreadable ? "upload" : classifyFailure(err?.status));
     } finally {
       setImporting(false);
     }
