@@ -261,6 +261,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [editingCredits, setEditingCredits] = useState<string | null>(null);
   const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
   const [newMinuteValue, setNewMinuteValue] = useState(0);
@@ -554,6 +555,12 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setEditMode(!editMode); setEditingCredits(null); setEditingMinutes(null); setDeleteConfirm(null); }}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium transition ${
+                editMode ? "border-amber-400/40 bg-amber-400/10 text-amber-200" : "border-white/10 bg-[#0e0e15] text-zinc-300 hover:bg-white/5"}`}>
+              {editMode ? "Done editing" : "Edit"}
+            </button>
             <button
               onClick={() => fetchAll(true, currentCursor)}
               disabled={refreshing}
@@ -854,9 +861,9 @@ export default function AdminPage() {
                                       className="rounded p-1 text-zinc-500 hover:bg-white/10"><X size={13} /></button>
                             </div>
                           ) : (
-                            <button
+                            <button disabled={!editMode}
                               onClick={(e) => { e.stopPropagation(); setEditingCredits(user.id); setNewCreditValue(Number(user.credits) || 0); }}
-                              className="text-[13px] tabular-nums text-zinc-300 underline-offset-2 hover:underline">
+                              className="text-[13px] tabular-nums text-zinc-300 underline-offset-2 enabled:hover:underline disabled:cursor-default">
                               {num(Number(user.credits) || 0)}
                               <span className="text-zinc-600"> / {num(allowance)}</span>
                             </button>
@@ -873,9 +880,9 @@ export default function AdminPage() {
                                       className="rounded p-0.5 text-zinc-500 hover:bg-white/10"><X size={12} /></button>
                             </div>
                           ) : (
-                            <button
+                            <button disabled={!editMode}
                               onClick={(e) => { e.stopPropagation(); setEditingMinutes(user.id); setNewMinuteValue(Number(user.minutesBalance) || 0); }}
-                              className="mt-0.5 block w-full text-right text-[11px] tabular-nums underline-offset-2 hover:underline"
+                              className="mt-0.5 block w-full text-right text-[11px] tabular-nums underline-offset-2 enabled:hover:underline disabled:cursor-default"
                               title="Change interview minutes">
                               {(Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) ? (
                                 <span className="text-emerald-300">{num(Number(user.minutesBalance) || 0)} min left
@@ -903,7 +910,7 @@ export default function AdminPage() {
                                 Cancel
                               </button>
                             </div>
-                          ) : (
+                          ) : editMode && (
                             <button onClick={() => setDeleteConfirm(user.id)} aria-label="Delete user"
                                     className="rounded p-1.5 text-zinc-600 transition hover:bg-red-500/10 hover:text-red-400">
                               <Trash2 size={14} />
@@ -1016,12 +1023,14 @@ export default function AdminPage() {
 
                               <div>
                                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Counted as</div>
-                                <button onClick={() => toggleInternal(user.id, user.internal !== true)}
-                                  className={`mb-4 rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition ${
+                                <button disabled={!editMode} onClick={() => toggleInternal(user.id, user.internal !== true)}
+                                  className={`mb-4 rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                     user.internal === true
                                       ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
                                       : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}>
-                                  {user.internal === true ? "Yours or a friend's (left out of the numbers). Click to count as a real user" : "Real user. Click to mark as yours or a friend's"}
+                                  {user.internal === true
+                                    ? `Yours or a friend's (left out of the numbers)${editMode ? ". Click to count as a real user" : ""}`
+                                    : `Real user${editMode ? ". Click to mark as yours or a friend's" : ""}`}
                                 </button>
                                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Change plan</div>
                                 <div className="flex flex-wrap gap-1.5">
@@ -1033,8 +1042,8 @@ export default function AdminPage() {
                                       them as buttons would let a retired plan be
                                       handed out again. */}
                                   {(["free", "pro", "max"] as const).map((p) => (
-                                    <button key={p} onClick={() => updatePlan(user.id, p)}
-                                      className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition ${
+                                    <button key={p} disabled={!editMode} onClick={() => updatePlan(user.id, p)}
+                                      className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                         plan === p
                                           ? "border-white/25 bg-white/10 text-white"
                                           : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}>
