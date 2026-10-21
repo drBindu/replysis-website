@@ -32,7 +32,7 @@ const PLAN_PRICE_USD: Record<string, number> = {
 const WINDOWS = [7, 30, 90] as const;
 
 type AdminMetrics = {
-  users: number; paidUsers: number; proUsers: number; maxUsers: number;
+  users: number; paidUsers: number; proUsers: number; maxUsers: number; minuteBuyers?: number; minuteRevenueInr?: number;
   liveUsers: number; listeningNow: number; totalUsageMinutes: number;
   winDownloads: number; macDownloads: number;
   internalUsers: number; realUsers: number; realPaid: number; realPro: number; realMax: number;
@@ -321,6 +321,8 @@ export default function AdminPage() {
       setMetrics({
         users: Number(m.users) || 0,
         paidUsers: Number(m.paidUsers) || 0,
+        minuteBuyers: Number(m.minuteBuyers) || 0,
+        minuteRevenueInr: Number(m.minuteRevenueInr) || 0,
         proUsers: Number(m.proUsers) || 0,
         maxUsers: Number(m.maxUsers) || 0,
         liveUsers: Number(m.liveUsers) || 0,
@@ -794,6 +796,11 @@ export default function AdminPage() {
                         <td className="px-4 py-3"><PlanBadge plan={plan} /></td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums text-zinc-300">
                           {PLAN_PRICE_USD[plan] ? `${money(PLAN_PRICE_USD[plan])}/mo` : <span className="text-zinc-600">free</span>}
+                          {Number(user.minutesPaidInr) > 0 && (
+                            <div className="text-[11px] font-semibold text-emerald-300" title={`${user.minutesPurchases} minute purchase(s)`}>
+                              +₹{num(Math.round(Number(user.minutesPaidInr)))} minutes
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">
                           {u ? <span className="text-white">{num(u.charged)}</span>
@@ -840,6 +847,12 @@ export default function AdminPage() {
                               {num(Number(user.credits) || 0)}
                               <span className="text-zinc-600"> / {num(allowance)}</span>
                             </button>
+                          )}
+                          {(Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) && (
+                            <div className="text-[11px] tabular-nums text-emerald-300">
+                              {num(Number(user.minutesBalance) || 0)} min left
+                              <span className="text-zinc-600"> of {num(Number(user.minutesBought) || 0)} bought</span>
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">
@@ -1068,6 +1081,8 @@ export default function AdminPage() {
           <Kpi label="Windows downloads" value={num(metrics.winDownloads)} icon={<Monitor size={12} />} />
           <Kpi label="Mac downloads" value={num(metrics.macDownloads)} icon={<Apple size={12} />} />
           <Kpi label="Free accounts" value={num(Math.max(0, metrics.users - metrics.paidUsers))} icon={<Users size={12} />} />
+          <Kpi label="Minutes sold" value={`₹${num(metrics.minuteRevenueInr ?? 0)}`} icon={<Users size={12} />} />
+          <Kpi label="Minute buyers" value={num(metrics.minuteBuyers ?? 0)} icon={<Users size={12} />} />
           <Kpi label="Conversion" value={`${metrics.users ? ((metrics.paidUsers / metrics.users) * 100).toFixed(1) : "0.0"}%`}
                sub="paying / total" icon={<TrendingUp size={12} />} />
         </section>

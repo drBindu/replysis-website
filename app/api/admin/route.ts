@@ -729,6 +729,7 @@ export async function GET(req: Request) {
       internalPaid,
       internalPro,
       internalMax,
+      minutePurchases,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -750,7 +751,22 @@ export async function GET(req: Request) {
       users.where("internal", "==", true).where("plan", "in", ["pro", "max", "lifetime", "teams"]).count().get(),
       users.where("internal", "==", true).where("plan", "==", "pro").count().get(),
       users.where("internal", "==", true).where("plan", "==", "max").count().get(),
+      // Interview minutes bought (India). They were invisible here: a customer paid Rs 165 and the list showed
+      // "free" and "0 / 25" (2026-10-21). Small collection, read whole.
+      db.collection("minute_purchases").get(),
     ]);
+    const paidMinutes = new Map<string, { inr: number; minutes: number; count: number; last: number }>();
+    let minuteRevenueInr = 0;
+    for (const d of minutePurchases.docs) {
+      const p = d.data();
+      if (typeof p.uid !== "string") continue;
+      const inr = (Number(p.amount) || 0) / 100;
+      minuteRevenueInr += inr;
+      const cur = paidMinutes.get(p.uid) ?? { inr: 0, minutes: 0, count: 0, last: 0 };
+      cur.inr += inr; cur.minutes += Number(p.minutes) || 0; cur.count += 1;
+      cur.last = Math.max(cur.last, anyMs(p.createdAt) ?? 0);
+      paidMinutes.set(p.uid, cur);
+    }
 
     const hasMore = userPage.docs.length > requestedPageSize;
     const listedDocs = userPage.docs.slice(0, requestedPageSize);
@@ -765,6 +781,8 @@ export async function GET(req: Request) {
           authLastSignIn: metadata[doc.id]?.lastSignIn ?? null,
           authCreated: metadata[doc.id]?.created ?? null,
           realUsageMinutes: Math.round((Number(data.totalDurationSeconds) || 0) / 60),
+          minutesPaidInr: paidMinutes.get(doc.id)?.inr ?? 0,
+          minutesPurchases: paidMinutes.get(doc.id)?.count ?? 0,
         };
       }),
       metrics: {
@@ -785,6 +803,8 @@ export async function GET(req: Request) {
         realPaid: Math.max(0, paidCount.data().count - internalPaid.data().count),
         realPro: Math.max(0, proCount.data().count - internalPro.data().count),
         realMax: Math.max(0, maxCount.data().count - internalMax.data().count),
+        minuteBuyers: paidMinutes.size,
+        minuteRevenueInr: Math.round(minuteRevenueInr),
       },
       page: {
         nextCursor: hasMore ? listedDocs.at(-1)?.id ?? null : null,
