@@ -344,6 +344,7 @@ type LiveEvent = {
   detail: string;
   credits?: number;
   app?: "windows" | "mac";
+  more?: string;   // the app's setup lines for a problem
 };
 
 // An app tells the server who it is (platform and version) whenever it makes an account call, and the server writes that down at
@@ -506,6 +507,8 @@ async function liveView(db: Firestore, sinceMs: number) {
     events.push({
       id: `e:${doc.id}`, kind: "error", at, who: null,
       detail: `${typeof d.version === "string" ? `v${d.version} ` : ""}${bits}`.slice(0, 220),
+      // The app's own setup lines for this problem (devices found, Windows' error text), from 1.0.41 on.
+      ...(typeof d.detail === "string" && d.detail ? { more: d.detail.slice(0, 6000) } : {}),
     });
   }
 

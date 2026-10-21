@@ -20,6 +20,7 @@ export type LiveEvent = {
   at: number;
   who: string | null;
   detail: string;
+  more?: string;
   credits?: number;
   app?: "windows" | "mac";
 };
@@ -440,6 +441,12 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                     {e.who ? <span className="text-zinc-200">{e.who}</span> : null}
                     {e.app ? <span className="ml-2 text-[10px] text-zinc-500">{APP_LOOK[e.app].label}</span> : null}
                     {e.detail ? <span className="ml-2 text-zinc-500">{e.detail}</span> : null}
+                    {e.more ? (
+                      <details className="mt-1 ml-2">
+                        <summary className="cursor-pointer text-[11px] text-zinc-500 hover:text-zinc-300">What the app saw</summary>
+                        <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded bg-black/40 p-2 text-[11px] leading-snug text-zinc-400">{e.more.split(" | ").join(String.fromCharCode(10))}</pre>
+                      </details>
+                    ) : null}
                   </span>
                   {typeof e.credits === "number" && e.credits !== 0 ? (
                     <span className={`shrink-0 text-[11px] tabular-nums ${e.credits < 0 ? "text-amber-300" : "text-zinc-500"}`}>
