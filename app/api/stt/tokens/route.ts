@@ -453,7 +453,37 @@ async function hasCreditsToListen(
   }
 }
 
+// The admin reads usage_events. This page charged credits without writing one, so a person who asked four questions
+// in the browser showed "nothing recorded" (2026-10-21). Same row shape as the Java backend's UsageEventService.
+const USAGE_ACTION: Record<string, string> = {
+  realtime: "answer", generate_script: "mock_script", generate_feedback: "mock_feedback",
+  generate_questions: "question_generation", stt_token: "live_listen",
+};
+async function recordUsage(uid: string, email: string, mode: string, credits: number) {
+  if (!db || !uid || !credits) return;
+  try {
+    await db.collection("usage_events").add({
+      identityId: uid, email: email ? email.toLowerCase() : null, guest: false,
+      action: USAGE_ACTION[mode] ?? mode, provider: null, model: null,
+      credits, refund: credits < 0, platform: "web", day: new Date().toISOString().slice(0, 10),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("[usage] record failed:", (err as Error)?.name ?? "Error");
+  }
+}
+
 async function checkAndDeductCredits(
+  uid: string,
+  email: string,
+  mode:  string
+): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean }> {
+  const result = await checkAndDeductCreditsCore(uid, email, mode);
+  if (result.allowed) await recordUsage(uid, email, mode, CREDIT_COSTS[mode] ?? 0);
+  return result;
+}
+
+async function checkAndDeductCreditsCore(
   uid: string,
   email: string,
   mode:  string
@@ -541,7 +571,9 @@ async function checkAndDeductCredits(
 
 async function refundCredits(uid: string, email: string, mode: string): Promise<void> {
   const cost = CREDIT_COSTS[mode] ?? 2;
-  if (!db || !uid || cost === 0 || UNLIMITED_EMAILS.has(email.toLowerCase())) return;
+  if (!db || !uid || cost === 0) return;
+  await recordUsage(uid, email, mode, -cost);
+  if (UNLIMITED_EMAILS.has(email.toLowerCase())) return;
 
   try {
     const userRef = db.collection("users").doc(uid);
