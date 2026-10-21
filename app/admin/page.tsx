@@ -262,6 +262,8 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingCredits, setEditingCredits] = useState<string | null>(null);
+  const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
+  const [newMinuteValue, setNewMinuteValue] = useState(0);
   const [newCreditValue, setNewCreditValue] = useState<number>(0);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -408,6 +410,13 @@ export default function AdminPage() {
   async function handleManualCredits(userId: string) {
     if (await runAdminAction("updateCredits", { userId, credits: newCreditValue })) {
       setEditingCredits(null);
+      fetchAll(true, currentCursor);
+    }
+  }
+
+  async function handleManualMinutes(userId: string) {
+    if (await runAdminAction("updateMinutes", { userId, minutes: Math.max(0, Math.round(newMinuteValue)) })) {
+      setEditingMinutes(null);
       fetchAll(true, currentCursor);
     }
   }
@@ -852,11 +861,27 @@ export default function AdminPage() {
                               <span className="text-zinc-600"> / {num(allowance)}</span>
                             </button>
                           )}
-                          {(Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) && (
-                            <div className="text-[11px] tabular-nums text-emerald-300">
-                              {num(Number(user.minutesBalance) || 0)} min left
-                              <span className="text-zinc-600"> of {num(Number(user.minutesBought) || 0)} bought</span>
+                          {editingMinutes === user.id ? (
+                            <div className="mt-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                              <input type="number" autoFocus min={0} value={newMinuteValue}
+                                onChange={(e) => setNewMinuteValue(Number(e.target.value))}
+                                className="w-16 rounded border border-white/15 bg-black/40 px-2 py-0.5 text-right text-[11px] tabular-nums text-white outline-none" />
+                              <span className="text-[11px] text-zinc-500">min</span>
+                              <button onClick={() => handleManualMinutes(user.id)} aria-label="Save minutes"
+                                      className="rounded p-0.5 text-emerald-400 hover:bg-white/10"><Check size={12} /></button>
+                              <button onClick={() => setEditingMinutes(null)} aria-label="Cancel"
+                                      className="rounded p-0.5 text-zinc-500 hover:bg-white/10"><X size={12} /></button>
                             </div>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingMinutes(user.id); setNewMinuteValue(Number(user.minutesBalance) || 0); }}
+                              className="mt-0.5 block w-full text-right text-[11px] tabular-nums underline-offset-2 hover:underline"
+                              title="Change interview minutes">
+                              {(Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) ? (
+                                <span className="text-emerald-300">{num(Number(user.minutesBalance) || 0)} min left
+                                  <span className="text-zinc-600"> of {num(Number(user.minutesBought) || 0)} bought</span></span>
+                              ) : <span className="text-zinc-600">0 min</span>}
+                            </button>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">

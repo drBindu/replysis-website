@@ -973,6 +973,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // Interview minutes, set by hand: a gift, a goodwill top up after a problem, or a correction. Bought minutes are
+    // never touched here; minutesBought stays the record of what was paid for.
+    if (action === "updateMinutes") {
+      const minutes = body.minutes;
+      if (typeof minutes !== "number" || !Number.isInteger(minutes) || minutes < 0 || minutes > 100_000)
+        throw new HttpError(400, "Invalid minutes");
+      await db.runTransaction(async (transaction) => {
+        const existing = await transaction.get(userRef);
+        if (!existing.exists) throw new HttpError(404, "User not found");
+        const current = existing.data() ?? {};
+        transaction.update(userRef, { minutesBalance: minutes });
+        transaction.set(auditRef, auditData(
+          principal,
+          "updateMinutes",
+          userId,
+          { minutesBalance: Number(current.minutesBalance) || 0 },
+          { minutesBalance: minutes },
+        ));
+      });
+      return NextResponse.json({ success: true });
+    }
+
     if (action === "deleteUser") {
       if (userId === principal.uid) throw new HttpError(400, "You cannot delete the active administrator account");
 
