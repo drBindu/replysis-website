@@ -684,7 +684,7 @@ export async function GET(req: Request) {
   // One row per person for the last N days: what they did, whether it worked, how fast, whether they paid. Built for
   // the owner's question "who got answers, who worked, slow or fast" (2026-10-21), which needed five other tables.
   if (query.get("view") === "people") {
-    const days = Math.min(30, Math.max(1, Number(query.get("days")) || 7));
+    const days = Math.min(3650, Math.max(1, Number(query.get("days")) || 7));
     const since = new Date(Date.now() - days * 86_400_000);
     try {
       const [userSnap, useSnap, actSnap, buySnap] = await Promise.all([

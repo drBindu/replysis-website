@@ -40,6 +40,8 @@ export default function PeoplePanel() {
   const [days, setDays] = useState(7);
   const [people, setPeople] = useState<Person[]>([]);
   const [hideMine, setHideMine] = useState(true);
+  // One group at a time (owner 2026-10-21: separate the people using it from the ones who signed up and did nothing).
+  const [group, setGroup] = useState<Person["result"] | "all">("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,30 +62,31 @@ export default function PeoplePanel() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const shown = useMemo(() => people.filter(p => !(hideMine && p.internal)), [people, hideMine]);
+  const real = useMemo(() => people.filter(p => !(hideMine && p.internal)), [people, hideMine]);
+  const shown = useMemo(() => real.filter(p => group === "all" || p.result === group), [real, group]);
   const sum = useMemo(() => {
-    const by = (r: Person["result"]) => shown.filter(p => p.result === r).length;
-    const fast = shown.filter(p => p.medianMs != null);
+    const by = (r: Person["result"]) => real.filter(p => p.result === r).length;
+    const fast = real.filter(p => p.medianMs != null);
     const allMs = fast.map(p => p.medianMs as number).sort((a, b) => a - b);
     return {
-      total: shown.length, got: by("got-answers"), web: by("website-only"), stuck: by("app-no-answer"), idle: by("signed-up-only"),
-      paid: shown.filter(p => p.paid).length, paidInr: shown.reduce((s, p) => s + p.paidInr, 0),
+      total: real.length, got: by("got-answers"), web: by("website-only"), stuck: by("app-no-answer"), idle: by("signed-up-only"),
+      paid: real.filter(p => p.paid).length, paidInr: real.reduce((s, p) => s + p.paidInr, 0),
       typicalMs: allMs.length ? allMs[Math.floor(allMs.length / 2)] : null,
     };
-  }, [shown]);
+  }, [real]);
 
   return (
     <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-white">People</h2>
-          <p className="mt-0.5 text-[12px] text-zinc-500">Everyone active in the last {days} days: what they did, whether it worked, how fast, and who paid.</p>
+          <p className="mt-0.5 text-[12px] text-zinc-500">Everyone active {days === 3650 ? "ever" : days === 1 ? "today" : `in the last ${days} days`}. Click a box to see only that group.</p>
         </div>
         <div className="flex items-center gap-2">
-          {[1, 7, 30].map(d => (
+          {[1, 7, 30, 3650].map(d => (
             <button key={d} onClick={() => setDays(d)}
               className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${days === d ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
-              {d === 1 ? "Today" : `${d} days`}
+              {d === 1 ? "Today" : d === 3650 ? "All time" : `${d} days`}
             </button>
           ))}
           <label className="ml-2 flex items-center gap-1.5 text-[11px] text-zinc-400">
@@ -96,19 +99,21 @@ export default function PeoplePanel() {
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-        {[
-          ["People", sum.total, "text-white"],
-          ["Got answers", sum.got, "text-emerald-300"],
-          ["Website tools only", sum.web, "text-sky-300"],
-          ["Opened app, no answer", sum.stuck, sum.stuck ? "text-red-300" : "text-zinc-400"],
-          ["Did nothing", sum.idle, "text-zinc-400"],
-          ["Paid", `${sum.paid}${sum.paidInr ? ` (₹${Math.round(sum.paidInr)})` : ""}`, sum.paid ? "text-emerald-300" : "text-zinc-400"],
-          ["Typical answer speed", sum.typicalMs == null ? "-" : `${(sum.typicalMs / 1000).toFixed(1)}s`, "text-white"],
-        ].map(([label, value, tone]) => (
-          <div key={String(label)} className="rounded-lg border border-white/5 bg-black/20 px-3 py-2">
+        {([
+          ["People", sum.total, "text-white", "all"],
+          ["Using it (got answers)", sum.got, "text-emerald-300", "got-answers"],
+          ["Website tools only", sum.web, "text-sky-300", "website-only"],
+          ["Opened app, no answer", sum.stuck, sum.stuck ? "text-red-300" : "text-zinc-400", "app-no-answer"],
+          ["Signed up, never used", sum.idle, "text-zinc-400", "signed-up-only"],
+          ["Paid", `${sum.paid}${sum.paidInr ? ` (₹${Math.round(sum.paidInr)})` : ""}`, sum.paid ? "text-emerald-300" : "text-zinc-400", null],
+          ["Typical answer speed", sum.typicalMs == null ? "-" : `${(sum.typicalMs / 1000).toFixed(1)}s`, "text-white", null],
+        ] as [string, string | number, string, Person["result"] | "all" | null][]).map(([label, value, tone, g]) => (
+          <button key={label} disabled={g == null} onClick={() => g && setGroup(g)}
+            className={`rounded-lg border px-3 py-2 text-left transition disabled:cursor-default ${
+              g != null && group === g ? "border-white/30 bg-white/10" : "border-white/5 bg-black/20 enabled:hover:bg-white/5"}`}>
             <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
             <div className={`mt-0.5 text-lg font-semibold tabular-nums ${tone}`}>{value}</div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -133,7 +138,7 @@ export default function PeoplePanel() {
           </thead>
           <tbody>
             {shown.length === 0 && (
-              <tr><td colSpan={11} className="px-3 py-8 text-center text-[13px] text-zinc-600">{loading ? "Loading" : "Nobody in this period"}</td></tr>
+              <tr><td colSpan={11} className="px-3 py-8 text-center text-[13px] text-zinc-600">{loading ? "Loading" : "Nobody in this group"}</td></tr>
             )}
             {shown.map(p => (
               <tr key={p.id} className="border-b border-white/5 text-[12.5px]">
