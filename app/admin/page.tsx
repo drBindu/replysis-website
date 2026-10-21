@@ -11,6 +11,7 @@ import { PLAN_MONTHLY_CREDITS, PLAN_MONTHLY_AUDIO_MINUTES } from "../../data/pro
 import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/providerRates";
 import LivePanel from "./LivePanel";
 import VisitorsPanel from "./VisitorsPanel";
+import PeoplePanel from "./PeoplePanel";
 
 // A user counts as online if their last heartbeat was within this window. The
 // client beats every 60s, so 150s tolerates one missed beat.
@@ -575,9 +576,8 @@ export default function AdminPage() {
           </div>
         ) : null}
 
-        {/* What is happening right now */}
-        <LivePanel />
-        <VisitorsPanel />
+        {/* Who came, what they did, whether it worked, how fast, who paid */}
+        <PeoplePanel />
 
         {/* Money and people */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -597,6 +597,10 @@ export default function AdminPage() {
           These four are current state and all-time totals. They do not follow the
           date range below.
         </p>
+
+        {/* What is happening right now */}
+        <LivePanel />
+        <VisitorsPanel />
 
         {/* Usage */}
         <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">

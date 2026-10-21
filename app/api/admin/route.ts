@@ -680,6 +680,76 @@ export async function GET(req: Request) {
     }
   }
 
+  // One row per person for the last N days: what they did, whether it worked, how fast, whether they paid. Built for
+  // the owner's question "who got answers, who worked, slow or fast" (2026-10-21), which needed five other tables.
+  if (query.get("view") === "people") {
+    const days = Math.min(30, Math.max(1, Number(query.get("days")) || 7));
+    const since = new Date(Date.now() - days * 86_400_000);
+    try {
+      const [userSnap, useSnap, actSnap, buySnap] = await Promise.all([
+        db.collection("users").where("lastActive", ">=", since).limit(400).get(),
+        db.collection("usage_events").where("createdAt", ">", since).limit(5000).get(),
+        db.collection("activity_events").where("createdAt", ">", since).limit(5000).get(),
+        db.collection("minute_purchases").get(),
+      ]);
+      type Use = { answers: number; screens: number; mock: number; resume: number; refunds: number; ms: number[]; firstAt: number; lastAnswerAt: number };
+      const use = new Map<string, Use>();
+      for (const d of useSnap.docs) {
+        const e = d.data();
+        const id = typeof e.identityId === "string" ? e.identityId : "";
+        if (!id) continue;
+        const u = use.get(id) ?? { answers: 0, screens: 0, mock: 0, resume: 0, refunds: 0, ms: [], firstAt: 0, lastAnswerAt: 0 };
+        const action = String(e.action || "");
+        const at = anyMs(e.createdAt) ?? 0;
+        if (e.refund) u.refunds += 1;
+        else if (action === "answer") { u.answers += 1; u.lastAnswerAt = Math.max(u.lastAnswerAt, at); }
+        else if (action === "screen") { u.screens += 1; u.lastAnswerAt = Math.max(u.lastAnswerAt, at); }
+        else if (/^mock|question_generation/.test(action)) u.mock += 1;
+        else u.resume += 1;
+        if ((action === "answer" || action === "screen") && Number(e.latencyMs) > 0) u.ms.push(Number(e.latencyMs));
+        u.firstAt = u.firstAt ? Math.min(u.firstAt, at) : at;
+        use.set(id, u);
+      }
+      const apps = new Map<string, string>();
+      for (const d of actSnap.docs) {
+        const e = d.data();
+        if (typeof e.identityId === "string" && !apps.has(e.identityId)) apps.set(e.identityId, `${e.platform ?? ""} ${e.appVersion ?? ""}`.trim());
+      }
+      const bought = new Map<string, number>();
+      for (const d of buySnap.docs) {
+        const p = d.data();
+        if (typeof p.uid === "string") bought.set(p.uid, (bought.get(p.uid) ?? 0) + (Number(p.amount) || 0) / 100);
+      }
+      const median = (xs: number[]) => { if (!xs.length) return null; const a = [...xs].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+      const people = userSnap.docs.map((doc) => {
+        const d = doc.data();
+        const u = use.get(doc.id);
+        const plan = typeof d.plan === "string" ? d.plan : "free";
+        const paidInr = bought.get(doc.id) ?? 0;
+        const paid = paidInr > 0 || ["pro", "max", "lifetime", "teams"].includes(plan);
+        const got = (u?.answers ?? 0) + (u?.screens ?? 0);
+        const app = apps.get(doc.id) ?? null;
+        const result =
+          got > 0 ? "got-answers"
+          : (u?.mock ?? 0) + (u?.resume ?? 0) > 0 ? "website-only"
+          : app ? "app-no-answer"
+          : "signed-up-only";
+        return {
+          id: doc.id, email: typeof d.email === "string" ? d.email : null, internal: d.internal === true,
+          joined: anyMs(d.createdAt), lastSeen: anyMs(d.lastActive), plan, paid, paidInr,
+          minutesLeft: Number(d.minutesBalance) || 0, answersLeft: Math.floor((Number(d.credits) || 0) / 5),
+          app, answers: u?.answers ?? 0, screens: u?.screens ?? 0, mock: u?.mock ?? 0, resume: u?.resume ?? 0,
+          refunds: u?.refunds ?? 0, medianMs: median(u?.ms ?? []), slowest: u?.ms.length ? Math.max(...u.ms) : null,
+          lastAnswerAt: u?.lastAnswerAt || null, result,
+        };
+      }).sort((a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0));
+      return NextResponse.json({ days, people });
+    } catch (error) {
+      console.error("[admin] People query failed", error);
+      return NextResponse.json({ error: "Unable to load people" }, { status: 500 });
+    }
+  }
+
   if (query.get("view") === "usage") {
     const requestedDays = Number(query.get("days"));
     const days = Number.isSafeInteger(requestedDays) && requestedDays > 0
