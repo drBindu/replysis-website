@@ -282,7 +282,8 @@ async function usageView(db: Firestore, days: number) {
     for (const target of [row, totals]) {
       target.credits += credits;
       target.events += 1;
-      if (isRefund) { target.refunded += -credits; target.refunds += 1; }
+      // "screen_nothing": the screen held no question, so it was not charged. Not a failure (2026-10-21).
+      if (isRefund) { target.refunded += -credits; if (action !== "screen_nothing") target.refunds += 1; }
       else          { target.charged  += credits; }
       target.byAction[action] = (target.byAction[action] ?? 0) + 1;
       target.byModel[model]   = (target.byModel[model] ?? 0) + 1;
@@ -473,7 +474,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     events.push({
       id: `u:${doc.id}`,
       kind: credits < 0 ? "refund" : action === "screen" ? "screen" : action === "answer" ? "answer" : "resume",
-      at, who, detail: model, credits,
+      at, who, detail: action === "screen_nothing" ? "nothing on the screen to answer, not charged" : model, credits,
       app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
     });
   }
@@ -701,7 +702,7 @@ export async function GET(req: Request) {
         const u = use.get(id) ?? { answers: 0, screens: 0, mock: 0, resume: 0, refunds: 0, ms: [], firstAt: 0, lastAnswerAt: 0 };
         const action = String(e.action || "");
         const at = anyMs(e.createdAt) ?? 0;
-        if (e.refund) u.refunds += 1;
+        if (e.refund) { if (action !== "screen_nothing") u.refunds += 1; }
         else if (action === "answer") { u.answers += 1; u.lastAnswerAt = Math.max(u.lastAnswerAt, at); }
         else if (action === "screen") { u.screens += 1; u.lastAnswerAt = Math.max(u.lastAnswerAt, at); }
         else if (/^mock|question_generation/.test(action)) u.mock += 1;
