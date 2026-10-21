@@ -471,7 +471,10 @@ export default function AdminPage() {
   }, [users, search, sortBy, usageFor]);
 
   // Revenue and customer counts leave out accounts marked as the owner's or a friend's.
-  const mrr = metrics.realPro * PLAN_PRICE_USD.pro + metrics.realMax * PLAN_PRICE_USD.max;
+  // India interview minutes are paid in rupees; without them the margin showed a loss while a customer had paid Rs 165.
+  const INR_PER_USD = 88;
+  const mrr = metrics.realPro * PLAN_PRICE_USD.pro + metrics.realMax * PLAN_PRICE_USD.max
+    + (metrics.minuteRevenueInr ?? 0) / INR_PER_USD;
   const totals = usage?.totals;
   const refundRate = totals && totals.events > 0
     ? (totals.refunds / totals.events) * 100
@@ -697,7 +700,7 @@ export default function AdminPage() {
                 <Kpi label="Margin"
                      value={ratesConfigured() && totalCost.priced ? money(mrr - totalCost.usd) : "not priced"}
                      sub={ratesConfigured() && totalCost.priced
-                       ? "monthly revenue less provider cost"
+                       ? "plans and minutes sold, less AI cost"
                        : "needs rates to calculate"}
                      tone={ratesConfigured() && totalCost.priced && mrr - totalCost.usd < 0 ? "warn" : "good"}
                      icon={<TrendingUp size={12} />} />
