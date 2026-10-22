@@ -12,6 +12,7 @@ import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/pro
 import LivePanel from "./LivePanel";
 import VisitorsPanel from "./VisitorsPanel";
 import PeoplePanel from "./PeoplePanel";
+import EmailUsersPanel from "./EmailUsersPanel";
 
 // A user counts as online if their last heartbeat was within this window. The
 // client beats every 60s, so 150s tolerates one missed beat.
@@ -597,6 +598,7 @@ export default function AdminPage() {
 
         {/* Who came, what they did, whether it worked, how fast, who paid */}
         <PeoplePanel />
+        <EmailUsersPanel />
 
         {/* Money and people */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -10,6 +10,9 @@ import {
   type Firestore,
 } from "firebase-admin/firestore";
 import { clientIp, rateLimit } from "../../lib/rate-limit";
+import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
+
+const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -906,6 +909,29 @@ export async function POST(req: Request) {
   try {
     const body = await parseJsonBody(req);
     const action = body.action;
+
+    // Update news to every customer (owner 2026-10-21). "test" sends only to the admin first, to read it as a customer would.
+    if (action === "emailUsers") {
+      const subject = typeof body.subject === "string" ? body.subject.trim().slice(0, 150) : "";
+      const text = typeof body.message === "string" ? body.message.trim().slice(0, 5000) : "";
+      if (!subject || !text) throw new HttpError(400, "Write a subject and a message");
+      if (!mailConfigured()) throw new HttpError(503, "Emails are not set up yet: the email key is missing on the server");
+      let mails: Mail[];
+      if (body.test === true) {
+        mails = [{ to: principal.email, uid: principal.uid, subject, text }];
+      } else {
+        const snap = await db.collection("users").select("email", "emailOptOut", "internal").get();
+        mails = snap.docs
+          .map((d) => ({ d: d.data(), id: d.id }))
+          .filter(({ d }) => typeof d.email === "string" && d.email.includes("@") && d.emailOptOut !== true)
+          .map(({ d, id }) => ({ to: String(d.email), uid: id, subject, text }));
+      }
+      const result = await sendMails(mails);
+      await auditRefFor(db).set(auditData(principal, body.test === true ? "emailUsersTest" : "emailUsers", "all",
+        {}, { subject, recipients: mails.length, sent: result.sent, failed: result.failed }));
+      return NextResponse.json({ success: result.failed === 0, recipients: mails.length, ...result });
+    }
+
     const userId = body.userId;
     if (!validUserId(userId)) throw new HttpError(400, "Invalid userId");
 
