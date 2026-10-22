@@ -42,6 +42,8 @@ type AccountProfile = {
   stripeCancelAtPeriodEnd?: boolean;
   stripeCurrentPeriodEnd?: number | null;
   lastPaymentFailedAt?: unknown;
+  planSource?: string | null;      // "pass": India, paid once for 30 days, no subscription
+  passExpiresAt?: string | null;
 };
 
 function dateValue(value: unknown): Date | null {
@@ -301,12 +303,18 @@ export default function AccountPage() {
                   <div className="h-full rounded-full bg-gradient-to-r from-[#1C7A3E] to-[#68b874] transition-[width] duration-500" style={{ width: `${percentage}%` }} />
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                  <RefreshCw className="h-3.5 w-3.5" /> {isPaid ? `Refreshes ${formatDate(profile?.creditsResetDate)}` : "Free answers are one time and do not refresh"}
+                  <RefreshCw className="h-3.5 w-3.5" /> {profile?.planSource === "pass"
+                    ? `Your month ends ${formatDate(profile?.passExpiresAt)}. Nothing renews automatically.`
+                    : isPaid ? `Refreshes ${formatDate(profile?.creditsResetDate)}` : "Free answers are one time and do not refresh"}
                 </div>
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {isPaid ? (
+                {profile?.planSource === "pass" ? (
+                  <Link href="/pricing" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1C7A3E] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#176533]">
+                    Add 1 more month <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : isPaid ? (
                   <button
                     type="button"
                     onClick={openBillingPortal}
@@ -325,10 +333,10 @@ export default function AccountPage() {
                   View plan details
                 </Link>
               </div>
-              {isPaid && (
+              {isPaid && profile?.planSource !== "pass" && (
                 <p className="mt-3 flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-[#267b42]" /> Payments, invoices, plan changes, and cancellation are handled securely by Stripe.</p>
               )}
-              {isPaid && !hasBillingAccount && (
+              {isPaid && !hasBillingAccount && profile?.planSource !== "pass" && (
                 <p role="status" className="mt-3 text-xs font-semibold text-amber-700">Your billing account is still syncing. Refresh in a moment or contact support if this continues.</p>
               )}
               {portalError && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{portalError}</p>}
@@ -346,7 +354,7 @@ export default function AccountPage() {
             <div className="mt-7 space-y-4">
               {[
                 [History, "Invoices", hasBillingAccount ? "Available in your secure Stripe portal" : "Created after your first paid checkout"],
-                [CalendarClock, "Subscription", isCanceling ? `Access continues until ${formatDate(profile?.stripeCurrentPeriodEnd)}` : isPaid ? "Renews according to your selected billing period" : "No active paid subscription"],
+                [CalendarClock, "Subscription", profile?.planSource === "pass" ? `Paid once, ends ${formatDate(profile?.passExpiresAt)}` : isCanceling ? `Access continues until ${formatDate(profile?.stripeCurrentPeriodEnd)}` : isPaid ? "Renews according to your selected billing period" : "No active paid subscription"],
                 [ShieldCheck, "Payment details", "Stored and processed by Stripe—not Replysis"],
               ].map(([Icon, label, value]) => {
                 const ItemIcon = Icon as typeof History;

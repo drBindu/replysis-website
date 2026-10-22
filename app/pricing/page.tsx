@@ -204,7 +204,7 @@ const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
   india && plan.inrCredits
     ? plan.features.map((line) =>
         /answers refresh automatically/.test(line)
-          ? `${answersFor(plan.inrCredits!).toLocaleString()} answers refresh automatically each month`
+          ? `${answersFor(plan.inrCredits!).toLocaleString()} answers for 30 days`
           : line)
     : plan.features;
 
@@ -213,7 +213,7 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
     const rupees = annual
       ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
       : plan.inrMonthly;
-    if (rupees) return `₹${rupees}/mo`;
+    if (rupees) return annual ? `₹${rupees}/mo` : `₹${rupees} for 1 month`;
   }
   return `$${(annual ? plan.annualPrice : plan.monthlyPrice).toFixed(2)}/mo`;
 };
@@ -502,7 +502,9 @@ export default function PricingPage() {
             Fast, resume-grounded answer suggestions, with desktop controls designed for standard screen-share paths. Every plan draws on one
             balance of answers, and the cost is shown before an action uses any.
           </p>
-          <p className="hv2-fine">Secure Stripe checkout. Cancel anytime. Clear monthly limits.</p>
+          <p className="hv2-fine">{india
+            ? "Secure Stripe checkout. Pay once with UPI or card. Nothing renews automatically."
+            : "Secure Stripe checkout. Cancel anytime. Clear monthly limits."}</p>
         </div>
       </section>
 
@@ -534,7 +536,7 @@ export default function PricingPage() {
 
                   <p className="hv2-price">
                     {shownPrice}
-                    {price > 0 && <small>{plan.oneTime ? " one-time" : " a month"}</small>}
+                    {price > 0 && <small>{plan.oneTime ? " one-time" : rupeesForThisCard && !annual ? " for 1 month" : " a month"}</small>}
                   </p>
                   {annual && savings > 0 && (
                     <p className="hv2-plan-sub">
@@ -554,7 +556,7 @@ export default function PricingPage() {
                       {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
                     </button>
                   ) : (
-                    hasPaidPlan ? (
+                    hasPaidPlan && !(india && !annual) ? (
                       <Link href="/account" className="hv2-btn hv2-btn-block">
                         {isCurrent ? "Manage current plan" : "Change plan securely"}
                       </Link>
@@ -562,11 +564,13 @@ export default function PricingPage() {
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading}
                         className="hv2-btn hv2-btn-block">
-                        {loading === plan.id ? "Redirecting..." : plan.cta}
+                        {loading === plan.id ? "Redirecting..." : india && !annual && isCurrent ? "Add 1 more month" : plan.cta}
                       </button>
                     )
                   )}
-                  <p className="hv2-plan-sub" style={{ textAlign: "center" }}>{plan.ctaNote}</p>
+                  <p className="hv2-plan-sub" style={{ textAlign: "center" }}>
+                    {india && !annual && plan.id !== "free" ? "Pay once with UPI or card. No auto renewal." : plan.ctaNote}
+                  </p>
 
                   <ul className="hv2-plan-list">
                     {featuresFor(plan, india).map((f) => <li key={f}>{f}</li>)}

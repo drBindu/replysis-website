@@ -339,6 +339,49 @@ async function addBoughtMinutes(session: any) {
   console.log(`MINUTES: ${uid} +${minutes}${autoAdd ? " (auto add on)" : ""}`);
 }
 
+/**
+ * India: one month of Pro or Max paid once (no AutoPay). Each paid session adds 30 days, from the current end when the
+ * same plan is still running. creditsResetDate sits a day past the end so a lazy monthly refill can never extend a
+ * pass; the backend's PassExpiryService moves the account back to free when passExpiresAt passes. Keyed on the
+ * checkout session, so a session counts once however many events arrive.
+ */
+async function applyPlanPass(session: any) {
+  const uid = session.metadata?.uid;
+  const plan = session.metadata?.plan;
+  if (typeof uid !== "string" || !uid || (plan !== "pro" && plan !== "max")) throw new Error("Invalid plan pass metadata");
+  const allowance = INDIA_PLAN_ALLOWANCE[plan as keyof typeof INDIA_PLAN_ALLOWANCE];
+  const userRef = db!.collection("users").doc(uid);
+  const receiptRef = db!.collection("plan_passes").doc(String(session.id));
+  await db!.runTransaction(async (tx) => {
+    if ((await tx.get(receiptRef)).exists) return;
+    const current = await tx.get(userRef);
+    if (!current.exists) throw new Error("Plan pass buyer not found");
+    const d = current.data() ?? {};
+    const now = Date.now();
+    const runningEnd = d.planSource === "pass" && d.plan === plan ? Date.parse(String(d.passExpiresAt ?? "")) : NaN;
+    const start = Number.isFinite(runningEnd) && runningEnd > now ? runningEnd : now;
+    const end = new Date(start + 30 * 86_400_000);
+    const purchased = Math.max(0, Number(d.purchasedCredits ?? 0));
+    const left = Number.isFinite(runningEnd) && runningEnd > now ? Math.max(0, Number(d.credits ?? 0) - purchased) : 0;
+    tx.set(receiptRef, { uid, plan, amount: session.amount_total ?? null, currency: session.currency ?? "inr",
+                         start: new Date(start).toISOString(), end: end.toISOString(), createdAt: FieldValue.serverTimestamp() });
+    tx.set(userRef, {
+      plan,
+      planSource: "pass",
+      passExpiresAt: end.toISOString(),
+      credits: Math.min(left + allowance.credits, allowance.credits * 2) + purchased,
+      creditsUsed: 0,
+      creditsResetDate: new Date(end.getTime() + 86_400_000).toISOString(),
+      audioMinutesAllowance: allowance.audioMinutes,
+      stripeCustomerId: session.customer ?? d.stripeCustomerId ?? null,
+      lastPaymentFailedAt: null,
+      lastPassPurchaseAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  console.log(`PLAN PASS: ${uid} ${plan} 30 days`);
+}
+
 // ── POST /api/stripe/webhook ─────────────────────────────────────
 export async function POST(req: Request) {
   // Must read raw body BEFORE any JSON parsing  -  Stripe verifies against raw bytes
@@ -398,6 +441,16 @@ export async function POST(req: Request) {
       const session = event.data.object;
       if (session.payment_status === "paid") await addBoughtMinutes(session);
       else console.log(`[webhook] minutes checkout not paid yet (${session.payment_status})`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
+    // ── INDIA PLAN, PAID ONCE  -  UPI may settle a moment after completion ──
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && event.data?.object?.metadata?.purchaseType === "plan_pass") {
+      const session = event.data.object;
+      if (session.payment_status === "paid") await applyPlanPass(session);
+      else console.log(`[webhook] plan pass checkout not paid yet (${session.payment_status})`);
       await completeEvent(event.id);
       return NextResponse.json({ received: true });
     }

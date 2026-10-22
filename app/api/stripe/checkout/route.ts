@@ -173,6 +173,9 @@ export async function POST(req: Request) {
       if (rupees) {
         priceId = rupees;
         console.log(`[checkout] India: charging the rupee price for ${priceKey}`);
+        // India plans are paid once for 30 days, never a subscription: a monthly UPI or card charge needs an AutoPay
+        // mandate, and a customer's Rs 699 failed that way (2026-10-21). Paying again adds 30 more days.
+        if (!isCreditPack) return buyPlanPass(req, plan, rupees, uid, email);
       }
     }
 
@@ -212,13 +215,6 @@ export async function POST(req: Request) {
     // Leaving it out is what switches on dynamic payment methods, where Stripe
     // shows the methods relevant to the buyer's country and currency, from the
     // set the account has enabled. Cards are still one of them.
-    //
-    // One exception: a rupee SUBSCRIPTION is card only. A monthly plan paid by UPI needs a UPI AutoPay mandate, which many
-    // Indian banks and UPI apps fail: a customer's Rs 699 plan timed out after 5 minutes, "declined by network" with no UPI
-    // id ever entered (2026-10-21). One-time payments (minutes, answer packs) keep UPI, where it works.
-    if (!isCreditPack && priceId === PRICE_IDS_INR[priceKey]) {
-      params.append("payment_method_types[]", "card");
-    }
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
     // A plan returns to the pricing page. An answer pack is bought from the account (it is not on the
@@ -285,6 +281,58 @@ export async function POST(req: Request) {
  * without a Stripe price for each. The country is checked here, from the address, not taken from the page.
  * With auto add chosen, the card is saved for later charges; UPI cannot be saved, so Stripe then offers cards.
  */
+/**
+ * India: one month of Pro or Max, paid once (UPI or card), no AutoPay. The amount is read from the rupee price already
+ * set up in Stripe, so the price stays managed in one place. The webhook gives 30 days per payment (purchaseType plan_pass).
+ */
+async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid: string, email: string) {
+  const priceRes = await fetch(`https://api.stripe.com/v1/prices/${rupeePriceId}`,
+    { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+  const price = await priceRes.json();
+  const amount = Number(price?.unit_amount);
+  if (!priceRes.ok || !Number.isInteger(amount) || amount < 100 || String(price?.currency).toLowerCase() !== "inr") {
+    console.error(`[checkout] India pass: rupee price ${rupeePriceId} unusable`);
+    return NextResponse.json({ error: "This plan isn't available for checkout yet. Please try again shortly." }, { status: 503 });
+  }
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
+  const origin = new Set([SITE_URL, "http://localhost:3000"]).has(req.headers.get("origin") || "") ? req.headers.get("origin")! : SITE_URL;
+  const name = plan === "max" ? "Replysis Max, 1 month" : "Replysis Pro, 1 month";
+  const params = new URLSearchParams();
+  params.append("mode", "payment");
+  params.append("line_items[0][price_data][currency]", "inr");
+  params.append("line_items[0][price_data][unit_amount]", String(amount));
+  params.append("line_items[0][price_data][product_data][name]", name);
+  params.append("line_items[0][price_data][product_data][description]", "30 days. Paid once, no auto renewal. We email you before it ends.");
+  params.append("line_items[0][quantity]", "1");
+  params.append("success_url", `${origin}/pricing?success=true`);
+  params.append("cancel_url", `${origin}/pricing?canceled=true`);
+  params.append("customer_email", email);
+  params.append("customer_creation", "always");
+  params.append("submit_type", "pay");
+  params.append("branding_settings[display_name]", "Replysis");
+  params.append("branding_settings[button_color]", "#267B42");
+  params.append("custom_text[submit][message]", "One payment for 30 days. Nothing is charged automatically later.");
+  params.append("metadata[uid]", uid);
+  params.append("metadata[purchaseType]", "plan_pass");
+  params.append("metadata[plan]", plan);
+  params.append("metadata[days]", "30");
+  params.append("payment_intent_data[metadata][uid]", uid);
+  params.append("payment_intent_data[metadata][purchaseType]", "plan_pass");
+  params.append("payment_intent_data[description]", name);
+
+  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  const session = await response.json();
+  if (!response.ok || typeof session?.url !== "string") {
+    console.error("[checkout] India pass session failed:", session?.error?.message ?? response.status);
+    return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
+  }
+  return NextResponse.json({ url: session.url });
+}
+
 async function buyMinutes(req: Request, minutesInput: unknown, autoAdd: boolean, uid: unknown,
                           verifiedUid: string, verifiedEmail: string | undefined) {
   if (typeof uid !== "string" || uid !== verifiedUid) {
