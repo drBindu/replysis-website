@@ -813,6 +813,7 @@ export async function GET(req: Request) {
       internalPro,
       internalMax,
       minutePurchases,
+      planPasses,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -837,9 +838,21 @@ export async function GET(req: Request) {
       // Interview minutes bought (India). They were invisible here: a customer paid Rs 165 and the list showed
       // "free" and "0 / 25" (2026-10-21). Small collection, read whole.
       db.collection("minute_purchases").get(),
+      db.collection("plan_passes").get(),
     ]);
     const paidMinutes = new Map<string, { inr: number; minutes: number; count: number; last: number }>();
     let minuteRevenueInr = 0;
+    // India one-month plans (paid once in rupees) are money in too; they were missing from every total (2026-10-22).
+    for (const d of planPasses.docs) {
+      const p = d.data();
+      if (typeof p.uid !== "string") continue;
+      const inr = (Number(p.amount) || 0) / 100;
+      minuteRevenueInr += inr;
+      const cur = paidMinutes.get(p.uid) ?? { inr: 0, minutes: 0, count: 0, last: 0 };
+      cur.inr += inr; cur.count += 1;
+      cur.last = Math.max(cur.last, anyMs(p.createdAt) ?? 0);
+      paidMinutes.set(p.uid, cur);
+    }
     for (const d of minutePurchases.docs) {
       const p = d.data();
       if (typeof p.uid !== "string") continue;

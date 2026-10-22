@@ -1124,7 +1124,7 @@ export default function AdminPage() {
           <Kpi label="Windows downloads" value={num(metrics.winDownloads)} icon={<Monitor size={12} />} />
           <Kpi label="Mac downloads" value={num(metrics.macDownloads)} icon={<Apple size={12} />} />
           <Kpi label="Free accounts" value={num(Math.max(0, metrics.users - metrics.paidUsers))} icon={<Users size={12} />} />
-          <Kpi label="Minutes sold" value={`₹${num(metrics.minuteRevenueInr ?? 0)}`} icon={<Users size={12} />} />
+          <Kpi label="India sales (minutes + month)" value={`₹${num(metrics.minuteRevenueInr ?? 0)}`} icon={<Users size={12} />} />
           <Kpi label="Minute buyers" value={num(metrics.minuteBuyers ?? 0)} icon={<Users size={12} />} />
           <Kpi label="Conversion" value={`${metrics.users ? ((metrics.paidUsers / metrics.users) * 100).toFixed(1) : "0.0"}%`}
                sub="paying / total" icon={<TrendingUp size={12} />} />
