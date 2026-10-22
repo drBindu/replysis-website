@@ -715,9 +715,15 @@ export async function GET(req: Request) {
         use.set(id, u);
       }
       const apps = new Map<string, string>();
+      const appsAt = new Map<string, number>();
       for (const d of actSnap.docs) {
         const e = d.data();
-        if (typeof e.identityId === "string" && !apps.has(e.identityId)) apps.set(e.identityId, `${e.platform ?? ""} ${e.appVersion ?? ""}`.trim());
+        // The newest version seen, not the first: a customer on 1.0.48 showed as 1.0.43 (2026-10-22).
+        if (typeof e.identityId === "string") {
+          const at = anyMs(e.createdAt) ?? 0;
+          const seen = appsAt.get(e.identityId) ?? -1;
+          if (at >= seen) { appsAt.set(e.identityId, at); apps.set(e.identityId, `${e.platform ?? ""} ${e.appVersion ?? ""}`.trim()); }
+        }
       }
       const bought = new Map<string, number>();
       for (const d of buySnap.docs) {
