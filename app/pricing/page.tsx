@@ -12,6 +12,7 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
 import InterviewMinutes from "../../components/InterviewMinutes";
+import type { LocalPlanPrices } from "../../data/localPrices";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
   answersFor, interviewsFor,
@@ -208,7 +209,8 @@ const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
           : line)
     : plan.features;
 
-const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false) => {
+const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false, local: LocalPlanPrices | null = null) => {
+  if (local && !annual && (plan.id === "pro" || plan.id === "max")) return `${local.symbol}${local[plan.id]}/mo`;
   if (india) {
     const rupees = annual
       ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
@@ -330,6 +332,8 @@ export default function PricingPage() {
   // $29.99 is ninety percent. If the two ever disagree, the charge wins and the
   // buyer sees a surprise, so both read the same source.
   const [india, setIndia] = useState(false);
+  // UK, Canada, Australia: their own currency, when the server says those prices exist in Stripe.
+  const [localPrices, setLocalPrices] = useState<LocalPlanPrices | null>(null);
   const [previewIndia, setPreviewIndia] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -339,7 +343,9 @@ export default function PricingPage() {
     fetch("/api/geo")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (cancelled || d?.country !== "IN") return;
+        if (cancelled) return;
+        if (d?.localPrices) setLocalPrices(d.localPrices as LocalPlanPrices);
+        if (d?.country !== "IN") return;
         setIndia(true);
       })
       .catch(() => { /* dollars, which is the safe default */ });
@@ -520,9 +526,12 @@ export default function PricingPage() {
                     ? plan.inrAnnualYearly && Math.round(plan.inrAnnualYearly / 12)
                     : plan.inrMonthly)
                 : undefined;
+              const localForThisCard = !plan.oneTime && !annual && localPrices && (plan.id === "pro" || plan.id === "max")
+                ? `${localPrices.symbol}${localPrices[plan.id]}`
+                : undefined;
               const shownPrice = rupeesForThisCard
                 ? `₹${rupeesForThisCard}`
-                : price === 0 ? "Free" : `$${price}`;
+                : localForThisCard ?? (price === 0 ? "Free" : `$${price}`);
               const isCurrent = currentPlan === plan.id;
               const savings = !plan.oneTime && plan.monthlyPrice > 0
                 ? Math.round((plan.monthlyPrice - plan.annualPrice) * 12)
@@ -646,14 +655,14 @@ export default function PricingPage() {
                   {col.name === "Pro" && !hasPaidPlan && (
                     <p style={{ marginTop: 14 }}>
                       <button onClick={() => handleCheckout("pro")} disabled={!!loading} className="hv2-link">
-                        Get Pro, {perMonth(PRO_PLAN, annual, india)}
+                        Get Pro, {perMonth(PRO_PLAN, annual, india, localPrices)}
                       </button>
                     </p>
                   )}
                   {col.name === "Max" && !hasPaidPlan && (
                     <p style={{ marginTop: 14 }}>
                       <button onClick={() => handleCheckout("max")} disabled={!!loading} className="hv2-link">
-                        Get Max, {perMonth(MAX_PLAN, annual, india)}
+                        Get Max, {perMonth(MAX_PLAN, annual, india, localPrices)}
                       </button>
                     </p>
                   )}
@@ -675,8 +684,8 @@ export default function PricingPage() {
                   <th scope="col"><span className="sr-only">Feature</span></th>
                   {[
                     { name: "Starter", price: "Free" },
-                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual, india) },
-                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual, india) },
+                    { name: PRO_PLAN.name, price: perMonth(PRO_PLAN, annual, india, localPrices) },
+                    { name: MAX_PLAN.name, price: perMonth(MAX_PLAN, annual, india, localPrices) },
                   ].map(({ name, price }) => (
                     <th key={name} scope="col" className="hv2-table-plan">
                       {name}

@@ -11,7 +11,8 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
-import { isIndia } from "@/app/lib/buyer-country";
+import { countryOf, isIndia } from "@/app/lib/buyer-country";
+import { LOCAL_PRICES, localPriceEnv } from "../../../../data/localPrices";
 import { validMinutes, rupeesFor } from "../../../../data/interviewMinutes";
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
@@ -176,6 +177,16 @@ export async function POST(req: Request) {
         // India plans are paid once for 30 days, never a subscription: a monthly UPI or card charge needs an AutoPay
         // mandate, and a customer's Rs 699 failed that way (2026-10-21). Paying again adds 30 more days.
         if (!isCreditPack) return buyPlanPass(req, plan, rupees, uid, email);
+      }
+    }
+
+    // UK, Canada, Australia: the monthly plan in their own currency, decided from the buyer's address like India.
+    if (!isCreditPack && !annual) {
+      const local = LOCAL_PRICES[(await countryOf(req.headers)) ?? ""];
+      const localId = local ? process.env[localPriceEnv(plan as "pro" | "max", local.currency)] : undefined;
+      if (localId) {
+        priceId = localId;
+        console.log(`[checkout] ${local!.currency.toUpperCase()}: charging the local price for ${priceKey}`);
       }
     }
 

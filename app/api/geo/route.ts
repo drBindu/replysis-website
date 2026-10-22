@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { countryOf } from "@/app/lib/buyer-country";
+import { LOCAL_PRICES, localPriceEnv } from "../../../data/localPrices";
 
 /**
  * The country this request came from, so the pricing page can show the right
@@ -32,8 +33,13 @@ export async function GET(req: Request) {
     process.env.STRIPE_CREDITS_5000_PRICE_INR
   );
 
+  // UK, Canada, Australia: their own currency, only when both monthly prices exist in Stripe.
+  const local = country ? LOCAL_PRICES[country] : undefined;
+  const localPrices = local && process.env[localPriceEnv("pro", local.currency)] && process.env[localPriceEnv("max", local.currency)]
+    ? local : null;
+
   return NextResponse.json(
-    { country, rupeePacks },
+    { country, rupeePacks, localPrices },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
