@@ -96,6 +96,9 @@ async function autoAdd(uid: string, userRef: FirebaseFirestore.DocumentReference
     const s = status(data);
     if (!s.autoAdd || !s.savedCard) return { ok: false as const, reason: "off", s };
     if (s.minutesBalance > AUTO_ADD_WHEN_LEFT) return { ok: false as const, reason: "not-needed", s };
+    // A paid plan with answers left keeps answering without minutes: never charge for minutes then (2026-10-22).
+    const paidPlan = data.plan === "pro" || data.plan === "max" || data.plan === "teams" || data.plan === "lifetime";
+    if (paidPlan && Number(data.credits ?? 0) >= 20) return { ok: false as const, reason: "plan-covers", s };
     if (now - Number(data.minutesAddStartedAt ?? 0) < ADD_LOCK_MS) return { ok: false as const, reason: "in-progress", s };
     tx.update(userRef, { minutesAddStartedAt: now });
     return { ok: true as const, s, customer: String(data.stripeCustomerId ?? ""), method: String(data.minutesPaymentMethod) };
