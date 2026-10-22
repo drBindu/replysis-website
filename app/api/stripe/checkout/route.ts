@@ -212,6 +212,13 @@ export async function POST(req: Request) {
     // Leaving it out is what switches on dynamic payment methods, where Stripe
     // shows the methods relevant to the buyer's country and currency, from the
     // set the account has enabled. Cards are still one of them.
+    //
+    // One exception: a rupee SUBSCRIPTION is card only. A monthly plan paid by UPI needs a UPI AutoPay mandate, which many
+    // Indian banks and UPI apps fail: a customer's Rs 699 plan timed out after 5 minutes, "declined by network" with no UPI
+    // id ever entered (2026-10-21). One-time payments (minutes, answer packs) keep UPI, where it works.
+    if (!isCreditPack && priceId === PRICE_IDS_INR[priceKey]) {
+      params.append("payment_method_types[]", "card");
+    }
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
     // A plan returns to the pricing page. An answer pack is bought from the account (it is not on the
