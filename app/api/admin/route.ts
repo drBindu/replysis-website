@@ -690,11 +690,12 @@ export async function GET(req: Request) {
     const days = Math.min(3650, Math.max(1, Number(query.get("days")) || 7));
     const since = new Date(Date.now() - days * 86_400_000);
     try {
-      const [userSnap, useSnap, actSnap, buySnap] = await Promise.all([
+      const [userSnap, useSnap, actSnap, buySnap, passSnap] = await Promise.all([
         db.collection("users").where("lastActive", ">=", since).limit(400).get(),
         db.collection("usage_events").where("createdAt", ">", since).limit(5000).get(),
         db.collection("activity_events").where("createdAt", ">", since).limit(5000).get(),
         db.collection("minute_purchases").get(),
+        db.collection("plan_passes").get(),
       ]);
       type Use = { answers: number; screens: number; mock: number; resume: number; refunds: number; ms: number[]; firstAt: number; lastAnswerAt: number };
       const use = new Map<string, Use>();
@@ -726,9 +727,11 @@ export async function GET(req: Request) {
         }
       }
       const bought = new Map<string, number>();
-      for (const d of buySnap.docs) {
+      // Minutes and India one-month plans (paid once, rupees) both count as paid.
+      for (const d of [...buySnap.docs, ...passSnap.docs]) {
         const p = d.data();
-        if (typeof p.uid === "string") bought.set(p.uid, (bought.get(p.uid) ?? 0) + (Number(p.amount) || 0) / 100);
+        if (typeof p.uid === "string" && (p.currency ?? "inr") === "inr")
+          bought.set(p.uid, (bought.get(p.uid) ?? 0) + (Number(p.amount) || 0) / 100);
       }
       const median = (xs: number[]) => { if (!xs.length) return null; const a = [...xs].sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
       const people = userSnap.docs.map((doc) => {

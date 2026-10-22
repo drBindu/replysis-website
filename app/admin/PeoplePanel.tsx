@@ -156,7 +156,7 @@ export default function PeoplePanel() {
                 <td className="px-3 py-2 text-right tabular-nums"><Speed ms={p.medianMs} /></td>
                 <td className="px-3 py-2 text-zinc-400">{p.app ?? <span className="text-zinc-700">not opened</span>}</td>
                 <td className="px-3 py-2">
-                  {p.paidInr > 0 ? <span className="font-semibold text-emerald-300">₹{Math.round(p.paidInr)} minutes</span>
+                  {p.paidInr > 0 ? <span className="font-semibold text-emerald-300">₹{Math.round(p.paidInr)}{p.plan !== "free" ? ` ${p.plan}` : " minutes"}</span>
                     : p.paid ? <span className="font-semibold text-emerald-300">{p.plan}</span>
                     : <span className="text-zinc-600">free</span>}
                 </td>
