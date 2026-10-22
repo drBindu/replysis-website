@@ -509,7 +509,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     if (!at) continue;
     const bits = [d.type, d.message].filter((x) => typeof x === "string" && x).join(": ");
     events.push({
-      id: `e:${doc.id}`, kind: "error", at, who: null,
+      id: `e:${doc.id}`, kind: "error", at, who: typeof d.user === "string" && d.user ? d.user : null,
       detail: `${typeof d.version === "string" ? `v${d.version} ` : ""}${bits}`.slice(0, 220),
       // The app's own setup lines for this problem (devices found, Windows' error text), from 1.0.41 on.
       ...(typeof d.detail === "string" && d.detail ? { more: d.detail.slice(0, 6000) } : {}),
