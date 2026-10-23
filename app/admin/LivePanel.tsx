@@ -31,6 +31,12 @@ type OnlineUser = {
   id: string; email: string | null; plan: string;
   lastActive: number | null; listening: boolean;
   where: Array<{ app: AppKind; version: string }>;
+  openedAt?: number | null; lastListeningAt?: number | null;
+};
+
+type LeftUser = {
+  id: string; email: string | null; plan: string; app: AppKind; version: string;
+  leftAt: number; openedAt: number | null; lastListeningAt: number | null;
 };
 
 type PartState = "awake" | "slow" | "down" | "starting";
@@ -43,6 +49,7 @@ type LiveResponse = {
   now: number;
   events: LiveEvent[];
   online: OnlineUser[];
+  left?: LeftUser[];
   listeningNow: number;
   systems?: Systems;
   problems: string[];
@@ -109,6 +116,26 @@ export function mergeEvents(held: LiveEvent[], incoming: LiveEvent[], keep = KEE
 
 function clock(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+/** "11:00 PM" in the viewer's own time. */
+function shortClock(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+/** "2 h 15 min", "40 min", "under a minute". */
+function span(ms: number): string {
+  const m = Math.floor(Math.max(0, ms) / 60_000);
+  if (m < 1) return "under a minute";
+  const h = Math.floor(m / 60);
+  return h ? `${h} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`;
+}
+
+/** What they did with this opening: listened, or never pressed Start (owner, 2026-10-23: "is she stuck?"). */
+function startNote(openedAt: number | null | undefined, lastListeningAt: number | null | undefined, listening: boolean): string {
+  if (listening) return "";
+  if (!openedAt) return "";
+  return lastListeningAt && lastListeningAt >= openedAt ? `, last listened ${shortClock(lastListeningAt)}` : ", has not pressed Start";
 }
 
 function ago(ms: number | null, now: number): string {
@@ -193,6 +220,7 @@ function fmtUptime(seconds: number): string {
 export default function LivePanel({ getToken }: { getToken?: () => Promise<string | null> } = {}) {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [online, setOnline] = useState<OnlineUser[]>([]);
+  const [left, setLeft] = useState<LeftUser[]>([]);
   const [listeningNow, setListeningNow] = useState(0);
   const [systems, setSystems] = useState<Systems | undefined>(undefined);
   const [problems, setProblems] = useState<string[]>([]);
@@ -238,6 +266,7 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
 
             setEvents((held) => mergeEvents(held, Array.isArray(data.events) ? data.events : []));
             setOnline(Array.isArray(data.online) ? data.online : []);
+            setLeft(Array.isArray(data.left) ? data.left : []);
             setListeningNow(Number(data.listeningNow) || 0);
             setSystems(data.systems);
             setProblems(Array.isArray(data.problems) ? data.problems : []);
@@ -397,10 +426,38 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                     ))}
                     <span className="text-[10px] text-zinc-600">{u.plan}, seen {ago(u.lastActive, now)}</span>
                   </div>
+                  {u.openedAt ? (
+                    <p className="mt-1 text-[10px] text-zinc-500">
+                      Opened {shortClock(u.openedAt)}, open {span(now - u.openedAt)}{startNote(u.openedAt, u.lastListeningAt, u.listening)}
+                    </p>
+                  ) : null}
                 </li>
               );
             })}
           </ul>
+          {left.length > 0 && (
+            <>
+              <div className="flex items-center justify-between border-y border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <span>Recently left</span>
+                <span className="normal-case tracking-normal text-zinc-600">last 12 hours</span>
+              </div>
+              <ul className="max-h-[20rem] divide-y divide-white/5 overflow-y-auto">
+                {left.map((u) => (
+                  <li key={u.id} className="px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-xs text-zinc-400">{u.email ?? u.id.slice(0, 8)}</span>
+                      <span className="shrink-0 text-[10px] text-zinc-500">Left {shortClock(u.leftAt)}</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-zinc-600">
+                      {APP_LOOK[u.app].label}{u.version ? ` ${u.version}` : ""}, {u.plan}
+                      {u.openedAt ? `, opened ${shortClock(u.openedAt)}, was open ${span(u.leftAt - u.openedAt)}` : ""}
+                      {startNote(u.openedAt, u.lastListeningAt, false)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
 
         <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-3">

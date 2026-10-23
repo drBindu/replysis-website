@@ -448,7 +448,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     }
   }
 
-  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, alertSnap, activitySnap, onlineSnap, listeningUsers, listeningGuests] = await Promise.all([
+  const [systems, usageSnap, signupSnap, downloadSnap, errorSnap, alertSnap, activitySnap, onlineSnap, listeningUsers, listeningGuests, leftSnap] = await Promise.all([
     systemsView(),
     safe("usage", db.collection("usage_events").where("createdAt", ">", since).orderBy("createdAt", "desc").limit(150).get()),
     safe("signups", users.where("createdAt", ">", since).orderBy("createdAt", "desc").limit(50).get()),
@@ -459,6 +459,8 @@ async function liveView(db: Firestore, sinceMs: number) {
     safe("online", users.where("lastActive", ">=", activeSince).orderBy("lastActive", "desc").limit(40).get()),
     safe("listening", users.where("lastListeningAt", ">=", activeSince).count().get()),
     safe("guests", db.collection("anon_devices").where("lastListeningAt", ">=", activeSince).count().get()),
+    // People who were here in the last 12 hours, for "Recently left" (owner, 2026-10-23: when did they go offline).
+    safe("left", users.where("lastActive", ">=", new Date(now - 12 * 3600_000)).orderBy("lastActive", "desc").limit(60).get()),
   ]);
 
   const events: LiveEvent[] = [];
@@ -578,13 +580,37 @@ async function liveView(db: Firestore, sinceMs: number) {
       lastActive: anyMs(d.lastActive),
       listening: (appOpen && d.appListening === true) || reportedLately,
       where,
+      // When the surface they are on now was opened (the app's opening wins when both are open), and their last listening.
+      openedAt: (appOpen ? anyMs(d.appOpenedAt) : null) ?? (where.some((w) => w.app === "web") ? anyMs(d.webOpenedAt) : null),
+      lastListeningAt: lastListening,
     };
   }).filter((u) => u.where.length > 0);
+
+  const hereIds = new Set(online.map((u) => u.id));
+  const left = (leftSnap?.docs ?? []).filter((doc) => !hereIds.has(doc.id)).map((doc) => {
+    const d = doc.data();
+    const appLast = Math.max(anyMs(d.lastAppLeftAt) ?? 0, anyMs(d.lastAppAt) ?? 0);
+    const webLast = Math.max(anyMs(d.lastWebLeftAt) ?? 0, anyMs(d.lastWebAt) ?? 0);
+    const viaApp = appLast >= webLast && appLast > 0;
+    const leftAt = Math.max(appLast, webLast) || anyMs(d.lastActive);
+    const openedAt = viaApp ? anyMs(d.appOpenedAt) : anyMs(d.webOpenedAt);
+    return {
+      id: doc.id,
+      email: typeof d.email === "string" ? d.email : null,
+      plan: typeof d.plan === "string" ? d.plan : "free",
+      app: viaApp ? (d.lastPlatform === "mac" ? "mac" : "windows") : "web",
+      version: viaApp && typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "",
+      leftAt,
+      openedAt: openedAt && leftAt && openedAt < leftAt ? openedAt : null,
+      lastListeningAt: anyMs(d.lastListeningAt),
+    };
+  }).filter((u) => u.leftAt).slice(0, 30);
 
   return {
     now,
     events: events.slice(0, 200),
     online,
+    left,
     // Whichever is higher: the people the page can see listening now, or the count of recent audio reports (which includes guests).
     listeningNow: Math.max(online.filter((u) => u.listening).length, (listeningUsers?.data().count ?? 0) + (listeningGuests?.data().count ?? 0)),
     systems,

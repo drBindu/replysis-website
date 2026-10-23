@@ -889,7 +889,11 @@ export default function AdminPage() {
                               onClick={(e) => { e.stopPropagation(); setEditingMinutes(user.id); setNewMinuteValue(Number(user.minutesBalance) || 0); }}
                               className="mt-0.5 block w-full text-right text-[11px] tabular-nums underline-offset-2 enabled:hover:underline disabled:cursor-default"
                               title="Change interview minutes">
-                              {(Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) ? (
+                              {/* A paid plan covers answers, so leftover gift or bought minutes are spare, not a limit (2026-10-23:
+                                  a Pro customer read as "1 min left"). */}
+                              {(user.plan === "pro" || user.plan === "max") && Number(user.minutesBalance) > 0 ? (
+                                <span className="text-zinc-500">Plan covers it<span className="text-zinc-600">, {num(Number(user.minutesBalance) || 0)} spare min</span></span>
+                              ) : (Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) ? (
                                 <span className="text-emerald-300">{num(Number(user.minutesBalance) || 0)} min left
                                   <span className="text-zinc-600"> of {num(Number(user.minutesBought) || 0)} bought</span></span>
                               ) : <span className="text-zinc-600">0 min</span>}
