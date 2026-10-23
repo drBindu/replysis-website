@@ -767,7 +767,12 @@ export async function GET(req: Request) {
         const paidInr = bought.get(doc.id) ?? 0;
         const paid = paidInr > 0 || ["pro", "max", "lifetime", "teams"].includes(plan);
         const got = (u?.answers ?? 0) + (u?.screens ?? 0);
-        const app = apps.get(doc.id) ?? null;
+        // The app's own minute pings (lastPlatform, lastAppVersion) count too: the activity log alone showed "not opened"
+        // for a customer who got answers in the Windows app (2026-10-23). The newer of the two wins.
+        const pinged = (d.lastPlatform === "windows" || d.lastPlatform === "mac") && anyMs(d.lastAppSeenAt)
+          ? { at: anyMs(d.lastAppSeenAt) ?? 0, label: `${d.lastPlatform} ${typeof d.lastAppVersion === "string" ? d.lastAppVersion : ""}`.trim() }
+          : null;
+        const app = pinged && pinged.at >= (appsAt.get(doc.id) ?? -1) ? pinged.label : apps.get(doc.id) ?? pinged?.label ?? null;
         const result =
           got > 0 ? "got-answers"
           : (u?.mock ?? 0) + (u?.resume ?? 0) > 0 ? "website-only"
