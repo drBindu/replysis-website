@@ -10,13 +10,14 @@ type Person = {
   plan: string; paid: boolean; paidInr: number; minutesLeft: number; answersLeft: number; app: string | null;
   answers: number; screens: number; mock: number; resume: number; refunds: number;
   medianMs: number | null; slowest: number | null; lastAnswerAt: number | null;
-  result: "got-answers" | "website-only" | "app-no-answer" | "signed-up-only";
+  result: "got-answers" | "website-only" | "app-not-started" | "app-no-answer" | "signed-up-only";
 };
 
 const RESULT: Record<Person["result"], { label: string; tone: string; order: number }> = {
   "got-answers":    { label: "Got answers",              tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", order: 0 },
   "website-only":   { label: "Used website tools",        tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             order: 1 },
-  "app-no-answer":  { label: "Opened app, no answer",     tone: "border-red-500/30 bg-red-500/10 text-red-300",             order: 2 },
+  "app-no-answer":  { label: "Pressed Start, no answer",  tone: "border-red-500/30 bg-red-500/10 text-red-300",             order: 2 },
+  "app-not-started": { label: "Opened app, never pressed Start", tone: "border-amber-500/30 bg-amber-500/10 text-amber-300", order: 2 },
   "signed-up-only": { label: "Signed up, did nothing",    tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-400",          order: 3 },
 };
 
@@ -69,7 +70,7 @@ export default function PeoplePanel() {
     const fast = real.filter(p => p.medianMs != null);
     const allMs = fast.map(p => p.medianMs as number).sort((a, b) => a - b);
     return {
-      total: real.length, got: by("got-answers"), web: by("website-only"), stuck: by("app-no-answer"), idle: by("signed-up-only"),
+      total: real.length, got: by("got-answers"), web: by("website-only"), stuck: by("app-no-answer"), notStarted: by("app-not-started"), idle: by("signed-up-only"),
       paid: real.filter(p => p.paid).length, paidInr: real.reduce((s, p) => s + p.paidInr, 0),
       typicalMs: allMs.length ? allMs[Math.floor(allMs.length / 2)] : null,
     };
@@ -98,12 +99,13 @@ export default function PeoplePanel() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         {([
           ["People", sum.total, "text-white", "all"],
           ["Using it (got answers)", sum.got, "text-emerald-300", "got-answers"],
           ["Website tools only", sum.web, "text-sky-300", "website-only"],
-          ["Opened app, no answer", sum.stuck, sum.stuck ? "text-red-300" : "text-zinc-400", "app-no-answer"],
+          ["Opened app, never pressed Start", sum.notStarted, sum.notStarted ? "text-amber-300" : "text-zinc-400", "app-not-started"],
+          ["Pressed Start, no answer", sum.stuck, sum.stuck ? "text-red-300" : "text-zinc-400", "app-no-answer"],
           ["Signed up, never used", sum.idle, "text-zinc-400", "signed-up-only"],
           ["Paid", `${sum.paid}${sum.paidInr ? ` (₹${Math.round(sum.paidInr)})` : ""}`, sum.paid ? "text-emerald-300" : "text-zinc-400", null],
           ["Typical answer speed", sum.typicalMs == null ? "-" : `${(sum.typicalMs / 1000).toFixed(1)}s`, "text-white", null],
@@ -161,7 +163,8 @@ export default function PeoplePanel() {
                     : <span className="text-zinc-600">free</span>}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-zinc-400">
-                  {p.minutesLeft > 0 ? <span className="text-emerald-300">{p.minutesLeft} min</span> : `${p.answersLeft} answers`}
+                  {/* A paid plan answers from its plan; leftover gift minutes are not what it has left (Gowri read "1 min", 2026-10-24). */}
+                  {p.minutesLeft > 0 && !(p.plan === "pro" || p.plan === "max") ? <span className="text-emerald-300">{p.minutesLeft} min</span> : `${p.answersLeft} answers`}
                 </td>
                 <td className="px-3 py-2 text-zinc-500">{ago(p.joined)}</td>
                 <td className="px-3 py-2 text-zinc-500">{ago(p.lastSeen)}</td>

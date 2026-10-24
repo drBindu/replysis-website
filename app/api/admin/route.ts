@@ -776,7 +776,9 @@ export async function GET(req: Request) {
         const result =
           got > 0 ? "got-answers"
           : (u?.mock ?? 0) + (u?.resume ?? 0) > 0 ? "website-only"
-          : app ? "app-no-answer"
+          // Pressed Start (listening was reported) but no answer is a real problem; opened and never pressed Start is not
+          // (2026-10-23: all four "no answer" people had never pressed Start, and the red label read as a failure).
+          : app ? (anyMs(d.lastListeningAt) || Number(d.audioMinutesUsed) > 0 ? "app-no-answer" : "app-not-started")
           : "signed-up-only";
         return {
           id: doc.id, email: typeof d.email === "string" ? d.email : null, internal: d.internal === true,
