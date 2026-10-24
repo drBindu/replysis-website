@@ -295,8 +295,9 @@ export default function Home() {
             {!user ? (
               <>
                 {/* Log in  -  clearly outlined so it reads as "secondary" */}
+                {/* Hidden on small phones: it is in the menu there, and the header did not fit (the menu button sat off screen). */}
                 <button onClick={() => openAuth("signin")}
-                  className="px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
+                  className="hidden sm:block px-4 py-1.5 text-[13px] font-semibold text-gray-600 hover:text-zinc-900 border border-gray-200 hover:border-zinc-400 rounded-full transition-all whitespace-nowrap bg-white hover:bg-zinc-100/60 shadow-sm">
                   Log in
                 </button>
 
@@ -381,7 +382,7 @@ export default function Home() {
             )}
 
             {/* ── Hamburger  -  < lg only ── */}
-            <button onClick={() => setShowMobile(v => !v)}
+            <button onClick={() => setShowMobile(v => !v)} aria-label={showMobile ? "Close menu" : "Open menu"} aria-expanded={showMobile}
               className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all">
               {showMobile ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

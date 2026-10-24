@@ -15,7 +15,7 @@ import InterviewMinutes from "../../components/InterviewMinutes";
 import type { LocalPlanPrices } from "../../data/localPrices";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
-  answersFor, interviewsFor,
+  answersFor, interviewsFor, TRIAL_ANSWERS, TRIAL_DAYS,
 } from "../../data/productFacts";
 
 // Yearly plans are hidden (owner, 2026-09-29). A job search lasts one to three months, and
@@ -89,7 +89,7 @@ const ALL_PLANS: {
     id: "free",
     name: "Starter",
     emoji: "🚀",
-    tagline: `See it work in a real interview. ${FREE_ANSWERS} answers, no card.`,
+    tagline: `New accounts start with ${TRIAL_DAYS} days of Pro free: ${TRIAL_ANSWERS} answers, no card.`,
     monthlyPrice: 0,
     annualPrice: 0,
     oneTime: false,
@@ -104,7 +104,7 @@ const ALL_PLANS: {
       "Answers tailored to your resume and role",
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
-      `${FREE_ANSWERS} live answers to try it, once`,
+      `${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, then Starter`,
       "Live listening included, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
     ],
@@ -250,7 +250,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: `A live answer, a screen read and most other actions use one answer. Starter gives you ${FREE_ANSWERS} answers once, enough to see it work. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers, mock practice, and AI resume tools share this balance. Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
+    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers, mock practice, and AI resume tools share this balance. Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
