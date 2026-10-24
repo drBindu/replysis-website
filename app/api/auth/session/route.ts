@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { PLAN_MONTHLY_CREDITS } from "../../../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, TRIAL_AUDIO_MINUTES, TRIAL_CREDITS, TRIAL_DAYS } from "../../../../data/productFacts";
 
 export const runtime = "nodejs";
 
@@ -63,15 +63,22 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       return;
     }
 
+    // A new account starts on the Pro trial (productFacts TRIAL_*). creditsResetDate sits a day past the end so a monthly
+    // refill can never extend it; the server's PassExpiryService ends it.
+    const trialEnd = new Date(Date.now() + TRIAL_DAYS * 86_400_000);
     transaction.create(ref, {
       uid,
       email,
       displayName: displayName || "User",
-      plan: "free",
-      credits: PLAN_MONTHLY_CREDITS.free,
+      plan: "pro",
+      planSource: "trial",
+      passExpiresAt: trialEnd.toISOString(),
+      trialStartedAt: FieldValue.serverTimestamp(),
+      audioMinutesAllowance: TRIAL_AUDIO_MINUTES,
+      credits: TRIAL_CREDITS,
       creditsUsed: 0,
       purchasedCredits: 0,
-      creditsResetDate: nextResetDate(),
+      creditsResetDate: new Date(trialEnd.getTime() + 86_400_000).toISOString(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       stripeSubscriptionStatus: null,

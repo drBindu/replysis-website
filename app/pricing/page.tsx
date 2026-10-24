@@ -318,6 +318,7 @@ export default function PricingPage() {
   const [profile,  setProfile]  = useState<UserProfile | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
+  const [pendingAutopay, setPendingAutopay] = useState(false);
   // Signing in from the minutes card keeps the buyer on this page, next to the slider they set.
   const [stayAfterAuth, setStayAfterAuth] = useState(false);
   const [loading,  setLoading]  = useState<string | null>(null);
@@ -378,13 +379,17 @@ export default function PricingPage() {
     else if (params.get("canceled") === "true") setCheckoutReturn("canceled");
   }, []);
 
-  const handleCheckout = async (planId: "pro" | "max", checkoutUser: User | null = user) => {
-    if (currentPlan && currentPlan !== "free") {
+  // autopay: India only, a monthly card subscription instead of the one month paid once (owner, 2026-10-23).
+  const handleCheckout = async (planId: "pro" | "max", checkoutUser: User | null = user, autopay = false) => {
+    // An India month paid once is not a subscription, so its owner may add a month or move to AutoPay. Only a real
+    // subscription is sent to Account & Billing (the "Add 1 more month" button was refused here, 2026-10-23).
+    if (hasPaidPlan && !(indiaMonthly && !profile?.stripeSubscriptionId)) {
       setCheckoutError("You already have an active plan. Open Account & Billing to change it securely without creating a second subscription.");
       return;
     }
     if (!checkoutUser) {
       setPendingPlan(planId);
+      setPendingAutopay(autopay);
       setShowAuth(true);
       return;
     }
@@ -395,7 +400,7 @@ export default function PricingPage() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email }),
+        body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email, ...(autopay ? { autopay: true } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -429,7 +434,7 @@ export default function PricingPage() {
     setShowAuth(false);
     const planToBuy = pendingPlan;
     setPendingPlan(null);
-    if (planToBuy) void handleCheckout(planToBuy, signedInUser);
+    if (planToBuy) void handleCheckout(planToBuy, signedInUser, pendingAutopay);
     else if (stayAfterAuth) setStayAfterAuth(false);
     else window.location.href = "/real-interview";
   };
@@ -444,7 +449,10 @@ export default function PricingPage() {
   };
 
   const currentPlan = profile?.plan as PlanId | undefined;
-  const hasPaidPlan = Boolean(currentPlan && currentPlan !== "free");
+  // A trial is Pro with nothing paid: its owner can buy any plan.
+  const onTrial = profile?.planSource === "trial";
+  const hasPaidPlan = Boolean(currentPlan && currentPlan !== "free" && !onTrial);
+  const indiaMonthly = india && !annual;
   const visibleRows = showAll ? ROWS : ROWS.slice(0, 10);
 
   return (
@@ -565,7 +573,7 @@ export default function PricingPage() {
                       {isCurrent ? "Current plan" : user ? "Starter features included" : plan.cta}
                     </button>
                   ) : (
-                    hasPaidPlan && !(india && !annual) ? (
+                    hasPaidPlan && !(indiaMonthly && !profile?.stripeSubscriptionId) ? (
                       <Link href="/account" className="hv2-btn hv2-btn-block">
                         {isCurrent ? "Manage current plan" : "Change plan securely"}
                       </Link>
@@ -580,6 +588,17 @@ export default function PricingPage() {
                   <p className="hv2-plan-sub" style={{ textAlign: "center" }}>
                     {india && !annual && plan.id !== "free" ? "Pay once with UPI or card. No auto renewal." : plan.ctaNote}
                   </p>
+                  {indiaMonthly && plan.id !== "free" && !profile?.stripeSubscriptionId && (
+                    <p className="hv2-plan-sub" style={{ textAlign: "center", marginTop: 4 }}>
+                      <button onClick={() => handleCheckout(plan.id as "pro" | "max", user, true)} disabled={!!loading} className="hv2-link" style={{ fontSize: "inherit" }}>
+                        Or pay monthly with AutoPay
+                      </button>
+                      <br />
+                      {isCurrent && profile?.planSource === "pass"
+                        ? "Card AutoPay. The first charge comes when your current month ends."
+                        : "Card AutoPay. Renews every month, cancel anytime."}
+                    </p>
+                  )}
 
                   <ul className="hv2-plan-list">
                     {featuresFor(plan, india).map((f) => <li key={f}>{f}</li>)}

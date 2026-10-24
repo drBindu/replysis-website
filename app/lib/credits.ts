@@ -118,6 +118,9 @@ export type UserProfile = {
   stripeCancelAtPeriodEnd?: boolean;
   stripeCurrentPeriodEnd?: number | null;
   stripeBillingInterval?: "monthly" | "annual" | null;
+  /** "pass" for an India month paid once (passExpiresAt is its end), "subscription" for AutoPay. */
+  planSource?: string;
+  passExpiresAt?: string;
   lastPaymentFailedAt?: string | null;
   onboardingSeenAt?: unknown;
   createdAt: any;

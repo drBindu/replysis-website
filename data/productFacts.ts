@@ -223,3 +223,13 @@ export const TRUST_FACTS = {
   screenCapture:
     "The desktop app uses operating-system capture controls to stay out of standard screen-share paths. Coverage depends on the operating system and capture tool, so users should test their setup first.",
 } as const;
+
+/**
+ * Every new account starts on a 3 day Pro trial, no card (owner, 2026-10-24: "we want more users"). Capped at 50 answers
+ * and 2 hours of listening so one heavy trial costs about Rs 20. When it ends the account is Free (PassExpiryService on
+ * the server). The server's FirestoreCreditsService.newAccountFields writes the same numbers.
+ */
+export const TRIAL_DAYS = 3;
+export const TRIAL_ANSWERS = 50;
+export const TRIAL_CREDITS = TRIAL_ANSWERS * 5;
+export const TRIAL_AUDIO_MINUTES = 120;

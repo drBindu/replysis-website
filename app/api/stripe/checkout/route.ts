@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    const { plan, annual, uid, creditPack, minutes, autoAdd } = body;
+    const { plan, annual, uid, creditPack, minutes, autoAdd, autopay } = body;
     if (minutes !== undefined) {
       return buyMinutes(req, minutes, autoAdd === true, uid, verifiedUid, verifiedEmail);
     }
@@ -136,9 +136,12 @@ export async function POST(req: Request) {
     // One Replysis account must never accidentally buy two concurrent
     // subscriptions. Plan changes remain a support-assisted operation until
     // the self-service billing portal ships.
+    // The end of a running India month paid once, so AutoPay bought during it starts charging when it ends.
+    let passEndMs = NaN;
     try {
       const profile = await getFirestore().collection("users").doc(verifiedUid).get();
       const activeSubscriptionId = profile.data()?.stripeSubscriptionId;
+      if (profile.data()?.planSource === "pass") passEndMs = Date.parse(String(profile.data()?.passExpiresAt ?? ""));
       if (!isCreditPack && typeof activeSubscriptionId === "string" && activeSubscriptionId.length > 0) {
         return NextResponse.json({ error: "An active subscription already exists" }, { status: 409 });
       }
@@ -167,6 +170,7 @@ export async function POST(req: Request) {
     // decide what it is charged. A timezone is a setting, and the gap between
     // Rs 299 and $29.99 is ninety percent, so a client-supplied country would
     // be an open discount for anyone who read this file.
+    let indiaAutopay = false;
     if (await isIndia(req.headers)) {
       const rupees = isCreditPack
         ? CREDIT_PRICE_IDS_INR[selectedPack!.id]
@@ -176,7 +180,10 @@ export async function POST(req: Request) {
         console.log(`[checkout] India: charging the rupee price for ${priceKey}`);
         // India plans are paid once for 30 days, never a subscription: a monthly UPI or card charge needs an AutoPay
         // mandate, and a customer's Rs 699 failed that way (2026-10-21). Paying again adds 30 more days.
-        if (!isCreditPack) return buyPlanPass(req, plan, rupees, uid, email);
+        if (!isCreditPack && autopay !== true) return buyPlanPass(req, plan, rupees, uid, email);
+        // AutoPay (owner, 2026-10-23): a monthly rupee subscription, card only. A UPI AutoPay mandate is what failed
+        // on 2026-10-21; a card e-mandate is approved with the card's OTP during checkout.
+        if (!isCreditPack) indiaAutopay = true;
       }
     }
 
@@ -226,6 +233,7 @@ export async function POST(req: Request) {
     // Leaving it out is what switches on dynamic payment methods, where Stripe
     // shows the methods relevant to the buyer's country and currency, from the
     // set the account has enabled. Cards are still one of them.
+    if (indiaAutopay) params.append("payment_method_types[]", "card");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
     // A plan returns to the pricing page. An answer pack is bought from the account (it is not on the
@@ -260,6 +268,13 @@ export async function POST(req: Request) {
       params.append("subscription_data[metadata][uid]", uid);
       params.append("subscription_data[metadata][plan]", plan);
       params.append("subscription_data[metadata][interval]", annual ? "annual" : "monthly");
+      // A month already paid for is not thrown away: the subscription's first charge waits for its end. Stripe needs the
+      // start at least 48 hours away, so a month ending sooner starts AutoPay now.
+      if (indiaAutopay && Number.isFinite(passEndMs) && passEndMs - Date.now() > 49 * 3600_000) {
+        params.append("subscription_data[trial_end]", String(Math.floor(passEndMs / 1000)));
+        params.append("metadata[startsAfterPass]", "1");
+        params.set("custom_text[submit][message]", "Your current month continues. The first AutoPay charge is on the day it ends. Cancel anytime from Account & Billing.");
+      }
     }
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {

@@ -576,7 +576,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     return {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
-      plan: typeof d.plan === "string" ? d.plan : "free",
+      plan: d.planSource === "trial" ? "trial" : typeof d.plan === "string" ? d.plan : "free",
       lastActive: anyMs(d.lastActive),
       listening: (appOpen && d.appListening === true) || reportedLately,
       where,
@@ -597,7 +597,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     return {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
-      plan: typeof d.plan === "string" ? d.plan : "free",
+      plan: d.planSource === "trial" ? "trial" : typeof d.plan === "string" ? d.plan : "free",
       app: viaApp ? (d.lastPlatform === "mac" ? "mac" : "windows") : "web",
       version: viaApp && typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "",
       leftAt,
@@ -763,7 +763,8 @@ export async function GET(req: Request) {
       const people = userSnap.docs.map((doc) => {
         const d = doc.data();
         const u = use.get(doc.id);
-        const plan = typeof d.plan === "string" ? d.plan : "free";
+        // A trial account is on Pro but has paid nothing: shown as "trial" and never counted as paid (2026-10-24).
+        const plan = d.planSource === "trial" ? "trial" : typeof d.plan === "string" ? d.plan : "free";
         const paidInr = bought.get(doc.id) ?? 0;
         const paid = paidInr > 0 || ["pro", "max", "lifetime", "teams"].includes(plan);
         const got = (u?.answers ?? 0) + (u?.screens ?? 0);
@@ -847,6 +848,7 @@ export async function GET(req: Request) {
       internalMax,
       minutePurchases,
       planPasses,
+      trialCount,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -872,6 +874,8 @@ export async function GET(req: Request) {
       // "free" and "0 / 25" (2026-10-21). Small collection, read whole.
       db.collection("minute_purchases").get(),
       db.collection("plan_passes").get(),
+      // Trial accounts sit on Pro with nothing paid; taken out of the paid and Pro counts below.
+      users.where("planSource", "==", "trial").count().get(),
     ]);
     const paidMinutes = new Map<string, { inr: number; minutes: number; count: number; last: number }>();
     let minuteRevenueInr = 0;
@@ -916,11 +920,12 @@ export async function GET(req: Request) {
       }),
       metrics: {
         users: userCount.data().count,
-        paidUsers: paidCount.data().count,
+        paidUsers: Math.max(0, paidCount.data().count - trialCount.data().count),
+        trialUsers: trialCount.data().count,
         // Split so the portal can price revenue. Counted server side because
         // the user list is paginated and a page of 100 cannot be summed into a
         // figure that describes the whole product.
-        proUsers: proCount.data().count,
+        proUsers: Math.max(0, proCount.data().count - trialCount.data().count),
         maxUsers: maxCount.data().count,
         liveUsers: liveCount.data().count,
         listeningNow: listeningUsers.data().count + listeningGuests.data().count,
@@ -929,8 +934,8 @@ export async function GET(req: Request) {
         macDownloads: macDownloads.data().count,
         internalUsers: internalCount.data().count,
         realUsers: Math.max(0, userCount.data().count - internalCount.data().count),
-        realPaid: Math.max(0, paidCount.data().count - internalPaid.data().count),
-        realPro: Math.max(0, proCount.data().count - internalPro.data().count),
+        realPaid: Math.max(0, paidCount.data().count - internalPaid.data().count - trialCount.data().count),
+        realPro: Math.max(0, proCount.data().count - internalPro.data().count - trialCount.data().count),
         realMax: Math.max(0, maxCount.data().count - internalMax.data().count),
         minuteBuyers: paidMinutes.size,
         minuteRevenueInr: Math.round(minuteRevenueInr),

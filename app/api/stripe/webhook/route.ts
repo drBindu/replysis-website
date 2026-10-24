@@ -277,6 +277,7 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
 
     transaction.set(userRef, {
       plan,
+      planSource: "subscription",
       credits: adjustedCredits + purchasedCredits,
       // Cleared rather than left behind when the subscription is not a rupee
       // one, so somebody who moves from a rupee plan to a dollar plan is not
@@ -483,11 +484,13 @@ export async function POST(req: Request) {
       } else if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
         console.log(`✅ PAYMENT: ${uid} → ${plan} | Customer: ${customerId}`);
         const credits = PLAN_CREDITS[plan] ?? 1000;
+        // India AutoPay bought during a month paid once: that month carries on with its answers, and the subscription
+        // (free until the month ends) takes over from then. planSource "subscription" stops the pass expiry job.
+        const afterPass = session.metadata?.startsAfterPass === "1";
         await applyUserUpdate(uid, eventCreated, {
           plan,
-          credits,
-          creditsUsed: 0,
-          creditsResetDate: getNextResetDate(),
+          planSource: "subscription",
+          ...(afterPass ? {} : { credits, creditsUsed: 0, creditsResetDate: getNextResetDate() }),
           stripeCustomerId: customerId ?? null,
           stripeSubscriptionId: subscriptionId ?? null,
           stripeSubscriptionStatus: "active",
@@ -533,8 +536,10 @@ export async function POST(req: Request) {
         const sub = await subRes.json();
         const uid  = sub.metadata?.uid;
         const plan = subscriptionPlan(sub);
+        // The free invoice that opens an AutoPay waiting for a paid month to end is not a renewal: no refill.
+        const freeTrialStart = Number(invoice.amount_paid ?? 0) === 0 && sub.status === "trialing";
 
-        if (uid && plan && ["pro", "max", "teams"].includes(plan)) { // lifetime is one-time, no renewal
+        if (uid && plan && ["pro", "max", "teams"].includes(plan) && !freeTrialStart) { // lifetime is one-time, no renewal
           const credits = PLAN_CREDITS[plan] ?? 1000;
           await applyUserUpdate(uid, eventCreated, {
             plan,

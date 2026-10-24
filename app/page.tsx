@@ -14,21 +14,8 @@ import "./home-v2.css";
 import HeroV2 from "../components/home/v2/HeroV2";
 import { WhatItDoes, ScreenReading, PracticeAndResume, PlainFacts, ClosingCta } from "../components/home/v2/Sections";
 
-// The Microsoft Store listing, not a file on this site.
-//
-// This pointed at /app.msixbundle, which has not existed on the server for
-// some time: every visitor who read the pricing and clicked Download for
-// Windows was sent to a 404. The Store copy installs with no security
-// warning, updates itself, and is already live, so it is the better
-// destination regardless of whether the file comes back.
-const WINDOWS_DOWNLOAD = "https://apps.microsoft.com/detail/9N13GQC3MKK9";
-// Signed with Azure Trusted Signing since v1.0.24 (current: v1.0.29) - no more SmartScreen
-// warning, so the direct-download button is back. Bump this URL's version
-// alongside every new signed release: it stays pinned rather than tracking
-// "latest" because a fresh unsigned or barely-reputable build could
-// otherwise start showing the warning again without anyone deciding that.
-const WINDOWS_DIRECT_DOWNLOAD = "https://github.com/drBindu/replysis-windows/releases/download/v1.0.51/Replysis-win-Setup.exe";
-const MAC_DOWNLOAD     = "https://github.com/drBindu/replysis-mac/releases/latest/download/InterviewCopilot-mac.dmg";
+// Download addresses live in app/lib/downloads.ts (the release step bumps the Windows version there).
+import { WINDOWS_DOWNLOAD, WINDOWS_DIRECT_DOWNLOAD, MAC_DOWNLOAD } from "./lib/downloads";
 
 /**
  * Reading the query string opts a component out of static rendering, so it is
@@ -141,7 +128,11 @@ export default function Home() {
   };
 
   const completeAuth = () => {
-    const destination = authModal.nextPath ?? "/real-interview";
+    let destination = authModal.nextPath ?? "/real-interview";
+    // A brand new account goes to /start first (get the app, then the first answer): 13 of 17 new
+    // accounts in a week never opened the app. Returning users keep going where they asked.
+    const created = Date.parse(auth.currentUser?.metadata.creationTime ?? "");
+    if (destination === "/real-interview" && Number.isFinite(created) && Date.now() - created < 10 * 60 * 1000) destination = "/start";
     setAuthModal((current) => ({ ...current, open: false, fromQuery: false }));
     router.push(destination);
   };
