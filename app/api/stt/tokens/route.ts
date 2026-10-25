@@ -1350,17 +1350,35 @@ export async function POST(req: Request) {
             `end of what you say (action "follow_up"). It must dig into what they just said, never into the next question's topic. ` +
             `Otherwise action "next".\n`
           : `Do not ask a follow-up; action "next" unless repeating or ending.\n`) +
-        `For action "next" say only your reaction: the app adds the next question itself${nextQ ? "" : ", and there are no more questions, so a short warm wrap-up line is fine"}.\n` +
-        `Never give a score or coaching; that comes at the end. At most 40 words. No emojis, no stage directions, no quotation marks.\n` +
+        // Owner, 2026-10-25: no fixed lines anywhere. Every word Maya says, the way into each question and the goodbye
+        // included, is hers, written for this moment.
+        (nextQ
+          ? `For action "next" say two things in one flowing spoken turn: first a short reaction to something specific they said, ` +
+            `then move on and ask your next question in your own words, keeping exactly what it asks.\n`
+          : `That was their last answer. For action "next" say both: a short reaction to something specific they said, then a ` +
+            `warm goodbye in your own words that ends the interview and tells them their feedback is ready on the screen.\n`) +
+        `Never give a score or coaching; that comes at the end. At most 60 words. No emojis, no stage directions, no quotation marks.\n` +
         `Reply with JSON only: {"say": string, "tone": one of ${TONES.join("|")}, "action": one of ${ACTIONS.join("|")}}`;
       const userPrompt =
         (earlier ? `EARLIER IN THIS INTERVIEW:\n${earlier}\n\n` : "") +
         (name ? `CANDIDATE'S NAME: ${name}\n` : "") +
         `QUESTION YOU ASKED:\n${safeQ}\n\nWHAT THE CANDIDATE SAID:\n${safeA || "(nothing)"}` +
-        (nextQ ? `\n\nYOUR NEXT QUESTION (for context only, do not ask it): ${nextQ}` : "");
+        (nextQ ? `\n\nYOUR NEXT QUESTION: ${nextQ}` : "");
+
+      // The very start of the interview: her hello and the first question, also in her own words.
+      const opening = b.opening === true;
+      const openSystem =
+        `You are Maya, a senior interviewer${company ? ` at ${company}` : ""}${role ? `, interviewing a candidate for ${role}` : ""}. ` +
+        `A live spoken video interview is starting now. You are a real person: warm, sharp, a dry sense of humour. Never say ` +
+        `or hint that you are an AI. Greet the candidate${name ? " by first name" : ""}, introduce yourself in a few words, ` +
+        `one short friendly line to put them at ease, then ask the first question in your own words, keeping exactly what it ` +
+        `asks. Spoken style, contractions, at most 55 words, no emojis, no quotation marks. ` +
+        `Reply with JSON only: {"say": string, "tone": "warm", "action": "next"}`;
+      const openUser = (name ? `CANDIDATE'S NAME: ${name}\n` : "") + `FIRST QUESTION: ${safeQ}`;
 
       try {
-        const raw = String(await callLLM(selectedModel, systemPrompt, userPrompt, { temperature: 0.8, max_tokens: 400, json: true }));
+        const raw = String(await callLLM(selectedModel, opening ? openSystem : systemPrompt, opening ? openUser : userPrompt,
+          { temperature: 0.8, max_tokens: 400, json: true }));
         const m = raw.match(/\{[\s\S]*\}/);
         const j = m ? JSON.parse(m[0]) : {};
         const say = typeof j.say === "string" ? j.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
