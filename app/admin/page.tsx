@@ -7,7 +7,7 @@ import {
   RefreshCw, Search, ChevronDown, ChevronRight, LogIn, CreditCard,
   Image as ImageIcon, MessageSquare, AlertTriangle, TrendingUp,
 } from "lucide-react";
-import { PLAN_MONTHLY_CREDITS, PLAN_MONTHLY_AUDIO_MINUTES } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, PLAN_MONTHLY_AUDIO_MINUTES, TRIAL_CREDITS, TRIAL_AUDIO_MINUTES } from "../../data/productFacts";
 import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/providerRates";
 import LivePanel from "./LivePanel";
 import VisitorsPanel from "./VisitorsPanel";
@@ -115,6 +115,8 @@ const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: n % 1 === 0 ? 0 : 2 });
 
 function planOf(user: any): string {
+  // A trial account sits on Pro but has paid nothing: the People table showed it as Pro at $34.99 (2026-10-24).
+  if (user?.planSource === "trial") return "trial";
   return String(user?.plan || "free").toLowerCase();
 }
 
@@ -175,6 +177,7 @@ function PlanBadge({ plan }: { plan: string }) {
     max: "border-violet-500/30 bg-violet-500/10 text-violet-300",
     lifetime: "border-amber-500/30 bg-amber-500/10 text-amber-300",
     teams: "border-teal-500/30 bg-teal-500/10 text-teal-300",
+    trial: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
     free: "border-white/10 bg-white/5 text-zinc-400",
     guest: "border-white/10 bg-white/5 text-zinc-500",
   };
@@ -792,8 +795,8 @@ export default function AdminPage() {
                 {rows.map((user) => {
                   const plan = planOf(user);
                   const u = usageFor(user.id);
-                  const allowance = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
-                  const audioCap = PLAN_MONTHLY_AUDIO_MINUTES[plan as keyof typeof PLAN_MONTHLY_AUDIO_MINUTES] ?? 60;
+                  const allowance = plan === "trial" ? TRIAL_CREDITS : PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
+                  const audioCap = plan === "trial" ? TRIAL_AUDIO_MINUTES : PLAN_MONTHLY_AUDIO_MINUTES[plan as keyof typeof PLAN_MONTHLY_AUDIO_MINUTES] ?? 60;
                   const audioUsed = Math.round(Number(user.audioMinutesUsed) || 0);
                   const online = Date.now() - toMs(user.lastActive) < ONLINE_WINDOW_SECS * 1000;
                   const open = expandedUser === user.id;
