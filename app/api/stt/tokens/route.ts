@@ -102,6 +102,7 @@ const MAX_MESSAGES = 24;
 const MAX_MESSAGE_CHARS = 6_000;
 const VALID_MODES = new Set([
   "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up", "suggest_answer",
+  "maya_turn",
 ]);
 
 function requestTooLarge(req: Request): boolean {
@@ -335,6 +336,7 @@ const CREDIT_COSTS: Record<string, number> = {
   generate_questions: CREDIT_ACTION_COSTS.question_generation,
   follow_up:          0,   // the interviewer's short follow-up in a mock interview: part of the conversation, not charged
   suggest_answer:     0,   // the suggested answer a candidate can reveal with the eye button in a mock interview
+  maya_turn:          0,   // what Maya says back after each answer: the conversation itself, not charged
   realtime:           CREDIT_ACTION_COSTS.realtime_per_minute,
   stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
@@ -1300,6 +1302,72 @@ export async function POST(req: Request) {
     // ════════════════════════════════════════════════════
     // MODE: FOLLOW UP (mock interview): one short natural follow-up question, or none
     // ════════════════════════════════════════════════════
+    // ── MAYA'S TURN: what the interviewer says back, as one consistent person ──
+    // Owner, 2026-10-24: Maya should talk like a real human with one character and real emotions, laugh at a joke, and
+    // say "this is an interview, you can't talk like that" when a candidate is not taking it seriously. So instead of a
+    // fixed "Thanks, that's helpful" she reads what was actually said and decides what a real interviewer would say and do.
+    if (mode === "maya_turn") {
+      const b = body as Record<string, unknown>;
+      const safeQ = sanitizeText(question).slice(0, 1000);
+      const safeA = sanitizeText(answer).slice(0, 3000);
+      const role = sanitizeText(String(b.role ?? "")).slice(0, 120);
+      const company = sanitizeText(String(b.company ?? "")).slice(0, 120);
+      const name = sanitizeText(String(b.candidateName ?? "")).slice(0, 60);
+      const nextQ = sanitizeText(String(b.nextQuestion ?? "")).slice(0, 600);
+      const warnings = Math.max(0, Math.min(3, Number(b.warnings) || 0));
+      const canFollowUp = b.canFollowUp === true;
+      const earlier = (Array.isArray(b.history) ? b.history : []).slice(-4)
+        .map((h: any) => `Q: ${sanitizeText(String(h?.q ?? "")).slice(0, 300)}\nA: ${sanitizeText(String(h?.a ?? "")).slice(0, 500)}`)
+        .join("\n\n");
+      const TONES = ["warm", "amused", "impressed", "curious", "thoughtful", "serious", "firm"];
+      const ACTIONS = ["next", "follow_up", "repeat", "end"];
+      const systemPrompt =
+        `You are Maya, a senior interviewer${company ? ` at ${company}` : ""}${role ? `, interviewing a candidate for ${role}` : ""}. ` +
+        `This is a live spoken video interview. You are a real person: warm, sharp, a dry sense of humour, genuinely curious, ` +
+        `and you take the interview seriously. You have been interviewing people for ten years. Never say or hint that you ` +
+        `are an AI, a model or a program, and never break character.\n\n` +
+        `Read the question you asked and what the candidate just said, then decide what you say back and what happens next.\n` +
+        `How you talk: short spoken sentences with contractions, the way people talk on a call. React to something specific ` +
+        `they actually said; never generic praise, never "great answer". Vary how you start; do not begin with "Thanks".\n` +
+        `Emotions are real: pleased by a strong concrete example, amused by a genuinely funny line, curious when something ` +
+        `is interesting, gently skeptical of a vague or inflated claim.\n` +
+        `If they make a light joke, laugh it off in a few words, maybe joke back once, then carry on.\n` +
+        `If they are rude, crude, flirty, insulting, or clearly not taking it seriously, react like a real interviewer: calm and ` +
+        `firm, for example "Let's keep this professional, please." You have already warned them ${warnings} time(s); be firmer ` +
+        `each time, then ask them to answer the question properly (action "repeat"). After two warnings you may end the interview politely (action "end").\n` +
+        `If they ask you to repeat or explain the question, or clearly misheard it, say it again in different, simpler words ` +
+        `(action "repeat").\n` +
+        `If they ask you something (about you, the team, the role), answer in one or two sentences as Maya, without inventing ` +
+        `specific facts about the company, then continue.\n` +
+        `If they said nothing useful or went silent, encourage them kindly and repeat the question (action "repeat").\n` +
+        (canFollowUp
+          ? `If one natural follow-up would really help (a concrete example, the result, a number, their own part), ask it at the ` +
+            `end of what you say (action "follow_up"). Otherwise action "next".\n`
+          : `Do not ask a follow-up; action "next" unless repeating or ending.\n`) +
+        `For action "next" say only your reaction: the app adds the next question itself${nextQ ? "" : ", and there are no more questions, so a short warm wrap-up line is fine"}.\n` +
+        `Never give a score or coaching; that comes at the end. At most 40 words. No emojis, no stage directions, no quotation marks.\n` +
+        `Reply with JSON only: {"say": string, "tone": one of ${TONES.join("|")}, "action": one of ${ACTIONS.join("|")}}`;
+      const userPrompt =
+        (earlier ? `EARLIER IN THIS INTERVIEW:\n${earlier}\n\n` : "") +
+        (name ? `CANDIDATE'S NAME: ${name}\n` : "") +
+        `QUESTION YOU ASKED:\n${safeQ}\n\nWHAT THE CANDIDATE SAID:\n${safeA || "(nothing)"}` +
+        (nextQ ? `\n\nYOUR NEXT QUESTION (for context only, do not ask it): ${nextQ}` : "");
+
+      try {
+        const raw = String(await callLLM(selectedModel, systemPrompt, userPrompt, { temperature: 0.8, max_tokens: 400, json: true }));
+        const m = raw.match(/\{[\s\S]*\}/);
+        const j = m ? JSON.parse(m[0]) : {};
+        const say = typeof j.say === "string" ? j.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
+        const tone = TONES.includes(j.tone) ? j.tone : "warm";
+        let action = ACTIONS.includes(j.action) ? j.action : "next";
+        if (action === "follow_up" && !canFollowUp) action = "next";
+        if (!say) return NextResponse.json({ say: null, tone: "warm", action: "next" });
+        return NextResponse.json({ say, tone, action });
+      } catch {
+        return NextResponse.json({ say: null, tone: "warm", action: "next" });
+      }
+    }
+
     if (mode === "follow_up") {
       const safeQ = sanitizeText(question).slice(0, 1000);
       const safeA = sanitizeText(answer).slice(0, 3000);

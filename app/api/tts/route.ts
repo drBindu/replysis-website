@@ -26,8 +26,20 @@ export async function POST(req: Request) {
   const text = typeof body?.text === "string" ? body.text.replace(/\s+/g, " ").trim() : "";
   if (!text || text.length > MAX_CHARS) return NextResponse.json({ error: "Invalid text" }, { status: 400 });
 
+  // How she sounds saying it (Maya's reactions, 2026-10-24). Gemini's voice follows a short spoken-style direction placed
+  // before the line and does not read the direction aloud.
+  const STYLE: Record<string, string> = {
+    warm: "Say warmly and naturally, like a friendly interviewer on a video call",
+    amused: "Say with a light, amused laugh in your voice",
+    impressed: "Say sounding genuinely impressed and pleased",
+    curious: "Say with real curiosity, leaning in",
+    thoughtful: "Say thoughtfully, at an unhurried pace",
+    serious: "Say calmly and seriously",
+    firm: "Say calmly but firmly, like an interviewer setting a boundary",
+  };
+  const style = typeof body?.tone === "string" ? STYLE[body.tone] : undefined;
   const request = {
-    contents: [{ parts: [{ text }] }],
+    contents: [{ parts: [{ text: style ? `${style}: ${text}` : text }] }],
     generationConfig: {
       responseModalities: ["AUDIO"],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
