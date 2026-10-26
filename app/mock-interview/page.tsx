@@ -698,6 +698,8 @@ export default function MockInterviewPage() {
   const [difficulty, setDifficulty]             = useState<Difficulty>("mixed");
   const [taggedQuestions, setTaggedQuestions] = useState<TaggedQuestion[]>([]);
   const [userPlan, setUserPlan]               = useState<string>("free");
+  // The mock interview with live Maya is for paid users only (owner, 2026-10-26); null until known. Trial is not paid.
+  const [isPaid, setIsPaid]                   = useState<boolean | null>(null);
 
   // ── Interview State ──────────────────────────────────────────
   const [questions,    setQuestions]    = useState<string[]>([]);
@@ -828,7 +830,7 @@ export default function MockInterviewPage() {
     if (phase !== "ready") return;
     setLoadingCredits(true);
     fetchCredits()
-      .then(d => { setCredits(d?.credits ?? d?.balance ?? null); if (d?.plan) setUserPlan(d.plan); })
+      .then(d => { setCredits(d?.credits ?? d?.balance ?? null); if (d?.plan) setUserPlan(d.plan); setIsPaid(d?.paid === true); })
       .catch(() => setCredits(null))
       .finally(() => setLoadingCredits(false));
   }, [phase]);
@@ -837,7 +839,7 @@ export default function MockInterviewPage() {
   useEffect(() => {
     if (!user) return;
     fetchCredits()
-      .then(d => { if (d?.plan) setUserPlan(d.plan); setCredits(d?.credits ?? d?.balance ?? null); })
+      .then(d => { if (d?.plan) setUserPlan(d.plan); setCredits(d?.credits ?? d?.balance ?? null); setIsPaid(d?.paid === true); })
       .catch(() => {});
   }, [user]);
 
@@ -1543,6 +1545,8 @@ export default function MockInterviewPage() {
       const available = Number(balance?.credits ?? balance?.balance ?? 0);
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
+      setIsPaid(balance?.paid === true);
+      if (balance?.paid !== true) return;                    // the paid only screen shows instead
       if (available < setupAndFeedbackCredits) {
         setSetupError(`This session needs ${answerCount(setupAndFeedbackCredits)} answers including question setup. Choose fewer questions or add answers.`);
         return;
@@ -1604,6 +1608,8 @@ export default function MockInterviewPage() {
       const available = Number(balance?.credits ?? balance?.balance ?? 0);
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
+      setIsPaid(balance?.paid === true);
+      if (balance?.paid !== true) return;                    // the paid only screen shows instead
       if (available < estimatedCredits) {
         setSetupError("Not enough answers remain for this session. Return to setup and choose fewer questions, or add answers.");
         return;
@@ -1786,7 +1792,27 @@ export default function MockInterviewPage() {
           {/* ══════════════════════════════════════════════════════
               SETUP PHASE
           ══════════════════════════════════════════════════════ */}
-          {phase === "setup" && (
+          {phase !== "summary" && isPaid === false && (
+            <motion.div key="paid-only"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35 }}
+              style={{ maxWidth: 520, margin: "40px auto", borderRadius: 18, border: `1px solid ${T.border}`, background: T.panel,
+                padding: "32px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, lineHeight: 1.2, textWrap: "balance" }}>
+                Mock interview with Maya
+              </h1>
+              <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
+                Maya is a live video interviewer. She asks you real questions for your role, listens to your answers and tells you
+                how to make each one stronger. Mock interviews are part of the paid plans.
+              </p>
+              <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 4, padding: "11px 20px", borderRadius: 10,
+                background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                See plans
+              </a>
+            </motion.div>
+          )}
+
+          {phase === "setup" && isPaid !== false && (
             <motion.div key="setup"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
@@ -2067,7 +2093,7 @@ export default function MockInterviewPage() {
           {/* ══════════════════════════════════════════════════════
               PREFLIGHT PHASE
           ══════════════════════════════════════════════════════ */}
-          {phase === "ready" && (
+          {phase === "ready" && isPaid !== false && (
             <motion.div key="ready"
               initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.3 }}

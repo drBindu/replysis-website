@@ -1,7 +1,8 @@
 "use client";
 
 import type { RefObject } from "react";
-import TalkingFace, { type TalkingFaceHandle } from "./TalkingFace";
+import type { TalkingFaceHandle } from "./TalkingFace";
+import SimliFace from "./SimliFace";
 
 export type InterviewerState = "speaking" | "listening" | "thinking" | "idle";
 
@@ -11,7 +12,7 @@ export type Interviewer = {
   title: string;
 };
 
-/** The interviewer shown in the mock interview. Her face lives at /interviewers/<id>/face (a photo and expression patches). */
+/** The interviewer shown in the mock interview: the real Maya, live on video through Simli (paid users only). */
 export const DEFAULT_INTERVIEWER: Interviewer = { id: "maya", name: "Maya", title: "Interviewer" };
 
 const STATUS: Record<InterviewerState, string> = {
@@ -22,10 +23,9 @@ const STATUS: Record<InterviewerState, string> = {
 };
 
 /**
- * A video call style interviewer (owner, 2026-10-17: "real human feel", lips matching the voice, free to run).
- *
- * The face is TalkingFace: one photo whose mouth follows the spoken audio and which blinks and moves slightly. The name tag
- * says it is an AI interviewer. If the face cannot load, a portrait card with a speaking ring takes its place.
+ * A video call style interviewer. Since 2026-10-26 she is the real Maya on live video (owner: "real human, not photo", never
+ * a photo), made from her own Flow video and lip synced by Simli. The name tag says it is an AI interviewer. Until she
+ * connects, or if she cannot, a name card with a speaking ring shows and her voice still plays.
  */
 export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEWER, faceRef }: {
   state: InterviewerState;
@@ -51,7 +51,7 @@ export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEW
         </div>
       </div>
 
-      <TalkingFace ref={faceRef} base={`/interviewers/${interviewer.id}/face`} />
+      <SimliFace ref={faceRef} />
 
       {/* Top row: live marker */}
       <div style={{ position: "absolute", top: 12, left: 14, display: "flex", alignItems: "center", gap: 7, color: "white",

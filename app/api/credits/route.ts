@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { isPaidPlan } from "../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -78,13 +79,15 @@ export async function GET(req: Request) {
     const snap = await db.collection("users").doc(uid).get();
 
     if (!snap.exists) {
-      return NextResponse.json({ credits: 0, plan: "free" });
+      return NextResponse.json({ credits: 0, plan: "free", paid: false });
     }
 
     const data = snap.data()!;
     return NextResponse.json({
       credits: data.credits ?? 0,
       plan: data.plan ?? "free",
+      // A trial account is on Pro but has paid nothing, so it is not paid (the mock interview is for paid plans only).
+      paid: isPaidPlan(data),
     });
   } catch (err: any) {
     console.error("Credits GET error:", err);
