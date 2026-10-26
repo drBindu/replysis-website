@@ -342,7 +342,7 @@ const LIVE_MAX_BACK_MS = 6 * 3_600_000;
 
 type LiveEvent = {
   id: string;
-  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error" | "alert";
+  kind: "answer" | "screen" | "refund" | "resume" | "mock" | "listen" | "signup" | "download" | "error" | "alert";
   at: number;
   who: string | null;
   detail: string;
@@ -478,8 +478,19 @@ async function liveView(db: Firestore, sinceMs: number) {
     const model = typeof d.model === "string" && d.model ? d.model : "";
     events.push({
       id: `u:${doc.id}`,
-      kind: credits < 0 ? "refund" : action === "screen" ? "screen" : action === "answer" ? "answer" : "resume",
-      at, who, detail: action === "screen_nothing" ? "nothing on the screen to answer, not charged" : model, credits,
+      // Every action that was not an answer or a screen read used to show as "Resume tool": a new user's mock interview
+      // questions looked like resume work in the Live feed (owner, 2026-10-26). Each now says what it was.
+      kind: credits < 0 ? "refund"
+        : action === "screen" || action === "screen_nothing" ? "screen"
+        : action === "answer" ? "answer"
+        : /^mock_|^question_generation$/.test(action) ? "mock"
+        : action === "live_listen" ? "listen"
+        : "resume",
+      at, who, detail: action === "screen_nothing" ? "nothing on the screen to answer, not charged"
+        : action === "question_generation" ? "questions made"
+        : action === "mock_feedback" ? "feedback on an answer"
+        : action === "mock_script" ? "a suggested answer"
+        : model, credits,
       app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
     });
   }

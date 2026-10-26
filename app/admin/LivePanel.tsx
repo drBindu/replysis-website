@@ -16,7 +16,7 @@ const FRESH_MS = 8_000;
 
 export type LiveEvent = {
   id: string;
-  kind: "answer" | "screen" | "refund" | "resume" | "signup" | "download" | "error" | "alert";
+  kind: "answer" | "screen" | "refund" | "resume" | "mock" | "listen" | "signup" | "download" | "error" | "alert";
   at: number;
   who: string | null;
   detail: string;
@@ -99,6 +99,8 @@ const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: Lucid
   screen:   { label: "Screen read",  tone: "border-violet-500/30 bg-violet-500/10 text-violet-300",    Icon: ImageIcon },
   refund:   { label: "Refunded",     tone: "border-amber-500/30 bg-amber-500/10 text-amber-300",       Icon: RotateCcw },
   resume:   { label: "Resume tool",  tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",          Icon: MessageSquare },
+  mock:     { label: "Mock interview", tone: "border-teal-500/30 bg-teal-500/10 text-teal-300",       Icon: MessageSquare },
+  listen:   { label: "Listening",    tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             Icon: MessageSquare },
   signup:   { label: "New account",  tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: UserPlus },
   download: { label: "Download",     tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: Download },
   error:    { label: "App problem",  tone: "border-rose-500/30 bg-rose-500/10 text-rose-300",          Icon: AlertTriangle },
