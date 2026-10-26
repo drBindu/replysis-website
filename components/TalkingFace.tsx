@@ -11,8 +11,15 @@ export type TalkingFaceHandle = {
   speak: (pcm: Int16Array, sampleRate: number) => Promise<void>;
   /** For a voice we cannot hear inside the page (the browser's own): a generic talking movement while true. */
   setTalking: (on: boolean) => void;
+  /** Her expression, faded in over a quarter second: the same five as the phone app (2026-10-26). */
+  setMood: (mood: Mood) => void;
+  /** While the candidate answers she nods now and then, as a listener does. */
+  setListening: (on: boolean) => void;
   stop: () => void;
 };
+
+export type Mood = "neutral" | "curious" | "serious" | "smile" | "soft";
+const MOODS: Exclude<Mood, "neutral">[] = ["curious", "serious", "smile", "soft"];
 
 const FRAME_SECONDS = 0.04;   // 25 mouth decisions a second
 
@@ -72,6 +79,8 @@ const TalkingFace = forwardRef<TalkingFaceHandle, { base?: string }>(function Ta
   const shapeRef = useRef<Shape>("closed");
   const blinkRef = useRef(false);
   const talkingRef = useRef(false);
+  const moodRef = useRef<Mood>("neutral");
+  const listeningRef = useRef(false);
   const audioCtx = useRef<AudioContext | null>(null);
   const source = useRef<AudioBufferSourceNode | null>(null);
   const track = useRef<{ shapes: Shape[]; startAt: number } | null>(null);
@@ -107,6 +116,12 @@ const TalkingFace = forwardRef<TalkingFaceHandle, { base?: string }>(function Ta
     let frame = 0;
     let nextBlink = performance.now() + 2500 + Math.random() * 2500;
     let blinkUntil = 0;
+    // Expression fades (0 to 1 each), nods and the moment the mouth last closed, for the emphasis nod.
+    const fade: Record<string, number> = { curious: 0, serious: 0, smile: 0, soft: 0 };
+    let last = performance.now();
+    let nodStart = -1e9, nodDepth = 0;
+    let nextListenNod = performance.now() + 3500;
+    let lastShape: Shape = "closed", closedSince = performance.now();
     let genericShape: Shape = "closed";
     let genericUntil = 0;
     const order: Shape[] = ["slight", "ah", "ee", "slight", "oh", "ah", "closed", "slight", "ah"];
@@ -130,24 +145,47 @@ const TalkingFace = forwardRef<TalkingFaceHandle, { base?: string }>(function Ta
       if (now > nextBlink) { blinkUntil = now + 130; nextBlink = now + 2800 + Math.random() * 3200; }
       blinkRef.current = now < blinkUntil;
 
+      // Expressions: the broad smile has its own mouth, so while she talks the soft smile stands in under the mouth.
+      const dt = Math.min(100, now - last); last = now;
+      const want = moodRef.current === "smile" && shape !== "closed" ? "soft" : moodRef.current;
+      for (const m of MOODS) fade[m] += ((m === want ? 1 : 0) - fade[m]) * Math.min(1, dt / 90);
+      // Nods: now and then while listening, and a small one when she opens her mouth wide after a pause.
+      if (listeningRef.current && now > nextListenNod) { nodStart = now; nodDepth = 1; nextListenNod = now + 3500 + Math.random() * 3500; }
+      if (shape === "closed" && lastShape !== "closed") closedSince = now;
+      if (shape === "ah" && lastShape === "closed" && now - closedSince > 350) { nodStart = now; nodDepth = 0.5; }
+      lastShape = shape;
+      const nt = (now - nodStart) / 600;
+      const nod = nt >= 0 && nt < 1 ? Math.sin(nt * Math.PI) * nodDepth : 0;
+
       ctx.drawImage(images.current.base, 0, 0);
+      for (const m of MOODS) {
+        if (fade[m] < 0.01) continue;
+        const p = spec.patches[`expr_${m}`];
+        const img = images.current[`expr_${m}`];
+        if (!p || !img?.complete) continue;
+        ctx.globalAlpha = fade[m];
+        ctx.drawImage(img, p.x, p.y, p.w, p.h);
+        ctx.globalAlpha = 1;
+      }
       if (shape !== "closed") {
         const p = spec.patches[`mouth_${shape}`];
         const img = images.current[`mouth_${shape}`];
         if (p && img?.complete) ctx.drawImage(img, p.x, p.y, p.w, p.h);
       }
-      if (blinkRef.current) {
+      // The blink was made from her neutral eyes, so it shows only while her eyes are neutral.
+      if (blinkRef.current && (moodRef.current === "neutral" || moodRef.current === "soft")) {
         const p = spec.patches.eyes_closed;
         const img = images.current.eyes_closed;
         if (p && img?.complete) ctx.drawImage(img, p.x, p.y, p.w, p.h);
       }
       // A person on a call is never perfectly still: a very small, slow sway, a little more while speaking.
       const speaking = shape !== "closed" || talkingRef.current || !!track.current;
-      const amp = speaking ? 1.6 : 0.8;
+      const amp = speaking ? 1.8 : 1.2;
       const s = now / 1000;
+      const breath = 1.03 + Math.sin(s * 1.5) * 0.003;
       canvas.style.transform =
-        `translate(${(Math.sin(s * 0.7) * amp).toFixed(2)}px, ${(Math.sin(s * 0.9 + 1) * amp * 0.6).toFixed(2)}px) ` +
-        `rotate(${(Math.sin(s * 0.5) * 0.25 * (speaking ? 1.5 : 1)).toFixed(3)}deg) scale(1.02)`;
+        `translate(${(Math.sin(s * 0.7) * amp).toFixed(2)}px, ${(Math.sin(s * 0.9 + 1) * amp * 0.6 + nod * 5).toFixed(2)}px) ` +
+        `rotate(${(Math.sin(s * 0.5) * 0.45 * (speaking ? 1.3 : 1)).toFixed(3)}deg) scale(${breath.toFixed(4)})`;
       frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
@@ -184,6 +222,8 @@ const TalkingFace = forwardRef<TalkingFaceHandle, { base?: string }>(function Ta
       if (source.current === node) { source.current = null; track.current = null; }
     },
     setTalking: (on) => { talkingRef.current = on; },
+    setMood: (m) => { moodRef.current = m; },
+    setListening: (on) => { listeningRef.current = on; },
     stop,
   }), [stop]);
 

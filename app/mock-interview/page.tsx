@@ -926,6 +926,7 @@ export default function MockInterviewPage() {
   };
 
   const stopRecording = useCallback(() => {
+    faceRef.current?.setListening(false);
     releaseEarlyMic();
     clearSilenceTimer();
     accountForListening();
@@ -987,6 +988,7 @@ export default function MockInterviewPage() {
   // ── Start recording (Speechmatics) ────────────────────────
   const startRecording = useCallback(async () => {
     if (isRecordingRef.current || isAnalyzingRef.current || wsRef.current) return;
+    faceRef.current?.setListening(true);   // she nods now and then while the candidate answers
     setRecordingError(null);
     try {
       // Made while the question was being spoken (prepareListening), so listening starts the moment Maya stops.
@@ -1373,6 +1375,14 @@ export default function MockInterviewPage() {
     faceRef.current?.stop();
     if (listenAfter) void prepareListening();
     const mine = ++speakToken.current;
+    // Her face follows the line (2026-10-26, same as the phone app): a soft smile on a warm line and a real smile after
+    // it, a curious look on a question, then a soft smile while the candidate answers.
+    const warm = ACKNOWLEDGEMENTS.includes(text) || text === INTERVIEW_INTRO || text === INTERVIEW_CLOSING;
+    faceRef.current?.setMood(warm ? "soft" : text.includes("?") ? "curious" : "neutral");
+    const afterLine = () => {
+      if (warm) { faceRef.current?.setMood("smile"); setTimeout(() => faceRef.current?.setMood("soft"), 1800); }
+      else setTimeout(() => faceRef.current?.setMood("soft"), 1500);
+    };
     const voice = await fetchVoice(text);
     if (mine !== speakToken.current) return;                 // a newer question started meanwhile
     if (voice && faceRef.current) {
@@ -1380,6 +1390,7 @@ export default function MockInterviewPage() {
       await faceRef.current.speak(voice.pcm, voice.rate);
       if (mine !== speakToken.current) return;
       setIsSpeaking(false);
+      afterLine();
       if (listenAfter) setTimeout(() => startRecording(), 120);
       return;
     }
@@ -1391,7 +1402,7 @@ export default function MockInterviewPage() {
     utter.rate   = 0.95;
     utter.onstart = () => { setIsSpeaking(true); faceRef.current?.setTalking(true); };
     await new Promise<void>((resolve) => {
-      utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 150); resolve(); };
+      utter.onend   = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); afterLine(); if (listenAfter) setTimeout(() => startRecording(), 150); resolve(); };
       utter.onerror = () => { faceRef.current?.setTalking(false); setIsSpeaking(false); if (listenAfter) setTimeout(() => startRecording(), 300); resolve(); };
       window.speechSynthesis.speak(utter);
     });
