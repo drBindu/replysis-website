@@ -1437,7 +1437,8 @@ export async function POST(req: Request) {
         // Only the first time on a question: after one hint, moving on is right.
         const lastQ = Array.isArray(b.history) && b.history.length ? String((b.history[b.history.length - 1] as any)?.q ?? "") : "";
         let stuckHandled = false;
-        if (stuck && action !== "repeat" && action !== "end" && !opening && sanitizeText(lastQ).slice(0, 1000) !== safeQ) {
+        if (stuck && action !== "end" && !opening && sanitizeText(lastQ).slice(0, 1000) !== safeQ) {
+          let said2Used = false;
           try {
             // Without the next question in view, so she cannot drift to it (she did, every time it was there).
             const sameOnly = userPrompt.split("\n\nYOUR NEXT QUESTION:")[0];
@@ -1448,10 +1449,10 @@ export async function POST(req: Request) {
             const m2 = again.match(/\{[\s\S]*\}/);
             const j2 = m2 ? JSON.parse(m2[0]) : {};
             const said2 = typeof j2.say === "string" ? j2.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
-            if (said2) { say = said2; action = "repeat"; }
+            if (said2) { say = said2; action = "repeat"; said2Used = true; }
           } catch { /* the fallback below */ }
-          // Still moving on: a calm line and the same question again, so she never leaves them stuck.
-          if (action !== "repeat") {
+          // Still moving on (or the retry failed): a calm line and the same question again, so she never leaves them stuck.
+          if (!said2Used) {
             say = `${/nervous|anxious|scared/i.test(safeA) ? "That's completely normal, take your time." : "No problem, take a moment."} ${safeQ}`;
             action = "repeat";
           }
