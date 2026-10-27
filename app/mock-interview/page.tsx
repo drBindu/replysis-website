@@ -1871,14 +1871,16 @@ export default function MockInterviewPage() {
       }}>
         <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 24px",
           height: 58, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Logo: back to the home page (owner, 2026-10-27); during an interview it asks first. */}
+          <a href="/" aria-label="Replysis home"
+            onClick={(e) => { if (phase === "interview" && !window.confirm("Leave the interview and go to the home page?")) e.preventDefault(); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", cursor: "pointer" }}>
             <BrandIcon size={30} />
             <span style={{ fontSize: 15, fontWeight: 800, color: T.text, letterSpacing: "-0.02em" }}>Replysis</span>
             <span style={{ fontSize: 9, fontWeight: 900, padding: "2px 7px", borderRadius: 6,
               background: T.accentBg, border: `1px solid ${T.accentBrd}`, color: T.accent,
               letterSpacing: "0.12em", textTransform: "uppercase" }}>AI</span>
-          </div>
+          </a>
 
           {/* Stepper (hidden on a phone, where it pushed End Session off the screen) */}
           <div className="mi-stepper" style={{ display: "flex", alignItems: "center", gap: 4 }}>
