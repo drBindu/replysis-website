@@ -4,6 +4,7 @@ import AppWindow, { SAY_TWO_SUM } from "./AppWindow";
 import EditorScreen from "./EditorScreen";
 import { OSDownloadButtons } from "../HeroSection";
 import { PUBLIC_PLAN_CAPACITY } from "../../../data/productFacts";
+import { MOCK_PLAN } from "../../../data/mayaAddon";
 
 type Nav = (path: string) => void;
 type Download = (os: "win" | "win-direct" | "mac") => void;
@@ -169,8 +170,10 @@ export function PlainFacts({ onNav }: { onNav: Nav }) {
           <div>
             <dt>Plans</dt>
             <dd>
-              Starter: {plans.free.summary}. Pro: {plans.pro.summary}, $34.99 a month. Max: {plans.max.summary}, $79.99 a month.{" "}
-              <a href="/pricing" onClick={(e) => { e.preventDefault(); onNav("pricing"); }}>See pricing</a> for answer packs.
+              Starter: {plans.free.summary}, and one free interview with Maya. Practice: {MOCK_PLAN.interviews} interviews with
+              Maya and {MOCK_PLAN.credits / 5} answers each month, ${MOCK_PLAN.usd} a month. Pro: {plans.pro.summary}, $34.99 a
+              month. Max: {plans.max.summary}, $79.99 a month. Pro and Max can add Maya.{" "}
+              <a href="/pricing" onClick={(e) => { e.preventDefault(); onNav("pricing"); }}>See pricing</a>.
             </dd>
           </div>
           <div>

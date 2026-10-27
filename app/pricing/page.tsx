@@ -249,7 +249,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers, mock practice, and AI resume tools share this balance. Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
+    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers and AI resume tools share this balance; interviews with Maya use none.  Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
