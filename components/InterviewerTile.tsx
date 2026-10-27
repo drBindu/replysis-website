@@ -1,8 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
-import type { TalkingFaceHandle } from "./TalkingFace";
-import SimliFace from "./SimliFace";
+import { MayaVideo, type MayaLive } from "./MayaLive";
 
 export type InterviewerState = "speaking" | "listening" | "thinking" | "idle";
 
@@ -27,13 +25,13 @@ const STATUS: Record<InterviewerState, string> = {
  * a photo), made from her own Flow video and lip synced by Simli. The name tag says it is an AI interviewer. Until she
  * connects, or if she cannot, a name card with a speaking ring shows and her voice still plays.
  */
-export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEWER, faceRef }: {
+export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEWER, live }: {
   state: InterviewerState;
   /** Kept for callers; the question is not shown on the face (owner: no captions). */
   question?: string;
   interviewer?: Interviewer;
-  /** Lets the interview speak through the face. */
-  faceRef?: RefObject<TalkingFaceHandle | null>;
+  /** Maya's live connection (made by the page so she can join before the interview starts). */
+  live: MayaLive;
 }) {
   const speaking = state === "speaking";
 
@@ -51,7 +49,7 @@ export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEW
         </div>
       </div>
 
-      <SimliFace ref={faceRef} />
+      <MayaVideo live={live} />
 
       {/* Top row: live marker */}
       <div style={{ position: "absolute", top: 12, left: 14, display: "flex", alignItems: "center", gap: 7, color: "white",
@@ -67,7 +65,7 @@ export default function InterviewerTile({ state, interviewer = DEFAULT_INTERVIEW
         </span>
         <span style={{ color: speaking ? "#0b171b" : "white", fontSize: 11, fontWeight: 800, letterSpacing: "0.04em",
           background: speaking ? "#1fc98a" : "rgba(255,255,255,0.18)", padding: "5px 9px", borderRadius: 8 }}>
-          {STATUS[state]}
+          {live.status === "connecting" ? "Joining" : STATUS[state]}
         </span>
       </div>
 

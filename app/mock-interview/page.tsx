@@ -21,7 +21,7 @@ import { analyzeInterviewTurns } from "../real-interview/_lib/interviewAnalytics
 import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCount } from "../../data/productFacts";
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 import { pickInterviewerVoice } from "./interviewerVoice";
-import type { TalkingFaceHandle } from "../../components/TalkingFace";
+import { useMayaLive } from "../../components/MayaLive";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -1327,7 +1327,9 @@ export default function MockInterviewPage() {
   // ── TTS ───────────────────────────────────────────────────
   // Maya's face speaks the question: the voice comes from our server as audio, so her mouth can follow it exactly. If that
   // voice cannot be had, the browser's own woman's voice speaks and the face makes a general talking movement instead.
-  const faceRef = useRef<TalkingFaceHandle | null>(null);
+  // Maya joins on the check screen, so she is on the call when the interview begins (paid users only).
+  const maya = useMayaLive(isPaid === true && (phase === "ready" || phase === "interview"));
+  const faceRef = useRef(maya.face);
   const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
   const speakToken = useRef(0);
 
@@ -1628,7 +1630,10 @@ export default function MockInterviewPage() {
     followUpsAsked.current = 0;
     followUpIndexes.current = new Set();
     questionsRef.current = questions;
-    setTimeout(() => { void speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`); prepareAfter(0); }, 500);
+    // Her first words wait for her face (she started joining on the check screen), at most 25 seconds.
+    prepareAfter(0);
+    void maya.whenReady(25_000).then(() => new Promise((r) => setTimeout(r, 500)))
+      .then(() => speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`));
   };
 
   // ── File upload ────────────────────────────────────────────
@@ -2214,6 +2219,7 @@ export default function MockInterviewPage() {
                       { label: "Difficulty", value: DIFFICULTY_OPTIONS.find(d => d.id === difficulty)?.label ?? "Mixed", sub: undefined, ok: true },
                       { label: "Questions",  value: `${questions.length} prepared`, sub: `of ${questionCount} requested`, ok: questions.length >= questionCount * 0.8 },
                       { label: "Camera",     value: cameraOn ? "Connected" : "Disabled", ok: cameraOn },
+                      { label: "Maya",       value: maya.status === "ready" ? "On the call" : maya.status === "failed" ? "Voice only" : "Joining", ok: maya.status === "ready" },
                       { label: "AI Voice",   value: ttsEnabled ? "Enabled" : "Muted",   ok: ttsEnabled },
                       { label: "Microphone", value: "Checked when you answer", ok: true },
                       { label: "Memory AI",  value: `Last ${CONTEXT_HISTORY_TURNS} turns`, sub: "context-aware", ok: true },
@@ -2311,7 +2317,7 @@ export default function MockInterviewPage() {
                 <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
                   <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"}
-                    faceRef={faceRef} />
+                    live={maya} />
 
                   {/* The candidate's own tile: small in the corner, larger at the bottom right in full screen */}
                   {callView && !cameraOn && (
@@ -2697,7 +2703,7 @@ export default function MockInterviewPage() {
                   </div>
                   <p style={{ marginTop: 16, fontSize: 13, fontWeight: 800, textTransform: "uppercase",
                     letterSpacing: "0.1em", color: scoreHex(parseFloat(avgScore) || 0) }}>
-                    {scoreLabel(parseFloat(avgScore) || 0)}
+                    {scores.length === 0 ? "No answers yet" : scoreLabel(parseFloat(avgScore) || 0)}
                   </p>
                   <p style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>Overall Performance</p>
                 </div>
@@ -2735,7 +2741,16 @@ export default function MockInterviewPage() {
                 </div>
               </div>
 
-              {/* Complete delivery and STAR report */}
+              {/* Complete delivery and STAR report. With no answers there is nothing to measure, so no numbers are shown. */}
+              {history.length === 0 ? (
+                <div style={{ borderRadius: 16, border: `1px solid ${T.border}`, background: T.panel,
+                  padding: "22px 24px", marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>No answers yet</h3>
+                  <p style={{ fontSize: 12.5, color: T.textMid, marginTop: 6, lineHeight: 1.6 }}>
+                    This interview ended before you answered a question. Start a new one and your full report appears here.
+                  </p>
+                </div>
+              ) : (
               <div style={{ borderRadius: 16, border: `1px solid ${T.border}`, background: T.panel,
                 padding: "22px 24px", marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 20 }}>
@@ -2796,6 +2811,7 @@ export default function MockInterviewPage() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Question by question: what to improve in each answer */}
               {Object.keys(turnFeedback).length > 0 && (
