@@ -9,6 +9,8 @@ import { NextResponse } from "next/server";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { ensureAdmin } from "../../../lib/verify-user";
 import { mailConfigured, sendMails, unsubscribeToken } from "../../../lib/user-mail";
+import { mayaAccess } from "../../../lib/paid-plan";
+import { MOCK_PLAN } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -105,5 +107,70 @@ export async function POST(req: Request) {
     await doc.ref.set({ followupKind: kind, followupSentAt: new Date(), followupSent: result.sent === 1 }, { merge: true });
     report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });
   }
+  // ── Upgrade emails (owner, 2026-10-27) ──
+  // The iPhone app may not point to the website to pay (outside the US), so the moments that matter get one email each,
+  // from the server, with the plans link: someone who used their free interview with Maya and did not buy, and someone
+  // who ran out of answers. Once per person per kind, ever, and only for people active in the last two weeks.
+  const recent = now - 14 * 24 * 3600_000;
+  const upgrade: { doc: FirebaseFirestore.QueryDocumentSnapshot; kind: "maya-taste" | "out-of-answers" }[] = [];
+  const tasted = await db.collection("users").where("mayaFreeUsed", "==", true).get();
+  for (const doc of tasted.docs) {
+    const at = ms(doc.data().mayaFreeUsedAt);
+    if (at && now - at > 3600_000 && now - at < 7 * 24 * 3600_000 && mayaAccess(doc.data()).state !== "ok") upgrade.push({ doc, kind: "maya-taste" });
+  }
+  const empty = await db.collection("users").where("credits", "<", 5).get();
+  for (const doc of empty.docs) {
+    const d = doc.data();
+    const seen = ms(d.lastActive) ?? 0;
+    const paid = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
+    if (!paid && d.mockPlan !== true && Number(d.minutesBalance ?? 0) <= 0 && seen > recent && Number(d.creditsUsed ?? 0) > 0) {
+      upgrade.push({ doc, kind: "out-of-answers" });
+    }
+  }
+  for (const { doc, kind } of upgrade) {
+    const d = doc.data();
+    const to = typeof d.email === "string" ? d.email : "";
+    if (!to.includes("@") || d.emailOptOut === true || d.internal === true) continue;
+    const masked = to.replace(/^(.{3}).*@/, "$1***@");
+    if (dry) { report.push({ who: masked, kind: `would send ${kind}` }); continue; }
+    try { await db.collection("_alerts").doc(`upgrade-${kind}-${doc.id}`).create({ sentAt: now, kind }); }
+    catch { continue; }
+    const first = String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "";
+    const m = upgradeEmail(kind, first);
+    const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
+    report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });
+  }
   return NextResponse.json({ checked: users.size, report });
+}
+
+function upgradeEmail(kind: "maya-taste" | "out-of-answers", first: string): { subject: string; text: string } {
+  const hi = `Hi${first ? " " + first : ""},`;
+  if (kind === "maya-taste") return {
+    subject: "Keep practising with Maya",
+    text: `${hi}
+
+Thanks for your interview with Maya. The more you practise out loud, the calmer and clearer you get in the real one.
+
+The Practice plan gives you ${MOCK_PLAN.interviews} interviews with Maya every month, with feedback and a stronger answer for every question, plus live answers for your real interviews. It is $${MOCK_PLAN.usd} a month (Rs ${MOCK_PLAN.inr} in India). Pro and Max can add Maya too.
+
+See the plans: https://replysis.com/pricing
+
+Once you have a plan, it works on the website and in the Replysis apps with the same account.
+
+The Replysis team`,
+  };
+  return {
+    subject: "You have used your Replysis answers",
+    text: `${hi}
+
+You have used all your answers. To keep getting answers in your interviews, choose a plan here:
+
+https://replysis.com/pricing
+
+Pro gives you 500 answers every month. If you mostly want to practise, the Practice plan includes interviews with Maya and live answers.
+
+Once you have a plan, it works on the website and in the Replysis apps with the same account.
+
+The Replysis team`,
+  };
 }
