@@ -1387,7 +1387,7 @@ export default function MockInterviewPage() {
   const maya = useMayaLive(isPaid === true && (phase === "interview" || (phase === "ready" && !taste)));
   const faceRef = useRef(maya.face);
   // Her video takes up to ~10 s to join (the free interview only starts joining at Begin), and her voice used to start
-  // first, so she talked from an empty tile (owner, 2026-10-27). Her lines wait for her face, up to 15 s.
+  // first, so she talked from an empty tile (owner, 2026-10-27). Her lines wait for her face, up to 30 s.
   const mayaStatusRef = useRef(maya.status);
   mayaStatusRef.current = maya.status;
   const mayaWantedRef = useRef(false);
@@ -1509,7 +1509,8 @@ export default function MockInterviewPage() {
     const voice = await voices[0];
     // At Begin her status is still "off" for a moment (she starts joining on the next render), which the first version
     // of this wait missed, so "off" is waited through too while she is meant to be on the call.
-    for (const t0 = Date.now(); Date.now() - t0 < 15_000;) {
+    // Up to 30 s, the same as her own join timeout: people want to see her while she speaks (owner, 2026-10-27).
+    for (const t0 = Date.now(); Date.now() - t0 < 30_000;) {
       const st = mayaStatusRef.current;
       if (st === "ready" || st === "failed") break;
       if (st === "off" && (!mayaWantedRef.current || Date.now() - t0 > 2_000)) break;
