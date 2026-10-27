@@ -46,5 +46,9 @@ export const MOCK_PLAN = {
  */
 export const FREE_TASTES_PER_DAY = 20;
 
-/** Live Maya sessions a day, for anyone (not shown; stops one person using a month in a day). */
-export const MAYA_SESSIONS_PER_DAY = 6;
+/**
+ * Only a started interview counts (owner, 2026-10-26: "start interview, one off, not sessions"): refreshing a page or a
+ * connection that fails never uses one up. This number only stops abuse of the connection itself (a script opening
+ * sessions without interviews); nobody practising ever reaches it.
+ */
+export const MAYA_CONNECTIONS_PER_DAY = 40;

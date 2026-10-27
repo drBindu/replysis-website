@@ -1674,6 +1674,11 @@ export default function MockInterviewPage() {
       setLoadingCredits(false);
     }
     setPhase("interview"); setIndex(0);
+    // This interview counts as one of the month's Maya interviews (only a started interview counts).
+    void auth.currentUser?.getIdToken().then((t) => fetch("/api/simli/begin", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+      body: JSON.stringify({ id: `web-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }),
+    })).catch(() => { /* counting must never stop an interview */ });
     setAnswer(""); answerRef.current = "";
     setScores([]); setHistory([]); setResponseDurations([]);
     setFeedback(null); setShowFeedback(false); setFeedbackFailed(false); setSessionTime(0);

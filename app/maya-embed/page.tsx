@@ -33,6 +33,7 @@ export default function MayaEmbed() {
   const [started, setStarted] = useState(false);
   const [getToken] = useState(() => async () => token.current);
   const maya = useMayaLive(started, getToken);
+  const [interviewId] = useState(() => `app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => { if (maya.status !== "off") toApp({ type: "status", status: maya.status }); }, [maya.status]);
 
@@ -40,7 +41,15 @@ export default function MayaEmbed() {
     const onMessage = (e: MessageEvent) => {
       let m: AppMessage;
       try { m = JSON.parse(typeof e.data === "string" ? e.data : ""); } catch { return; }
-      if (m.type === "start" && typeof m.token === "string") { token.current = m.token; setStarted(true); }
+      if (m.type === "start" && typeof m.token === "string") {
+        token.current = m.token;
+        setStarted(true);
+        // The phone opens this page for one interview: it counts as one of the month's Maya interviews.
+        void fetch("/api/simli/begin", {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${m.token}` },
+          body: JSON.stringify({ id: interviewId }),
+        }).catch(() => {});
+      }
       else if (m.type === "speak") {
         void maya.face.speak(decodePcm(m.pcm), m.rate).then(() => toApp({ type: "done", id: m.id }));
       } else if (m.type === "stop") maya.face.stop();
@@ -53,7 +62,7 @@ export default function MayaEmbed() {
       window.removeEventListener("message", onMessage);
       document.removeEventListener("message", onMessage as EventListener);
     };
-  }, [maya.face]);
+  }, [maya.face, interviewId]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#0b171b" }}>

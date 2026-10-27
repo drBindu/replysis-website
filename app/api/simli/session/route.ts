@@ -11,7 +11,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
-import { FREE_TASTES_PER_DAY, MAYA_ADDON, MAYA_SESSIONS_PER_DAY } from "../../../../data/mayaAddon";
+import { FREE_TASTES_PER_DAY, MAYA_ADDON, MAYA_CONNECTIONS_PER_DAY } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -56,22 +56,22 @@ export async function POST(req: Request) {
     }
   }
 
-  // Counted per day and per month before the session is made, so a failure to count cannot give free sessions.
+  // Interviews are counted when one starts (/api/simli/begin), never here. Here: the month's interviews must not all be
+  // used, and connections are guarded against abuse only.
   const day = new Date().toISOString().slice(0, 10);
   const month = day.slice(0, 7);
   const usageRef = getFirestore().collection("avatar_usage").doc(`${uid}_${day}`);
   const monthRef = getFirestore().collection("avatar_usage").doc(`${uid}_${month}`);
   const allowed = internal ? "ok" : await getFirestore().runTransaction(async (tx) => {
-    const used = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
-    const usedMonth = Number((await tx.get(monthRef)).data()?.sessions ?? 0);
-    if (used >= MAYA_SESSIONS_PER_DAY) return "day";
-    if (!taste && usedMonth >= access.monthly) return "month";
-    tx.set(usageRef, { uid, day, sessions: used + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    tx.set(monthRef, { uid, month, sessions: usedMonth + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const connections = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
+    const interviews = Number((await tx.get(monthRef)).data()?.interviews ?? 0);
+    if (connections >= MAYA_CONNECTIONS_PER_DAY) return "day";
+    if (!taste && interviews >= access.monthly) return "month";
+    tx.set(usageRef, { uid, day, sessions: connections + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return "ok";
   }).catch(() => "error");
   if (allowed !== "ok") {
-    return NextResponse.json({ error: allowed === "month" ? "Monthly limit reached" : "Daily limit reached" }, { status: 429 });
+    return NextResponse.json({ error: allowed === "month" ? "Monthly interviews used" : "Too many connections today" }, { status: 429 });
   }
 
   try {
