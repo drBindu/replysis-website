@@ -1390,6 +1390,8 @@ export default function MockInterviewPage() {
   // first, so she talked from an empty tile (owner, 2026-10-27). Her lines wait for her face, up to 15 s.
   const mayaStatusRef = useRef(maya.status);
   mayaStatusRef.current = maya.status;
+  const mayaWantedRef = useRef(false);
+  mayaWantedRef.current = isPaid === true;
   const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
   const speakToken = useRef(0);
 
@@ -1505,7 +1507,12 @@ export default function MockInterviewPage() {
     const parts = spokenParts(text);
     const voices = parts.map((part) => fetchVoice(part));
     const voice = await voices[0];
-    for (const t0 = Date.now(); mayaStatusRef.current === "connecting" && Date.now() - t0 < 15_000;) {
+    // At Begin her status is still "off" for a moment (she starts joining on the next render), which the first version
+    // of this wait missed, so "off" is waited through too while she is meant to be on the call.
+    for (const t0 = Date.now(); Date.now() - t0 < 15_000;) {
+      const st = mayaStatusRef.current;
+      if (st === "ready" || st === "failed") break;
+      if (st === "off" && (!mayaWantedRef.current || Date.now() - t0 > 2_000)) break;
       await new Promise((r) => setTimeout(r, 200));
     }
     if (mine !== speakToken.current) return;                 // a newer question started meanwhile
