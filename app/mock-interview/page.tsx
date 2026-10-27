@@ -1386,6 +1386,10 @@ export default function MockInterviewPage() {
   // The free interview joins only at Begin: joining is what uses it up, and someone may still go back from the checks.
   const maya = useMayaLive(isPaid === true && (phase === "interview" || (phase === "ready" && !taste)));
   const faceRef = useRef(maya.face);
+  // Her video takes up to ~10 s to join (the free interview only starts joining at Begin), and her voice used to start
+  // first, so she talked from an empty tile (owner, 2026-10-27). Her lines wait for her face, up to 15 s.
+  const mayaStatusRef = useRef(maya.status);
+  mayaStatusRef.current = maya.status;
   const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
   const speakToken = useRef(0);
 
@@ -1501,6 +1505,9 @@ export default function MockInterviewPage() {
     const parts = spokenParts(text);
     const voices = parts.map((part) => fetchVoice(part));
     const voice = await voices[0];
+    for (const t0 = Date.now(); mayaStatusRef.current === "connecting" && Date.now() - t0 < 15_000;) {
+      await new Promise((r) => setTimeout(r, 200));
+    }
     if (mine !== speakToken.current) return;                 // a newer question started meanwhile
     if (voice && faceRef.current) {
       setIsSpeaking(true);
