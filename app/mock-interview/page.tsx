@@ -1843,8 +1843,8 @@ export default function MockInterviewPage() {
               letterSpacing: "0.12em", textTransform: "uppercase" }}>AI</span>
           </div>
 
-          {/* Stepper */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {/* Stepper (hidden on a phone, where it pushed End Session off the screen) */}
+          <div className="mi-stepper" style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {(["setup","ready","interview","summary"] as Phase[]).map((p, i) => {
               const labels = ["Configure", "Preflight", "Interview", "Analytics"];
               const isActive = phase === p;
@@ -1880,7 +1880,7 @@ export default function MockInterviewPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {phase === "interview" && (
               <>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
+                <div className="mi-clock" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
                   borderRadius: 8, border: `1px solid ${T.border}`, background: T.card,
                   fontSize: 12, fontWeight: 600, color: T.textMid, fontFamily: "monospace" }}>
                   <Clock size={12} style={{ color: T.textFaint }} /> {formatTime(sessionTime)}
@@ -2473,11 +2473,40 @@ export default function MockInterviewPage() {
                   </div>
                 </div>
 
-                {/* AI Robot area */}
-                <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
+                {/* AI Robot area. On a phone the page is one column of auto height, where flex: 1 gave her no height at all
+                    and she was missing (owner, 2026-10-27); maya-stage keeps a video sized area there. */}
+                <div className={callView ? undefined : "maya-stage"}
+                  style={{ flex: 1, position: "relative", display: "flex", alignItems: "center",
                   justifyContent: "center", overflow: "hidden", background: "#0b171b" }}>
                   <InterviewerTile state={isSpeaking ? "speaking" : isAnalyzing ? "thinking" : isRecording ? "listening" : "idle"}
                     live={maya} />
+
+                  {/* Full screen hides the right panel, so the suggested answer is offered here too: the eye at the top
+                      right, and the answer over the bottom of the video while it is on (owner, 2026-10-27). */}
+                  {callView && (
+                    <>
+                      <button onClick={toggleSuggested} aria-pressed={showSuggested}
+                        aria-label={showSuggested ? "Hide the suggested answer" : "Show the suggested answer"}
+                        style={{ position: "absolute", top: 14, right: 14, zIndex: 3, display: "flex", alignItems: "center", gap: 6,
+                          padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                          border: "1px solid rgba(255,255,255,0.25)", background: "rgba(0,0,0,0.5)", color: "white" }}>
+                        {showSuggested ? <Eye size={15} /> : <EyeOff size={15} />}
+                        Suggested answer
+                      </button>
+                      {showSuggested && (() => {
+                        const s = suggestions[currentQ];
+                        return (
+                          <div className="light-scrollbar"
+                            style={{ position: "absolute", left: 16, right: 16, bottom: 16, zIndex: 3, maxHeight: "38%", overflowY: "auto",
+                              padding: "12px 14px", borderRadius: 12, background: "rgba(0,0,0,0.72)", color: "white",
+                              fontSize: 14, lineHeight: 1.65 }}>
+                            {!s || s.loading ? "Writing a suggested answer from your resume"
+                              : s.failed ? "A suggested answer could not be made for this question." : s.text}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
 
                   {/* The candidate's own tile: small in the corner, larger at the bottom right in full screen */}
                   {callView && !cameraOn && (
@@ -3058,6 +3087,10 @@ export default function MockInterviewPage() {
           .setup-grid     { grid-template-columns: 1fr !important; }
           .preflight-grid { grid-template-columns: 1fr !important; }
           .interview-grid { grid-template-columns: 1fr !important; height: auto !important; }
+          .maya-stage     { flex: none !important; height: min(92vw, 62vh); }
+        }
+        @media (max-width: 640px) {
+          .mi-stepper, .mi-clock { display: none !important; }
           .summary-stats  { grid-template-columns: 1fr 1fr !important; }
           .summary-detail { grid-template-columns: 1fr !important; }
         }
