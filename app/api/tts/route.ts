@@ -36,7 +36,10 @@ async function cloudVoice(text: string): Promise<Buffer | null> {
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: "en-US", name: `en-US-Chirp3-HD-${VOICE}` },
-        audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000 },
+        // Owner, 2026-10-27: "she is talking very fast". A calm interviewer's pace; MAYA_SPEAKING_RATE adjusts it on the
+        // server without a release (0.85 to 1.0 sound natural).
+        audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000,
+                       speakingRate: Number(process.env.MAYA_SPEAKING_RATE) || 0.9 },
       }),
       signal: AbortSignal.timeout(8_000),
     });
