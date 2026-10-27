@@ -30,8 +30,10 @@ export async function POST(req: Request) {
   const apiKey = process.env.SIMLI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Live face unavailable" }, { status: 503 });
 
-  const access = await getFirestore().collection("users").doc(uid).get()
-    .then((d) => mayaAccess(d.data())).catch(() => null);
+  const userData = await getFirestore().collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
+  const access = userData ? mayaAccess(userData) : null;
+  // The owner and testers (internal accounts) are never counted or limited.
+  const internal = userData?.internal === true;
   if (!access || (access.state !== "ok" && access.state !== "taste")) {
     return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
   }
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
   const month = day.slice(0, 7);
   const usageRef = getFirestore().collection("avatar_usage").doc(`${uid}_${day}`);
   const monthRef = getFirestore().collection("avatar_usage").doc(`${uid}_${month}`);
-  const allowed = await getFirestore().runTransaction(async (tx) => {
+  const allowed = internal ? "ok" : await getFirestore().runTransaction(async (tx) => {
     const used = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
     const usedMonth = Number((await tx.get(monthRef)).data()?.sessions ?? 0);
     if (used >= MAYA_SESSIONS_PER_DAY) return "day";
