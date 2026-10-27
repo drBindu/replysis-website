@@ -87,7 +87,8 @@ export async function POST(req: Request) {
   const testFace = params.get("testFace");
   if (internal && testFace && /^[0-9a-f-]{36}$/.test(testFace)) {
     test.faceId = testFace;
-    test.trinity2 = true;
+    // &kind=legacy tries a Legacy face (the engine the live Maya uses); otherwise a Trinity-2 face.
+    test.trinity2 = params.get("kind") !== "legacy";
     const num = (k: string) => { const v = Number(params.get(k)); return Number.isFinite(v) && params.get(k) !== null ? v : undefined; };
     const w = num("w"), h = num("h");
     if (w && h) test.size = { streaming_width: w, streaming_height: h };
