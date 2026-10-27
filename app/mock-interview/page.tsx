@@ -771,15 +771,10 @@ export default function MockInterviewPage() {
   }, []);
   useEffect(() => { if (phase !== "interview") setCallView(false); }, [phase]);
 
-  // The suggested answer, shown only while the eye is on (remembered per browser), made once per question.
+  // The suggested answer, made once per question, shown only while the eye is on. Every interview starts with it
+  // hidden (owner, 2026-10-27): it used to be remembered, so one tap kept it showing in every later interview.
   const [showSuggested, setShowSuggested] = useState(false);
-  useEffect(() => {
-    try { if (window.localStorage.getItem("replysis-mock-suggest") === "on") setShowSuggested(true); } catch { /* private window */ }
-  }, []);
-  const toggleSuggested = () => setShowSuggested(prev => {
-    try { window.localStorage.setItem("replysis-mock-suggest", prev ? "off" : "on"); } catch { /* private window */ }
-    return !prev;
-  });
+  const toggleSuggested = () => setShowSuggested(prev => !prev);
   const [suggestions, setSuggestions] = useState<Record<string, { text: string; loading: boolean; failed?: boolean }>>({});
   // Each question's feedback, kept for the report at the end, keyed by question number.
   const [turnFeedback, setTurnFeedback] = useState<Record<number, TurnFeedback>>({});
