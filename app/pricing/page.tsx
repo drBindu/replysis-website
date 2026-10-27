@@ -444,6 +444,7 @@ export default function PricingPage() {
     }
     setPracticeLoading(false);
   };
+  const addonPrice = india ? `₹${MAYA_ADDON.inr}` : localPrices ? `${localPrices.symbol}${MAYA_ADDON.local[localPrices.currency]}` : `$${MAYA_ADDON.usd}`;
   const practicePrice = india ? `₹${MOCK_PLAN.inr}` : localPrices ? `${localPrices.symbol}${MOCK_PLAN.local[localPrices.currency]}` : `$${MOCK_PLAN.usd}`;
 
   const openFreeAccount = () => {
@@ -544,7 +545,10 @@ export default function PricingPage() {
           {/* The Practice plan sits below the main plans; people judge from the top of the page and may never scroll to it
               (owner, 2026-10-27), so it is named here with a jump to it. */}
           <a href="#practice" className="hv2-practice-jump">
-            <span>Only want practice interviews with Maya? <strong>Practice is {practicePrice} {india ? "for 1 month" : "a month"}.</strong></span>
+            <span>
+              Only want practice interviews with Maya? <strong>Practice is {practicePrice} {india ? "for 1 month" : "a month"}.</strong>
+              <br />Buying Pro? Add Maya for <strong>only {addonPrice} more</strong>. Max includes her.
+            </span>
             <span className="hv2-practice-jump-cta">See Practice</span>
           </a>
         </div>
