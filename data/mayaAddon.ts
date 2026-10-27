@@ -26,7 +26,7 @@ export const MAYA_ADDON = {
   interviewsIndia: 10,
   /** Every account may try Maya once, free: this many questions, and a short live session. */
   tasteQuestions: 3,
-  tasteSeconds: 360,
+  tasteSeconds: 300,
 };
 
 export const MOCK_PLAN = {
@@ -44,10 +44,11 @@ export const MOCK_PLAN = {
 };
 
 /**
- * Free interviews a day across everyone (owner, 2026-10-26: "what if no one pays and all use free"). About 14 cents each
- * (6 minutes of Simli, the AI and her voice), so at most about $34 a month even if nobody pays. After that: "try tomorrow".
+ * Free interviews a day across everyone (owner, 2026-10-27). Free interviews share the Simli plan's 1,000 minutes a month
+ * with paying customers, so at most 3 a day of 5 minutes (about 450 minutes a month) and the rest is always left for
+ * paid interviews. After that: "Today's free interviews are taken. Try again tomorrow, or upgrade now."
  */
-export const FREE_TASTES_PER_DAY = 8;
+export const FREE_TASTES_PER_DAY = 3;
 
 /**
  * Only a started interview counts (owner, 2026-10-26: "start interview, one off, not sessions"): refreshing a page or a

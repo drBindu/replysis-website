@@ -1956,7 +1956,7 @@ export default function MockInterviewPage() {
                 <>
                   <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
                     {mayaState === "taste_full"
-                      ? "Today's free interviews with Maya are taken. Try again tomorrow."
+                      ? "Today's free interviews with Maya are taken. Try again tomorrow, or upgrade now and start right away."
                       : "You have used your free interview."}{" "}
                     The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month, plus live answers for your real
                     interviews. Max includes it, and Pro can add it.
@@ -1964,7 +1964,7 @@ export default function MockInterviewPage() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 }}>
                     <a href="/pricing" style={{ padding: "11px 20px", borderRadius: 10,
                       background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                      See Practice and plans
+                      {mayaState === "taste_full" ? "Upgrade now" : "See Practice and plans"}
                     </a>
                   </div>
                 </>

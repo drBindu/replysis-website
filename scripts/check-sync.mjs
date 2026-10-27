@@ -419,7 +419,7 @@ console.log("\nMaya: the free interview, Practice and the add-on");
 {
   const AGREED_MAYA = { addonUsd: 10, addonInr: 399, addonInterviews: 20, addonInterviewsIndia: 10,
                         practiceUsd: 14.99, practiceInr: 499, practiceInterviews: 20, practiceInterviewsIndia: 10,
-                        practiceCredits: 500, practiceCreditsIndia: 250, tasteQuestions: 3, freePerDay: 8 };
+                        practiceCredits: 500, practiceCreditsIndia: 250, tasteQuestions: 3, freePerDay: 3 };
   const m = read(resolve(FRONT, "data/mayaAddon.ts"));
   const grab = (block, key) => {
     const b = m && m.match(new RegExp(`export const ${block} = \\{([\\s\\S]*?)\\n\\};`));
@@ -475,7 +475,7 @@ console.log("\nMaya: the free interview, Practice and the add-on");
     console.log(`  Max with Maya   revenue $${maxRev}  worst-case cost $${(maxCost + FEE(maxRev)).toFixed(2)}  (${Math.round(keep * 100)}% kept)`);
     (keep >= 0.5 ? ok : bad)("Max with Maya included keeps at least 50% in the worst case");
   }
-  const freeCost = got.freePerDay * 30 * (6 * SIMLI_MIN + 0.05 + 0.03);
+  const freeCost = got.freePerDay * 30 * (5 * SIMLI_MIN + 0.05 + 0.03);
   (freeCost <= 40 ? ok : bad)(`free Maya interviews cost at most $${freeCost.toFixed(0)} a month even if nobody pays`);
 }
 
