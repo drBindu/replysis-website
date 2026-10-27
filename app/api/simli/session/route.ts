@@ -11,6 +11,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
+import { MAYA_ADDON } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,22 @@ export async function POST(req: Request) {
 
   const access = await getFirestore().collection("users").doc(uid).get()
     .then((d) => mayaAccess(d.data())).catch(() => null);
-  if (!access || access.state !== "ok") return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
+  if (!access || (access.state !== "ok" && access.state !== "taste")) {
+    return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
+  }
+  // The free interview is used up the moment its session is made (claimed in a transaction, so two tabs cannot both
+  // have it), and it is short.
+  const taste = access.state === "taste";
+  if (taste) {
+    const userRef = getFirestore().collection("users").doc(uid);
+    const claimed = await getFirestore().runTransaction(async (tx) => {
+      if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return false;
+      tx.set(userRef, { mayaFreeUsed: true, mayaFreeUsedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return true;
+    }).catch(() => false);
+    if (!claimed) return NextResponse.json({ error: "Free interview already used" }, { status: 403 });
+  }
 
-  // A daily allowance per person, counted before the session is made so a failure to count cannot give free sessions.
   // Counted per day and per month before the session is made, so a failure to count cannot give free sessions.
   const day = new Date().toISOString().slice(0, 10);
   const month = day.slice(0, 7);
@@ -43,7 +57,7 @@ export async function POST(req: Request) {
     const used = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
     const usedMonth = Number((await tx.get(monthRef)).data()?.sessions ?? 0);
     if (used >= SESSIONS_PER_DAY) return "day";
-    if (usedMonth >= access.monthly) return "month";
+    if (!taste && usedMonth >= access.monthly) return "month";
     tx.set(usageRef, { uid, day, sessions: used + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     tx.set(monthRef, { uid, month, sessions: usedMonth + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return "ok";
@@ -60,7 +74,7 @@ export async function POST(req: Request) {
         faceId: process.env.SIMLI_FACE_ID || DEFAULT_FACE_ID,
         apiVersion: "v2",
         handleSilence: true,
-        maxSessionLength: MAX_SESSION_SECONDS,
+        maxSessionLength: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
         maxIdleTime: MAX_IDLE_SECONDS,
         audioInputFormat: "pcm16",
       }),
@@ -71,7 +85,7 @@ export async function POST(req: Request) {
       console.error(`[simli] token request failed: HTTP ${res.status}`);
       return NextResponse.json({ error: "Live face unavailable" }, { status: 502 });
     }
-    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: MAX_SESSION_SECONDS },
+    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS },
       { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[simli] token request error:", (e as Error)?.name ?? "Error");

@@ -22,6 +22,7 @@ import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCo
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 import { pickInterviewerVoice } from "./interviewerVoice";
 import { useMayaLive } from "../../components/MayaLive";
+import { MAYA_ADDON } from "../../data/mayaAddon";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -699,10 +700,12 @@ export default function MockInterviewPage() {
   const [taggedQuestions, setTaggedQuestions] = useState<TaggedQuestion[]>([]);
   const [userPlan, setUserPlan]               = useState<string>("free");
   // The mock interview with live Maya needs a paid plan plus the Maya add-on (owner, 2026-10-26); null until known.
-  const [mayaState, setMayaState]             = useState<"ok" | "free" | "no_addon" | null>(null);
-  const isPaid = mayaState === null ? null : mayaState === "ok";
+  const [mayaState, setMayaState]             = useState<"ok" | "taste" | "free" | "no_addon" | null>(null);
+  // "taste": the one free interview every account gets (3 questions) before the add-on.
+  const isPaid = mayaState === null ? null : mayaState === "ok" || mayaState === "taste";
+  const taste = mayaState === "taste";
   const setIsPaidFrom = (d: { maya?: unknown } | null | undefined) =>
-    setMayaState(d?.maya === "ok" || d?.maya === "no_addon" ? d.maya : "free");
+    setMayaState(d?.maya === "ok" || d?.maya === "no_addon" || d?.maya === "taste" ? d.maya : "free");
   // The add-on's price in the customer's own currency, asked for only when the add button shows.
   const [mayaOffer, setMayaOffer]             = useState<{ price: string; once: boolean; interviews: number } | null>(null);
   const [mayaBusy, setMayaBusy]               = useState(false);
@@ -818,7 +821,7 @@ export default function MockInterviewPage() {
   const activeDiff        = DIFFICULTY_OPTIONS.find(o => o.id === difficulty) ?? DIFFICULTY_OPTIONS[4];
   const estimatedCredits  = activeModel.creditsPerQ * questionCount;
   const setupAndFeedbackCredits = CREDIT_ACTION_COSTS.question_generation + estimatedCredits;
-  const maxQ              = PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
+  const maxQ              = taste ? MAYA_ADDON.tasteQuestions : PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
   const sliderPct         = Math.round(((questionCount - MIN_QUESTIONS) / Math.max(maxQ - MIN_QUESTIONS, 1)) * 100);
   const currentQ          = questions[index] ?? "Tell me about yourself.";
   const totalQ            = questions.length || 1;
@@ -889,9 +892,9 @@ export default function MockInterviewPage() {
 
   // ── Clamp question count when plan is known ───────────────
   useEffect(() => {
-    const max = PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
+    const max = taste ? MAYA_ADDON.tasteQuestions : PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
     if (questionCount > max) setQuestionCount(max);
-  }, [userPlan]);
+  }, [userPlan, taste]);
 
   // ── Reset difficulty if no longer accessible ──────────────
   useEffect(() => {
@@ -1372,7 +1375,8 @@ export default function MockInterviewPage() {
   // Maya's face speaks the question: the voice comes from our server as audio, so her mouth can follow it exactly. If that
   // voice cannot be had, the browser's own woman's voice speaks and the face makes a general talking movement instead.
   // Maya joins on the check screen, so she is on the call when the interview begins (paid users only).
-  const maya = useMayaLive(isPaid === true && (phase === "ready" || phase === "interview"));
+  // The free interview joins only at Begin: joining is what uses it up, and someone may still go back from the checks.
+  const maya = useMayaLive(isPaid === true && (phase === "interview" || (phase === "ready" && !taste)));
   const faceRef = useRef(maya.face);
   const avatarSilence = useCallback(() => { faceRef.current?.stop(); }, []);
   const speakToken = useRef(0);
@@ -1592,7 +1596,7 @@ export default function MockInterviewPage() {
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
       setIsPaidFrom(balance);
-      if (balance?.maya !== "ok") return;                    // the plan or add-on screen shows instead
+      if (balance?.maya !== "ok" && balance?.maya !== "taste") return;   // the plan or add-on screen shows instead
       if (available < setupAndFeedbackCredits) {
         setSetupError(`This session needs ${answerCount(setupAndFeedbackCredits)} answers including question setup. Choose fewer questions or add answers.`);
         return;
@@ -1655,7 +1659,7 @@ export default function MockInterviewPage() {
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
       setIsPaidFrom(balance);
-      if (balance?.maya !== "ok") return;                    // the plan or add-on screen shows instead
+      if (balance?.maya !== "ok" && balance?.maya !== "taste") return;   // the plan or add-on screen shows instead
       if (available < estimatedCredits) {
         setSetupError("Not enough answers remain for this session. Return to setup and choose fewer questions, or add answers.");
         return;
@@ -1903,6 +1907,11 @@ export default function MockInterviewPage() {
                   <p style={{ fontSize: 13.5, color: T.textMid, lineHeight: 1.6, maxWidth: 420 }}>
                     Add your resume and a job description if you have them. Without a resume, the interviewer asks questions for the role instead.
                   </p>
+                  {taste && (
+                    <p style={{ fontSize: 13.5, color: T.accent, fontWeight: 700, lineHeight: 1.6, maxWidth: 440, marginTop: 8 }}>
+                      Your free interview with Maya: {MAYA_ADDON.tasteQuestions} questions, once. After that, add the mock interview to your plan.
+                    </p>
+                  )}
                 </div>
 
                 {/* Resume card */}

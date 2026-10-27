@@ -14,4 +14,7 @@ export const MAYA_ADDON = {
   interviews: 10,
   /** India pays Rs 399, about a third of $10, so it carries fewer interviews. */
   interviewsIndia: 5,
+  /** Every account may try Maya once, free (owner, 2026-10-26): this many questions, and a short live session. */
+  tasteQuestions: 3,
+  tasteSeconds: 360,
 };
