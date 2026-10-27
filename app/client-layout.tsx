@@ -122,7 +122,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   const isCompanyPage = pathname.startsWith("/company");
-  const hideFooter = pathname.startsWith("/resume/editor") || isCompanyPage;
+  const hideFooter = pathname.startsWith("/resume/editor") || pathname.startsWith("/maya-embed") || isCompanyPage;
 
   // `initial={false}` is what keeps the first paint visible: the entry
   // animation is skipped for the page that is already on screen (server render

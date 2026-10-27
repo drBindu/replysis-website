@@ -49,7 +49,7 @@ export type MayaLive = {
  * Until she is connected, or if she cannot connect, her voice still plays from the page over the name card, so an
  * interview never goes silent. Same face handle as the old photo face, so the interview code did not change.
  */
-export function useMayaLive(active: boolean): MayaLive {
+export function useMayaLive(active: boolean, getToken?: () => Promise<string | undefined>): MayaLive {
   const client = useRef<Client | null>(null);
   const [status, setStatus] = useState<SimliStatus | "off">("off");
   const statusRef = useRef<SimliStatus | "off">("off");
@@ -88,7 +88,8 @@ export function useMayaLive(active: boolean): MayaLive {
     setBoth("connecting");
     (async () => {
       try {
-        const token = await auth.currentUser?.getIdToken();
+        // The phone app's embed passes its own sign-in token; the website uses its own.
+        const token = getToken ? await getToken() : await auth.currentUser?.getIdToken();
         if (!token) throw new Error("signed out");
         const res = await fetch("/api/simli/session", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`session ${res.status}`);
