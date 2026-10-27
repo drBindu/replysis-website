@@ -110,9 +110,9 @@ export async function POST(req: Request) {
         audioInputFormat: "pcm16",
         // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
         // laptop, tall for a phone, so she fills it without bars. Older faces keep their own square frame. The smallest size
-        // Simli takes (512 on the short side): 1280x720 lagged for the owner (2026-10-27).
+        // 1280x720: at 910x512 Simli framed her badly (face low and cut off); 1280x720 played at 25 fps for the owner.
         ...(test.trinity2
-          ? test.size ?? (shape === "tall" ? { streaming_width: 512, streaming_height: 910 } : { streaming_width: 910, streaming_height: 512 })
+          ? test.size ?? (shape === "tall" ? { streaming_width: 720, streaming_height: 1280 } : { streaming_width: 1280, streaming_height: 720 })
           : {}),
         ...(test.extra ?? {}),
       }),
