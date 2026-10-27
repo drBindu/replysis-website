@@ -49,7 +49,7 @@ export type MayaLive = {
  * Until she is connected, or if she cannot connect, her voice still plays from the page over the name card, so an
  * interview never goes silent. Same face handle as the old photo face, so the interview code did not change.
  */
-export function useMayaLive(active: boolean, getToken?: () => Promise<string | undefined>): MayaLive {
+export function useMayaLive(active: boolean, getToken?: () => Promise<string | undefined>, shape: "wide" | "tall" = "wide"): MayaLive {
   const client = useRef<Client | null>(null);
   const [status, setStatus] = useState<SimliStatus | "off">("off");
   const statusRef = useRef<SimliStatus | "off">("off");
@@ -91,7 +91,7 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         // The phone app's embed passes its own sign-in token; the website uses its own.
         const token = getToken ? await getToken() : await auth.currentUser?.getIdToken();
         if (!token) throw new Error("signed out");
-        const res = await fetch("/api/simli/session", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`/api/simli/session?shape=${shape}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`session ${res.status}`);
         const { sessionToken } = await res.json();
         const { SimliClient, LogLevel } = await import("simli-client/dist/client");   /* not the package index: its import of ./Client has the wrong letter case and fails on Linux */

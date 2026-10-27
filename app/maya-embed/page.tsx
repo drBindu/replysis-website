@@ -32,7 +32,8 @@ export default function MayaEmbed() {
   const token = useRef<string | undefined>(undefined);
   const [started, setStarted] = useState(false);
   const [getToken] = useState(() => async () => token.current);
-  const maya = useMayaLive(started, getToken);
+  // The phone shows her in a tall frame.
+  const maya = useMayaLive(started, getToken, "tall");
   const [interviewId] = useState(() => `app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => { if (maya.status !== "off") toApp({ type: "status", status: maya.status }); }, [maya.status]);

@@ -27,6 +27,7 @@ export async function POST(req: Request) {
   if (!rateLimit(`simli:${uid}`, 6, 60 * 60_000).ok || !rateLimit(`simli-ip:${clientIp(req)}`, 20, 60 * 60_000).ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
+  const shape = new URL(req.url).searchParams.get("shape") === "tall" ? "tall" : "wide";
   const apiKey = process.env.SIMLI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Live face unavailable" }, { status: 503 });
 
@@ -85,6 +86,11 @@ export async function POST(req: Request) {
         maxSessionLength: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
         maxIdleTime: MAX_IDLE_SECONDS,
         audioInputFormat: "pcm16",
+        // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
+        // laptop, tall for a phone, so she fills it without bars. Older faces keep their own square frame.
+        ...(process.env.SIMLI_FACE_KIND === "trinity2"
+          ? shape === "tall" ? { streaming_width: 720, streaming_height: 1280 } : { streaming_width: 1280, streaming_height: 720 }
+          : {}),
       }),
       signal: AbortSignal.timeout(15_000),
     });
