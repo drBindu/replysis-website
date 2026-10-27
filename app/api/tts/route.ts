@@ -21,7 +21,7 @@ const MAX_CHARS = 500;
  * It reads the words plainly (no tone directions), which suits Maya's calm manner (owner: no overacting).
  */
 let cloudToken: { token: string; until: number } | null = null;
-async function cloudVoice(text: string): Promise<Buffer | null> {
+async function cloudVoice(text: string, rate: number): Promise<Buffer | null> {
   try {
     if (!cloudToken || Date.now() > cloudToken.until) {
       const credential = getApps()[0]?.options.credential;
@@ -38,7 +38,7 @@ async function cloudVoice(text: string): Promise<Buffer | null> {
         voice: { languageCode: "en-US", name: `en-US-Chirp3-HD-${VOICE}` },
         // Owner, 2026-10-27: "she is talking very fast". A calm interviewer's pace; MAYA_SPEAKING_RATE adjusts it on the
         // server without a release (0.85 to 1.0 sound natural).
-        audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: 24000,
+        audioConfig: { audioEncoding: "LINEAR16", sampleRateHertz: rate,
                        speakingRate: Number(process.env.MAYA_SPEAKING_RATE) || 0.9 },
       }),
       signal: AbortSignal.timeout(8_000),
@@ -88,10 +88,13 @@ export async function POST(req: Request) {
     serious: "Say calmly and plainly",
     firm: "Say calmly and plainly, polite but clear",
   };
-  const fast = await cloudVoice(text);
+  // Maya's live face takes 16 kHz: asked for directly it needs no conversion, which blurred the sounds her lips follow
+  // (owner, 2026-10-27: "the lip sync has to improve"). Played in the page or the phone, 24 kHz.
+  const rate = body?.sampleRate === 16000 ? 16000 : 24000;
+  const fast = await cloudVoice(text, rate);
   if (fast) {
     return new NextResponse(new Uint8Array(fast), {
-      headers: { "Content-Type": "application/octet-stream", "X-Sample-Rate": "24000", "Cache-Control": "no-store" },
+      headers: { "Content-Type": "application/octet-stream", "X-Sample-Rate": String(rate), "Cache-Control": "no-store" },
     });
   }
 

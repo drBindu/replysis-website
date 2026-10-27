@@ -1411,7 +1411,8 @@ export default function MockInterviewPage() {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, tone: toneOf.current.get(text) }),
+        // 16 kHz is what her live face takes, so no conversion blurs the sounds her lips follow.
+        body: JSON.stringify({ text, tone: toneOf.current.get(text), sampleRate: 16000 }),
       });
       if (!res.ok) return null;
       const rate = Number(res.headers.get("X-Sample-Rate")) || 24000;

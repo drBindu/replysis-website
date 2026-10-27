@@ -52,6 +52,7 @@ export type MayaLive = {
 export function useMayaLive(active: boolean, getToken?: () => Promise<string | undefined>, shape: "wide" | "tall" = "wide"): MayaLive {
   const client = useRef<Client | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lineNo = useRef(0);                            // a new line or stop() ends the sending of the one before
   const [status, setStatus] = useState<SimliStatus | "off">("off");
   const statusRef = useRef<SimliStatus | "off">("off");
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
@@ -190,14 +191,29 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         };
         done.current = end;
         timer = setTimeout(() => { done.current = null; resolve(); }, seconds * 1000 + 2500);
-        const CHUNK = 6000;                                        // about 190 ms
-        for (let i = 0; i < bytes.length; i += CHUNK) simli.sendAudioData(bytes.slice(i, i + CHUNK));
+        // Sent at speaking pace in 0.1 s pieces, half a second ahead, rather than the whole line at once: steadier input
+        // for her lips (owner, 2026-10-27).
+        const CHUNK = 3200;                                        // 100 ms of 16 kHz 16 bit audio
+        const AHEAD = 5;                                           // half a second sent straight away
+        const t0 = performance.now();
+        const mine = ++lineNo.current;
+        void (async () => {
+          for (let i = 0, n = 0; i < bytes.length; i += CHUNK, n++) {
+            if (client.current !== simli || lineNo.current !== mine) return;   // hung up, stopped, or a newer line
+            const due = t0 + (n - AHEAD) * 100;
+            const wait = due - performance.now();
+            if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+            if (client.current !== simli || lineNo.current !== mine) return;
+            simli.sendAudioData(bytes.slice(i, i + CHUNK));
+          }
+        })();
       });
     },
     setTalking: () => { /* the browser's own voice cannot move her lips; she stays as she is */ },
     setMood: () => { /* her real face shows her expression by itself */ },
     setListening: () => {},
     stop: () => {
+      lineNo.current++;
       try { client.current?.ClearBuffer(); } catch { /* nothing playing */ }
       try { local.current?.src?.stop(); } catch { /* not started */ }
       finishLine();
