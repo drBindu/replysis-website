@@ -74,7 +74,9 @@ export function useMayaLive(active: boolean): MayaLive {
     const videoEl = document.createElement("video");
     videoEl.autoplay = true;
     videoEl.playsInline = true;
-    videoEl.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;";
+    // Simli sends a square picture. "contain" shows all of her in any window shape (the wide full screen call view
+    // cropped her at the eyes with "cover"); the tile's dark background fills the sides.
+    videoEl.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;";
     const audioEl = document.createElement("audio");
     audioEl.autoplay = true;
     // Kept in the page (off screen) until a MayaVideo takes the video, so the browser lets both play.
