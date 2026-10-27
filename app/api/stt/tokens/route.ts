@@ -1356,8 +1356,10 @@ export async function POST(req: Request) {
         // Owner, 2026-10-27: "My name is Pawan" got "I didn't catch that". A short answer that makes sense is a person talking.
         `A short answer that makes sense is NOT noise. Respond to it exactly as a person would in a real conversation. ` +
         `If they only told you their name, greet them by it warmly (for example: Nice to meet you, Pawan.) and invite them, ` +
-        `in your own words, to tell you a bit more, like their background or what they do now (action "follow_up"). If any ` +
-        `short answer is too thin, react to what they did say, then ask for the missing part naturally (action "follow_up").\n` +
+        `in your own words, to tell you a bit more, like their background or what they do now (action "follow_up" when a follow-up is allowed, ` +
+        `otherwise "repeat"). If any ` +
+        `short answer is too thin, react to what they did say, then ask for the missing part naturally (action "follow_up" ` +
+        `when allowed, otherwise "repeat"). Never use action "next" while asking them for more.\n` +
         `Only if the candidate is clearly and directly rude, insulting or crude toward you or the interview, react like a real ` +
         `interviewer would, calm and firm, in your own words (never the same sentence twice). You have already had to do this ` +
         `${warnings} time(s); after two, you may end the interview politely (action "end"). Otherwise never mention professionalism.\n` +
