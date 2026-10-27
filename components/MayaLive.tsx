@@ -43,7 +43,7 @@ export type MayaLive = {
  *
  * She takes 10 to 20 seconds to connect, so the page turns this on at the check screen before "Begin interview" and she
  * is already there when the interview starts (otherwise her first question was spoken before her face appeared). It
- * hangs up when `active` goes false; Simli also ends an idle session after two minutes. The video and audio elements
+ * hangs up when `active` goes false, and rejoins by itself if the call drops. The video and audio elements
  * live outside React so the connection survives the screen changing; `MayaVideo` shows the video where it is placed.
  *
  * Until she is connected, or if she cannot connect, her voice still plays from the page over the name card, so an
@@ -56,6 +56,11 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
   const [status, setStatus] = useState<SimliStatus | "off">("off");
   const statusRef = useRef<SimliStatus | "off">("off");
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
+  // A dropped call (Simli hung up, the network blinked) rejoins by itself, a few times per interview, instead of
+  // leaving an empty tile for the rest of it (owner, 2026-10-27: "she disappeared and didn't come back").
+  const [attempt, setAttempt] = useState(0);
+  const rejoins = useRef(0);
+  useEffect(() => { if (!active) rejoins.current = 0; }, [active]);
   const waiters = useRef<(() => void)[]>([]);
   const done = useRef<(() => void) | null>(null);      // ends the line being spoken
   const local = useRef<{ ctx: AudioContext; src: AudioBufferSourceNode | null } | null>(null);
@@ -112,7 +117,14 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         const { SimliClient, LogLevel } = await import("simli-client/dist/client");   /* not the package index: its import of ./Client has the wrong letter case and fails on Linux */
         if (cancelled) return;
         const simli = new SimliClient(sessionToken, videoEl, audioEl, null, LogLevel.ERROR, "livekit");
-        const fail = () => { if (!cancelled) { client.current = null; setBoth("failed"); finishLine(); } };
+        const fail = () => {
+          if (cancelled) return;
+          const wasLive = client.current !== null;
+          client.current = null;
+          finishLine();
+          if (wasLive && rejoins.current < 3) { rejoins.current += 1; setBoth("connecting"); setAttempt((n) => n + 1); return; }
+          setBoth("failed");
+        };
         simli.on("error", fail);
         simli.on("startup_error", fail);
         simli.on("stop", fail);
@@ -150,7 +162,7 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
       setVideo(null);
       setBoth("off");
     };
-  }, [active]);
+  }, [active, attempt]);
 
   /** Plays the voice in the page itself, for when Maya is not connected. */
   const playLocally = (pcm: Int16Array, rate: number) => new Promise<void>((resolve) => {

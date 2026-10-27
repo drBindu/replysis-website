@@ -18,7 +18,9 @@ export const dynamic = "force-dynamic";
 /** Kate, one of Simli's ready made faces, only until SIMLI_FACE_ID (our own Maya, made from her Flow video) is set. */
 const DEFAULT_FACE_ID = "d2a5c7c6-fed9-4f55-bcb3-062f7cd20103";
 const MAX_SESSION_SECONDS = 900;       // 15 minutes
-const MAX_IDLE_SECONDS = 120;
+// Simli ends a session after this long with no voice sent. She is silent the whole time the candidate answers, so 120 s
+// hung up on her mid interview and she never came back (owner, 2026-10-27). The session's own length is the real cap.
+const MAX_IDLE_SECONDS = MAX_SESSION_SECONDS;
 
 
 export async function POST(req: Request) {
