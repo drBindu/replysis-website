@@ -1361,7 +1361,8 @@ export async function POST(req: Request) {
         `If they said nothing useful or went silent, encourage them kindly and repeat the question (action "repeat").\n` +
         (canFollowUp
           ? `If one natural follow-up would really help (a concrete example, the result, a number, their own part), ask it at the ` +
-            `end of what you say (action "follow_up"). It must dig into what they just said, never into the next question's topic. ` +
+            `end of what you say (action "follow_up"). It must dig into what they just said, never into the next question's topic, ` +
+            `and then stop: do not also ask your next question in the same turn. ` +
             `Otherwise action "next".\n`
           : `Do not ask a follow-up; action "next" unless repeating or ending.\n`) +
         // Owner, 2026-10-25: no fixed lines anywhere. Every word Maya says, the way into each question and the goodbye
@@ -1400,8 +1401,22 @@ export async function POST(req: Request) {
         const tone = TONES.includes(j.tone) ? j.tone : "warm";
         let action = ACTIONS.includes(j.action) ? j.action : "next";
         if (action === "follow_up" && !canFollowUp) action = "next";
+        // One question at a time (2026-10-27): she asked a follow-up and then the next question in the same breath. A
+        // follow-up or a repeat keeps only what comes before the next question, if she slipped it in.
+        let sayOut = say;
+        if ((action === "follow_up" || action === "repeat") && nextQ) {
+          const words = (t: string) => new Set(t.toLowerCase().match(/[a-z']+/g) ?? []);
+          const target = words(nextQ);
+          const parts = say.split(/(?<=[.!?])\s+/);
+          while (parts.length > 1) {
+            const last = words(parts[parts.length - 1]);
+            const shared = [...last].filter((w) => target.has(w)).length;
+            if (last.size && shared / last.size >= 0.6) parts.pop(); else break;
+          }
+          sayOut = parts.join(" ");
+        }
         if (!say) return NextResponse.json({ say: null, tone: "warm", action: "next" });
-        return NextResponse.json({ say, tone, action });
+        return NextResponse.json({ say: sayOut, tone, action });
       } catch {
         return NextResponse.json({ say: null, tone: "warm", action: "next" });
       }
