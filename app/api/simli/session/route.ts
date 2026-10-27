@@ -27,7 +27,8 @@ export async function POST(req: Request) {
   if (!rateLimit(`simli:${uid}`, 6, 60 * 60_000).ok || !rateLimit(`simli-ip:${clientIp(req)}`, 20, 60 * 60_000).ok) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
-  const shape = new URL(req.url).searchParams.get("shape") === "tall" ? "tall" : "wide";
+  const params = new URL(req.url).searchParams;
+  const shape = params.get("shape") === "tall" ? "tall" : "wide";
   const apiKey = process.env.SIMLI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Live face unavailable" }, { status: 503 });
 
@@ -75,12 +76,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: allowed === "month" ? "Monthly interviews used" : "Too many connections today" }, { status: 429 });
   }
 
+  // Private test of a face (owner and testers only, 2026-10-27): ?testFace=<id>&w=&h=&x=&y=&zoom= on the session request
+  // tries another face and framing without touching what customers get.
+  const test: { faceId: string; trinity2: boolean; size?: Record<string, number>; extra?: Record<string, unknown> } = {
+    faceId: process.env.SIMLI_FACE_ID || DEFAULT_FACE_ID,
+    trinity2: process.env.SIMLI_FACE_KIND === "trinity2",
+  };
+  const testFace = params.get("testFace");
+  if (internal && testFace && /^[0-9a-f-]{36}$/.test(testFace)) {
+    test.faceId = testFace;
+    test.trinity2 = true;
+    const num = (k: string) => { const v = Number(params.get(k)); return Number.isFinite(v) && params.get(k) !== null ? v : undefined; };
+    const w = num("w"), h = num("h");
+    if (w && h) test.size = { streaming_width: w, streaming_height: h };
+    const x = num("x"), y = num("y"), zoom = num("zoom");
+    test.extra = {
+      ...(x !== undefined ? { avatar_position_x: x } : {}),
+      ...(y !== undefined ? { avatar_position_y: y } : {}),
+      ...(zoom !== undefined ? { camera: { zoom } } : {}),
+    };
+  }
+
   try {
     const res = await fetch("https://api.simli.ai/compose/token", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-simli-api-key": apiKey },
       body: JSON.stringify({
-        faceId: process.env.SIMLI_FACE_ID || DEFAULT_FACE_ID,
+        faceId: test.faceId,
         apiVersion: "v2",
         handleSilence: true,
         maxSessionLength: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
@@ -89,9 +111,10 @@ export async function POST(req: Request) {
         // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
         // laptop, tall for a phone, so she fills it without bars. Older faces keep their own square frame. The smallest size
         // Simli takes (512 on the short side): 1280x720 lagged for the owner (2026-10-27).
-        ...(process.env.SIMLI_FACE_KIND === "trinity2"
-          ? shape === "tall" ? { streaming_width: 512, streaming_height: 910 } : { streaming_width: 910, streaming_height: 512 }
+        ...(test.trinity2
+          ? test.size ?? (shape === "tall" ? { streaming_width: 512, streaming_height: 910 } : { streaming_width: 910, streaming_height: 512 })
           : {}),
+        ...(test.extra ?? {}),
       }),
       signal: AbortSignal.timeout(15_000),
     });

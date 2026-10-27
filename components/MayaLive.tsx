@@ -99,7 +99,11 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         // The phone app's embed passes its own sign-in token; the website uses its own.
         const token = getToken ? await getToken() : await auth.currentUser?.getIdToken();
         if (!token) throw new Error("signed out");
-        const res = await fetch(`/api/simli/session?shape=${shape}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        // A private face test (owner and testers only, checked by the server) passes through from the page's address.
+        const test = new URLSearchParams(location.search);
+        const testQuery = ["testFace", "w", "h", "x", "y", "zoom"].filter((k) => test.get(k) !== null)
+          .map((k) => `&${k}=${encodeURIComponent(test.get(k)!)}`).join("");
+        const res = await fetch(`/api/simli/session?shape=${shape}${testQuery}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`session ${res.status}`);
         const { sessionToken } = await res.json();
         const { SimliClient, LogLevel } = await import("simli-client/dist/client");   /* not the package index: its import of ./Client has the wrong letter case and fails on Linux */
