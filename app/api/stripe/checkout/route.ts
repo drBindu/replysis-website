@@ -10,6 +10,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { MAYA_ADDON } from "../../../../data/mayaAddon";
+import { mayaAccess } from "../../../lib/paid-plan";
 import { sendOwnerAlert } from "../../../lib/user-mail";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
@@ -129,6 +130,7 @@ export async function POST(req: Request) {
       return buyMinutes(req, minutes, autoAdd === true, uid, verifiedUid, verifiedEmail);
     }
     if (addon === "maya") return addMaya(req, uid, verifiedUid, verifiedEmail, body.preview === true);
+    if (plan === "mock") return buyMockPlan(req, uid, verifiedUid, verifiedEmail);
     const withMaya = maya === true && !creditPack;
     const selectedPack = creditPackById(creditPack);
     const isCreditPack = Boolean(selectedPack);
@@ -394,6 +396,65 @@ async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid
   const session = await response.json();
   if (!response.ok || typeof session?.url !== "string") {
     console.error("[checkout] India pass session failed:", session?.error?.message ?? response.status);
+    return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
+  }
+  return NextResponse.json({ url: session.url });
+}
+
+/**
+ * The Practice plan (owner, 2026-10-26: "what if they only want the mock interview"): $14.99 a month, 20 interviews
+ * with Maya and 100 live interview answers (data/mayaAddon.ts MOCK_PLAN). Bought in the buyer's own currency like the plans; India pays
+ * Rs 499 once for 30 days (purchaseType mock_pass). It is a separate subscription (mockSubscriptionId), so a Pro or Max
+ * bought later is not blocked by it.
+ */
+async function buyMockPlan(req: Request, uid: unknown, verifiedUid: string, verifiedEmail: string | undefined) {
+  if (typeof uid !== "string" || uid !== verifiedUid) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!STRIPE_SECRET || STRIPE_SECRET.length < 10) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  const d = (await getFirestore().collection("users").doc(uid).get()).data() ?? {};
+  if (mayaAccess(d).state === "ok") {
+    return NextResponse.json({ error: "You already have the mock interview. Open it from Mock interview." }, { status: 409 });
+  }
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
+  const origin = new Set([SITE_URL, "http://localhost:3000"]).has(req.headers.get("origin") || "") ? req.headers.get("origin")! : SITE_URL;
+  const india = await isIndia(req.headers);
+  const local = india ? undefined : LOCAL_PRICES[(await countryOf(req.headers)) ?? ""];
+  const localId = local ? process.env[`STRIPE_MOCK_MONTHLY_PRICE_${local.currency.toUpperCase()}`] : undefined;
+  const price = india ? process.env.STRIPE_MOCK_ONCE_PRICE_INR : localId || process.env.STRIPE_MOCK_MONTHLY_PRICE;
+  if (!price) {
+    console.error("[checkout] Missing Mock interview plan price");
+    return NextResponse.json({ error: "This plan isn't available for checkout yet. Please try again shortly." }, { status: 503 });
+  }
+  const params = new URLSearchParams();
+  params.append("mode", india ? "payment" : "subscription");
+  params.append("line_items[0][price]", price);
+  params.append("line_items[0][quantity]", "1");
+  params.append("success_url", `${origin}/mock-interview?mock=added`);
+  params.append("cancel_url", `${origin}/pricing?canceled=true`);
+  params.append("customer_email", verifiedEmail ?? "");
+  params.append("submit_type", india ? "pay" : "subscribe");
+  params.append("branding_settings[display_name]", "Replysis");
+  params.append("branding_settings[button_color]", "#267B42");
+  params.append("custom_text[submit][message]", india
+    ? "Practice plan for 30 days: interviews with Maya and live answers. Paid once, nothing renews."
+    : "Practice plan: interviews with Maya and live answers every month. Cancel anytime from Account and Billing.");
+  params.append("metadata[uid]", uid);
+  params.append("metadata[purchaseType]", india ? "mock_pass" : "mock_plan");
+  if (india) {
+    params.append("customer_creation", "always");
+    params.append("payment_intent_data[metadata][uid]", uid);
+    params.append("payment_intent_data[metadata][purchaseType]", "mock_pass");
+  } else {
+    params.append("subscription_data[metadata][uid]", uid);
+    params.append("subscription_data[metadata][kind]", "mock");
+  }
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  const session = await res.json();
+  if (!res.ok || typeof session?.url !== "string") {
+    console.error("[checkout] Mock plan session failed:", session?.error?.message ?? res.status);
     return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
   }
   return NextResponse.json({ url: session.url });

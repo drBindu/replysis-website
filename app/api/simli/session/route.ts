@@ -11,7 +11,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
-import { MAYA_ADDON } from "../../../../data/mayaAddon";
+import { MAYA_ADDON, MAYA_SESSIONS_PER_DAY } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 const DEFAULT_FACE_ID = "d2a5c7c6-fed9-4f55-bcb3-062f7cd20103";
 const MAX_SESSION_SECONDS = 900;       // 15 minutes
 const MAX_IDLE_SECONDS = 120;
-const SESSIONS_PER_DAY = 4;
+
 
 export async function POST(req: Request) {
   const uid = await verifiedUid(req);
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   const allowed = await getFirestore().runTransaction(async (tx) => {
     const used = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
     const usedMonth = Number((await tx.get(monthRef)).data()?.sessions ?? 0);
-    if (used >= SESSIONS_PER_DAY) return "day";
+    if (used >= MAYA_SESSIONS_PER_DAY) return "day";
     if (!taste && usedMonth >= access.monthly) return "month";
     tx.set(usageRef, { uid, day, sessions: used + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     tx.set(monthRef, { uid, month, sessions: usedMonth + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });

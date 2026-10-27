@@ -22,7 +22,7 @@ import { ANSWER_CREDIT_COST, CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, answerCo
 import { startPcmCapture, PCM_SAMPLE_RATE, type PcmCapture } from "./pcm";
 import { pickInterviewerVoice } from "./interviewerVoice";
 import { useMayaLive } from "../../components/MayaLive";
-import { MAYA_ADDON } from "../../data/mayaAddon";
+import { MAYA_ADDON, MOCK_PLAN } from "../../data/mayaAddon";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "/pdf.worker.min.mjs";
@@ -704,8 +704,11 @@ export default function MockInterviewPage() {
   // "taste": the one free interview every account gets (3 questions) before the add-on.
   const isPaid = mayaState === null ? null : mayaState === "ok" || mayaState === "taste";
   const taste = mayaState === "taste";
-  const setIsPaidFrom = (d: { maya?: unknown } | null | undefined) =>
+  const setIsPaidFrom = (d: { maya?: unknown } | null | undefined) => {
     setMayaState(d?.maya === "ok" || d?.maya === "no_addon" || d?.maya === "taste" ? d.maya : "free");
+    // The Mock interview plan sits on a free account; in the mock interview it has Pro's question counts and levels.
+    if (d?.maya === "ok") setUserPlan((p) => (p === "free" ? "pro" : p));
+  };
   // The add-on's price in the customer's own currency, asked for only when the add button shows.
   const [mayaOffer, setMayaOffer]             = useState<{ price: string; once: boolean; interviews: number } | null>(null);
   const [mayaBusy, setMayaBusy]               = useState(false);
@@ -1597,7 +1600,7 @@ export default function MockInterviewPage() {
       setCredits(available);
       setIsPaidFrom(balance);
       if (balance?.maya !== "ok" && balance?.maya !== "taste") return;   // the plan or add-on screen shows instead
-      if (available < setupAndFeedbackCredits) {
+      if (available < setupAndFeedbackCredits && balance?.maya !== "ok" && balance?.maya !== "taste") {   // unlimited with Maya
         setSetupError(`This session needs ${answerCount(setupAndFeedbackCredits)} answers including question setup. Choose fewer questions or add answers.`);
         return;
       }
@@ -1660,7 +1663,7 @@ export default function MockInterviewPage() {
       setCredits(available);
       setIsPaidFrom(balance);
       if (balance?.maya !== "ok" && balance?.maya !== "taste") return;   // the plan or add-on screen shows instead
-      if (available < estimatedCredits) {
+      if (available < estimatedCredits && balance?.maya !== "ok" && balance?.maya !== "taste") {   // unlimited with Maya
         setSetupError("Not enough answers remain for this session. Return to setup and choose fewer questions, or add answers.");
         return;
       }
@@ -1878,12 +1881,15 @@ export default function MockInterviewPage() {
               ) : (
                 <>
                   <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-                    Choose Pro or Max with the mock interview included.
+                    You have used your free interview. The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month,
+                    plus live answers for your real interviews. Pro and Max can add it too.
                   </p>
-                  <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 4, padding: "11px 20px", borderRadius: 10,
-                    background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                    See plans
-                  </a>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 }}>
+                    <a href="/pricing" style={{ padding: "11px 20px", borderRadius: 10,
+                      background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                      See Practice and plans
+                    </a>
+                  </div>
                 </>
               )}
             </motion.div>

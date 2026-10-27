@@ -10,6 +10,7 @@ import {
   isGreetingPlusSmallTalk as isPleasantryGreetingPlusSmallTalk,
 } from "../../../real-interview/_lib/promptBuilder";
 import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset } from "../../../../data/productFacts";
+import { mockStepsFree } from "../../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -479,11 +480,20 @@ async function checkAndDeductCredits(
   uid: string,
   email: string,
   mode:  string
-): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean }> {
+): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean; waived?: boolean }> {
+  // The mock interview uses no answers with the Practice plan or the Maya add-on, and its one free interview is free
+  // (owner, 2026-10-26): its own steps use no answers then.
+  if (MOCK_MODES.has(mode) && db && uid) {
+    const free = await db.collection("users").doc(uid).get().then((d) => mockStepsFree(d.data())).catch(() => false);
+    if (free) return { allowed: true, remaining: -1, waived: true };
+  }
   const result = await checkAndDeductCreditsCore(uid, email, mode);
   if (result.allowed) await recordUsage(uid, email, mode, CREDIT_COSTS[mode] ?? 0);
   return result;
 }
+
+/** The mock interview's own steps (shared with nothing else that costs money). */
+const MOCK_MODES = new Set(["generate_questions", "generate_feedback", "generate_script"]);
 
 async function checkAndDeductCreditsCore(
   uid: string,
@@ -1193,7 +1203,7 @@ export async function POST(req: Request) {
       }, { status: 402 });
     }
 
-    creditCharged = (CREDIT_COSTS[mode] ?? 2) > 0;
+    creditCharged = (CREDIT_COSTS[mode] ?? 2) > 0 && !creditResult.waived;
     chargedUid = verifiedUid;
     chargedEmail = userEmail;
     chargedMode = mode;

@@ -1,20 +1,44 @@
 /**
- * The mock interview with Maya is an add-on to Pro or Max (owner, 2026-10-26: "if they select including mock interview
- * they cost $10 more"). Live Maya is billed to us by Simli per minute (about $0.75 for a 15 minute interview), so the
- * add-on carries a monthly number of interviews that always leaves most of the $10.
+ * The mock interview with Maya (owner, 2026-10-26).
  *
- * Stripe: product "Mock interview with Maya", price ids in the server env (STRIPE_MAYA_MONTHLY_PRICE and the _INR,
- * _GBP, _CAD, _AUD monthly ones, plus STRIPE_MAYA_ONCE_PRICE_INR for India plans paid once).
+ * Two ways to have it, each with a clear, generous number (owner: "not unlimited but not too limited, and I don't want
+ * to lose money"):
+ * - the Maya add-on on Pro or Max: +$10 a month, 20 interviews;
+ * - the Practice plan on its own: $14.99 a month, 20 interviews plus 100 live interview answers.
+ * Every account also gets ONE free interview of 3 questions first.
+ *
+ * Worst case cost (every interview used, 15 minutes each, Simli about 1 cent a minute): add-on about $3.50 of $10,
+ * Practice about $5.70 of $14.99. India pays less and gets half the numbers.
+ *
+ * Stripe: products "Mock interview with Maya" (STRIPE_MAYA_*) and "Replysis Mock Interview" (STRIPE_MOCK_*), price ids
+ * in the server env; each has monthly USD, INR, GBP, CAD, AUD and a one-time INR price for India months paid once.
  */
 export const MAYA_ADDON = {
   usd: 10,
   inr: 399,
   local: { gbp: 7.99, cad: 13.99, aud: 14.99 } as Record<string, number>,
   /** Live Maya interviews a month with the add-on. */
-  interviews: 10,
-  /** India pays Rs 399, about a third of $10, so it carries fewer interviews. */
-  interviewsIndia: 5,
-  /** Every account may try Maya once, free (owner, 2026-10-26): this many questions, and a short live session. */
+  interviews: 20,
+  /** India pays Rs 399, about 40 percent of $10. */
+  interviewsIndia: 10,
+  /** Every account may try Maya once, free: this many questions, and a short live session. */
   tasteQuestions: 3,
   tasteSeconds: 360,
 };
+
+export const MOCK_PLAN = {
+  usd: 14.99,
+  inr: 499,
+  local: { gbp: 11.99, cad: 19.99, aud: 21.99 } as Record<string, number>,
+  /** Live Maya interviews a month on the plan. */
+  interviews: 20,
+  interviewsIndia: 10,
+  /** Live interview answers a month (credits, 5 an answer) and listening minutes for them. */
+  credits: 500,
+  creditsIndia: 250,
+  audioMinutes: 120,
+  audioMinutesIndia: 60,
+};
+
+/** Live Maya sessions a day, for anyone (not shown; stops one person using a month in a day). */
+export const MAYA_SESSIONS_PER_DAY = 6;

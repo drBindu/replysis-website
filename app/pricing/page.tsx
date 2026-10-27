@@ -13,7 +13,7 @@ import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
 import InterviewMinutes from "../../components/InterviewMinutes";
 import type { LocalPlanPrices } from "../../data/localPrices";
-import { MAYA_ADDON } from "../../data/mayaAddon";
+import { MAYA_ADDON, MOCK_PLAN } from "../../data/mayaAddon";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
   answersFor, interviewsFor, TRIAL_ANSWERS, TRIAL_DAYS,
@@ -228,7 +228,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: false,          pro: `Add for $${MAYA_ADDON.usd}/month`, max: `Add for $${MAYA_ADDON.usd}/month`},
+  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`, max: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -426,6 +426,30 @@ export default function PricingPage() {
     setLoading(null);
   };
 
+  // The Practice plan (owner, 2026-10-26): interviews with Maya plus some live answers, for people who mostly practise.
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const handlePractice = async () => {
+    if (!user) { setStayAfterAuth(true); setShowAuth(true); return; }
+    setPracticeLoading(true);
+    setCheckoutError(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+        body: JSON.stringify({ plan: "mock", uid: user.uid }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) { window.location.href = data.url; return; }
+      setCheckoutError(typeof data.error === "string" && res.status === 409
+        ? data.error
+        : "We could not start checkout just now. You have not been charged. Please try again.");
+    } catch {
+      setCheckoutError(copyFor("offline").body);
+    }
+    setPracticeLoading(false);
+  };
+  const practicePrice = india ? `₹${MOCK_PLAN.inr}` : localPrices ? `${localPrices.symbol}${MOCK_PLAN.local[localPrices.currency]}` : `$${MOCK_PLAN.usd}`;
+
   const openFreeAccount = () => {
     setPendingPlan(null);
     setShowAuth(true);
@@ -591,7 +615,7 @@ export default function PricingPage() {
                           {india && !annual ? " for the month" : " a month"}
                           <br />
                           <span style={{ opacity: 0.75, fontSize: 13 }}>
-                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} practice interviews a month
+                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} interviews a month
                           </span>
                         </span>
                       </label>
@@ -625,6 +649,36 @@ export default function PricingPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ PRACTICE PLAN ═════════════════════════════════════════════════ */}
+      <section className="hv2-section" style={{ paddingTop: 24 }}>
+        <div className="hv2-wide">
+          <div className="hv2-plan" style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ flex: "1 1 340px", minWidth: 0 }}>
+              <p className="hv2-plan-note">Mostly practising?</p>
+              <h2 className="hv2-serif hv2-plan-name">Practice</h2>
+              <p className="hv2-tagline" style={{ maxWidth: "none" }}>
+                Mock interviews with Maya, a live video interviewer who asks real questions for your role and tells you how to
+                make every answer stronger. Plus live answers for your real interviews.
+              </p>
+              <ul className="hv2-plan-list" style={{ marginTop: 12 }}>
+                <li>{india ? MOCK_PLAN.interviewsIndia : MOCK_PLAN.interviews} interviews with Maya every month</li>
+                <li>{Math.floor((india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits) / 5)} live interview answers every month</li>
+                <li>Feedback and a stronger answer for every question</li>
+              </ul>
+            </div>
+            <div style={{ flex: "0 1 260px", minWidth: 220 }}>
+              <p className="hv2-price">{practicePrice}<small>{india ? " for 1 month" : " a month"}</small></p>
+              <button onClick={() => void handlePractice()} disabled={practiceLoading} className="hv2-btn hv2-btn-block" style={{ marginTop: 10 }}>
+                {practiceLoading ? "Redirecting..." : "Get Practice"}
+              </button>
+              <p className="hv2-plan-sub" style={{ textAlign: "center" }}>
+                {india ? "Pay once with UPI or card. No auto renewal." : "Cancel anytime"}
+              </p>
+            </div>
           </div>
         </div>
       </section>

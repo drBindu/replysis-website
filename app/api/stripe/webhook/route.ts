@@ -18,7 +18,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
 import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
 import { validMinutes } from "../../../../data/interviewMinutes";
-import { MAYA_ADDON } from "../../../../data/mayaAddon";
+import { MAYA_ADDON, MOCK_PLAN } from "../../../../data/mayaAddon";
 import { sendOwnerAlert } from "../../../lib/user-mail";
 
 /** Tells the owner a Maya add-on was bought, so the Simli plan can be raised before it is needed (owner, 2026-10-26). */
@@ -411,6 +411,52 @@ async function applyPlanPass(session: any) {
   if (session.metadata?.maya === "1") await alertMayaBought(`India ${plan} month`);
 }
 
+/**
+ * The Practice plan (owner, 2026-10-26): interviews with Maya plus live answers, on an account that stays on the free
+ * plan otherwise. A subscription (mock_plan, `mockPlan` while it runs, renewed on invoice.paid) or an India month paid
+ * once (mock_pass, `mockPlanUntil`). Its answers are given as credits, and its listening time as audioMinutesAllowance
+ * (the Java backend reads that for any plan). A Pro or Max on the same account keeps its own, larger numbers.
+ */
+async function applyPractice(uid: string, opts: { india: boolean; subscriptionId?: string; until?: Date; customer?: string }) {
+  const userRef = db!.collection("users").doc(uid);
+  await db!.runTransaction(async (tx) => {
+    const current = await tx.get(userRef);
+    if (!current.exists) throw new Error("Practice buyer not found");
+    const d = current.data() ?? {};
+    const onPlan = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
+    const purchased = Math.max(0, Number(d.purchasedCredits ?? 0));
+    tx.set(userRef, {
+      ...(opts.subscriptionId ? { mockPlan: true, mockSubscriptionId: opts.subscriptionId } : {}),
+      ...(opts.until ? { mockPlanUntil: opts.until.toISOString() } : {}),
+      mayaMonthly: opts.india ? MOCK_PLAN.interviewsIndia : MOCK_PLAN.interviews,
+      // A paid Pro or Max already has more of both; only a free or trial account takes the Practice numbers.
+      ...(onPlan ? {} : {
+        credits: purchased + (opts.india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits),
+        audioMinutesAllowance: opts.india ? MOCK_PLAN.audioMinutesIndia : MOCK_PLAN.audioMinutes,
+      }),
+      stripeCustomerId: opts.customer ?? d.stripeCustomerId ?? null,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  console.log(`PRACTICE: ${uid}${opts.india ? " (India)" : ""}`);
+}
+
+/** The Practice subscription ended: Maya and its answers stop (a Pro or Max on the account is untouched). */
+async function endPractice(uid: string) {
+  const userRef = db!.collection("users").doc(uid);
+  await db!.runTransaction(async (tx) => {
+    const d = (await tx.get(userRef)).data() ?? {};
+    const onPlan = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
+    tx.set(userRef, {
+      mockPlan: false,
+      mockSubscriptionId: null,
+      ...(onPlan ? {} : { credits: Math.max(0, Number(d.purchasedCredits ?? 0)), audioMinutesAllowance: FieldValue.delete() }),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+  console.log(`PRACTICE ENDED: ${uid}`);
+}
+
 /** The Maya add-on bought once for an India plan paid once: it runs until that plan's month ends. */
 async function applyMayaPass(session: any) {
   const uid = session.metadata?.uid;
@@ -491,6 +537,46 @@ export async function POST(req: Request) {
       const session = event.data.object;
       if (session.payment_status === "paid") await addBoughtMinutes(session);
       else console.log(`[webhook] minutes checkout not paid yet (${session.payment_status})`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
+    // ── PRACTICE PLAN ────────────────────────────────────────────
+    // Its own subscription (metadata kind "mock"), kept apart from Pro and Max so neither changes the other.
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && ["mock_plan", "mock_pass"].includes(event.data?.object?.metadata?.purchaseType)) {
+      const session = event.data.object;
+      const uid = session.metadata?.uid;
+      if (typeof uid === "string" && uid && session.payment_status === "paid") {
+        if (session.metadata.purchaseType === "mock_pass") {
+          const receiptRef = db.collection("plan_passes").doc(`mock_${String(session.id)}`);
+          const fresh = await db.runTransaction(async (tx) => {
+            if ((await tx.get(receiptRef)).exists) return false;
+            tx.set(receiptRef, { uid, kind: "practice", amount: session.amount_total ?? null, currency: session.currency ?? "inr",
+                                 createdAt: FieldValue.serverTimestamp() });
+            return true;
+          });
+          if (fresh) {
+            const d = (await db.collection("users").doc(uid).get()).data() ?? {};
+            const running = Date.parse(String(d.mockPlanUntil ?? ""));
+            const start = Number.isFinite(running) && running > Date.now() ? running : Date.now();
+            await applyPractice(uid, { india: true, until: new Date(start + 30 * 86_400_000), customer: session.customer });
+            await alertMayaBought("Practice plan, India");
+          }
+        } else {
+          await applyPractice(uid, { india: session.currency === "inr", subscriptionId: session.subscription, customer: session.customer });
+          await alertMayaBought("Practice plan");
+        }
+      }
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+    if (event.data?.object?.object === "subscription" && event.data.object.metadata?.kind === "mock"
+        && (event.type === "customer.subscription.deleted" || event.type === "customer.subscription.updated")) {
+      const sub = event.data.object;
+      const uid = sub.metadata?.uid;
+      const dead = ["canceled", "unpaid", "incomplete_expired"].includes(sub.status);
+      if (typeof uid === "string" && uid && (event.type === "customer.subscription.deleted" || dead)) await endPractice(uid);
       await completeEvent(event.id);
       return NextResponse.json({ received: true });
     }
@@ -597,7 +683,11 @@ export async function POST(req: Request) {
         if (!subRes.ok) throw new Error(`Stripe subscription lookup failed: ${subRes.status}`);
         const sub = await subRes.json();
         const uid  = sub.metadata?.uid;
-        const plan = subscriptionPlan(sub);
+        const plan = sub.metadata?.kind === "mock" ? null : subscriptionPlan(sub);
+        // The Practice plan's monthly refill (its first invoice is the checkout, already applied).
+        if (sub.metadata?.kind === "mock" && typeof uid === "string" && invoice.billing_reason === "subscription_cycle") {
+          await applyPractice(uid, { india: String(invoice.currency) === "inr", subscriptionId: subscriptionId, customer: sub.customer });
+        }
         // The free invoice that opens an AutoPay waiting for a paid month to end is not a renewal: no refill.
         const freeTrialStart = Number(invoice.amount_paid ?? 0) === 0 && sub.status === "trialing";
 
