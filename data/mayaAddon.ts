@@ -41,10 +41,10 @@ export const MOCK_PLAN = {
 };
 
 /**
- * Free interviews a day across everyone (owner, 2026-10-26: "what if no one pays and all use free"). About 11 cents each
- * (6 minutes of Simli and the AI), so at most about $33 a month even if nobody pays. After that: "try tomorrow".
+ * Free interviews a day across everyone (owner, 2026-10-26: "what if no one pays and all use free"). About 14 cents each
+ * (6 minutes of Simli, the AI and her voice), so at most about $34 a month even if nobody pays. After that: "try tomorrow".
  */
-export const FREE_TASTES_PER_DAY = 10;
+export const FREE_TASTES_PER_DAY = 8;
 
 /**
  * Only a started interview counts (owner, 2026-10-26: "start interview, one off, not sessions"): refreshing a page or a

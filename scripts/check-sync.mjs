@@ -419,7 +419,7 @@ console.log("\nMaya: the free interview, Practice and the add-on");
 {
   const AGREED_MAYA = { addonUsd: 10, addonInr: 399, addonInterviews: 20, addonInterviewsIndia: 10,
                         practiceUsd: 14.99, practiceInr: 499, practiceInterviews: 20, practiceInterviewsIndia: 10,
-                        practiceCredits: 500, practiceCreditsIndia: 250, tasteQuestions: 3, freePerDay: 10 };
+                        practiceCredits: 500, practiceCreditsIndia: 250, tasteQuestions: 3, freePerDay: 8 };
   const m = read(resolve(FRONT, "data/mayaAddon.ts"));
   const grab = (block, key) => {
     const b = m && m.match(new RegExp(`export const ${block} = \\{([\\s\\S]*?)\\n\\};`));
@@ -453,7 +453,8 @@ console.log("\nMaya: the free interview, Practice and the add-on");
 
   // Worst case: every interview used for its full 15 minutes of Simli (1 cent a minute after the plan's minutes), the AI
   // for questions and feedback (about 5 cents an interview), and for Practice every answer and listening minute used.
-  const SIMLI_MIN = 0.01, INTERVIEW = 15 * SIMLI_MIN + 0.05, FEE = (r) => 0.029 * r + 0.3, RUPEE = 85;
+  // Her voice (Google Chirp 3 HD, $30 per million characters) is about 3,000 characters an interview: 9 cents.
+  const SIMLI_MIN = 0.01, INTERVIEW = 15 * SIMLI_MIN + 0.05 + 0.09, FEE = (r) => 0.029 * r + 0.3, RUPEE = 85;
   const addon = got.addonUsd - (got.addonInterviews * INTERVIEW) - FEE(got.addonUsd);
   const practiceCost = got.practiceInterviews * INTERVIEW + (got.practiceCredits / 5) * ANSWER + 120 * STT_PER_MIN;
   const practice = got.practiceUsd - practiceCost - FEE(got.practiceUsd);
@@ -465,7 +466,7 @@ console.log("\nMaya: the free interview, Practice and the add-on");
     console.log(`  ${name.padEnd(15)} revenue $${revenue.toFixed(2)}  worst-case profit $${profit.toFixed(2)} (${Math.round((profit / revenue) * 100)}%)`);
     (profit > 0 ? ok : bad)(`${name} never loses money in the worst case`);
   }
-  const freeCost = got.freePerDay * 30 * (6 * SIMLI_MIN + 0.05);
+  const freeCost = got.freePerDay * 30 * (6 * SIMLI_MIN + 0.05 + 0.03);
   (freeCost <= 40 ? ok : bad)(`free Maya interviews cost at most $${freeCost.toFixed(0)} a month even if nobody pays`);
 }
 
