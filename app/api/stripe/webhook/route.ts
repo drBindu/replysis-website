@@ -18,6 +18,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
 import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
 import { validMinutes } from "../../../../data/interviewMinutes";
+import { MAYA_ADDON } from "../../../../data/mayaAddon";
 
 const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY    || "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -90,6 +91,25 @@ const INDIA_PRICE_IDS = new Set(
     process.env.STRIPE_MAX_ANNUAL_PRICE_INR,
   ].filter((id): id is string => Boolean(id)),
 );
+
+// The Maya add-on (mock interview with live Maya, 2026-10-26): kept in step with the subscription's items.
+const MAYA_PRICE_IDS = new Set(
+  [
+    process.env.STRIPE_MAYA_MONTHLY_PRICE,
+    process.env.STRIPE_MAYA_MONTHLY_PRICE_INR,
+    process.env.STRIPE_MAYA_MONTHLY_PRICE_GBP,
+    process.env.STRIPE_MAYA_MONTHLY_PRICE_CAD,
+    process.env.STRIPE_MAYA_MONTHLY_PRICE_AUD,
+  ].filter((id): id is string => Boolean(id)),
+);
+
+/** Whether the subscription carries the Maya add-on, and how many interviews a month that gives. */
+function mayaFields(subscription: any): { mayaAddon: boolean; mayaMonthly: number } {
+  const items: any[] = Array.isArray(subscription?.items?.data) ? subscription.items.data : [];
+  const item = items.find((it) => MAYA_PRICE_IDS.has(it?.price?.id));
+  const rupees = String(item?.price?.currency ?? "").toLowerCase() === "inr";
+  return { mayaAddon: Boolean(item), mayaMonthly: rupees ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews };
+}
 
 function boughtInRupees(subscription: any): boolean {
   const priceId = subscription?.items?.data?.[0]?.price?.id;
@@ -289,6 +309,7 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
       stripeCancelAtPeriodEnd: subscription.cancel_at_period_end === true,
       stripeCurrentPeriodEnd: subscriptionPeriodEnd(subscription),
       stripeBillingInterval: subscriptionInterval(subscription) ?? currentData.stripeBillingInterval ?? null,
+      ...mayaFields(subscription),
       stripeLastEventCreated: eventCreated,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
@@ -377,10 +398,32 @@ async function applyPlanPass(session: any) {
       stripeCustomerId: session.customer ?? d.stripeCustomerId ?? null,
       lastPaymentFailedAt: null,
       lastPassPurchaseAt: FieldValue.serverTimestamp(),
+      // The Maya add-on bought with this month runs for the same 30 days.
+      ...(session.metadata?.maya === "1" ? { mayaAddonUntil: end.toISOString(), mayaMonthly: MAYA_ADDON.interviewsIndia } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
-  console.log(`PLAN PASS: ${uid} ${plan} 30 days`);
+  console.log(`PLAN PASS: ${uid} ${plan} 30 days${session.metadata?.maya === "1" ? " with Maya" : ""}`);
+}
+
+/** The Maya add-on bought once for an India plan paid once: it runs until that plan's month ends. */
+async function applyMayaPass(session: any) {
+  const uid = session.metadata?.uid;
+  if (typeof uid !== "string" || !uid) throw new Error("Invalid Maya pass metadata");
+  const userRef = db!.collection("users").doc(uid);
+  const receiptRef = db!.collection("plan_passes").doc(`maya_${String(session.id)}`);
+  await db!.runTransaction(async (tx) => {
+    if ((await tx.get(receiptRef)).exists) return;
+    const current = await tx.get(userRef);
+    if (!current.exists) throw new Error("Maya pass buyer not found");
+    const passEnd = Date.parse(String(current.data()?.passExpiresAt ?? ""));
+    const until = new Date(Number.isFinite(passEnd) && passEnd > Date.now() ? passEnd : Date.now() + 30 * 86_400_000);
+    tx.set(receiptRef, { uid, kind: "maya", amount: session.amount_total ?? null, currency: session.currency ?? "inr",
+                         end: until.toISOString(), createdAt: FieldValue.serverTimestamp() });
+    tx.set(userRef, { mayaAddonUntil: until.toISOString(), mayaMonthly: MAYA_ADDON.interviewsIndia,
+                      updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  });
+  console.log(`MAYA PASS: ${uid}`);
 }
 
 // ── POST /api/stripe/webhook ─────────────────────────────────────
@@ -446,6 +489,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
+    // ── MAYA ADD-ON FOR AN INDIA PLAN PAID ONCE ───────────────────
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && event.data?.object?.metadata?.purchaseType === "maya_pass") {
+      const session = event.data.object;
+      if (session.payment_status === "paid") await applyMayaPass(session);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
     // ── INDIA PLAN, PAID ONCE  -  UPI may settle a moment after completion ──
     if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
         && event.data?.object?.metadata?.purchaseType === "plan_pass") {
@@ -496,6 +548,8 @@ export async function POST(req: Request) {
           stripeSubscriptionStatus: "active",
           stripeCancelAtPeriodEnd: false,
           stripeBillingInterval: session.metadata?.interval ?? null,
+          mayaAddon: session.metadata?.maya === "1",
+          mayaMonthly: session.currency === "inr" ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews,
           lastPaymentFailedAt: null,
         });
       } else {
@@ -515,6 +569,7 @@ export async function POST(req: Request) {
           credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
+          mayaAddon: false,
           stripeSubscriptionStatus: "canceled",
           stripeCancelAtPeriodEnd: false,
           stripeCurrentPeriodEnd: null,
@@ -552,6 +607,7 @@ export async function POST(req: Request) {
             stripeCancelAtPeriodEnd: sub.cancel_at_period_end === true,
             stripeCurrentPeriodEnd: subscriptionPeriodEnd(sub),
             stripeBillingInterval: subscriptionInterval(sub),
+            ...mayaFields(sub),
             lastPaymentFailedAt: null,
           });
           console.log(`🔄 RENEWED: ${uid} → ${credits} credits`);
@@ -574,6 +630,7 @@ export async function POST(req: Request) {
           credits:              PLAN_MONTHLY_CREDITS.free,
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
+          mayaAddon: false,
           stripeSubscriptionStatus: sub.status,
           stripeCancelAtPeriodEnd: false,
           stripeCurrentPeriodEnd: null,

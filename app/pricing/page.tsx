@@ -13,6 +13,7 @@ import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
 import InterviewMinutes from "../../components/InterviewMinutes";
 import type { LocalPlanPrices } from "../../data/localPrices";
+import { MAYA_ADDON } from "../../data/mayaAddon";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
   answersFor, interviewsFor, TRIAL_ANSWERS, TRIAL_DAYS,
@@ -137,7 +138,6 @@ const ALL_PLANS: {
     features: [
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
-      `Up to ${fmt(Math.floor(PLAN_MONTHLY_CREDITS.pro / MOCK_CREDITS))} guided mock sessions with mock-only use`,
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
@@ -168,7 +168,6 @@ const ALL_PLANS: {
       `Everything in Pro, with ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× the monthly capacity`,
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
-      `Up to ${fmt(Math.floor(PLAN_MONTHLY_CREDITS.max / MOCK_CREDITS))} guided mock sessions with mock-only use`,
       "Live listening included, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
@@ -229,7 +228,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview sessions",              free: `${Math.max(1, Math.floor(PLAN_MONTHLY_CREDITS.free / MOCK_CREDITS))}, once`, pro: `${fmt(Math.floor(PLAN_MONTHLY_CREDITS.pro / MOCK_CREDITS))}/month`, max: `${fmt(Math.floor(PLAN_MONTHLY_CREDITS.max / MOCK_CREDITS))}/month`},
+  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: false,          pro: `Add for $${MAYA_ADDON.usd}/month`, max: `Add for $${MAYA_ADDON.usd}/month`},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -319,6 +318,8 @@ export default function PricingPage() {
   const [showAuth, setShowAuth] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<"pro" | "max" | null>(null);
   const [pendingAutopay, setPendingAutopay] = useState(false);
+  // The Maya add-on, ticked per plan card (owner, 2026-10-26: "+$10 for the mock interview").
+  const [mayaPick, setMayaPick] = useState<Record<string, boolean>>({});
   // Signing in from the minutes card keeps the buyer on this page, next to the slider they set.
   const [stayAfterAuth, setStayAfterAuth] = useState(false);
   const [loading,  setLoading]  = useState<string | null>(null);
@@ -400,7 +401,8 @@ export default function PricingPage() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email, ...(autopay ? { autopay: true } : {}) }),
+        body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email, ...(autopay ? { autopay: true } : {}),
+                               ...(mayaPick[planId] ? { maya: true } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -578,11 +580,27 @@ export default function PricingPage() {
                         {isCurrent ? "Manage current plan" : "Change plan securely"}
                       </Link>
                     ) : (
+                      <>
+                      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "4px 0 12px", cursor: "pointer",
+                        fontSize: 14, lineHeight: 1.45 }}>
+                        <input type="checkbox" checked={!!mayaPick[plan.id]} style={{ marginTop: 3, width: 16, height: 16, accentColor: "#267B42" }}
+                          onChange={(e) => setMayaPick((m) => ({ ...m, [plan.id]: e.target.checked }))} />
+                        <span>
+                          <strong>Add mock interview with Maya</strong>{" "}
+                          {india ? `+₹${MAYA_ADDON.inr}` : localPrices ? `+${localPrices.symbol}${MAYA_ADDON.local[localPrices.currency]}` : `+$${MAYA_ADDON.usd}`}
+                          {india && !annual ? " for the month" : " a month"}
+                          <br />
+                          <span style={{ opacity: 0.75, fontSize: 13 }}>
+                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} practice interviews a month
+                          </span>
+                        </span>
+                      </label>
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading}
                         className="hv2-btn hv2-btn-block">
                         {loading === plan.id ? "Redirecting..." : india && !annual && isCurrent ? "Add 1 more month" : plan.cta}
                       </button>
+                      </>
                     )
                   )}
                   <p className="hv2-plan-sub" style={{ textAlign: "center" }}>
@@ -641,8 +659,8 @@ export default function PricingPage() {
         <div className="hv2-wrap">
           <h2 className="hv2-serif hv2-h2">Which plan <em>fits.</em></h2>
           <p className="hv2-p">
-            Paid plans include the complete premium experience. There is no separate upgrade for premium AI, desktop capture controls, mock
-            practice, or resume tailoring.
+            Paid plans include the complete premium experience: premium AI, desktop capture controls and resume tailoring. The mock
+            interview with Maya, a live video interviewer, can be added to either plan.
           </p>
           <ul className="hv2-index">
             {[
@@ -658,7 +676,7 @@ export default function PricingPage() {
               {
                 name: "Max", who: "Interviewing constantly",
                 note: `You have frequent interview loops, practice daily, or need ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× Pro capacity and priority support.`,
-                items: ["Several interviews every week", "Long technical loops back to back", "Running mock sessions daily to prepare", "Need the highest monthly capacity"],
+                items: ["Several interviews every week", "Long technical loops back to back", "Practice with Maya between interviews", "Need the highest monthly capacity"],
               },
             ].map((col) => (
               <li key={col.name}>

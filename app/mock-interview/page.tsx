@@ -698,8 +698,15 @@ export default function MockInterviewPage() {
   const [difficulty, setDifficulty]             = useState<Difficulty>("mixed");
   const [taggedQuestions, setTaggedQuestions] = useState<TaggedQuestion[]>([]);
   const [userPlan, setUserPlan]               = useState<string>("free");
-  // The mock interview with live Maya is for paid users only (owner, 2026-10-26); null until known. Trial is not paid.
-  const [isPaid, setIsPaid]                   = useState<boolean | null>(null);
+  // The mock interview with live Maya needs a paid plan plus the Maya add-on (owner, 2026-10-26); null until known.
+  const [mayaState, setMayaState]             = useState<"ok" | "free" | "no_addon" | null>(null);
+  const isPaid = mayaState === null ? null : mayaState === "ok";
+  const setIsPaidFrom = (d: { maya?: unknown } | null | undefined) =>
+    setMayaState(d?.maya === "ok" || d?.maya === "no_addon" ? d.maya : "free");
+  // The add-on's price in the customer's own currency, asked for only when the add button shows.
+  const [mayaOffer, setMayaOffer]             = useState<{ price: string; once: boolean; interviews: number } | null>(null);
+  const [mayaBusy, setMayaBusy]               = useState(false);
+  const [mayaError, setMayaError]             = useState<string | null>(null);
 
   // ── Interview State ──────────────────────────────────────────
   const [questions,    setQuestions]    = useState<string[]>([]);
@@ -830,16 +837,53 @@ export default function MockInterviewPage() {
     if (phase !== "ready") return;
     setLoadingCredits(true);
     fetchCredits()
-      .then(d => { setCredits(d?.credits ?? d?.balance ?? null); if (d?.plan) setUserPlan(d.plan); setIsPaid(d?.paid === true); })
+      .then(d => { setCredits(d?.credits ?? d?.balance ?? null); if (d?.plan) setUserPlan(d.plan); setIsPaidFrom(d); })
       .catch(() => setCredits(null))
       .finally(() => setLoadingCredits(false));
   }, [phase]);
+
+  // ── The Maya add-on: its price for this customer, and adding it ──
+  useEffect(() => {
+    if (mayaState !== "no_addon" || !user || !auth.currentUser || mayaOffer) return;
+    void (async () => {
+      try {
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser!.getIdToken()}` },
+          body: JSON.stringify({ addon: "maya", preview: true, uid: auth.currentUser!.uid }),
+        });
+        const d = await res.json();
+        if (res.ok && typeof d.price === "string") setMayaOffer(d);
+        else setMayaError(typeof d.error === "string" ? d.error : "Could not load the price. Please refresh.");
+      } catch { setMayaError("Could not load the price. Please refresh."); }
+    })();
+  }, [mayaState, user, mayaOffer]);
+
+  const addMaya = async () => {
+    if (!auth.currentUser || mayaBusy) return;
+    setMayaBusy(true); setMayaError(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser!.getIdToken()}` },
+        body: JSON.stringify({ addon: "maya", uid: auth.currentUser!.uid }),
+      });
+      const d = await res.json();
+      if (res.ok && typeof d.url === "string") { window.location.href = d.url; return; }
+      if (res.ok && d.ok) { setMayaState("ok"); return; }
+      setMayaError(typeof d.error === "string" ? d.error : "Could not add it just now. You have not been charged.");
+    } catch {
+      setMayaError("Could not add it just now. You have not been charged.");
+    } finally {
+      setMayaBusy(false);
+    }
+  };
 
   // ── User plan (for difficulty / count gating) ────────────
   useEffect(() => {
     if (!user) return;
     fetchCredits()
-      .then(d => { if (d?.plan) setUserPlan(d.plan); setCredits(d?.credits ?? d?.balance ?? null); setIsPaid(d?.paid === true); })
+      .then(d => { if (d?.plan) setUserPlan(d.plan); setCredits(d?.credits ?? d?.balance ?? null); setIsPaidFrom(d); })
       .catch(() => {});
   }, [user]);
 
@@ -1547,8 +1591,8 @@ export default function MockInterviewPage() {
       const available = Number(balance?.credits ?? balance?.balance ?? 0);
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
-      setIsPaid(balance?.paid === true);
-      if (balance?.paid !== true) return;                    // the paid only screen shows instead
+      setIsPaidFrom(balance);
+      if (balance?.maya !== "ok") return;                    // the plan or add-on screen shows instead
       if (available < setupAndFeedbackCredits) {
         setSetupError(`This session needs ${answerCount(setupAndFeedbackCredits)} answers including question setup. Choose fewer questions or add answers.`);
         return;
@@ -1610,8 +1654,8 @@ export default function MockInterviewPage() {
       const available = Number(balance?.credits ?? balance?.balance ?? 0);
       if (!Number.isFinite(available) || available < 0) throw new Error("Invalid credit balance");
       setCredits(available);
-      setIsPaid(balance?.paid === true);
-      if (balance?.paid !== true) return;                    // the paid only screen shows instead
+      setIsPaidFrom(balance);
+      if (balance?.maya !== "ok") return;                    // the plan or add-on screen shows instead
       if (available < estimatedCredits) {
         setSetupError("Not enough answers remain for this session. Return to setup and choose fewer questions, or add answers.");
         return;
@@ -1808,12 +1852,36 @@ export default function MockInterviewPage() {
               </h1>
               <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
                 Maya is a live video interviewer. She asks you real questions for your role, listens to your answers and tells you
-                how to make each one stronger. Mock interviews are part of the paid plans.
+                how to make each one stronger.
               </p>
-              <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 4, padding: "11px 20px", borderRadius: 10,
-                background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                See plans
-              </a>
+              {mayaState === "no_addon" ? (
+                <>
+                  <p style={{ fontSize: 14, color: T.text, lineHeight: 1.6, fontWeight: 600 }}>
+                    {mayaOffer
+                      ? mayaOffer.once
+                        ? `Add it to your plan for ${mayaOffer.price}, paid once for the rest of your month: ${mayaOffer.interviews} interviews.`
+                        : `Add it to your plan for ${mayaOffer.price} a month: ${mayaOffer.interviews} interviews every month. Today you pay only for the days left in this month.`
+                      : "Add it to your plan to start."}
+                  </p>
+                  <button onClick={() => void addMaya()} disabled={mayaBusy || !mayaOffer}
+                    style={{ alignSelf: "flex-start", marginTop: 4, padding: "11px 20px", borderRadius: 10, border: "none",
+                      background: T.accent, color: "white", fontSize: 14, fontWeight: 700, cursor: mayaBusy ? "default" : "pointer",
+                      opacity: mayaBusy || !mayaOffer ? 0.6 : 1 }}>
+                    {mayaBusy ? "Adding" : "Add to my plan"}
+                  </button>
+                  {mayaError && <p style={{ fontSize: 13, color: T.danger }}>{mayaError}</p>}
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
+                    Choose Pro or Max with the mock interview included.
+                  </p>
+                  <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 4, padding: "11px 20px", borderRadius: 10,
+                    background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                    See plans
+                  </a>
+                </>
+              )}
             </motion.div>
           )}
 

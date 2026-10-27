@@ -8,7 +8,8 @@
 import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { MAYA_ADDON } from "../../../../data/mayaAddon";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
 import { countryOf, isIndia } from "@/app/lib/buyer-country";
@@ -71,6 +72,17 @@ const CREDIT_PRICE_IDS_INR: Record<string, string> = {
   "5000": process.env.STRIPE_CREDITS_5000_PRICE_INR || "",
 };
 
+// The Maya add-on (mock interview with live Maya, owner 2026-10-26), one price per currency. It goes on the same
+// checkout as the plan, in the plan's currency; a currency without its price simply cannot add it.
+const MAYA_PRICE_IDS: Record<string, string> = {
+  usd: process.env.STRIPE_MAYA_MONTHLY_PRICE || "",
+  inr: process.env.STRIPE_MAYA_MONTHLY_PRICE_INR || "",
+  gbp: process.env.STRIPE_MAYA_MONTHLY_PRICE_GBP || "",
+  cad: process.env.STRIPE_MAYA_MONTHLY_PRICE_CAD || "",
+  aud: process.env.STRIPE_MAYA_MONTHLY_PRICE_AUD || "",
+};
+const MAYA_ONCE_PRICE_INR = process.env.STRIPE_MAYA_ONCE_PRICE_INR || "";
+
 const CREDIT_PRICE_IDS: Record<string, string> = {
   "500": process.env.STRIPE_CREDITS_500_PRICE || "price_REPLACE_ME",
   "1500": process.env.STRIPE_CREDITS_1500_PRICE || "price_REPLACE_ME",
@@ -111,10 +123,12 @@ export async function POST(req: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
-    const { plan, annual, uid, creditPack, minutes, autoAdd, autopay } = body;
+    const { plan, annual, uid, creditPack, minutes, autoAdd, autopay, maya, addon } = body;
     if (minutes !== undefined) {
       return buyMinutes(req, minutes, autoAdd === true, uid, verifiedUid, verifiedEmail);
     }
+    if (addon === "maya") return addMaya(req, uid, verifiedUid, verifiedEmail, body.preview === true);
+    const withMaya = maya === true && !creditPack;
     const selectedPack = creditPackById(creditPack);
     const isCreditPack = Boolean(selectedPack);
 
@@ -171,6 +185,7 @@ export async function POST(req: Request) {
     // Rs 299 and $29.99 is ninety percent, so a client-supplied country would
     // be an open discount for anyone who read this file.
     let indiaAutopay = false;
+    let currency = "usd";
     if (await isIndia(req.headers)) {
       const rupees = isCreditPack
         ? CREDIT_PRICE_IDS_INR[selectedPack!.id]
@@ -180,10 +195,11 @@ export async function POST(req: Request) {
         console.log(`[checkout] India: charging the rupee price for ${priceKey}`);
         // India plans are paid once for 30 days, never a subscription: a monthly UPI or card charge needs an AutoPay
         // mandate, and a customer's Rs 699 failed that way (2026-10-21). Paying again adds 30 more days.
-        if (!isCreditPack && autopay !== true) return buyPlanPass(req, plan, rupees, uid, email);
+        if (!isCreditPack && autopay !== true) return buyPlanPass(req, plan, rupees, uid, email, withMaya);
         // AutoPay (owner, 2026-10-23): a monthly rupee subscription, card only. A UPI AutoPay mandate is what failed
         // on 2026-10-21; a card e-mandate is approved with the card's OTP during checkout.
         if (!isCreditPack) indiaAutopay = true;
+        currency = "inr";
       }
     }
 
@@ -193,6 +209,7 @@ export async function POST(req: Request) {
       const localId = local ? process.env[localPriceEnv(plan as "pro" | "max", local.currency)] : undefined;
       if (localId) {
         priceId = localId;
+        currency = local!.currency;
         console.log(`[checkout] ${local!.currency.toUpperCase()}: charging the local price for ${priceKey}`);
       }
     }
@@ -236,6 +253,16 @@ export async function POST(req: Request) {
     if (indiaAutopay) params.append("payment_method_types[]", "card");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
+    // The Maya add-on rides on the same subscription, after the plan (the webhook reads the plan from the first item).
+    const mayaPrice = withMaya ? MAYA_PRICE_IDS[currency] : "";
+    if (withMaya && !mayaPrice) {
+      console.error(`[checkout] Missing Maya add-on price for ${currency}`);
+      return NextResponse.json({ error: "The mock interview add-on is not available in your currency yet. Please try without it." }, { status: 503 });
+    }
+    if (mayaPrice) {
+      params.append("line_items[1][price]", mayaPrice);
+      params.append("line_items[1][quantity]", "1");
+    }
     // A plan returns to the pricing page. An answer pack is bought from the account (it is not on the
     // pricing page any more), so it returns there.
     params.append("success_url", isCreditPack ? `${origin}/account?answers=added` : `${origin}/pricing?success=true`);
@@ -268,6 +295,10 @@ export async function POST(req: Request) {
       params.append("subscription_data[metadata][uid]", uid);
       params.append("subscription_data[metadata][plan]", plan);
       params.append("subscription_data[metadata][interval]", annual ? "annual" : "monthly");
+      if (mayaPrice) {
+        params.append("metadata[maya]", "1");
+        params.append("subscription_data[metadata][maya]", "1");
+      }
       // A month already paid for is not thrown away: the subscription's first charge waits for its end. Stripe needs the
       // start at least 48 hours away, so a month ending sooner starts AutoPay now.
       if (indiaAutopay && Number.isFinite(passEndMs) && passEndMs - Date.now() > 49 * 3600_000) {
@@ -311,7 +342,7 @@ export async function POST(req: Request) {
  * India: one month of Pro or Max, paid once (UPI or card), no AutoPay. The amount is read from the rupee price already
  * set up in Stripe, so the price stays managed in one place. The webhook gives 30 days per payment (purchaseType plan_pass).
  */
-async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid: string, email: string) {
+async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid: string, email: string, withMaya = false) {
   const priceRes = await fetch(`https://api.stripe.com/v1/prices/${rupeePriceId}`,
     { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
   const price = await priceRes.json();
@@ -330,6 +361,14 @@ async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid
   params.append("line_items[0][price_data][product_data][name]", name);
   params.append("line_items[0][price_data][product_data][description]", "30 days. Paid once, no auto renewal. We email you before it ends.");
   params.append("line_items[0][quantity]", "1");
+  if (withMaya) {
+    if (!MAYA_ONCE_PRICE_INR) {
+      return NextResponse.json({ error: "The mock interview add-on is not available yet. Please try without it." }, { status: 503 });
+    }
+    params.append("line_items[1][price]", MAYA_ONCE_PRICE_INR);
+    params.append("line_items[1][quantity]", "1");
+    params.append("metadata[maya]", "1");
+  }
   params.append("success_url", `${origin}/pricing?success=true`);
   params.append("cancel_url", `${origin}/pricing?canceled=true`);
   params.append("customer_email", email);
@@ -357,6 +396,90 @@ async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid
     return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
   }
   return NextResponse.json({ url: session.url });
+}
+
+/**
+ * Adds the Maya add-on to a plan someone already has (the "Add to my plan" button on the mock interview).
+ * - A subscription: the add-on is added to it in the plan's currency and the rest of this month is charged now
+ *   (Stripe prorates); the webhook then records it. It renews with the plan.
+ * - An India plan paid once: Rs 399 paid once, for the same 30 days as the plan (purchaseType maya_pass).
+ */
+async function addMaya(req: Request, uid: unknown, verifiedUid: string, verifiedEmail: string | undefined, preview: boolean) {
+  if (typeof uid !== "string" || uid !== verifiedUid) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!STRIPE_SECRET || STRIPE_SECRET.length < 10) return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  const userRef = getFirestore().collection("users").doc(uid);
+  const d = (await userRef.get()).data() ?? {};
+  const auth = { Authorization: `Bearer ${STRIPE_SECRET}` };
+
+  if (d.planSource === "pass") {
+    if (preview) return NextResponse.json({ price: `₹${MAYA_ADDON.inr}`, once: true, interviews: MAYA_ADDON.interviewsIndia });
+    if (!MAYA_ONCE_PRICE_INR) return NextResponse.json({ error: "Not available yet. Please try again later." }, { status: 503 });
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://replysis.com";
+    const origin = new Set([SITE_URL, "http://localhost:3000"]).has(req.headers.get("origin") || "") ? req.headers.get("origin")! : SITE_URL;
+    const params = new URLSearchParams();
+    params.append("mode", "payment");
+    params.append("line_items[0][price]", MAYA_ONCE_PRICE_INR);
+    params.append("line_items[0][quantity]", "1");
+    params.append("success_url", `${origin}/mock-interview?maya=added`);
+    params.append("cancel_url", `${origin}/mock-interview`);
+    params.append("customer_email", verifiedEmail ?? "");
+    params.append("submit_type", "pay");
+    params.append("branding_settings[display_name]", "Replysis");
+    params.append("branding_settings[button_color]", "#267B42");
+    params.append("custom_text[submit][message]", "Mock interview with Maya for the rest of your current month. Paid once.");
+    params.append("metadata[uid]", uid);
+    params.append("metadata[purchaseType]", "maya_pass");
+    params.append("payment_intent_data[metadata][uid]", uid);
+    params.append("payment_intent_data[metadata][purchaseType]", "maya_pass");
+    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST", headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(),
+    });
+    const session = await res.json();
+    if (!res.ok || typeof session?.url !== "string") {
+      console.error("[checkout] Maya pass session failed:", session?.error?.message ?? res.status);
+      return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
+    }
+    return NextResponse.json({ url: session.url });
+  }
+
+  const subscriptionId = typeof d.stripeSubscriptionId === "string" ? d.stripeSubscriptionId : "";
+  if (!subscriptionId) return NextResponse.json({ error: "Choose a plan first." }, { status: 400 });
+  const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, { headers: auth });
+  const sub = await subRes.json();
+  if (!subRes.ok) return NextResponse.json({ error: "Billing account unavailable. Please try again." }, { status: 502 });
+  const items: any[] = Array.isArray(sub?.items?.data) ? sub.items.data : [];
+  const mayaIds = new Set(Object.values(MAYA_PRICE_IDS).filter(Boolean));
+  if (items.some((it) => mayaIds.has(it?.price?.id))) return NextResponse.json({ ok: true, already: true });
+  const currency = String(items[0]?.price?.currency ?? "usd").toLowerCase();
+  const price = MAYA_PRICE_IDS[currency];
+  if (!price) return NextResponse.json({ error: "The add-on is not available in your currency yet." }, { status: 503 });
+  // What the button shows, in the plan's own currency, before anything is charged.
+  if (preview) {
+    const amount = currency === "usd" ? `$${MAYA_ADDON.usd}` : currency === "inr" ? `₹${MAYA_ADDON.inr}`
+      : `${{ gbp: "£", cad: "CA$", aud: "A$" }[currency] ?? ""}${MAYA_ADDON.local[currency]}`;
+    return NextResponse.json({ price: amount, once: false,
+      interviews: currency === "inr" ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews });
+  }
+  const params = new URLSearchParams();
+  params.append("subscription", subscriptionId);
+  params.append("price", price);
+  params.append("quantity", "1");
+  params.append("proration_behavior", "always_invoice");
+  params.append("payment_behavior", "error_if_incomplete");
+  const add = await fetch("https://api.stripe.com/v1/subscription_items", {
+    method: "POST", headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(),
+  });
+  const added = await add.json();
+  if (!add.ok) {
+    console.error("[checkout] Maya add-on failed:", added?.error?.code ?? add.status);
+    return NextResponse.json({ error: added?.error?.type === "card_error"
+      ? "Your card was declined. Update it in Account and Billing, then try again."
+      : "Could not add it just now. You have not been charged. Please try again." }, { status: 402 });
+  }
+  // The webhook records it too; set here so the page opens at once.
+  await userRef.set({ mayaAddon: true, mayaMonthly: currency === "inr" ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews,
+                      updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return NextResponse.json({ ok: true });
 }
 
 async function buyMinutes(req: Request, minutesInput: unknown, autoAdd: boolean, uid: unknown,

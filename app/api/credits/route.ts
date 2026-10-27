@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { isPaidPlan } from "../../lib/paid-plan";
+import { isPaidPlan, mayaAccess } from "../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -79,15 +79,20 @@ export async function GET(req: Request) {
     const snap = await db.collection("users").doc(uid).get();
 
     if (!snap.exists) {
-      return NextResponse.json({ credits: 0, plan: "free", paid: false });
+      return NextResponse.json({ credits: 0, plan: "free", paid: false, maya: "free" });
     }
 
     const data = snap.data()!;
+    const maya = mayaAccess(data);
     return NextResponse.json({
       credits: data.credits ?? 0,
       plan: data.plan ?? "free",
-      // A trial account is on Pro but has paid nothing, so it is not paid (the mock interview is for paid plans only).
+      // A trial account is on Pro but has paid nothing, so it is not paid.
       paid: isPaidPlan(data),
+      // The mock interview with Maya: "ok", "free" (needs a plan) or "no_addon" (needs the Maya add-on).
+      maya: maya.state,
+      mayaMonthly: maya.monthly,
+      mayaPass: maya.pass,
     });
   } catch (err: any) {
     console.error("Credits GET error:", err);

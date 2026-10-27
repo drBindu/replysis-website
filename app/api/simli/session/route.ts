@@ -1,6 +1,7 @@
 // A short lived Simli session token for the live interviewer face. The Simli API key never leaves the server.
 //
-// Paid users only (owner, 2026-10-26): free and trial accounts are refused here, not just hidden in the page.
+// Paid plans with the Maya add-on only (owner, 2026-10-26): everyone else is refused here, not just hidden in the page.
+// The add-on carries a number of interviews a month (see data/mayaAddon.ts); each live session counts as one.
 //
 // Cost control: Simli bills by the minute of a connected session, so a session is capped in length and idle time, and each
 // person gets only a few a day.
@@ -9,7 +10,7 @@ import { NextResponse } from "next/server";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
-import { isPaidPlan } from "../../../lib/paid-plan";
+import { mayaAccess } from "../../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -28,20 +29,28 @@ export async function POST(req: Request) {
   const apiKey = process.env.SIMLI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Live face unavailable" }, { status: 503 });
 
-  const paid = await getFirestore().collection("users").doc(uid).get()
-    .then((d) => isPaidPlan(d.data())).catch(() => false);
-  if (!paid) return NextResponse.json({ error: "Paid plans only" }, { status: 403 });
+  const access = await getFirestore().collection("users").doc(uid).get()
+    .then((d) => mayaAccess(d.data())).catch(() => null);
+  if (!access || access.state !== "ok") return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
 
   // A daily allowance per person, counted before the session is made so a failure to count cannot give free sessions.
+  // Counted per day and per month before the session is made, so a failure to count cannot give free sessions.
   const day = new Date().toISOString().slice(0, 10);
+  const month = day.slice(0, 7);
   const usageRef = getFirestore().collection("avatar_usage").doc(`${uid}_${day}`);
+  const monthRef = getFirestore().collection("avatar_usage").doc(`${uid}_${month}`);
   const allowed = await getFirestore().runTransaction(async (tx) => {
     const used = Number((await tx.get(usageRef)).data()?.sessions ?? 0);
-    if (used >= SESSIONS_PER_DAY) return false;
+    const usedMonth = Number((await tx.get(monthRef)).data()?.sessions ?? 0);
+    if (used >= SESSIONS_PER_DAY) return "day";
+    if (usedMonth >= access.monthly) return "month";
     tx.set(usageRef, { uid, day, sessions: used + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    return true;
-  }).catch(() => false);
-  if (!allowed) return NextResponse.json({ error: "Daily limit reached" }, { status: 429 });
+    tx.set(monthRef, { uid, month, sessions: usedMonth + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return "ok";
+  }).catch(() => "error");
+  if (allowed !== "ok") {
+    return NextResponse.json({ error: allowed === "month" ? "Monthly limit reached" : "Daily limit reached" }, { status: 429 });
+  }
 
   try {
     const res = await fetch("https://api.simli.ai/compose/token", {

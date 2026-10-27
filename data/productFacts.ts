@@ -170,13 +170,13 @@ export const PUBLIC_PLAN_CAPACITY = {
     label: "Pro",
     credits: PLAN_MONTHLY_CREDITS.pro,
     summary: `${answersText(PLAN_MONTHLY_CREDITS.pro)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews`,
-    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.pro / 20)} guided mock sessions.`,
+    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews.`,
   },
   max: {
     label: "Max",
     credits: PLAN_MONTHLY_CREDITS.max,
     summary: `${answersText(PLAN_MONTHLY_CREDITS.max)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews`,
-    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews, or ${Math.floor(PLAN_MONTHLY_CREDITS.max / 20)} guided mock sessions.`,
+    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews.`,
   },
 } as const;
 
