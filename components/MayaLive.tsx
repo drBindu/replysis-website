@@ -102,11 +102,13 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         if (!token) throw new Error("signed out");
         // A private face test (owner and testers only, checked by the server) passes through from the page's address.
         const test = new URLSearchParams(location.search);
-        const testQuery = ["testFace", "w", "h", "x", "y", "zoom"].filter((k) => test.get(k) !== null)
+        const testQuery = ["testFace", "kind", "fit", "w", "h", "x", "y", "zoom"].filter((k) => test.get(k) !== null)
           .map((k) => `&${k}=${encodeURIComponent(test.get(k)!)}`).join("");
         const res = await fetch(`/api/simli/session?shape=${shape}${testQuery}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(`session ${res.status}`);
-        const { sessionToken } = await res.json();
+        const { sessionToken, fit } = await res.json();
+        // A face framed with room around her fills the window; her head sits in the upper part of the picture.
+        if (fit === "cover") { videoEl.style.objectFit = "cover"; videoEl.style.objectPosition = "50% 20%"; }
         const { SimliClient, LogLevel } = await import("simli-client/dist/client");   /* not the package index: its import of ./Client has the wrong letter case and fails on Linux */
         if (cancelled) return;
         const simli = new SimliClient(sessionToken, videoEl, audioEl, null, LogLevel.ERROR, "livekit");

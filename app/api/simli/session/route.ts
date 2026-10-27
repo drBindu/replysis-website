@@ -126,7 +126,11 @@ export async function POST(req: Request) {
       console.error(`[simli] token request failed: HTTP ${res.status}`);
       return NextResponse.json({ error: "Live face unavailable" }, { status: 502 });
     }
-    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS },
+    // "cover": a face photographed with room around her fills the whole window instead of a square with blurred sides
+    // (owner, 2026-10-27: "not fit window full"). SIMLI_FACE_FIT=cover for the live face; &fit=cover in a private test.
+    const fitParam = internal && testFace ? params.get("fit") : null;
+    const fit = (fitParam ?? process.env.SIMLI_FACE_FIT) === "cover" ? "cover" : "contain";
+    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS, fit },
       { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[simli] token request error:", (e as Error)?.name ?? "Error");
