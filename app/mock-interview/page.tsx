@@ -33,6 +33,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 // several of them describe account configuration they cannot reach.
 const LISTENING_UNAVAILABLE = "Listening is temporarily unavailable. Please try again.";
 const MIC_BLOCKED = "Microphone access is blocked. Allow microphone access and try again.";
+// The microphone exists but another app or tab holds it (Windows gives NotReadableError), which used to read as
+// "Listening is temporarily unavailable" (owner, 2026-10-27).
+const MIC_BUSY = "Your microphone is being used by another app or tab. Close it, then tap to answer again.";
 const SIGN_IN_REQUIRED = "Your sign-in has expired. Sign in again to use the microphone.";
 const NO_ANSWERS_LEFT = "You have no answers left. Add more answers to continue.";
 
@@ -1151,7 +1154,8 @@ export default function MockInterviewPage() {
         } catch (mediaErr) {
           const denied = ["NotAllowedError", "SecurityError", "PermissionDeniedError"].includes((mediaErr as Error)?.name);
           console.error(`[Replysis] Mock interview could not start capture: ${(mediaErr as Error)?.name ?? "Error"}`);
-          setRecordingError(denied ? MIC_BLOCKED : LISTENING_UNAVAILABLE);
+          const busy = ["NotReadableError", "TrackStartError", "AbortError", "NotFoundError"].includes((mediaErr as Error)?.name);
+          setRecordingError(denied ? MIC_BLOCKED : busy ? MIC_BUSY : LISTENING_UNAVAILABLE);
           stopRecording();
         }
       };
