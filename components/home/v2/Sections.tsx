@@ -197,7 +197,7 @@ export function ClosingCta({
     <section className="hv2-section hv2-end" id="download-section">
       <div className="hv2-wrap">
         <h2 className="hv2-serif hv2-h2">Try it on a practice <em>question first.</em></h2>
-        <p className="hv2-p">3 days of Pro free, 50 answers, no card. If it helps, keep it.</p>
+        <p className="hv2-p">3 day free trial, 50 answers, no card. If it helps, keep it.</p>
         <div className="hv2-cta">
           <OSDownloadButtons detectedOS={detectedOS as never} mounted={mounted} onDownload={onDownload} size="large" />
         </div>

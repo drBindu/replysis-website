@@ -227,7 +227,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
                     </h2>
                     <p className="text-[13px] text-gray-400 mt-0.5">
                       {mode === "signin" ? "Sign in to continue to Replysis"
-                        : mode === "signup" ? `Start with ${TRIAL_DAYS} days of Pro free, ${TRIAL_ANSWERS} answers. No card needed.`
+                        : mode === "signup" ? `Start with a ${TRIAL_DAYS} day free trial, ${TRIAL_ANSWERS} answers. No card needed.`
                         : "We'll send a reset link to your inbox"}
                     </p>
                   </motion.div>

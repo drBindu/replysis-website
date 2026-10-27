@@ -153,7 +153,7 @@ export default function StartPage() {
         </div>
 
         <div className="mt-8 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Your free {TRIAL_DAYS} day Pro trial includes {TRIAL_ANSWERS} answers. No card needed.</p>
+          <p>Your {TRIAL_DAYS} day free trial includes {TRIAL_ANSWERS} answers. No card needed.</p>
           {device !== null && device !== "phone" && (
             <p>
               On a {device === "mac" ? "Windows PC" : "Mac"}?{" "}

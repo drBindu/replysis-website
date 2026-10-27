@@ -27,7 +27,7 @@ export default function HeroV2({
           <OSDownloadButtons detectedOS={detectedOS as never} mounted={mounted} onDownload={onDownload} size="large" />
         </div>
         <p className="hv2-fine">
-          3 days of Pro free, 50 answers, no card. <button onClick={() => onNav("real-interview")}>Or try it in your browser</button>
+          3 day free trial, 50 answers, no card. <button onClick={() => onNav("real-interview")}>Or try it in your browser</button>
         </p>
       </div>
       <div className="hv2-wide">

@@ -21,9 +21,9 @@ type Kind = "no-app" | "mock-only" | "no-answer";
 
 function email(kind: Kind, first: string, trial: boolean): { subject: string; text: string } {
   const hi = `Hi${first ? " " + first : ""},`;
-  const offer = trial ? "Your 3 day Pro trial with 50 answers" : "Your free answers";
+  const offer = trial ? "Your 3 day free trial with 50 answers" : "Your free answers";
   if (kind === "no-app") return {
-    subject: trial ? "Your Replysis Pro trial is waiting" : "Your first Replysis answer",
+    subject: trial ? "Your Replysis free trial is waiting" : "Your first Replysis answer",
     text: `${hi}
 
 Thanks for signing up for Replysis. ${offer} ${trial ? "is" : "are"} ready for you.

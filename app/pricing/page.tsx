@@ -88,7 +88,7 @@ const ALL_PLANS: {
     id: "free",
     name: "Starter",
     emoji: "🚀",
-    tagline: `New accounts start with ${TRIAL_DAYS} days of Pro free: ${TRIAL_ANSWERS} answers, no card.`,
+    tagline: `New accounts start with a ${TRIAL_DAYS} day free trial: ${TRIAL_ANSWERS} answers, no card.`,
     monthlyPrice: 0,
     annualPrice: 0,
     oneTime: false,
@@ -103,7 +103,8 @@ const ALL_PLANS: {
       "Answers tailored to your resume and role",
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
-      `${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, then Starter`,
+      `${TRIAL_DAYS} day free trial with ${TRIAL_ANSWERS} answers, then Starter`,
+      "One free mock interview with Maya",
       "Live listening included, subject to fair use",
       "Desktop capture exclusion for standard screen-share paths",
     ],
@@ -244,7 +245,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro and Max include a monthly allowance of answers, Max the largest. Tailoring a resume uses 4. Live answers and AI resume tools share this balance; interviews with Maya use none.  Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
+    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day free trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro and Max include a monthly allowance of answers, Max the largest. Tailoring a resume uses 4. Live answers and AI resume tools share this balance; interviews with Maya use none.  Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
