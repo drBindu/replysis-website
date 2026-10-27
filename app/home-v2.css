@@ -258,6 +258,18 @@
   .hv2-plan.is-main { border-top: 3px solid var(--green); }
 }
 
+/* Phones (owner, 2026-10-27: "easy to see and use in mobile"): less empty space above the plans, and long feature lists
+   folded to four lines with "Show all". On wider screens every line shows and the button is hidden. */
+.hv2-more-btn { display: none; }
+@media (max-width: 640px) {
+  .hv2-pricing-hero { padding-top: 40px !important; }
+  .hv2-pricing-plans { padding-top: 28px !important; }
+  .hv2-plan-list li.more { display: none; }
+  .hv2-plan-list.open li.more { display: list-item; }
+  .hv2-more-btn { display: inline-block; margin-top: 14px; min-height: 44px; font-size: 1rem; }
+  .hv2-price { font-size: 2.8rem; }
+}
+
 .hv2-table-wrap { margin-top: 30px; overflow-x: auto; }
 .hv2-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 0.98rem; }
 .hv2-table th, .hv2-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); text-align: center; font-weight: 400; }

@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import Footer from "../components/Footer";
+import MobileAppBanner from "../components/MobileAppBanner";
 import OfflineBanner from "../components/feedback/OfflineBanner";
 import CreditUpgradeNotice from "../components/CreditUpgradeNotice";
 import { ToastProvider } from "../components/feedback/Toast";
@@ -152,6 +153,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <CreditUpgradeNotice />
       {content}
       {!hideFooter && <Footer />}
+      <MobileAppBanner />
     </ToastProvider>
   );
 }

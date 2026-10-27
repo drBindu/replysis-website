@@ -320,6 +320,7 @@ export default function PricingPage() {
   const [pendingAutopay, setPendingAutopay] = useState(false);
   // The Maya add-on, ticked per plan card (owner, 2026-10-26: "+$10 for the mock interview").
   const [mayaPick, setMayaPick] = useState<Record<string, boolean>>({});
+  const [openLists, setOpenLists] = useState<Record<string, boolean>>({});
   // Signing in from the minutes card keeps the buyer on this page, next to the slider they set.
   const [stayAfterAuth, setStayAfterAuth] = useState(false);
   const [loading,  setLoading]  = useState<string | null>(null);
@@ -533,7 +534,7 @@ export default function PricingPage() {
       )}
 
       {/* ══ HEADING ═════════════════════════════════════════════════════════ */}
-      <section className="hv2-hero" style={{ paddingTop: 112 }}>
+      <section className="hv2-hero hv2-pricing-hero" style={{ paddingTop: 112 }}>
         <div className="hv2-wrap">
           <h1 className="hv2-serif hv2-h1" style={{ maxWidth: "11em" }}>
             Pick a plan, <em>or start free.</em>
@@ -549,7 +550,7 @@ export default function PricingPage() {
       </section>
 
       {/* ══ PLANS ═══════════════════════════════════════════════════════════ */}
-      <section className="hv2-section" style={{ paddingTop: 72 }}>
+      <section className="hv2-section hv2-pricing-plans" style={{ paddingTop: 72 }}>
         <div className="hv2-wide">
           <div className="hv2-plans">
             {ALL_PLANS.map((plan) => {
@@ -642,10 +643,19 @@ export default function PricingPage() {
                     </p>
                   )}
 
-                  <ul className="hv2-plan-list">
-                    {featuresFor(plan, india).map((f) => <li key={f}>{f}</li>)}
-                    {plan.notIncluded.map((t) => <li key={t} className="off">Not included: {lowerFirst(t)}</li>)}
+                  {/* On a phone only the first four show, with "Show all", so the plans and Practice are not 3,000 pixels down. */}
+                  <ul className={`hv2-plan-list${openLists[plan.id] ? " open" : ""}`}>
+                    {[...featuresFor(plan, india).map((f) => ({ t: f, off: false })),
+                      ...plan.notIncluded.map((t) => ({ t: `Not included: ${lowerFirst(t)}`, off: true }))]
+                      .map((item, i) => (
+                        <li key={item.t} className={[item.off ? "off" : "", i >= 4 ? "more" : ""].join(" ").trim() || undefined}>{item.t}</li>
+                      ))}
                   </ul>
+                  {featuresFor(plan, india).length + plan.notIncluded.length > 4 && !openLists[plan.id] && (
+                    <button className="hv2-link hv2-more-btn" onClick={() => setOpenLists((o) => ({ ...o, [plan.id]: true }))}>
+                      Show all
+                    </button>
+                  )}
                 </div>
               );
             })}

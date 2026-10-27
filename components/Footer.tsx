@@ -64,7 +64,7 @@ export default function Footer() {
                 <ul className="mt-4 space-y-3">
                   {group.links.map((link) => (
                     <li key={link.label}>
-                      <Link href={link.href} className="text-sm text-white/60 transition hover:text-emerald-300">{link.label}</Link>
+                      <Link href={link.href} className="inline-block py-1.5 text-sm text-white/60 transition hover:text-emerald-300 sm:py-0">{link.label}</Link>
                     </li>
                   ))}
                 </ul>
