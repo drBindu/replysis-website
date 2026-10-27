@@ -10,6 +10,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { MAYA_ADDON } from "../../../../data/mayaAddon";
+import { sendOwnerAlert } from "../../../lib/user-mail";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { creditPackById } from "../../../../data/creditPacks";
 import { countryOf, isIndia } from "@/app/lib/buyer-country";
@@ -479,6 +480,7 @@ async function addMaya(req: Request, uid: unknown, verifiedUid: string, verified
   // The webhook records it too; set here so the page opens at once.
   await userRef.set({ mayaAddon: true, mayaMonthly: currency === "inr" ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews,
                       updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  await sendOwnerAlert("Maya add-on bought (added to a plan)", `Someone just bought the mock interview add-on (Maya).\n\nIf Simli is still on the Free plan, upgrade it to Hobby now so Maya can join for them:\nhttps://app.simli.com/billing  (account booms5089@gmail.com)\n\nThe Free plan allows only one live Maya at a time and 50 minutes a month.`);
   return NextResponse.json({ ok: true });
 }
 

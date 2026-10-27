@@ -55,3 +55,16 @@ export async function sendMails(mails: Mail[]): Promise<{ sent: number; failed: 
   }
   return { sent, failed, error };
 }
+
+/** An email to the owner (ALERTS_TO, else support@), without the customer unsubscribe line. Never throws. */
+export async function sendOwnerAlert(subject: string, text: string): Promise<void> {
+  const key = process.env.ALERTS_RESEND_KEY;
+  if (!key) return;
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: FROM, to: [process.env.ALERTS_TO || "support@replysis.com"], subject, text }),
+    });
+  } catch { /* an alert must never break a payment */ }
+}

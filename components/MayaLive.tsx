@@ -192,9 +192,16 @@ export function useMayaLive(active: boolean): MayaLive {
   return { face, status, video, whenReady };
 }
 
-/** Shows Maya's live video inside its parent (which must be positioned), fading in once she is connected. */
+/**
+ * Shows Maya's live video inside its parent (which must be positioned), fading in once she is connected.
+ *
+ * Her picture is square and the tile is wide (very wide in full screen), so she is shown whole in the middle and the
+ * sides are filled by the same picture enlarged and softly blurred, as video call apps do (owner: "fit the window").
+ * The fill is redrawn about 8 times a second; it is only a background.
+ */
 export function MayaVideo({ live }: { live: Pick<MayaLive, "video" | "status"> }) {
   const box = useRef<HTMLDivElement>(null);
+  const fill = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = live.video;
     const parent = box.current;
@@ -202,9 +209,27 @@ export function MayaVideo({ live }: { live: Pick<MayaLive, "video" | "status"> }
     const before = el.parentElement;
     parent.appendChild(el);
     void el.play().catch(() => { /* starts when the stream arrives */ });
-    return () => { if (before?.isConnected) before.appendChild(el); };
+    let timer = 0;
+    const draw = () => {
+      const c = fill.current;
+      const ctx = c?.getContext("2d");
+      if (c && ctx && el.videoWidth > 0) {
+        if (c.width !== 64) { c.width = 64; c.height = 36; }
+        const side = Math.min(el.videoWidth, el.videoHeight * (64 / 36));
+        const h = side * (36 / 64);
+        ctx.drawImage(el, (el.videoWidth - side) / 2, (el.videoHeight - h) / 2, side, h, 0, 0, 64, 36);
+      }
+      timer = window.setTimeout(draw, 125);
+    };
+    draw();
+    return () => { window.clearTimeout(timer); if (before?.isConnected) before.appendChild(el); };
   }, [live.video]);
   return (
-    <div ref={box} style={{ position: "absolute", inset: 0, opacity: live.status === "ready" ? 1 : 0, transition: "opacity 0.4s ease" }} />
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", opacity: live.status === "ready" ? 1 : 0, transition: "opacity 0.4s ease" }}>
+      <canvas ref={fill} aria-hidden
+        style={{ position: "absolute", inset: -40, width: "calc(100% + 80px)", height: "calc(100% + 80px)",
+          filter: "blur(28px) brightness(0.8)", transform: "scale(1.05)" }} />
+      <div ref={box} style={{ position: "absolute", inset: 0 }} />
+    </div>
   );
 }

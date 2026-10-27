@@ -19,6 +19,10 @@ import crypto            from "node:crypto";
 import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
 import { validMinutes } from "../../../../data/interviewMinutes";
 import { MAYA_ADDON } from "../../../../data/mayaAddon";
+import { sendOwnerAlert } from "../../../lib/user-mail";
+
+/** Tells the owner a Maya add-on was bought, so the Simli plan can be raised before it is needed (owner, 2026-10-26). */
+const alertMayaBought = (how: string) => sendOwnerAlert(`Maya add-on bought (${how})`, `Someone just bought the mock interview add-on (Maya).\n\nIf Simli is still on the Free plan, upgrade it to Hobby now so Maya can join for them:\nhttps://app.simli.com/billing  (account booms5089@gmail.com)\n\nThe Free plan allows only one live Maya at a time and 50 minutes a month.`);
 
 const STRIPE_SECRET  = process.env.STRIPE_SECRET_KEY    || "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -404,6 +408,7 @@ async function applyPlanPass(session: any) {
     }, { merge: true });
   });
   console.log(`PLAN PASS: ${uid} ${plan} 30 days${session.metadata?.maya === "1" ? " with Maya" : ""}`);
+  if (session.metadata?.maya === "1") await alertMayaBought(`India ${plan} month`);
 }
 
 /** The Maya add-on bought once for an India plan paid once: it runs until that plan's month ends. */
@@ -424,6 +429,7 @@ async function applyMayaPass(session: any) {
                       updatedAt: FieldValue.serverTimestamp() }, { merge: true });
   });
   console.log(`MAYA PASS: ${uid}`);
+  await alertMayaBought("India, paid once");
 }
 
 // ── POST /api/stripe/webhook ─────────────────────────────────────
@@ -552,6 +558,7 @@ export async function POST(req: Request) {
           mayaMonthly: session.currency === "inr" ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews,
           lastPaymentFailedAt: null,
         });
+        if (session.metadata?.maya === "1") await alertMayaBought(`${plan} plan`);
       } else {
         console.error("[webhook] Missing or invalid checkout metadata");
       }
