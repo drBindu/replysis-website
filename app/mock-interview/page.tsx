@@ -940,14 +940,19 @@ export default function MockInterviewPage() {
 
   // ── Stop recording ────────────────────────────────────────
   const reportListeningMinutes = useCallback((minutes: number) => {
-    const token = listeningAuthTokenRef.current;
-    if (minutes <= 0 || !token) return;
-    void fetch("/api/usage/listening", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ minutes, purpose: "mock" }),
-      keepalive: true,
-    }).catch(() => {});
+    if (minutes <= 0) return;
+    // A fresh token each time: the one taken when the session started expires after an hour, and the server then
+    // dropped the minutes (6 times on 2026-10-27). getIdToken() refreshes only when it has to.
+    void (async () => {
+      const token = (await auth.currentUser?.getIdToken().catch(() => null)) || listeningAuthTokenRef.current;
+      if (!token) return;
+      await fetch("/api/usage/listening", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ minutes, purpose: "mock" }),
+        keepalive: true,
+      });
+    })().catch(() => {});
   }, []);
 
   const accountForListening = useCallback((finishSession = false) => {

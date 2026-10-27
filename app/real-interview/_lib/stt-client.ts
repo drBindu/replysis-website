@@ -372,7 +372,11 @@ export class SpeechmaticsClient {
     if (minutes <= 0) return;
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (this.options?.authToken) headers.Authorization = `Bearer ${this.options.authToken}`;
+      // A fresh token: the one passed in when listening started expires after an hour, and the server then dropped
+      // the minutes (2026-10-27). getIdToken() refreshes only when it has to.
+      const { auth } = await import("../../firebaseConfig");
+      const token = (await auth.currentUser?.getIdToken().catch(() => null)) || this.options?.authToken;
+      if (token) headers.Authorization = `Bearer ${token}`;
       // keepalive so the last minute still lands when the tab is closing.
       await fetch("/api/usage/listening", {
         method: "POST",
