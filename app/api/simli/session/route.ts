@@ -40,20 +40,27 @@ export async function POST(req: Request) {
   if (!internal && (!rateLimit(`simli:${uid}`, 6, 60 * 60_000).ok || !rateLimit(`simli-ip:${clientIp(req)}`, 20, 60 * 60_000).ok)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
-  if (!access || (access.state !== "ok" && access.state !== "taste")) {
+  // A free interview whose call dropped may rejoin for the time it has left (the page rejoins by itself, 2026-10-27);
+  // the interview was already claimed, so a rejoin claims and counts nothing.
+  const freeAt = (userData?.mayaFreeUsedAt as { toMillis?: () => number } | undefined)?.toMillis?.();
+  const rejoinLeft = userData?.mayaFreeUsed === true && typeof freeAt === "number"
+    ? Math.floor((freeAt + MAYA_ADDON.tasteSeconds * 1000 - Date.now()) / 1000) : 0;
+  const rejoin = !!access && access.state !== "ok" && access.state !== "taste" && rejoinLeft > 20;
+  if (!access || (access.state !== "ok" && access.state !== "taste" && !rejoin)) {
     return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
   }
   // The free interview is used up the moment its session is made (claimed in a transaction, so two tabs cannot both
   // have it), and it is short.
-  const taste = access.state === "taste";
-  if (taste) {
+  const taste = access.state === "taste" || rejoin;
+  if (taste && !rejoin) {
     const userRef = getFirestore().collection("users").doc(uid);
     const dayRef = getFirestore().collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`);
     const claimed = await getFirestore().runTransaction(async (tx) => {
       if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return "used";
       const today = Number((await tx.get(dayRef)).data()?.sessions ?? 0);
       if (today >= FREE_TASTES_PER_DAY) return "full";
-      tx.set(dayRef, { sessions: today + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      // The owner's test accounts (tester: true) must not use up the day's free interviews for real people.
+      if (userData?.tester !== true) tx.set(dayRef, { sessions: today + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       tx.set(userRef, { mayaFreeUsed: true, mayaFreeUsedAt: FieldValue.serverTimestamp() }, { merge: true });
       return "ok";
     }).catch(() => "error");
@@ -110,7 +117,7 @@ export async function POST(req: Request) {
         faceId: test.faceId,
         apiVersion: "v2",
         handleSilence: true,
-        maxSessionLength: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
+        maxSessionLength: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
         maxIdleTime: MAX_IDLE_SECONDS,
         audioInputFormat: "pcm16",
         // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
@@ -132,7 +139,7 @@ export async function POST(req: Request) {
     // (owner, 2026-10-27: "not fit window full"). SIMLI_FACE_FIT=cover for the live face; &fit=cover in a private test.
     const fitParam = internal && testFace ? params.get("fit") : null;
     const fit = (fitParam ?? process.env.SIMLI_FACE_FIT) === "cover" ? "cover" : "contain";
-    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS, fit },
+    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS, fit },
       { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[simli] token request error:", (e as Error)?.name ?? "Error");
