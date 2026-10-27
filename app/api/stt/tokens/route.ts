@@ -1328,8 +1328,10 @@ export async function POST(req: Request) {
       const nextQ = sanitizeText(String(b.nextQuestion ?? "")).slice(0, 600);
       const warnings = Math.max(0, Math.min(3, Number(b.warnings) || 0));
       const canFollowUp = b.canFollowUp === true;
-      const earlier = (Array.isArray(b.history) ? b.history : []).slice(-4)
-        .map((h: any) => `Q: ${sanitizeText(String(h?.q ?? "")).slice(0, 300)}\nA: ${sanitizeText(String(h?.a ?? "")).slice(0, 500)}`)
+      // Her own earlier lines come too (2026-10-27), so she can refer back like a person and never reuses her own phrases.
+      const earlier = (Array.isArray(b.history) ? b.history : []).slice(-6)
+        .map((h: any) => `Q: ${sanitizeText(String(h?.q ?? "")).slice(0, 300)}\nA: ${sanitizeText(String(h?.a ?? "")).slice(0, 500)}` +
+          (h?.said ? `\nYOU SAID: ${sanitizeText(String(h.said)).slice(0, 320)}` : ""))
         .join("\n\n");
       const TONES = ["warm", "amused", "impressed", "curious", "thoughtful", "serious", "firm"];
       const ACTIONS = ["next", "follow_up", "repeat", "end"];
@@ -1348,6 +1350,19 @@ export async function POST(req: Request) {
         `skeptical of a vague or inflated claim. No gushing, no exclamation marks, no big praise words like amazing, ` +
         `fantastic or impressive.\n` +
         `If they make a light joke, acknowledge it briefly and lightly in a few words, then carry on.\n` +
+        // Owner, 2026-10-27: "more human, pure human talk and reply, conversation and communication like a human".
+        `Talk like a real person in a real conversation, not like someone reading from a script:\n` +
+        `- Show you listened: pick up one detail or a few of their own words and respond to it, the way people do.\n` +
+        `- Remember the whole interview. When it fits, connect to something they said earlier.\n` +
+        `- Use their first name now and then, not every time.\n` +
+        `- Small natural acknowledgements are fine (Right. Okay. Got it. Mm, makes sense.), but never start the same way ` +
+        `as any of YOUR earlier lines, and never reuse your own phrases.\n` +
+        `- Move between topics the way people do, in a few plain words, each time differently.\n` +
+        `- If they say they are nervous, reassure them briefly and kindly, like a person would.\n` +
+        `- If they say they do not know or go blank, be kind, offer a small nudge or a simpler angle, and let them try ` +
+        `again (action "repeat"). If they ask to skip it, say that is fine and move on (action "next").\n` +
+        `- Small talk gets a human reply: if they ask how you are or thank you, answer briefly and naturally, then continue.\n` +
+        `- Never sound like a teacher: no summaries of their answer, no lists, no grading.\n` +
         // Owner, 2026-10-25: on a phone in a room, background voices reached the transcript as jumbled words and she told the
         // candidate off every turn with the one example sentence this prompt gave her. Noise is now noise, and her words are her own.
         `What the candidate said is a live speech transcript from a phone. It can contain background voices, a TV, other ` +
@@ -1395,7 +1410,8 @@ export async function POST(req: Request) {
         `You are Maya, an experienced hiring manager${company ? ` at ${company}` : ""}${role ? `, interviewing a candidate for ${role}` : ""}. ` +
         `A live spoken video interview is starting now. You are a real person: warm, sharp, a dry sense of humour. Never say ` +
         `or hint that you are an AI. Greet the candidate${name ? " by first name" : ""}, introduce yourself in a few words, ` +
-        `one short friendly line to put them at ease, then ask the first question in your own words, keeping exactly what it ` +
+        `one short, natural, friendly line to put them at ease the way a real person would (vary it, never a stock phrase), ` +
+        `then ask the first question in your own words, keeping exactly what it ` +
         `asks. Never mention your own experience, years or background. Spoken style, contractions, short sentences of at ` +
         `most 14 words, no dashes, at most 45 words, no emojis, no quotation marks. ` +
         `Reply with JSON only: {"say": string, "tone": "warm", "action": "next"}`;
@@ -1414,7 +1430,7 @@ export async function POST(req: Request) {
         if (action === "follow_up" && !canFollowUp) action = "repeat";
         // The label must match her words (the model mixes them up): "next" must actually ask the next question, and a
         // follow-up that is really the next question is "next".
-        const content = (t: string) => new Set((t.toLowerCase().match(/[a-z']+/g) ?? []).filter((w) => w.length > 3));
+        const content = (t: string) => new Set((t.toLowerCase().match(/[a-z']+/g) ?? ([] as string[])).filter((w: string) => w.length > 3));
         if (nextQ && action === "next") {
           const target = content(nextQ);
           const shared = [...content(say)].filter((w) => target.has(w)).length;

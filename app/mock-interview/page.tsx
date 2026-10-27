@@ -1476,7 +1476,7 @@ export default function MockInterviewPage() {
   };
 
   // ── Maya's own words ──────────────────────────────────────
-  const mayaHistory = useRef<{ q: string; a: string }[]>([]);
+  const mayaHistory = useRef<{ q: string; a: string; said?: string }[]>([]);
   const mayaWarnings = useRef(0);
   const indexRef = useRef(0);
   useEffect(() => { indexRef.current = index; }, [index]);
@@ -1484,7 +1484,7 @@ export default function MockInterviewPage() {
   const mayaTurn = async (o: { opening?: boolean; question: string; answer: string; nextQuestion: string; canFollowUp: boolean }): Promise<MayaTurn | null> => {
     try {
       const res = await Promise.race([
-        fetchAi({ mode: "maya_turn", ...o, warnings: mayaWarnings.current, history: mayaHistory.current.slice(-4),
+        fetchAi({ mode: "maya_turn", ...o, warnings: mayaWarnings.current, history: mayaHistory.current.slice(-6),
                   role: "", company: "", candidateName: candidateName(), model: selectedModel }) as Promise<Partial<MayaTurn>>,
         new Promise<null>((resolve) => setTimeout(() => resolve(null), 7000)),
       ]);
@@ -1612,7 +1612,7 @@ export default function MockInterviewPage() {
     const isLast = i >= list.length - 1;
     const turn = await turnFor(i, answer);
     earlyTurn.current = null;
-    mayaHistory.current.push({ q: question, a: answer });
+    mayaHistory.current.push({ q: question, a: answer, said: turn?.say ?? "" });
     if (turn?.tone === "firm") mayaWarnings.current += 1;
     const resetAnswer = () => {
       setAnswer(""); answerRef.current = "";
