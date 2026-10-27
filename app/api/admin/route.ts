@@ -465,6 +465,16 @@ async function liveView(db: Firestore, sinceMs: number) {
 
   const events: LiveEvent[] = [];
 
+  // Refund rows carry the account id but no email, so the same person showed twice, once as an id (2026-10-27).
+  const idsWithoutEmail = [...new Set((usageSnap?.docs ?? []).map((doc) => doc.data())
+    .filter((d) => !d.email && !d.guest && typeof d.identityId === "string" && d.identityId)
+    .map((d) => d.identityId as string))].slice(0, 50);
+  const emailById = new Map<string, string>();
+  if (idsWithoutEmail.length) {
+    const docs = await db.getAll(...idsWithoutEmail.map((id) => users.doc(id))).catch(() => []);
+    for (const u of docs) { const e = u.data()?.email; if (typeof e === "string" && e) emailById.set(u.id, e); }
+  }
+
   for (const doc of usageSnap?.docs ?? []) {
     const d = doc.data();
     const at = anyMs(d.createdAt);
@@ -474,7 +484,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     const identityId = typeof d.identityId === "string" ? d.identityId : "";
     const who = typeof d.email === "string" && d.email
       ? d.email
-      : d.guest ? guestLabel(identityId) : identityId ? identityId.slice(0, 8) : null;
+      : d.guest ? guestLabel(identityId) : identityId ? emailById.get(identityId) ?? identityId.slice(0, 8) : null;
     const model = typeof d.model === "string" && d.model ? d.model : "";
     events.push({
       id: `u:${doc.id}`,
