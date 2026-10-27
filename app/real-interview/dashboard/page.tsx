@@ -81,14 +81,14 @@ export default function DashboardPage() {
               <ArrowLeft size={15} />
             </button>
             <div className="h-4 w-px bg-slate-300" />
-            <div className="flex items-center gap-2">
+            <a href="/" aria-label="Replysis home" className="flex items-center gap-2">
               <BrandIcon size={30} />
               <span className="text-[14px] font-black text-slate-800 tracking-tight">Replysis</span>
               <span className="text-[10px] font-black text-zinc-800 px-1.5 py-0.5 rounded-md"
                 style={{ background: "rgba(31,138,62,0.1)", border: "1px solid rgba(31,138,62,0.18)" }}>
                 AI
               </span>
-            </div>
+            </a>
             <div className="h-4 w-px bg-slate-300" />
             <span className="text-[13px] font-bold text-slate-600">Session History</span>
           </div>

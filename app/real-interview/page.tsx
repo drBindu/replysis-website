@@ -206,7 +206,7 @@ export default function RealInterviewPage() {
             <div className="max-w-[1400px] mx-auto px-6 h-[60px] flex items-center justify-between">
 
               {/* Logo  -  Replysis */}
-              <div className="flex items-center gap-3">
+              <a href="/" aria-label="Replysis home" className="flex items-center gap-3">
                 <BrandIcon size={32} />
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[16px] font-black tracking-tight text-slate-800">Replysis</span>
@@ -215,7 +215,7 @@ export default function RealInterviewPage() {
                     AI
                   </span>
                 </div>
-              </div>
+              </a>
 
               {/* Right */}
               <div className="flex items-center gap-3">
