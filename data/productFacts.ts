@@ -150,8 +150,6 @@ export const answersLabel = (credits: number) => {
   const n = answerCount(credits);
   return `${n.toLocaleString("en-US")} ${n === 1 ? "answer" : "answers"}`;
 };
-const answersText = (credits: number) =>
-  `${answersFor(credits).toLocaleString("en-US")} answers each month`;
 
 // One real interview is about 30 answers with Auto on (it sometimes answers twice).
 // Customers think in interviews, not credits, so the copy says both.
@@ -169,14 +167,15 @@ export const PUBLIC_PLAN_CAPACITY = {
   pro: {
     label: "Pro",
     credits: PLAN_MONTHLY_CREDITS.pro,
-    summary: `${answersText(PLAN_MONTHLY_CREDITS.pro)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews`,
-    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews.`,
+    // No numbers for paid plans in customer text (owner, 2026-10-27: a number reads as a small limit; never "unlimited" either).
+    summary: "Answers for an active job search, refreshed every month",
+    example: "Enough for an active job search with interviews every week.",
   },
   max: {
     label: "Max",
     credits: PLAN_MONTHLY_CREDITS.max,
-    summary: `${answersText(PLAN_MONTHLY_CREDITS.max)}, about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews`,
-    example: `Enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews.`,
+    summary: "Our largest monthly allowance, for interview heavy weeks",
+    example: "Enough for several interviews a week and long technical loops.",
   },
 } as const;
 

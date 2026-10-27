@@ -272,7 +272,7 @@ export default function CreditsBadge() {
                   style={{ background: "linear-gradient(135deg, #1C7A3E, #21924A)", boxShadow: "0 3px 12px rgba(26,102,48,0.32)" }}>
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 pointer-events-none"
                     style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)" }} />
-                  Upgrade to Pro · {answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month
+                  Upgrade to Pro
                   <span className="ml-1.5 opacity-80">→</span>
                 </button>
               ) : (

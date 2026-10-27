@@ -170,9 +170,9 @@ export function PlainFacts({ onNav }: { onNav: Nav }) {
           <div>
             <dt>Plans</dt>
             <dd>
-              Starter: {plans.free.summary}, and one free interview with Maya. Practice: {MOCK_PLAN.interviews} interviews with
-              Maya and {MOCK_PLAN.credits / 5} answers each month, ${MOCK_PLAN.usd} a month. Pro: {plans.pro.summary}, $34.99 a
-              month. Max: {plans.max.summary}, $79.99 a month. Max includes Maya; Pro can add her.{" "}
+              Starter: {plans.free.summary}, and one free interview with Maya. Practice: interviews with Maya and live answers
+              every month, ${MOCK_PLAN.usd} a month. Pro: {plans.pro.summary}, $34.99 a month. Max: {plans.max.summary}, $79.99 a
+              month. Max includes Maya; Pro can add her.{" "}
               <a href="/pricing" onClick={(e) => { e.preventDefault(); onNav("pricing"); }}>See pricing</a>.
             </dd>
           </div>

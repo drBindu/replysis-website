@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { db } from "../app/firebaseConfig";
 import { useAuth } from "./AuthProvider";
-import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor, interviewsFor } from "../data/productFacts";
+import { ANSWER_CREDIT_COST, answersFor } from "../data/productFacts";
 
 type Notice = {
   credits: number;
@@ -104,8 +104,8 @@ export default function CreditUpgradeNotice() {
                 </h2>
                 <p className="mt-1 text-[13px] leading-5 text-slate-600">
                   {empty
-                    ? `That is what Replysis does in a real interview. Pro gives you ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month, enough for about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews.`
-                    : `You have ${answersFor(notice.credits)} free ${answersFor(notice.credits) === 1 ? "answer" : "answers"} left. Free answers do not refresh. Upgrade to Pro for ${answersFor(PLAN_MONTHLY_CREDITS.pro).toLocaleString("en-US")} answers a month.`}
+                    ? `That is what Replysis does in a real interview. Pro gives you fresh answers every month for your interviews.`
+                    : `You have ${answersFor(notice.credits)} free ${answersFor(notice.credits) === 1 ? "answer" : "answers"} left. Free answers do not refresh. Upgrade to Pro for fresh answers every month.`}
                 </p>
               </div>
               <button

@@ -438,7 +438,9 @@ console.log("\nMaya: the free interview, Practice and the add-on");
   for (const [k, v] of Object.entries(AGREED_MAYA)) (got[k] === v ? ok : bad)(`Maya ${k} is ${v} (data/mayaAddon.ts says ${got[k]})`);
 
   const page = read(resolve(FRONT, "app/pricing/page.tsx")) || "";
-  (/Get Practice/.test(page) && /MOCK_PLAN\.interviews/.test(page) ? ok : bad)("the pricing page shows the Practice plan with its numbers from data/mayaAddon.ts");
+  (/Get Practice/.test(page) && /MOCK_PLAN\.usd/.test(page) ? ok : bad)("the pricing page shows the Practice plan with its price from data/mayaAddon.ts");
+  (!/MOCK_PLAN\.interviews|MAYA_ADDON\.interviews|PRO_ANSWERS\)\} answers|interviewsFor\(/.test(page) ? ok : bad)(
+    "the pricing page shows no answer or interview numbers for paid plans (owner, 2026-10-27)");
   (!/unlimited (practice|mock)/i.test(page) ? ok : bad)("the pricing page never calls Maya unlimited (owner: a clear number)");
   (!/no separate upgrade for premium AI, desktop capture controls, mock/.test(page) ? ok : bad)("the pricing page no longer says mock practice is included in every plan");
 

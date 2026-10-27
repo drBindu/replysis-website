@@ -16,7 +16,7 @@ import type { LocalPlanPrices } from "../../data/localPrices";
 import { MAYA_ADDON, MOCK_PLAN } from "../../data/mayaAddon";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
-  answersFor, interviewsFor, TRIAL_ANSWERS, TRIAL_DAYS,
+  answersFor, TRIAL_ANSWERS, TRIAL_DAYS,
 } from "../../data/productFacts";
 
 // Yearly plans are hidden (owner, 2026-09-29). A job search lasts one to three months, and
@@ -29,8 +29,6 @@ const ANNUAL_ENABLED = false;
 // Every count on this page comes from the same numbers the server enforces.
 const fmt = (n: number) => n.toLocaleString("en-US");
 const FREE_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.free);
-const PRO_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.pro);
-const MAX_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.max);
 const MOCK_CREDITS = 20;   // what one guided mock session costs on average, see PUBLIC_CREDIT_COSTS
 
 function Check({ color = "violet" }: { color?: "violet" | "emerald" | "orange" | "blue" | "gray" }) {
@@ -141,7 +139,7 @@ const ALL_PLANS: {
       "Desktop capture exclusion for standard screen-share paths",
       "Saved interview history for review",
       "AI rewrites your resume for any job posting",
-      `${fmt(PRO_ANSWERS)} answers refresh automatically each month`,
+      "Answers refresh automatically each month",
       "Live listening included, subject to fair use",
     ],
     notIncluded: [],
@@ -165,7 +163,7 @@ const ALL_PLANS: {
     special: null,
     usagePool: PUBLIC_PLAN_CAPACITY.max.summary,
     features: [
-      `Everything in Pro, with ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× the monthly capacity`,
+      "Everything in Pro, with our largest monthly allowance",
       "Best AI models for polished, natural answers",
       "Answers grounded in your resume, role and job description",
       "Live listening included, subject to fair use",
@@ -195,16 +193,14 @@ const ANNUAL_SAVING_PCT = PRO_PLAN.monthlyPrice
  * that name numbers are swapped together, from the same values the webhook
  * writes onto the user.
  */
-const usagePoolFor = (plan: typeof PRO_PLAN, india: boolean) =>
-  india && plan.inrCredits
-    ? `${answersFor(plan.inrCredits).toLocaleString()} answers each month, about ${interviewsFor(plan.inrCredits)} interviews`
-    : plan.usagePool;
+// No numbers on paid plans (owner, 2026-10-27), so India shows the same line.
+const usagePoolFor = (plan: typeof PRO_PLAN, _india: boolean) => plan.usagePool;
 
 const featuresFor = (plan: typeof PRO_PLAN, india: boolean) =>
   india && plan.inrCredits
     ? plan.features.map((line) =>
         /answers refresh automatically/.test(line)
-          ? `${answersFor(plan.inrCredits!).toLocaleString()} answers for 30 days`
+          ? "Answers for 30 days"
           : line)
     : plan.features;
 
@@ -223,12 +219,11 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false, local: 
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Answer response target",               free: "<2 sec target", pro: "<2 sec target", max: "<2 sec target"},
-  { cat: "Live Copilot",  label: "Live answers",                         free: `${FREE_ANSWERS}, once`,               pro: `${fmt(PRO_ANSWERS)} a month`,               max: `${fmt(MAX_ANSWERS)} a month`},
-  { cat: "Live Copilot",  label: "About this many interviews",           free: "less than one",                        pro: `${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} a month`, max: `${interviewsFor(PLAN_MONTHLY_CREDITS.max)} a month`},
+  { cat: "Live Copilot",  label: "Live answers",                         free: `${FREE_ANSWERS}, once`,               pro: "Every month",               max: "Largest allowance, every month"},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`, max: `${MAYA_ADDON.interviews}/month included`},
+  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `Add for $${MAYA_ADDON.usd}/month`, max: "Included"},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -249,7 +244,7 @@ const FAQS = [
   },
   {
     q: "How much can I actually use?",
-    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro includes ${fmt(PRO_ANSWERS)} a month (about ${interviewsFor(PLAN_MONTHLY_CREDITS.pro)} interviews) and Max includes ${fmt(MAX_ANSWERS)} (about ${interviewsFor(PLAN_MONTHLY_CREDITS.max)} interviews). Tailoring a resume uses 4. Live answers and AI resume tools share this balance; interviews with Maya use none.  Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
+    a: `A live answer, a screen read and most other actions use one answer. Every new account starts with a ${TRIAL_DAYS} day Pro trial with ${TRIAL_ANSWERS} answers, no card, enough to try it in real interviews. Pro and Max include a monthly allowance of answers, Max the largest. Tailoring a resume uses 4. Live answers and AI resume tools share this balance; interviews with Maya use none.  Paid answers refresh monthly and do not roll over. The cost is shown before an action that uses your answers.`
   },
   {
     q: "Why do I need the desktop app for capture controls?",
@@ -261,7 +256,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between Pro and Max?",
-    a: `Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Pro includes ${fmt(PRO_ANSWERS)} answers a month. Max includes ${fmt(MAX_ANSWERS)} (${MAX_ANSWERS / PRO_ANSWERS}x Pro) plus priority support. Max increases capacity, not answer accuracy.`,
+    a: `Both plans include the same premium AI access, resume-grounded answers, desktop capture controls, saved interviews, and AI resume tailoring. Max has the larger monthly allowance of answers, includes the mock interview with Maya, and adds priority support. Max increases capacity, not answer accuracy.`,
   },
   {
     q: "Can I cancel anytime?",
@@ -611,7 +606,7 @@ export default function PricingPage() {
                           <strong>Mock interview with Maya included</strong>
                           <br />
                           <span style={{ opacity: 0.75, fontSize: 13 }}>
-                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} interviews a month
+                            A live video interviewer for practice interviews every month
                           </span>
                         </p>
                       ) : (
@@ -625,7 +620,7 @@ export default function PricingPage() {
                           {india && !annual ? " for the month" : " a month"}
                           <br />
                           <span style={{ opacity: 0.75, fontSize: 13 }}>
-                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} interviews a month
+                            A live video interviewer for practice interviews every month
                           </span>
                         </span>
                       </label>
@@ -685,8 +680,8 @@ export default function PricingPage() {
                 make every answer stronger. Plus live answers for your real interviews.
               </p>
               <ul className="hv2-plan-list" style={{ marginTop: 12 }}>
-                <li>{india ? MOCK_PLAN.interviewsIndia : MOCK_PLAN.interviews} interviews with Maya every month</li>
-                <li>{Math.floor((india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits) / 5)} live interview answers every month</li>
+                <li>Practice interviews with Maya every month</li>
+                <li>Live interview answers every month</li>
                 <li>Feedback and a stronger answer for every question</li>
               </ul>
             </div>
@@ -749,7 +744,7 @@ export default function PricingPage() {
               },
               {
                 name: "Max", who: "Interviewing constantly",
-                note: `You have frequent interview loops, practice daily, or need ${PLAN_MONTHLY_CREDITS.max / PLAN_MONTHLY_CREDITS.pro}× Pro capacity and priority support.`,
+                note: `You have frequent interview loops, practice daily, or want the largest allowance and priority support.`,
                 items: ["Several interviews every week", "Long technical loops back to back", "Practice with Maya between interviews", "Need the highest monthly capacity"],
               },
             ].map((col) => (

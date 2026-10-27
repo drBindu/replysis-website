@@ -159,7 +159,7 @@ export default function AccountPage() {
   const practice = plan === "free"
     && (profile?.mockPlan === true || Date.parse(String(profile?.mockPlanUntil ?? "")) > Date.now());
   const planFacts = practice
-    ? { label: "Practice", summary: `${MOCK_PLAN.interviews} interviews with Maya and ${answerCount(MOCK_PLAN.credits)} answers each month` }
+    ? { label: "Practice", summary: "Interviews with Maya and live answers every month" }
     : plan === "lifetime"
     ? { label: "Legacy Lifetime", summary: `${answerCount(PLAN_MONTHLY_CREDITS.lifetime).toLocaleString("en-US")} answers each month` }
     : plan === "teams"

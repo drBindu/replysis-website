@@ -1962,9 +1962,9 @@ export default function MockInterviewPage() {
                   </p>
                   <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6, fontSize: 14,
                     color: T.text, lineHeight: 1.5 }}>
-                    <li>{MOCK_PLAN.interviews} live interviews with Maya every month</li>
+                    <li>Live practice interviews with Maya every month</li>
                     <li>Feedback and a stronger answer for every question you answer</li>
-                    <li>{MOCK_PLAN.credits / 5} live answers for your real interviews</li>
+                    <li>Live answers for your real interviews</li>
                   </ul>
                   <p style={{ fontSize: 13.5, color: T.textMid, lineHeight: 1.55 }}>
                     Practice is ${MOCK_PLAN.usd} a month (Rs {MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.

@@ -151,7 +151,7 @@ function upgradeEmail(kind: "maya-taste" | "out-of-answers", first: string): { s
 
 Thanks for your interview with Maya. The more you practise out loud, the calmer and clearer you get in the real one.
 
-The Practice plan gives you ${MOCK_PLAN.interviews} interviews with Maya every month, with feedback and a stronger answer for every question, plus live answers for your real interviews. It is $${MOCK_PLAN.usd} a month (Rs ${MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.
+The Practice plan gives you interviews with Maya every month, with feedback and a stronger answer for every question, plus live answers for your real interviews. It is $${MOCK_PLAN.usd} a month (Rs ${MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.
 
 See the plans: https://replysis.com/pricing
 
@@ -167,7 +167,7 @@ You have used all your answers. To keep getting answers in your interviews, choo
 
 https://replysis.com/pricing
 
-Pro gives you 500 answers every month. If you mostly want to practise, the Practice plan includes interviews with Maya and live answers.
+Pro and Max give you answers every month. If you mostly want to practise, the Practice plan includes interviews with Maya and live answers.
 
 Once you have a plan, it works on the website and in the Replysis apps with the same account.
 
