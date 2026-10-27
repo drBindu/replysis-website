@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Terms governing your use of Replysis.",
 };
 
-const LAST_UPDATED = "May 1, 2026";
+const LAST_UPDATED = "October 27, 2026";
 const CONTACT = "support@replysis.com";
 
 export default function TermsPage() {
@@ -28,12 +28,12 @@ export default function TermsPage() {
         <div className="hv2-wrap hv2-legal-text">
 
           <p className="text-sm bg-gray-50 border border-gray-100 rounded-xl p-5">
-            By accessing or using Replysis at replysis.com or the Replysis desktop apps ("the Service"), you agree to these Terms. If you do not agree, do not use the Service.
+            By accessing or using Replysis at replysis.com, the Replysis desktop apps or the Replysis phone app ("the Service"), you agree to these Terms. If you do not agree, do not use the Service.
           </p>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">1. The Service</h2>
-            <p className="text-sm">Replysis provides interview preparation tools including a resume builder, mock interview mode, and a live interview copilot. The Service is intended for personal, non-commercial job-search use.</p>
+            <p className="text-sm">Replysis provides interview preparation tools including a resume builder, mock interviews with Maya, our live video interviewer, and a live interview copilot. The Service is intended for personal, non-commercial job-search use.</p>
           </div>
 
           <div>
@@ -72,8 +72,9 @@ export default function TermsPage() {
             <h2 className="text-xl font-black text-gray-900 mb-4">5. Subscriptions and payments</h2>
             <div className="space-y-4">
               {[
-                { label: "Free tier", body: "A free tier with limited usage is available. No credit card required to start." },
-                { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice." },
+                { label: "Free tier", body: "A free tier with limited usage is available. No credit card required to start. Each account can have one free mock interview with Maya, and only a few free interviews are available each day across everyone, so on a busy day you may be asked to come back tomorrow." },
+                { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice. Pro and Max include a monthly allowance of answers. The Practice plan includes mock interviews with Maya and live answers. Max includes Maya, and Pro can add her for a monthly fee." },
+                { label: "Fair use", body: "Every plan has fair use limits that keep the Service fast and available for everyone. They are set well above normal use for interview preparation, and the Service tells you if you reach one." },
                 { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact support@replysis.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
                 { label: "Cancellations", body: "Cancel any time. Your access continues until the end of the current billing period." },
                 { label: "Answers", body: "Unused answers do not roll over between billing periods and have no cash value." },
@@ -93,7 +94,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">7. Third-party services</h2>
-            <p className="text-sm">The Service integrates with Stripe, Firebase, Cerebras, Google Gemini, and Speechmatics. Use of these is subject to their own terms. We are not responsible for their actions or content.</p>
+            <p className="text-sm">The Service integrates with Stripe, Firebase, Cerebras, Google Gemini, Google Cloud Text-to-Speech, Deepgram, Speechmatics, Simli and Resend. Use of these is subject to their own terms. We are not responsible for their actions or content.</p>
           </div>
 
           <div>
@@ -108,7 +109,7 @@ export default function TermsPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">10. Termination</h2>
-            <p className="text-sm">We may suspend or terminate your account for violations of these Terms. You may delete your account at any time from account settings.</p>
+            <p className="text-sm">We may suspend or terminate your account for violations of these Terms. You may ask us to delete your account at any time by emailing <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
           </div>
 
           <div>

@@ -13,12 +13,12 @@ const DATA_FLOW = [
   {
     number: "01",
     title: "Transcribe",
-    text: "Live audio streams from your device to Deepgram for real-time transcription, with Speechmatics as a backup. Replysis does not store the raw audio file on its application servers. From version 1.0.20 the Windows app keeps an encrypted copy on your own computer for 7 days only if you turn on Save session audio.",
+    text: "Live audio streams from your device or phone to Deepgram for real-time transcription, with Speechmatics as a backup. Replysis does not store the raw audio file on its application servers. From version 1.0.20 the Windows app keeps an encrypted copy on your own computer for 7 days only if you turn on Save session audio.",
   },
   {
     number: "02",
     title: "Generate",
-    text: "The transcript, resume context, and instructions pass through Replysis to the selected AI provider so it can generate an answer, feedback, or resume suggestion. While the desktop app is listening it also sends screenshots of your screen, which Replysis holds for at most 90 seconds before deleting them.",
+    text: "The transcript, resume context, and instructions pass through Replysis to the selected AI provider so it can generate an answer, feedback, or resume suggestion. While the desktop app is listening it also sends screenshots of your screen, which Replysis holds for at most 90 seconds before deleting them. In a mock interview, Maya's voice is made by Google Cloud Text-to-Speech and her video by Simli, from her words only; your camera never leaves your screen.",
   },
   {
     number: "03",
@@ -116,13 +116,14 @@ export default function TrustPage() {
 
       <section className="hv2-section hv2-end">
         <div className="hv2-wrap">
-          <h2 className="hv2-serif hv2-h2">The public limits match <em>the product limits.</em></h2>
+          <h2 className="hv2-serif hv2-h2">What each plan <em>gives you.</em></h2>
           <dl className="hv2-facts">
             {Object.values(PUBLIC_PLAN_CAPACITY).map((plan) => (
               <div key={plan.label}>
                 <dt>{plan.label}</dt>
                 <dd>
-                  <strong style={{ color: "var(--ink)", fontWeight: 600 }}>{answersLabel(plan.credits)} {plan.label === "Starter" ? "once" : "a month"}.</strong>{" "}
+                  {/* No numbers for paid plans (owner, 2026-10-27); the free plan keeps its small one time number. */}
+                  <strong style={{ color: "var(--ink)", fontWeight: 600 }}>{plan.label === "Starter" ? `${answersLabel(plan.credits)} once.` : `${plan.summary}.`}</strong>{" "}
                   {plan.example}
                 </dd>
               </div>

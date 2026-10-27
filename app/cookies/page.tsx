@@ -8,15 +8,13 @@ export const metadata: Metadata = {
   description: "What cookies Replysis sets and why.",
 };
 
-const LAST_UPDATED = "May 1, 2026";
+const LAST_UPDATED = "October 27, 2026";
 const CONTACT = "support@replysis.com";
 
 const COOKIES = [
-  { name: "__session",      type: "Essential",  duration: "Session",  purpose: "Keeps you signed in during your browser session. Set by Firebase Authentication." },
-  { name: "firebaseToken",  type: "Essential",  duration: "30 days",  purpose: "Persists your login across browser restarts so you don't have to sign in every time." },
-  { name: "__stripe_mid",   type: "Essential",  duration: "1 year",   purpose: "Used by Stripe to prevent fraud during payment. Only present when you access the billing page." },
-  { name: "__stripe_sid",   type: "Essential",  duration: "Session",  purpose: "Used by Stripe for the duration of a checkout session." },
-  { name: "cx_pref",        type: "Functional", duration: "6 months", purpose: "Stores your UI preferences (theme, mode settings) so they persist between visits." },
+  { name: "replysis_session", type: "Essential", duration: "1 hour",  purpose: "Proves to our server that you are signed in. Set by Replysis, only after you sign in, and readable only by our server." },
+  { name: "__stripe_mid",   type: "Essential",  duration: "1 year",   purpose: "Set by Stripe on its own checkout page to prevent payment fraud. Only present if you go to checkout." },
+  { name: "__stripe_sid",   type: "Essential",  duration: "30 minutes", purpose: "Set by Stripe on its own checkout page for the length of a checkout." },
 ];
 
 export default function CookiesPage() {
@@ -74,7 +72,7 @@ export default function CookiesPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-3">Local storage</h2>
-            <p className="text-sm">In addition to cookies, Replysis uses browser <code className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to store your resume draft and session preferences locally on your machine. This data never leaves your device unless you explicitly submit it through the app.</p>
+            <p className="text-sm">In addition to cookies, Replysis uses browser <code className="text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded text-xs font-mono">localStorage</code> to keep you signed in (Firebase Authentication keeps your sign-in in browser storage), and to store your resume draft, your interview settings, a referral code from an invite link, and which notices you have closed. This data stays on your device unless you submit it through the app. Counting website visits uses no cookie and no storage at all.</p>
           </div>
 
           <div>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "How Replysis collects, uses, and protects your data.",
 };
 
-const LAST_UPDATED = "August 13, 2026";
+const LAST_UPDATED = "October 27, 2026";
 const CONTACT = "support@replysis.com";
 
 export default function PrivacyPage() {
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">1. Who we are</h2>
-            <p>Replysis ("we", "us", "our") operates replysis.com and the Replysis desktop apps for Windows and macOS. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
+            <p>Replysis ("we", "us", "our") operates replysis.com, the Replysis desktop apps for Windows and macOS, and the Replysis phone app. If you have questions about this policy, email us at <a href={`mailto:${CONTACT}`} className="text-zinc-900 hover:underline">{CONTACT}</a>.</p>
           </div>
 
           <div>
@@ -40,6 +40,9 @@ export default function PrivacyPage() {
                 { title: "Resume and job content", body: "Drafts may be stored in your browser. When you request AI output, resume and job-description text is sent through Replysis to the selected AI provider. Saved interview sessions can include a short resume snippet." },
                 { title: "Interview audio and transcripts", body: "Live audio streams from your device to our speech-to-text providers, Deepgram, with Speechmatics as a backup. Replysis does not store raw audio on its application servers. From version 1.0.20 the Windows app saves session audio only if you turn on Save session audio in Settings; it then keeps an encrypted copy on your own computer and deletes it automatically after 7 days. Version 1.0.19 and earlier saved that copy for every session. Session audio is never uploaded. Transcripts are processed to generate output and may be stored when you use saved session history." },
                 { title: "Screen captures", body: "While the desktop app is listening, it takes a screenshot of your screen every 2 seconds, and every 15 seconds for up to 5 minutes after you mute, so it can answer questions about what is on screen. Screenshots that have changed are sent to Replysis, held for at most 90 seconds, used for one answer, then deleted, and are read by Google Gemini." },
+                { title: "Mock interviews with Maya", body: "Your spoken answers stream to our speech-to-text providers to be transcribed. The transcript and your resume pass through Replysis to an AI provider, which writes what Maya says next and your feedback. Maya's voice is made from her words by Google Cloud Text-to-Speech, and her video is made from that voice by Simli. Only Maya's voice goes to Simli, never yours. If you turn on your camera, it shows only on your own screen and is never sent or recorded." },
+                { title: "Phone app", body: "The phone app listens with your phone's microphone and streams the audio to our speech-to-text providers, the same way the desktop apps do. If you link your phone to the desktop app, the transcript and answers pass through Replysis between your own devices and are not kept." },
+                { title: "Website visits", body: "To count visits we record the page, the country, the device type and a fingerprint that changes every day. Your IP address is not stored, no cookie is used, and no advertising or analytics company is involved." },
                 { title: "Payment information", body: "Handled entirely by Stripe. We never see or store your card number, CVV, or bank details. Only your subscription status reaches our servers." },
                 { title: "Usage and service data", body: "We record account-linked service metadata such as feature used, request count, transcript character count, duration, timestamps, credit balance, and error diagnostics. Usage logs are not intended to contain transcript text." },
               ].map((c, i) => (
@@ -79,21 +82,26 @@ export default function PrivacyPage() {
               <li>Process payments and manage your subscription</li>
               <li>Provide the resume builder, mock interview, and live copilot features</li>
               <li>Send transactional emails (account confirmation, receipts)</li>
+              <li>Send a few product emails, such as help getting started after you sign up or news about your plan</li>
               <li>Debug issues and improve the product</li>
             </ul>
-            <p className="text-sm mt-3">We will never send unsolicited marketing emails without your explicit consent.</p>
+            <p className="text-sm mt-3">Every product email has a one-click unsubscribe link. Once you use it, we send you only the emails your account needs, such as receipts.</p>
           </div>
 
           <div>
             <h2 className="text-xl font-black text-gray-900 mb-4">5. Third-party services</h2>
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
               {[
-                { name: "Firebase (Google)", purpose: "Authentication and account management" },
+                { name: "Firebase (Google)", purpose: "Authentication, account data and saved sessions" },
+                { name: "Oracle Cloud", purpose: "Hosting for the Replysis website and servers" },
                 { name: "Stripe", purpose: "Payment processing and subscription management" },
                 { name: "Cerebras", purpose: "Language-model inference for live interview answers" },
                 { name: "Google Gemini", purpose: "Reading screen captures, and language-model inference when a Gemini model is selected" },
                 { name: "Deepgram", purpose: "Real-time speech-to-text; live audio streams directly to this provider" },
                 { name: "Speechmatics", purpose: "Backup real-time speech-to-text when Deepgram is unavailable; live audio streams directly to this provider" },
+                { name: "Google Cloud Text-to-Speech", purpose: "Maya's voice in mock interviews, made from the words she says" },
+                { name: "Simli", purpose: "Maya's live video in mock interviews, made from her voice; your own audio and camera are never sent to Simli" },
+                { name: "Resend", purpose: "Sending account and product emails" },
               ].map((s, i) => (
                 <div key={i} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
                   <p className="font-bold text-gray-900 text-xs mb-1">{s.name}</p>
