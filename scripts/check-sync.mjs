@@ -466,6 +466,15 @@ console.log("\nMaya: the free interview, Practice and the add-on");
     console.log(`  ${name.padEnd(15)} revenue $${revenue.toFixed(2)}  worst-case profit $${profit.toFixed(2)} (${Math.round((profit / revenue) * 100)}%)`);
     (profit > 0 ? ok : bad)(`${name} never loses money in the worst case`);
   }
+  // Max includes Maya (owner, 2026-10-27): the full worst case of Max plus every Maya interview still keeps half.
+  (/MAX_INCLUDES_MAYA = true/.test(m || "") && /"max"\.equalsIgnoreCase/.test(java) && /Mock interview with Maya included/.test(page) ? ok : bad)(
+    "Max includes Maya on the website, the backend and the pricing page alike");
+  {
+    const maxCost = 24.0 + got.addonInterviews * INTERVIEW, maxRev = 79.99;
+    const keep = (maxRev - maxCost - FEE(maxRev)) / maxRev;
+    console.log(`  Max with Maya   revenue $${maxRev}  worst-case cost $${(maxCost + FEE(maxRev)).toFixed(2)}  (${Math.round(keep * 100)}% kept)`);
+    (keep >= 0.5 ? ok : bad)("Max with Maya included keeps at least 50% in the worst case");
+  }
   const freeCost = got.freePerDay * 30 * (6 * SIMLI_MIN + 0.05 + 0.03);
   (freeCost <= 40 ? ok : bad)(`free Maya interviews cost at most $${freeCost.toFixed(0)} a month even if nobody pays`);
 }

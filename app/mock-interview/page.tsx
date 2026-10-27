@@ -1963,7 +1963,7 @@ export default function MockInterviewPage() {
                       ? "Today's free interviews with Maya are taken. Try again tomorrow."
                       : "You have used your free interview."}{" "}
                     The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month, plus live answers for your real
-                    interviews. Pro and Max can add it too.
+                    interviews. Max includes it, and Pro can add it.
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 }}>
                     <a href="/pricing" style={{ padding: "11px 20px", borderRadius: 10,

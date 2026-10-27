@@ -1,4 +1,4 @@
-import { MAYA_ADDON } from "../../data/mayaAddon";
+import { MAYA_ADDON, MAX_INCLUDES_MAYA } from "../../data/mayaAddon";
 
 /**
  * Whether a user has paid: any plan above free, except the 3 day Pro trial (planSource "trial"), which has paid nothing.
@@ -37,6 +37,12 @@ export function mayaAccess(user: Record<string, unknown> | undefined | null, now
   const mockPlan = !!user && (user.mockPlan === true || future(user.mockPlanUntil));
   const addon = !!user && isPaidPlan(user)
     && (user.internal === true || user.mayaAddon === true || future(user.mayaAddonUntil));
+  // Max includes Maya (2026-10-27): the add-on's numbers, half in India (a rupee month paid once, or a rupee allowance).
+  const max = !!user && MAX_INCLUDES_MAYA && isPaidPlan(user) && String(user.plan).toLowerCase() === "max";
+  if (max && !addon && !mockPlan) {
+    const india = pass || typeof user?.audioMinutesAllowance === "number";
+    return { state: "ok", monthly: india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews, pass };
+  }
   if (mockPlan || addon) return { state: "ok", monthly, pass };
   if (user && user.mayaFreeUsed !== true) return { state: "taste", monthly, pass };
   return { state: user && isPaidPlan(user) ? "no_addon" : "free", monthly, pass };

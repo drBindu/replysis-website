@@ -228,7 +228,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`, max: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`},
+  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `${MAYA_ADDON.interviews}/month for +$${MAYA_ADDON.usd}`, max: `${MAYA_ADDON.interviews}/month included`},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -403,7 +403,7 @@ export default function PricingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ plan: planId, annual, uid: checkoutUser.uid, email: checkoutUser.email, ...(autopay ? { autopay: true } : {}),
-                               ...(mayaPick[planId] ? { maya: true } : {}) }),
+                               ...(mayaPick[planId] && planId !== "max" ? { maya: true } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -606,6 +606,15 @@ export default function PricingPage() {
                       </Link>
                     ) : (
                       <>
+                      {plan.id === "max" ? (
+                        <p style={{ margin: "4px 0 12px", fontSize: 14, lineHeight: 1.45 }}>
+                          <strong>Mock interview with Maya included</strong>
+                          <br />
+                          <span style={{ opacity: 0.75, fontSize: 13 }}>
+                            A live video interviewer, {india ? MAYA_ADDON.interviewsIndia : MAYA_ADDON.interviews} interviews a month
+                          </span>
+                        </p>
+                      ) : (
                       <label style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "4px 0 12px", cursor: "pointer",
                         fontSize: 14, lineHeight: 1.45 }}>
                         <input type="checkbox" checked={!!mayaPick[plan.id]} style={{ marginTop: 3, width: 16, height: 16, accentColor: "#267B42" }}
@@ -620,6 +629,7 @@ export default function PricingPage() {
                           </span>
                         </span>
                       </label>
+                      )}
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading}
                         className="hv2-btn hv2-btn-block">
@@ -724,7 +734,7 @@ export default function PricingPage() {
           <h2 className="hv2-serif hv2-h2">Which plan <em>fits.</em></h2>
           <p className="hv2-p">
             Paid plans include the complete premium experience: premium AI, desktop capture controls and resume tailoring. The mock
-            interview with Maya, a live video interviewer, can be added to either plan.
+            interview with Maya, a live video interviewer, is included in Max and can be added to Pro.
           </p>
           <ul className="hv2-index">
             {[

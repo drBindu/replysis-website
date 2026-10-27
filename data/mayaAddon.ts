@@ -13,6 +13,9 @@
  * Stripe: products "Mock interview with Maya" (STRIPE_MAYA_*) and "Replysis Mock Interview" (STRIPE_MOCK_*), price ids
  * in the server env; each has monthly USD, INR, GBP, CAD, AUD and a one-time INR price for India months paid once.
  */
+/** Max includes Maya with the add-on's numbers (owner, 2026-10-27: "ok" to including her in Max; Pro still adds her). */
+export const MAX_INCLUDES_MAYA = true;
+
 export const MAYA_ADDON = {
   usd: 10,
   inr: 399,
