@@ -87,9 +87,10 @@ export async function POST(req: Request) {
         maxIdleTime: MAX_IDLE_SECONDS,
         audioInputFormat: "pcm16",
         // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
-        // laptop, tall for a phone, so she fills it without bars. Older faces keep their own square frame.
+        // laptop, tall for a phone, so she fills it without bars. Older faces keep their own square frame. The smallest size
+        // Simli takes (512 on the short side): 1280x720 lagged for the owner (2026-10-27).
         ...(process.env.SIMLI_FACE_KIND === "trinity2"
-          ? shape === "tall" ? { streaming_width: 720, streaming_height: 1280 } : { streaming_width: 1280, streaming_height: 720 }
+          ? shape === "tall" ? { streaming_width: 512, streaming_height: 910 } : { streaming_width: 910, streaming_height: 512 }
           : {}),
       }),
       signal: AbortSignal.timeout(15_000),
