@@ -1424,13 +1424,15 @@ export async function POST(req: Request) {
         // follow-up or a repeat keeps only what comes before the next question, if she slipped it in.
         let sayOut = say;
         if ((action === "follow_up" || action === "repeat") && nextQ) {
-          const words = (t: string) => new Set(t.toLowerCase().match(/[a-z']+/g) ?? []);
-          const target = words(nextQ);
+          // A sentence is the next question when it carries most of that question's own words (words longer than three
+          // letters, so "is", "you" and "of" do not count), measured against the question, not the sentence: a reworded
+          // next question with extra words ("what impact did it have") was kept as a follow-up and asked twice.
+          const target = content(nextQ);
           const parts = say.split(/(?<=[.!?])\s+/);
           while (parts.length > 1) {
-            const last = words(parts[parts.length - 1]);
+            const last = content(parts[parts.length - 1]);
             const shared = [...last].filter((w) => target.has(w)).length;
-            if (last.size && shared / last.size >= 0.6) parts.pop(); else break;
+            if (target.size && shared / target.size >= 0.6) parts.pop(); else break;
           }
           sayOut = parts.join(" ");
           // Nothing of her own question was left: she had simply moved on to the next question.
