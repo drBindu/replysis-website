@@ -1436,7 +1436,7 @@ export async function POST(req: Request) {
           && !/\bskip\b/i.test(safeA);
         // Only the first time on a question: after one hint, moving on is right.
         const lastQ = Array.isArray(b.history) && b.history.length ? String((b.history[b.history.length - 1] as any)?.q ?? "") : "";
-        if (stuck && action === "next" && !opening && sanitizeText(lastQ).slice(0, 1000) !== safeQ) {
+        if (stuck && action !== "repeat" && action !== "end" && !opening && sanitizeText(lastQ).slice(0, 1000) !== safeQ) {
           try {
             const again = String(await callLLM(selectedModel, systemPrompt, userPrompt +
               `\n\nThe candidate is nervous or stuck on THIS question. Reassure or give a small hint, then ask this same ` +
@@ -1444,11 +1444,14 @@ export async function POST(req: Request) {
               { temperature: 0.7, max_tokens: 300, json: true }));
             const m2 = again.match(/\{[\s\S]*\}/);
             const j2 = m2 ? JSON.parse(m2[0]) : {};
-            if (typeof j2.say === "string" && j2.say.trim()) {
-              say = j2.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320);
-              action = "repeat";
-            }
-          } catch { /* keep the first reply */ }
+            const said2 = typeof j2.say === "string" ? j2.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
+            if (said2 && !(nextQ && said2.toLowerCase().includes(nextQ.toLowerCase().slice(0, 25)))) { say = said2; action = "repeat"; }
+          } catch { /* the fallback below */ }
+          // Still moving on: a calm line of our own and the same question again, so she never leaves them stuck.
+          if (action !== "repeat") {
+            say = `${/nervous|anxious|scared/i.test(safeA) ? "That's completely normal, take your time." : "No problem, take a moment."} ${safeQ}`;
+            action = "repeat";
+          }
         }
         // The praise words she must not use (no overacting) slipped through anyway: swapped for calm ones.
         say = say.replace(/\b(impressive|amazing|fantastic|incredible|awesome)\b/gi, (w) => (w[0] === w[0].toUpperCase() ? "Solid" : "solid"));
