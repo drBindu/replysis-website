@@ -174,6 +174,18 @@ const renderSafe = (val: unknown): string => {
 // "human words, an expert hiring manager or HR, not fixed dialogues"). There are no fixed lines here.
 type MayaTurn = { say: string; tone: string; action: "next" | "follow_up" | "repeat" | "end" };
 
+/** Her line in spoken sentences (a very short one joins the next), so each can be voiced at the same time. */
+function spokenParts(text: string): string[] {
+  const raw = text.split(/(?<=[.!?])\s+/).map((t) => t.trim()).filter(Boolean);
+  const out: string[] = [];
+  for (const part of raw) {
+    const prev = out[out.length - 1];
+    if (prev && prev.split(/\s+/).length < 4) out[out.length - 1] = `${prev} ${part}`;
+    else out.push(part);
+  }
+  return out.length ? out : [text];
+}
+
 type FeedbackTiming = "end" | "each";
 type TurnFeedback = { question: string; answer: string; feedback: Feedback | null; failed?: boolean };
 
@@ -1380,6 +1392,9 @@ export default function MockInterviewPage() {
   // Voices already made, by text. Maya's next line is prepared while the candidate is still answering, so it plays the
   // moment they stop instead of after a round trip to the voice service.
   const voiceCache = useRef(new Map<string, Promise<{ pcm: Int16Array; rate: number } | null>>());
+  // How she means each line (amused, impressed, curious...), from her reply, so her voice carries it.
+  const toneOf = useRef(new Map<string, string>());
+  const rememberTone = (t: MayaTurn) => { for (const part of spokenParts(t.say)) toneOf.current.set(part, t.tone); };
   const fetchVoice = useCallback((text: string): Promise<{ pcm: Int16Array; rate: number } | null> => {
     const cached = voiceCache.current.get(text);
     if (cached) return cached;
@@ -1396,7 +1411,7 @@ export default function MockInterviewPage() {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, tone: toneOf.current.get(text) }),
       });
       if (!res.ok) return null;
       const rate = Number(res.headers.get("X-Sample-Rate")) || 24000;
@@ -1412,7 +1427,7 @@ export default function MockInterviewPage() {
   const prepareAfter = (i: number) => {
     if (!ttsEnabled) return;
     const list = questionsRef.current;
-    if (i + 1 < list.length) void fetchVoice(list[i + 1]);
+    if (i + 1 < list.length) spokenParts(list[i + 1]).forEach((part) => void fetchVoice(part));
   };
 
   // ── Maya's own words ──────────────────────────────────────
@@ -1450,7 +1465,7 @@ export default function MockInterviewPage() {
     if (earlyTurn.current?.key !== key) {
       const turn = mayaTurn(nextTurnArgs(i, answer));
       // Her voice is made as soon as her words are known.
-      void turn.then((t) => { if (t && ttsEnabled) void fetchVoice(t.say); });
+      void turn.then((t) => { if (t && ttsEnabled) { rememberTone(t); spokenParts(t.say).forEach((part) => void fetchVoice(part)); } });
       earlyTurn.current = { key, turn };
     }
     return earlyTurn.current.turn;
@@ -1461,7 +1476,7 @@ export default function MockInterviewPage() {
     if (phase === "setup") { openingTurn.current = null; return; }   // new questions get a new hello
     if (phase !== "ready" || !questions[0] || openingTurn.current) return;
     const opening = mayaTurn({ opening: true, question: questions[0], answer: "", nextQuestion: "", canFollowUp: false });
-    void opening.then((t) => { if (t && ttsEnabled) void fetchVoice(t.say); });
+    void opening.then((t) => { if (t && ttsEnabled) { rememberTone(t); spokenParts(t.say).forEach((part) => void fetchVoice(part)); } });
     openingTurn.current = opening;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, questions]);
@@ -1480,11 +1495,21 @@ export default function MockInterviewPage() {
       if (warm) { faceRef.current?.setMood("smile"); setTimeout(() => faceRef.current?.setMood("soft"), 1800); }
       else setTimeout(() => faceRef.current?.setMood("soft"), 1500);
     };
-    const voice = await fetchVoice(text);
+    // Her voice takes over two seconds to make whatever the length (measured 2026-10-27), so each sentence is made at the
+    // same time and she starts on the first while the rest are still being made.
+    const parts = spokenParts(text);
+    const voices = parts.map((part) => fetchVoice(part));
+    const voice = await voices[0];
     if (mine !== speakToken.current) return;                 // a newer question started meanwhile
     if (voice && faceRef.current) {
       setIsSpeaking(true);
       await faceRef.current.speak(voice.pcm, voice.rate);
+      for (let k = 1; k < voices.length; k++) {
+        if (mine !== speakToken.current) return;
+        const next = await voices[k];
+        if (mine !== speakToken.current) return;
+        if (next) await faceRef.current?.speak(next.pcm, next.rate);
+      }
       if (mine !== speakToken.current) return;
       setIsSpeaking(false);
       afterLine();
