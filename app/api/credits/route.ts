@@ -99,6 +99,8 @@ export async function GET(req: Request) {
       paid: isPaidPlan(data),
       // The mock interview with Maya: "ok", "free" (needs a plan) or "no_addon" (needs the Maya add-on).
       maya: tasteFull ? "taste_full" : maya.state,
+      // The Practice plan sits on a free account: the apps show "Practice" instead of the free plan.
+      practice: data.mockPlan === true || Date.parse(String(data.mockPlanUntil ?? "")) > Date.now(),
       mayaMonthly: maya.monthly,
       mayaPass: maya.pass,
     });

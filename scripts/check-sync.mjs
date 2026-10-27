@@ -412,5 +412,62 @@ for (const plan of ["free", "pro", "max"]) {
 }
 rows.forEach((r) => console.log(r));
 
+// ---------- Maya (mock interview with live video), 2026-10-26 ------------------------------------------
+// Owner: 1 free interview of 3 questions; Practice $14.99 (Rs 499) = 20 interviews + 100 answers; add-on +$10 (Rs 399)
+// = 20 interviews; India half the interviews; never lose money; only a started interview counts.
+console.log("\nMaya: the free interview, Practice and the add-on");
+{
+  const AGREED_MAYA = { addonUsd: 10, addonInr: 399, addonInterviews: 20, addonInterviewsIndia: 10,
+                        practiceUsd: 14.99, practiceInr: 499, practiceInterviews: 20, practiceInterviewsIndia: 10,
+                        practiceCredits: 500, practiceCreditsIndia: 250, tasteQuestions: 3, freePerDay: 10 };
+  const m = read(resolve(FRONT, "data/mayaAddon.ts"));
+  const grab = (block, key) => {
+    const b = m && m.match(new RegExp(`export const ${block} = \\{([\\s\\S]*?)\\n\\};`));
+    const v = b && b[1].match(new RegExp(`\\n\\s*${key}:\\s*([0-9_.]+)`));
+    return v ? num(v[1]) : NaN;
+  };
+  const got = {
+    addonUsd: grab("MAYA_ADDON", "usd"), addonInr: grab("MAYA_ADDON", "inr"),
+    addonInterviews: grab("MAYA_ADDON", "interviews"), addonInterviewsIndia: grab("MAYA_ADDON", "interviewsIndia"),
+    practiceUsd: grab("MOCK_PLAN", "usd"), practiceInr: grab("MOCK_PLAN", "inr"),
+    practiceInterviews: grab("MOCK_PLAN", "interviews"), practiceInterviewsIndia: grab("MOCK_PLAN", "interviewsIndia"),
+    practiceCredits: grab("MOCK_PLAN", "credits"), practiceCreditsIndia: grab("MOCK_PLAN", "creditsIndia"),
+    tasteQuestions: grab("MAYA_ADDON", "tasteQuestions"),
+    freePerDay: m ? num((m.match(/FREE_TASTES_PER_DAY = ([0-9_]+)/) || [])[1]) : NaN,
+  };
+  for (const [k, v] of Object.entries(AGREED_MAYA)) (got[k] === v ? ok : bad)(`Maya ${k} is ${v} (data/mayaAddon.ts says ${got[k]})`);
+
+  const page = read(resolve(FRONT, "app/pricing/page.tsx")) || "";
+  (/Get Practice/.test(page) && /MOCK_PLAN\.interviews/.test(page) ? ok : bad)("the pricing page shows the Practice plan with its numbers from data/mayaAddon.ts");
+  (!/unlimited (practice|mock)/i.test(page) ? ok : bad)("the pricing page never calls Maya unlimited (owner: a clear number)");
+  (!/no separate upgrade for premium AI, desktop capture controls, mock/.test(page) ? ok : bad)("the pricing page no longer says mock practice is included in every plan");
+
+  const java = read(resolve(BACK, "src/main/java/com/replysis/backend/controller/QuestionController.java")) || "";
+  (/mockIncludedFor/.test(java) && /mockPlanUntil/.test(java) && /mayaAddonUntil/.test(java) ? ok : bad)("the backend gives the mock interview's steps free with Practice, the add-on or the free interview (same rule as the website)");
+  const lib = read(resolve(FRONT, "app/lib/paid-plan.ts")) || "";
+  (/mockPlanUntil/.test(lib) && /mayaAddonUntil/.test(lib) && /mayaFreeUsedAt/.test(lib) ? ok : bad)("the website's rule reads the same fields as the backend's");
+
+  const phone = read("C:/rx/src/lib/api.ts");
+  if (phone === null) warn("phone app not found at C:\\rx, its Maya gate was not checked");
+  else (/TASTE_QUESTIONS = 3/.test(phone) && /b\.maya === 'ok' \|\| b\.maya === 'taste'/.test(phone) ? ok : bad)("the phone app reads the same Maya states and the same 3 free questions");
+
+  // Worst case: every interview used for its full 15 minutes of Simli (1 cent a minute after the plan's minutes), the AI
+  // for questions and feedback (about 5 cents an interview), and for Practice every answer and listening minute used.
+  const SIMLI_MIN = 0.01, INTERVIEW = 15 * SIMLI_MIN + 0.05, FEE = (r) => 0.029 * r + 0.3, RUPEE = 85;
+  const addon = got.addonUsd - (got.addonInterviews * INTERVIEW) - FEE(got.addonUsd);
+  const practiceCost = got.practiceInterviews * INTERVIEW + (got.practiceCredits / 5) * ANSWER + 120 * STT_PER_MIN;
+  const practice = got.practiceUsd - practiceCost - FEE(got.practiceUsd);
+  const addonIn = got.addonInr / RUPEE, practiceIn = got.practiceInr / RUPEE;
+  const addonIndia = addonIn - got.addonInterviewsIndia * INTERVIEW - 0.035 * addonIn;
+  const practiceIndia = practiceIn - (got.practiceInterviewsIndia * INTERVIEW + (got.practiceCreditsIndia / 5) * ANSWER + 60 * STT_PER_MIN) - 0.035 * practiceIn;
+  for (const [name, profit, revenue] of [["add-on", addon, got.addonUsd], ["Practice", practice, got.practiceUsd],
+                                         ["add-on India", addonIndia, addonIn], ["Practice India", practiceIndia, practiceIn]]) {
+    console.log(`  ${name.padEnd(15)} revenue $${revenue.toFixed(2)}  worst-case profit $${profit.toFixed(2)} (${Math.round((profit / revenue) * 100)}%)`);
+    (profit > 0 ? ok : bad)(`${name} never loses money in the worst case`);
+  }
+  const freeCost = got.freePerDay * 30 * (6 * SIMLI_MIN + 0.05);
+  (freeCost <= 40 ? ok : bad)(`free Maya interviews cost at most $${freeCost.toFixed(0)} a month even if nobody pays`);
+}
+
 console.log(`\n${failures === 0 ? "ALL IN SYNC" : `${failures} PROBLEM(S)`}${warnings ? `, ${warnings} warning(s)` : ""}`);
 process.exit(failures === 0 ? 0 : 1);

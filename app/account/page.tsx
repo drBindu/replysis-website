@@ -25,6 +25,7 @@ import { db } from "../firebaseConfig";
 import { useAuth } from "../../components/AuthProvider";
 import { PageHeader } from "../../components/PageShell";
 import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, answerCount, type PlanId } from "../../data/productFacts";
+import { MOCK_PLAN } from "../../data/mayaAddon";
 import AnswerPacks from "../../components/AnswerPacks";
 import InterviewMinutes from "../../components/InterviewMinutes";
 import InviteFriends from "../../components/InviteFriends";
@@ -40,6 +41,8 @@ type AccountProfile = {
   stripeSubscriptionId?: string | null;
   stripeSubscriptionStatus?: string | null;
   stripeCancelAtPeriodEnd?: boolean;
+  mockPlan?: boolean;
+  mockPlanUntil?: string;
   stripeCurrentPeriodEnd?: number | null;
   lastPaymentFailedAt?: unknown;
   planSource?: string | null;      // "pass": India, paid once for 30 days, no subscription
@@ -152,16 +155,21 @@ export default function AccountPage() {
 
   const plan = profile?.plan && profile.plan in PLAN_MONTHLY_CREDITS ? profile.plan : "free";
   const activePlan = plan === "pro" || plan === "max" ? plan : "free";
-  const planFacts = plan === "lifetime"
+  // The Practice plan (2026-10-27) sits on a free account: shown as Practice, with its own monthly numbers.
+  const practice = plan === "free"
+    && (profile?.mockPlan === true || Date.parse(String(profile?.mockPlanUntil ?? "")) > Date.now());
+  const planFacts = practice
+    ? { label: "Practice", summary: `${MOCK_PLAN.interviews} interviews with Maya and ${answerCount(MOCK_PLAN.credits)} answers each month` }
+    : plan === "lifetime"
     ? { label: "Legacy Lifetime", summary: `${answerCount(PLAN_MONTHLY_CREDITS.lifetime).toLocaleString("en-US")} answers each month` }
     : plan === "teams"
       ? { label: "Legacy Teams", summary: `${answerCount(PLAN_MONTHLY_CREDITS.teams).toLocaleString("en-US")} answers each month` }
       : PUBLIC_PLAN_CAPACITY[activePlan];
   const credits = Math.max(0, Number(profile?.credits ?? 0));
-  const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+  const cap = practice ? MOCK_PLAN.credits : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const percentage = Math.max(0, Math.min(100, Math.round((Math.min(credits, cap) / cap) * 100)));
   const hasBillingAccount = typeof profile?.stripeCustomerId === "string" && profile.stripeCustomerId.startsWith("cus_");
-  const isPaid = plan !== "free";
+  const isPaid = plan !== "free" || practice;
   const paymentNeedsAttention = Boolean(profile?.lastPaymentFailedAt);
   const isCanceling = Boolean(profile?.stripeCancelAtPeriodEnd);
   const billingStatus = useMemo(() => {
