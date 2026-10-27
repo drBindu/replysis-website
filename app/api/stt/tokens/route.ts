@@ -1409,7 +1409,17 @@ export async function POST(req: Request) {
         const say = typeof j.say === "string" ? j.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
         const tone = TONES.includes(j.tone) ? j.tone : "warm";
         let action = ACTIONS.includes(j.action) ? j.action : "next";
-        if (action === "follow_up" && !canFollowUp) action = "next";
+        // Asking for more when no follow-up is allowed is a repeat of this question, not "next": "next" moved the interview
+        // on while she was still waiting for more (2026-10-27).
+        if (action === "follow_up" && !canFollowUp) action = "repeat";
+        // The label must match her words (the model mixes them up): "next" must actually ask the next question, and a
+        // follow-up that is really the next question is "next".
+        const content = (t: string) => new Set((t.toLowerCase().match(/[a-z']+/g) ?? []).filter((w) => w.length > 3));
+        if (nextQ && action === "next") {
+          const target = content(nextQ);
+          const shared = [...content(say)].filter((w) => target.has(w)).length;
+          if (target.size && shared === 0 && say.includes("?")) action = canFollowUp ? "follow_up" : "repeat";
+        }
         // One question at a time (2026-10-27): she asked a follow-up and then the next question in the same breath. A
         // follow-up or a repeat keeps only what comes before the next question, if she slipped it in.
         let sayOut = say;
@@ -1423,6 +1433,8 @@ export async function POST(req: Request) {
             if (last.size && shared / last.size >= 0.6) parts.pop(); else break;
           }
           sayOut = parts.join(" ");
+          // Nothing of her own question was left: she had simply moved on to the next question.
+          if (!sayOut.includes("?")) { sayOut = say; action = "next"; }
         }
         if (!say) return NextResponse.json({ say: null, tone: "warm", action: "next" });
         return NextResponse.json({ say: sayOut, tone, action });
