@@ -24,9 +24,6 @@ const MAX_IDLE_SECONDS = 120;
 export async function POST(req: Request) {
   const uid = await verifiedUid(req);
   if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!rateLimit(`simli:${uid}`, 6, 60 * 60_000).ok || !rateLimit(`simli-ip:${clientIp(req)}`, 20, 60 * 60_000).ok) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
   const params = new URL(req.url).searchParams;
   const shape = params.get("shape") === "tall" ? "tall" : "wide";
   const apiKey = process.env.SIMLI_API_KEY;
@@ -36,6 +33,11 @@ export async function POST(req: Request) {
   const access = userData ? mayaAccess(userData) : null;
   // The owner and testers (internal accounts) are never counted or limited.
   const internal = userData?.internal === true;
+  // Abuse guard for everyone else (a person never starts Maya 6 times an hour). The owner's testing hit it and looked like
+  // Maya failing (2026-10-27), so internal accounts skip it.
+  if (!internal && (!rateLimit(`simli:${uid}`, 6, 60 * 60_000).ok || !rateLimit(`simli-ip:${clientIp(req)}`, 20, 60 * 60_000).ok)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   if (!access || (access.state !== "ok" && access.state !== "taste")) {
     return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
   }
