@@ -170,20 +170,9 @@ const renderSafe = (val: unknown): string => {
   return String(val);
 };
 
-// What the interviewer says around the questions, so it sounds like a person running an interview rather than a list
-// being read out (owner, 2026-10-17: "make it a real mock interview, the AI speaks like a real person").
-const INTERVIEW_INTRO = "Hi, I'm Maya, and I'll be your interviewer today. Thanks for making the time. Let's get started.";
-const INTERVIEW_CLOSING = "That's all the questions I have for you today. Thank you, you did well to get through it. Your feedback is ready on the screen.";
-const ACKNOWLEDGEMENTS = [
-  "Thanks, that's helpful.", "Got it, thank you.", "Okay, thanks for sharing that.",
-  "That makes sense, thank you.", "Alright, thanks.", "Thanks for walking me through that.",
-];
-const TRANSITIONS = ["Let's move on.", "Here's my next question.", "Okay, next one.", "Moving on."];
-const textHash = (t: string) => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return Math.abs(h); };
-/** What Maya says just before a question: depends only on the question and whether it is the last, so it can be prepared early. */
-const nextLineFor = (question: string, isLast: boolean) =>
-  `${isLast ? "And my last question." : TRANSITIONS[textHash(question) % TRANSITIONS.length]} ${question}`;
-const ackFor = (answered: number) => ACKNOWLEDGEMENTS[answered % ACKNOWLEDGEMENTS.length];
+// Every word Maya says is written for that moment by the server (mode "maya_turn"), as on the phone (owner, 2026-10-27:
+// "human words, an expert hiring manager or HR, not fixed dialogues"). There are no fixed lines here.
+type MayaTurn = { say: string; tone: string; action: "next" | "follow_up" | "repeat" | "end" };
 
 type FeedbackTiming = "end" | "each";
 type TurnFeedback = { question: string; answer: string; feedback: Feedback | null; failed?: boolean };
@@ -1028,6 +1017,10 @@ export default function MockInterviewPage() {
   // ── Reset silence timer ───────────────────────────────────
   const resetSilenceTimer = useCallback((finalSegment = false) => {
     clearSilenceTimer();
+    // A pause: ask for Maya's reply now, so it is ready when the answer ends (the same answer reuses it).
+    if (finalSegment && feedbackTimingRef.current === "end" && answerRef.current.trim().split(/\s+/).length >= 4) {
+      void turnForRef.current(indexRef.current, answerRef.current);
+    }
     const wait = finalSegment && answerLooksFinished(answerRef.current) ? SILENCE_DONE_MS : SILENCE_DELAY_MS;
     silenceTimerRef.current = window.setTimeout(() => {
       if (answerRef.current.trim().length > 10) {
@@ -1415,14 +1408,63 @@ export default function MockInterviewPage() {
     }
   };
 
-  /** While question i is being answered: make the acknowledgement and the next line (or the goodbye) ready. */
+  /** While question i is being answered: the plain next question's voice, used only if Maya's own reply cannot be had. */
   const prepareAfter = (i: number) => {
     if (!ttsEnabled) return;
     const list = questionsRef.current;
-    void fetchVoice(ackFor(i));
-    if (i + 1 < list.length) void fetchVoice(nextLineFor(list[i + 1], i + 1 === list.length - 1));
-    else void fetchVoice(INTERVIEW_CLOSING);
+    if (i + 1 < list.length) void fetchVoice(list[i + 1]);
   };
+
+  // ── Maya's own words ──────────────────────────────────────
+  const mayaHistory = useRef<{ q: string; a: string }[]>([]);
+  const mayaWarnings = useRef(0);
+  const indexRef = useRef(0);
+  useEffect(() => { indexRef.current = index; }, [index]);
+  const candidateName = () => (auth.currentUser?.displayName ?? "").trim().split(/\s+/)[0] ?? "";
+  const mayaTurn = async (o: { opening?: boolean; question: string; answer: string; nextQuestion: string; canFollowUp: boolean }): Promise<MayaTurn | null> => {
+    try {
+      const res = await Promise.race([
+        fetchAi({ mode: "maya_turn", ...o, warnings: mayaWarnings.current, history: mayaHistory.current.slice(-4),
+                  role: "", company: "", candidateName: candidateName(), model: selectedModel }) as Promise<Partial<MayaTurn>>,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 7000)),
+      ]);
+      if (!res || typeof res.say !== "string" || !res.say) return null;
+      const action = res.action === "follow_up" || res.action === "repeat" || res.action === "end" ? res.action : "next";
+      return { say: res.say, tone: typeof res.tone === "string" ? res.tone : "warm", action };
+    } catch {
+      return null;
+    }
+  };
+  /** What Maya will say to an answer, asked for at the candidate's first pause so it is ready the moment they finish. */
+  const nextTurnArgs = (i: number, answer: string) => {
+    const list = questionsRef.current;
+    const isLast = i >= list.length - 1;
+    const baseCount = list.length - followUpIndexes.current.size;
+    const canFollowUp = !isLast && !followUpIndexes.current.has(i)
+      && followUpsAsked.current < Math.max(1, Math.ceil(baseCount / 2));
+    return { question: list[i] ?? "", answer, nextQuestion: isLast ? "" : list[i + 1], canFollowUp };
+  };
+  const earlyTurn = useRef<{ key: string; turn: Promise<MayaTurn | null> } | null>(null);
+  const turnFor = (i: number, answer: string) => {
+    const key = `${i}|${answer.trim()}`;
+    if (earlyTurn.current?.key !== key) {
+      const turn = mayaTurn(nextTurnArgs(i, answer));
+      // Her voice is made as soon as her words are known.
+      void turn.then((t) => { if (t && ttsEnabled) void fetchVoice(t.say); });
+      earlyTurn.current = { key, turn };
+    }
+    return earlyTurn.current.turn;
+  };
+  const openingTurn = useRef<Promise<MayaTurn | null> | null>(null);
+  // Her hello and first question are written and voiced while the candidate is on the check screen.
+  useEffect(() => {
+    if (phase === "setup") { openingTurn.current = null; return; }   // new questions get a new hello
+    if (phase !== "ready" || !questions[0] || openingTurn.current) return;
+    const opening = mayaTurn({ opening: true, question: questions[0], answer: "", nextQuestion: "", canFollowUp: false });
+    void opening.then((t) => { if (t && ttsEnabled) void fetchVoice(t.say); });
+    openingTurn.current = opening;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, questions]);
 
   const speakLine = useCallback(async (text: string, listenAfter: boolean) => {
     if (!ttsEnabled) { if (listenAfter) setTimeout(() => startRecording(), 300); return; }
@@ -1432,7 +1474,7 @@ export default function MockInterviewPage() {
     const mine = ++speakToken.current;
     // Her face follows the line (2026-10-26, same as the phone app): a soft smile on a warm line and a real smile after
     // it, a curious look on a question, then a soft smile while the candidate answers.
-    const warm = ACKNOWLEDGEMENTS.includes(text) || text === INTERVIEW_INTRO || text === INTERVIEW_CLOSING;
+    const warm = !text.includes("?");
     faceRef.current?.setMood(warm ? "soft" : text.includes("?") ? "curious" : "neutral");
     const afterLine = () => {
       if (warm) { faceRef.current?.setMood("smile"); setTimeout(() => faceRef.current?.setMood("soft"), 1800); }
@@ -1482,49 +1524,53 @@ export default function MockInterviewPage() {
   }, [showSuggested, phase, questions, index, suggestions, resumeText, jdText, selectedModel]);
 
   // ── After an answer (real interview mode) ────────────────
-  // Maya acknowledges straight away (the line is ready). Meanwhile she decides whether to ask one follow-up about what was
-  // just said, like a real interviewer: for a fair share of questions, never after the last one, never twice in a row.
-  // A follow-up is inserted as the next question, so it gets its own feedback in the report.
-  const requestFollowUp = async (question: string, answer: string): Promise<string | null> => {
-    try {
-      const result = await Promise.race([
-        fetchAi({ mode: "follow_up", question, answer, model: selectedModel }) as Promise<{ followUp?: string | null }>,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
-      ]);
-      return result && typeof result.followUp === "string" && result.followUp.trim() ? result.followUp.trim() : null;
-    } catch {
-      return null;
-    }
-  };
+  // Maya's reply was asked for at the candidate's first pause, so usually it is already there. It decides what happens:
+  // a reaction and the next question in her words, one follow-up on what they said (inserted as its own question, so it
+  // gets its own feedback), the question again in simpler words, or a goodbye. Without a reply: the plain next question.
   const followUpIndexes = useRef(new Set<number>());
   const continueAfterAnswer = async (i: number, question: string, answer: string) => {
     const list = questionsRef.current;
     const isLast = i >= list.length - 1;
-    const wasFollowUp = followUpIndexes.current.has(i);
-    const baseCount = list.length - followUpIndexes.current.size;
-    const mayFollow = !isLast && !wasFollowUp && answer.split(/\s+/).length >= 12
-      && followUpsAsked.current < Math.max(1, Math.ceil(baseCount / 2));
-    const followUpPromise = mayFollow ? requestFollowUp(question, answer) : Promise.resolve(null);
-    if (!isLast) await speakLine(ackFor(i), false);
-    const followUp = await followUpPromise;
-    if (followUp) {
+    const turn = await turnFor(i, answer);
+    earlyTurn.current = null;
+    mayaHistory.current.push({ q: question, a: answer });
+    if (turn?.tone === "firm") mayaWarnings.current += 1;
+    const resetAnswer = () => {
+      setAnswer(""); answerRef.current = "";
+      setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
+    };
+    if (turn?.action === "follow_up" && !isLast) {
       followUpsAsked.current += 1;
-      const updated = [...list.slice(0, i + 1), followUp, ...list.slice(i + 1)];
-      // Indexes after the insert move down by one.
+      const updated = [...list.slice(0, i + 1), turn.say, ...list.slice(i + 1)];
       followUpIndexes.current = new Set([...followUpIndexes.current].map((x) => (x > i ? x + 1 : x)));
       followUpIndexes.current.add(i + 1);
       questionsRef.current = updated;
       setQuestions(updated);
       setIndex(i + 1);
-      setAnswer(""); answerRef.current = "";
-      setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
-      void speakQuestion(followUp);
+      resetAnswer();
+      void speakQuestion(turn.say);
       prepareAfter(i + 1);
       return;
     }
-    nextQuestionRef.current();
+    if (turn?.action === "repeat") {
+      resetAnswer();
+      void speakQuestion(turn.say);
+      return;
+    }
+    if (isLast || turn?.action === "end") {
+      accountForListening(true);
+      if (turn && ttsEnabled) await speakLine(turn.say, false);
+      setPhase("summary");
+      return;
+    }
+    setIndex(i + 1);
+    resetAnswer();
+    void speakQuestion(turn?.say ?? list[i + 1]);
+    prepareAfter(i + 1);
   };
   const continueAfterAnswerRef = useRef(continueAfterAnswer);
+  const turnForRef = useRef(turnFor);
+  turnForRef.current = turnFor;
   continueAfterAnswerRef.current = continueAfterAnswer;
 
   // ── Navigation ────────────────────────────────────────────
@@ -1533,17 +1579,13 @@ export default function MockInterviewPage() {
     const next = index + 1;
     if (next >= questions.length) {
       accountForListening(true);
-      if (feedbackTimingRef.current === "end" && ttsEnabled) {
-        void speakLine(INTERVIEW_CLOSING, false).then(() => setPhase("summary"));
-      } else {
-        setPhase("summary");
-      }
+      setPhase("summary");
       return;
     }
     setIndex(next);
     setAnswer(""); answerRef.current = "";
     setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
-    setTimeout(() => { void speakQuestion(nextLineFor(questions[next], next === questions.length - 1)); prepareAfter(next); }, 150);
+    setTimeout(() => { void speakQuestion(questions[next]); prepareAfter(next); }, 150);
   };
 
   // ── Auto mode: after the score and the better answer have been up for a while, the next question starts by itself ──
@@ -1686,10 +1728,16 @@ export default function MockInterviewPage() {
     followUpsAsked.current = 0;
     followUpIndexes.current = new Set();
     questionsRef.current = questions;
-    // Her first words wait for her face (she started joining on the check screen), at most 25 seconds.
+    // Her first words (her own hello and the first question, prepared on the check screen) wait for her face, at most
+    // 25 seconds.
     prepareAfter(0);
-    void maya.whenReady(25_000).then(() => new Promise((r) => setTimeout(r, 500)))
-      .then(() => speakQuestion(`${INTERVIEW_INTRO} ${questions[0] ?? "Tell me about yourself."}`));
+    mayaHistory.current = [];
+    mayaWarnings.current = 0;
+    const first = questions[0] ?? "Tell me about yourself.";
+    const opening = openingTurn.current ?? mayaTurn({ opening: true, question: first, answer: "", nextQuestion: "", canFollowUp: false });
+    openingTurn.current = null;
+    void maya.whenReady(25_000).then(() => opening)
+      .then((t) => speakQuestion(t?.say ?? first));
   };
 
   // ── File upload ────────────────────────────────────────────
