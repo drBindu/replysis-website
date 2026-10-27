@@ -1954,19 +1954,25 @@ export default function MockInterviewPage() {
                 </>
               ) : (
                 <>
-                  <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
+                  {/* Owner, 2026-10-27: make it strong. What they get, the price, one clear button. */}
+                  <p style={{ fontSize: 15, color: T.text, lineHeight: 1.6, fontWeight: 600 }}>
                     {mayaState === "taste_full"
-                      ? "Today's free interviews with Maya are taken. Try again tomorrow, or upgrade now and start right away."
-                      : "You have used your free interview."}{" "}
-                    The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month, plus live answers for your real
-                    interviews. Max includes it, and Pro can add it.
+                      ? "Today's free interviews with Maya are taken. Start now with a plan, or come back tomorrow for your free one."
+                      : "You have had your free interview. Keep practising until the real one feels easy."}
                   </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 }}>
-                    <a href="/pricing" style={{ padding: "11px 20px", borderRadius: 10,
-                      background: T.accent, color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                      {mayaState === "taste_full" ? "Upgrade now" : "See Practice and plans"}
-                    </a>
-                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6, fontSize: 14,
+                    color: T.text, lineHeight: 1.5 }}>
+                    <li>{MOCK_PLAN.interviews} live interviews with Maya every month</li>
+                    <li>Feedback and a stronger answer for every question you answer</li>
+                    <li>{MOCK_PLAN.credits / 5} live answers for your real interviews</li>
+                  </ul>
+                  <p style={{ fontSize: 13.5, color: T.textMid, lineHeight: 1.55 }}>
+                    Practice is ${MOCK_PLAN.usd} a month (Rs {MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.
+                  </p>
+                  <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 2, padding: "13px 24px", borderRadius: 12,
+                    background: T.accent, color: "white", fontSize: 15, fontWeight: 800, textDecoration: "none" }}>
+                    {mayaState === "taste_full" ? "Start now with Practice" : "Get Practice"}
+                  </a>
                 </>
               )}
             </motion.div>
