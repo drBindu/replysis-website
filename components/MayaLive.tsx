@@ -51,6 +51,7 @@ export type MayaLive = {
  */
 export function useMayaLive(active: boolean, getToken?: () => Promise<string | undefined>, shape: "wide" | "tall" = "wide"): MayaLive {
   const client = useRef<Client | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [status, setStatus] = useState<SimliStatus | "off">("off");
   const statusRef = useRef<SimliStatus | "off">("off");
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
@@ -79,6 +80,13 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
     videoEl.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;";
     const audioEl = document.createElement("audio");
     audioEl.autoplay = true;
+    // iPhone (WKWebView): media must be allowed to play inline, and an element that never had play() called can stay
+    // silent even with autoplay; play() is called again once she is connected and before each line (2026-10-27, Maya
+    // was silent on a real iPhone while the Simulator played her).
+    audioEl.setAttribute("playsinline", "");
+    videoEl.setAttribute("playsinline", "");
+    videoEl.muted = true;   // her voice comes from the audio element; a muted video always starts on iPhone
+    audioRef.current = audioEl;
     // Kept in the page (off screen) until a MayaVideo takes the video, so the browser lets both play.
     const holder = document.createElement("div");
     holder.style.cssText = "position:fixed;left:-10000px;top:0;width:320px;height:240px;overflow:hidden;";
@@ -111,6 +119,8 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         if (cancelled) { void simli.stop().catch(() => {}); return; }
         made = simli as unknown as Client;
         client.current = made;
+        void audioEl.play().catch(() => { /* starts with the next line */ });
+        void videoEl.play().catch(() => {});
         setBoth("ready");
       } catch {
         if (!cancelled) setBoth("failed");
@@ -154,6 +164,7 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
       finishLine();
       const simli = client.current;
       if (!simli) return playLocally(pcm, rate);
+      void audioRef.current?.play().catch(() => {});
       const pcm16k = resamplePcm16(pcm, rate, 16000);
       const seconds = pcm16k.length / 16000;
       const bytes = new Uint8Array(pcm16k.buffer, pcm16k.byteOffset, pcm16k.byteLength);
