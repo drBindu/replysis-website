@@ -1358,9 +1358,11 @@ export async function POST(req: Request) {
         `- Small natural acknowledgements are fine (Right. Okay. Got it. Mm, makes sense.), but never start the same way ` +
         `as any of YOUR earlier lines, and never reuse your own phrases.\n` +
         `- Move between topics the way people do, in a few plain words, each time differently.\n` +
-        `- If they say they are nervous, reassure them briefly and kindly, like a person would.\n` +
-        `- If they say they do not know or go blank, be kind, offer a small nudge or a simpler angle, and let them try ` +
-        `again (action "repeat"). If they ask to skip it, say that is fine and move on (action "next").\n` +
+        `- If they say they are nervous, reassure them briefly and kindly, then gently ask the SAME question again in ` +
+        `easier words so they can answer it. Do not move on (action "repeat").\n` +
+        `- If they say they do not know or go blank, be kind and give a small hint or a simpler angle on the SAME ` +
+        `question, then let them try (action "repeat"). Move on only if they ask to skip it or have already had a hint.\n` +
+        `- If they ask to skip it, say that is fine and move on (action "next").\n` +
         `- Small talk gets a human reply: if they ask how you are or thank you, answer briefly and naturally, then continue.\n` +
         `- Never sound like a teacher: no summaries of their answer, no lists, no grading.\n` +
         // Owner, 2026-10-25: on a phone in a room, background voices reached the transcript as jumbled words and she told the
@@ -1422,12 +1424,34 @@ export async function POST(req: Request) {
           { temperature: 0.8, max_tokens: 400, json: true }));
         const m = raw.match(/\{[\s\S]*\}/);
         const j = m ? JSON.parse(m[0]) : {};
-        const say = typeof j.say === "string" ? j.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
+        let say = typeof j.say === "string" ? j.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320) : "";
         const tone = TONES.includes(j.tone) ? j.tone : "warm";
         let action = ACTIONS.includes(j.action) ? j.action : "next";
         // Asking for more when no follow-up is allowed is a repeat of this question, not "next": "next" moved the interview
         // on while she was still waiting for more (2026-10-27).
         if (action === "follow_up" && !canFollowUp) action = "repeat";
+        // Nervous or blank, in a short answer, is never a reason to move on (2026-10-27: she said "take a breath" and
+        // then asked the next question). Without a repeat, ask for the turn again with the rule spelled out.
+        const stuck = safeA.split(/\s+/).length <= 25 && /\b(nervous|anxious|scared|blank|don'?t know|do not know|not sure|can'?t think|no idea)\b/i.test(safeA)
+          && !/\bskip\b/i.test(safeA);
+        // Only the first time on a question: after one hint, moving on is right.
+        const lastQ = Array.isArray(b.history) && b.history.length ? String((b.history[b.history.length - 1] as any)?.q ?? "") : "";
+        if (stuck && action === "next" && !opening && sanitizeText(lastQ).slice(0, 1000) !== safeQ) {
+          try {
+            const again = String(await callLLM(selectedModel, systemPrompt, userPrompt +
+              `\n\nThe candidate is nervous or stuck on THIS question. Reassure or give a small hint, then ask this same ` +
+              `question again in easier words. Do not ask the next question. Action must be "repeat".`,
+              { temperature: 0.7, max_tokens: 300, json: true }));
+            const m2 = again.match(/\{[\s\S]*\}/);
+            const j2 = m2 ? JSON.parse(m2[0]) : {};
+            if (typeof j2.say === "string" && j2.say.trim()) {
+              say = j2.say.replace(/["“”]/g, "").replace(/\s+/g, " ").trim().slice(0, 320);
+              action = "repeat";
+            }
+          } catch { /* keep the first reply */ }
+        }
+        // The praise words she must not use (no overacting) slipped through anyway: swapped for calm ones.
+        say = say.replace(/\b(impressive|amazing|fantastic|incredible|awesome)\b/gi, (w) => (w[0] === w[0].toUpperCase() ? "Solid" : "solid"));
         // The label must match her words (the model mixes them up): "next" must actually ask the next question, and a
         // follow-up that is really the next question is "next".
         const content = (t: string) => new Set((t.toLowerCase().match(/[a-z']+/g) ?? ([] as string[])).filter((w: string) => w.length > 3));
