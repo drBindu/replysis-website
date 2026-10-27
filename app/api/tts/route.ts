@@ -28,14 +28,16 @@ export async function POST(req: Request) {
 
   // How she sounds saying it (Maya's reactions, 2026-10-24). Gemini's voice follows a short spoken-style direction placed
   // before the line and does not read the direction aloud.
+  // Owner, 2026-10-27: "not too much overacting". Every direction is understated: a calm, experienced professional on a
+  // call whose feeling shows only a little in her voice.
   const STYLE: Record<string, string> = {
-    warm: "Say warmly and naturally, like a friendly interviewer on a video call",
-    amused: "Say with a light, amused laugh in your voice",
-    impressed: "Say sounding genuinely impressed and pleased",
-    curious: "Say with real curiosity, leaning in",
-    thoughtful: "Say thoughtfully, at an unhurried pace",
-    serious: "Say calmly and seriously",
-    firm: "Say calmly but firmly, like an interviewer setting a boundary",
+    warm: "Say in a calm, natural, friendly tone, like an experienced interviewer on a video call",
+    amused: "Say naturally with a slight, quiet smile in your voice, no laughing",
+    impressed: "Say naturally, sounding quietly pleased, not excited",
+    curious: "Say naturally with mild interest",
+    thoughtful: "Say calmly, at an unhurried pace",
+    serious: "Say calmly and plainly",
+    firm: "Say calmly and plainly, polite but clear",
   };
   const style = typeof body?.tone === "string" ? STYLE[body.tone] : undefined;
   const request = {
