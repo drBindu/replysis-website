@@ -1059,6 +1059,26 @@ export default function MockInterviewPage() {
   }, [clearSilenceTimer, stopRecording]);
 
   // ── Start recording (Speechmatics) ────────────────────────
+  // One quiet retry before "Listening is temporarily unavailable" (owner, 2026-10-27), and the reason for every failure
+  // goes to the server's client_errors log: the server showed nothing for the failure the owner saw, because the keys were
+  // issued fine and it failed in the browser.
+  const listenRetried = useRef(false);
+  const startRecordingRef = useRef<() => Promise<void>>(async () => {});
+  const failListening = useCallback((reason: string) => {
+    void fetch("/api/v1/diagnostics/client-error", {
+      method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ source: "web-mock", type: "listening", os: navigator.userAgent.slice(0, 60),
+        message: `${reason}${listenRetried.current ? " (after retry)" : ""}`, user: auth.currentUser?.email ?? "" }),
+    }).catch(() => {});
+    if (!listenRetried.current) {
+      listenRetried.current = true;
+      window.setTimeout(() => { void startRecordingRef.current(); }, 900);
+      return;
+    }
+    listenRetried.current = false;
+    setRecordingError(LISTENING_UNAVAILABLE);
+  }, []);
+
   const startRecording = useCallback(async () => {
     if (isRecordingRef.current || isAnalyzingRef.current || wsRef.current) return;
     faceRef.current?.setListening(true);   // she nods now and then while the candidate answers
@@ -1091,6 +1111,7 @@ export default function MockInterviewPage() {
       const tokenRes = fresh ? await fresh.response.catch(askForToken) : await askForToken();
       if (!tokenRes.ok) {
         console.error(`[Replysis] Mock interview token request failed status=${tokenRes.status}`);
+        if (![401, 402, 429].includes(tokenRes.status)) { releaseEarlyMic(); failListening(`token request ${tokenRes.status}`); return; }
         const failure = await tokenRes.json().catch(() => ({}));
         setRecordingError(tokenRes.status === 401 ? SIGN_IN_REQUIRED
           : tokenRes.status === 402
@@ -1106,7 +1127,7 @@ export default function MockInterviewPage() {
       const tokenData = await tokenRes.json();
       if (tokenData.error) {
         console.error("[Replysis] Mock interview token rejected");
-        setRecordingError(LISTENING_UNAVAILABLE);
+        failListening("token rejected");
         releaseEarlyMic();
         return;
       }
@@ -1115,7 +1136,7 @@ export default function MockInterviewPage() {
         typeof tokenData.deepgramToken === "string" && tokenData.deepgramToken ? tokenData.deepgramToken : undefined;
       if (!token && !deepgramToken) {
         console.error("[Replysis] Mock interview token response contained no credential");
-        setRecordingError(LISTENING_UNAVAILABLE);
+        failListening("no credential");
         releaseEarlyMic();
         return;
       }
@@ -1151,11 +1172,13 @@ export default function MockInterviewPage() {
             }
           }, 5_000);
           isRecordingRef.current = true; setIsRecording(true);
+          listenRetried.current = false;
         } catch (mediaErr) {
           const denied = ["NotAllowedError", "SecurityError", "PermissionDeniedError"].includes((mediaErr as Error)?.name);
           console.error(`[Replysis] Mock interview could not start capture: ${(mediaErr as Error)?.name ?? "Error"}`);
           const busy = ["NotReadableError", "TrackStartError", "AbortError", "NotFoundError"].includes((mediaErr as Error)?.name);
-          setRecordingError(denied ? MIC_BLOCKED : busy ? MIC_BUSY : LISTENING_UNAVAILABLE);
+          if (denied || busy) setRecordingError(denied ? MIC_BLOCKED : MIC_BUSY);
+          else failListening(`capture ${(mediaErr as Error)?.name ?? "Error"}`);
           stopRecording();
         }
       };
@@ -1203,7 +1226,7 @@ export default function MockInterviewPage() {
           wsClosedPrematurely = true;
           ws.close();
           console.error("[Replysis] Mock interview transcription refused the credential");
-          setRecordingError(LISTENING_UNAVAILABLE);
+          failListening(`${provider} did not start in time`);
           stopRecording();
         // Cold provider sessions and slower networks can legitimately take more than five seconds. A short timeout falsely
         // reported a bad credential while the socket was still establishing recognition. The first choice is given less,
@@ -1248,7 +1271,7 @@ export default function MockInterviewPage() {
             } else if (msg.type === "Error") {
               console.error(`[Replysis] Mock interview transcription error code=${msg.err_code ?? "unknown"}`);
               if (fallBack()) return;
-              setRecordingError(LISTENING_UNAVAILABLE);
+              failListening(`deepgram error ${msg.err_code ?? "unknown"}`);
               stopRecording();
             }
             return;
@@ -1270,7 +1293,7 @@ export default function MockInterviewPage() {
           if (msg.message === "Error") {
             window.clearTimeout(connectTimeout);
             console.error(`[Replysis] Mock interview transcription error type=${msg.type ?? "unknown"}`);
-            setRecordingError(LISTENING_UNAVAILABLE);
+            failListening(`speechmatics error ${msg.type ?? "unknown"}`);
             stopRecording();
           }
         };
@@ -1280,7 +1303,7 @@ export default function MockInterviewPage() {
           window.clearTimeout(connectTimeout);
           wsConnectTimeoutRef.current = null;
           console.error("[Replysis] Mock interview transcription socket error");
-          if (!wsClosedPrematurely) setRecordingError(LISTENING_UNAVAILABLE);
+          if (!wsClosedPrematurely) failListening(`${provider} socket error`);
           stopRecording();
         };
         ws.onclose = (ev) => {
@@ -1290,7 +1313,7 @@ export default function MockInterviewPage() {
           wsConnectTimeoutRef.current = null;
           if (!smStartedRef.current && !wsClosedPrematurely) {
             console.error(`[Replysis] Mock interview transcription closed before start code=${ev.code}`);
-            setRecordingError(LISTENING_UNAVAILABLE);
+            failListening(`${provider} closed before start ${ev.code}`);
           }
           stopRecording();
         };
@@ -1300,14 +1323,12 @@ export default function MockInterviewPage() {
     } catch (err) {
       releaseEarlyMic();
       console.error("[Replysis] Mock interview recording failed to start:", (err as Error)?.name ?? "Error");
-      setRecordingError(
-        (err as Error)?.name === "NotAllowedError"
-          ? MIC_BLOCKED
-          : LISTENING_UNAVAILABLE,
-      );
       isRecordingRef.current = false; setIsRecording(false);
+      if ((err as Error)?.name === "NotAllowedError") setRecordingError(MIC_BLOCKED);
+      else failListening(`start ${(err as Error)?.name ?? "Error"}`);
     }
-  }, [stopRecording, resetSilenceTimer, reportListeningMinutes]);
+  }, [stopRecording, resetSilenceTimer, reportListeningMinutes, failListening]);
+  startRecordingRef.current = startRecording;
 
   // ── Submit answer ─────────────────────────────────────────
   const submitAnswer = useCallback(async (finalAns?: string) => {
