@@ -7,7 +7,7 @@ import { auth, db } from "../app/firebaseConfig";
 import { CREDIT_COSTS } from "../app/lib/credits";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, answersFor, answerCount, answersLabel } from "../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, TRIAL_CREDITS, TRIAL_DAYS, answersFor, answerCount, answersLabel } from "../data/productFacts";
 
 type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
@@ -103,6 +103,7 @@ function CreditArc({ pct, color, gradientId }: { pct: number; color: string; gra
 export default function CreditsBadge() {
   const [credits, setCredits] = useState<number | null>(null);
   const [plan, setPlan]       = useState<PlanKey>("free");
+  const [trial, setTrial] = useState(false);
   const [uid, setUid]         = useState<string | null>(null);
   const [open, setOpen]       = useState(false);
   const ref                   = useRef<HTMLDivElement>(null);
@@ -122,6 +123,7 @@ export default function CreditsBadge() {
         const d = snap.data();
         setCredits(d.credits ?? 0);
         setPlan((d.plan || "free") as PlanKey);
+        setTrial(d.planSource === "trial");
       }
     });
     return () => u();
@@ -144,15 +146,17 @@ export default function CreditsBadge() {
 
   if (!uid || credits === null) return null;
 
-  const meta           = PLAN_META[plan] ?? PLAN_META.free;
-  const max            = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+  // The 3 day trial runs on the Pro plan but nobody has paid for it, so it is shown as a free trial, never as Pro (owner,
+  // 2026-10-27: "that's not Pro, it's just the free tier").
+  const meta           = trial ? { ...PLAN_META.free, label: "Free trial" } : PLAN_META[plan] ?? PLAN_META.free;
+  const max            = trial ? TRIAL_CREDITS : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const displayCredits = Math.min(credits, max);
   const pct            = Math.max(0, Math.min(100, Math.round((displayCredits / max) * 100)));
   // In answers, not raw numbers: the trial is five answers, so "low" is two left or fewer and
   // "out" is less than the price of one.
-  const isLow          = plan === "free" && credits <= ANSWER_CREDIT_COST * 2;
-  const isCrit         = plan === "free" && credits < ANSWER_CREDIT_COST;
-  const isPaid         = plan !== "free";
+  const isPaid         = plan !== "free" && !trial;
+  const isLow          = !isPaid && credits <= ANSWER_CREDIT_COST * 2;
+  const isCrit         = !isPaid && credits < ANSWER_CREDIT_COST;
 
   const barColor  = isCrit ? "#ef4444" : isLow ? "#f59e0b" : meta.dropdownAccent;
 
@@ -199,10 +203,10 @@ export default function CreditsBadge() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-black text-gray-900">
-                    {isPaid ? `${meta.label} Plan` : "Starter Plan"}
+                    {isPaid ? `${meta.label} Plan` : trial ? "Free trial" : "Starter Plan"}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
-                    {isPaid ? `${answersLabel(max)} per month` : `${answersFor(max)} free answers, once`}
+                    {isPaid ? `${answersLabel(max)} per month` : trial ? `${answersFor(max)} answers to try everything, for ${TRIAL_DAYS} days` : `${answersFor(max)} free answers, once`}
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"

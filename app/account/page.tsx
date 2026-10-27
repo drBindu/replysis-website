@@ -24,7 +24,7 @@ import {
 import { db } from "../firebaseConfig";
 import { useAuth } from "../../components/AuthProvider";
 import { PageHeader } from "../../components/PageShell";
-import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, answerCount, type PlanId } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, TRIAL_ANSWERS, TRIAL_CREDITS, TRIAL_DAYS, answerCount, type PlanId } from "../../data/productFacts";
 import { MOCK_PLAN } from "../../data/mayaAddon";
 import AnswerPacks from "../../components/AnswerPacks";
 import InterviewMinutes from "../../components/InterviewMinutes";
@@ -158,7 +158,11 @@ export default function AccountPage() {
   // The Practice plan (2026-10-27) sits on a free account: shown as Practice, with its own monthly numbers.
   const practice = plan === "free"
     && (profile?.mockPlan === true || Date.parse(String(profile?.mockPlanUntil ?? "")) > Date.now());
-  const planFacts = practice
+  // The 3 day trial runs on the Pro plan but is free, so it is never called Pro (owner, 2026-10-27).
+  const trial = profile?.planSource === "trial";
+  const planFacts = trial
+    ? { label: "Free trial", summary: `${TRIAL_ANSWERS} answers to try everything, for ${TRIAL_DAYS} days` }
+    : practice
     ? { label: "Practice", summary: "Interviews with Maya and live answers every month" }
     : plan === "lifetime"
     ? { label: "Legacy Lifetime", summary: `${answerCount(PLAN_MONTHLY_CREDITS.lifetime).toLocaleString("en-US")} answers each month` }
@@ -166,10 +170,10 @@ export default function AccountPage() {
       ? { label: "Legacy Teams", summary: `${answerCount(PLAN_MONTHLY_CREDITS.teams).toLocaleString("en-US")} answers each month` }
       : PUBLIC_PLAN_CAPACITY[activePlan];
   const credits = Math.max(0, Number(profile?.credits ?? 0));
-  const cap = practice ? MOCK_PLAN.credits : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+  const cap = trial ? TRIAL_CREDITS : practice ? MOCK_PLAN.credits : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const percentage = Math.max(0, Math.min(100, Math.round((Math.min(credits, cap) / cap) * 100)));
   const hasBillingAccount = typeof profile?.stripeCustomerId === "string" && profile.stripeCustomerId.startsWith("cus_");
-  const isPaid = plan !== "free" || practice;
+  const isPaid = (plan !== "free" && !trial) || practice;
   const paymentNeedsAttention = Boolean(profile?.lastPaymentFailedAt);
   const isCanceling = Boolean(profile?.stripeCancelAtPeriodEnd);
   const billingStatus = useMemo(() => {
