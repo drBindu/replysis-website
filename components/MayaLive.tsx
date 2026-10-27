@@ -119,6 +119,11 @@ export function useMayaLive(active: boolean, getToken?: () => Promise<string | u
         if (cancelled) { void simli.stop().catch(() => {}); return; }
         made = simli as unknown as Client;
         client.current = made;
+        // The iPhone pauses the video when its sound mode changes (the microphone starting or stopping) and her face
+        // froze while her voice went on (Mac Claude, 2026-10-27): while she is connected, a pause is undone at once.
+        const keepPlaying = () => { if (!cancelled && client.current) void videoEl.play().catch(() => {}); };
+        videoEl.addEventListener("pause", keepPlaying);
+        audioEl.addEventListener("pause", () => { if (!cancelled && client.current) void audioEl.play().catch(() => {}); });
         void audioEl.play().catch(() => { /* starts with the next line */ });
         void videoEl.play().catch(() => {});
         setBoth("ready");
