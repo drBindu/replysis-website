@@ -40,5 +40,11 @@ export const MOCK_PLAN = {
   audioMinutesIndia: 60,
 };
 
+/**
+ * Free interviews a day across everyone (owner, 2026-10-26: "what if no one pays and all use free"). About 5 cents each,
+ * so at most about $30 a month even if nobody pays. After that: "Today's free interviews are taken".
+ */
+export const FREE_TASTES_PER_DAY = 20;
+
 /** Live Maya sessions a day, for anyone (not shown; stops one person using a month in a day). */
 export const MAYA_SESSIONS_PER_DAY = 6;

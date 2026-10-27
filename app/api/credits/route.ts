@@ -4,6 +4,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { isPaidPlan, mayaAccess } from "../../lib/paid-plan";
+import { FREE_TASTES_PER_DAY } from "../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -84,13 +85,20 @@ export async function GET(req: Request) {
 
     const data = snap.data()!;
     const maya = mayaAccess(data);
+    // The free interviews of the day are shared by everyone; when they are taken, say so before anyone starts.
+    let tasteFull = false;
+    if (maya.state === "taste") {
+      const today = await db.collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`).get()
+        .then((d) => Number(d.data()?.sessions ?? 0)).catch(() => 0);
+      tasteFull = today >= FREE_TASTES_PER_DAY;
+    }
     return NextResponse.json({
       credits: data.credits ?? 0,
       plan: data.plan ?? "free",
       // A trial account is on Pro but has paid nothing, so it is not paid.
       paid: isPaidPlan(data),
       // The mock interview with Maya: "ok", "free" (needs a plan) or "no_addon" (needs the Maya add-on).
-      maya: maya.state,
+      maya: tasteFull ? "taste_full" : maya.state,
       mayaMonthly: maya.monthly,
       mayaPass: maya.pass,
     });

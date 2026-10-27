@@ -700,12 +700,12 @@ export default function MockInterviewPage() {
   const [taggedQuestions, setTaggedQuestions] = useState<TaggedQuestion[]>([]);
   const [userPlan, setUserPlan]               = useState<string>("free");
   // The mock interview with live Maya needs a paid plan plus the Maya add-on (owner, 2026-10-26); null until known.
-  const [mayaState, setMayaState]             = useState<"ok" | "taste" | "free" | "no_addon" | null>(null);
+  const [mayaState, setMayaState]             = useState<"ok" | "taste" | "taste_full" | "free" | "no_addon" | null>(null);
   // "taste": the one free interview every account gets (3 questions) before the add-on.
   const isPaid = mayaState === null ? null : mayaState === "ok" || mayaState === "taste";
   const taste = mayaState === "taste";
   const setIsPaidFrom = (d: { maya?: unknown } | null | undefined) => {
-    setMayaState(d?.maya === "ok" || d?.maya === "no_addon" || d?.maya === "taste" ? d.maya : "free");
+    setMayaState(d?.maya === "ok" || d?.maya === "no_addon" || d?.maya === "taste" || d?.maya === "taste_full" ? d.maya : "free");
     // The Mock interview plan sits on a free account; in the mock interview it has Pro's question counts and levels.
     if (d?.maya === "ok") setUserPlan((p) => (p === "free" ? "pro" : p));
   };
@@ -1881,8 +1881,11 @@ export default function MockInterviewPage() {
               ) : (
                 <>
                   <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-                    You have used your free interview. The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month,
-                    plus live answers for your real interviews. Pro and Max can add it too.
+                    {mayaState === "taste_full"
+                      ? "Today's free interviews with Maya are taken. Try again tomorrow."
+                      : "You have used your free interview."}{" "}
+                    The Practice plan gives you {MOCK_PLAN.interviews} interviews with Maya every month, plus live answers for your real
+                    interviews. Pro and Max can add it too.
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginTop: 4 }}>
                     <a href="/pricing" style={{ padding: "11px 20px", borderRadius: 10,

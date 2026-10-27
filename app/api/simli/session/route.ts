@@ -11,7 +11,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
-import { MAYA_ADDON, MAYA_SESSIONS_PER_DAY } from "../../../../data/mayaAddon";
+import { FREE_TASTES_PER_DAY, MAYA_ADDON, MAYA_SESSIONS_PER_DAY } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +40,18 @@ export async function POST(req: Request) {
   const taste = access.state === "taste";
   if (taste) {
     const userRef = getFirestore().collection("users").doc(uid);
+    const dayRef = getFirestore().collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`);
     const claimed = await getFirestore().runTransaction(async (tx) => {
-      if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return false;
+      if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return "used";
+      const today = Number((await tx.get(dayRef)).data()?.sessions ?? 0);
+      if (today >= FREE_TASTES_PER_DAY) return "full";
+      tx.set(dayRef, { sessions: today + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       tx.set(userRef, { mayaFreeUsed: true, mayaFreeUsedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return true;
-    }).catch(() => false);
-    if (!claimed) return NextResponse.json({ error: "Free interview already used" }, { status: 403 });
+      return "ok";
+    }).catch(() => "error");
+    if (claimed !== "ok") {
+      return NextResponse.json({ error: claimed === "full" ? "Free interviews full today" : "Free interview already used" }, { status: 403 });
+    }
   }
 
   // Counted per day and per month before the session is made, so a failure to count cannot give free sessions.
