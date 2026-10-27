@@ -701,6 +701,19 @@ export default function MockInterviewPage() {
   const [taggedQuestions, setTaggedQuestions] = useState<TaggedQuestion[]>([]);
   const [userPlan, setUserPlan]               = useState<string>("free");
   // The mock interview with live Maya needs a paid plan plus the Maya add-on (owner, 2026-10-26); null until known.
+  // The Practice price in the visitor's own currency only (owner, 2026-10-27: "detect the country, show their currency"),
+  // from the same /api/geo as the pricing page; dollars until it answers.
+  const [practicePrice, setPracticePrice] = useState(`$${MOCK_PLAN.usd} a month`);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/geo").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (cancelled || !d) return;
+      if (d.country === "IN") setPracticePrice(`₹${MOCK_PLAN.inr} for 1 month`);
+      else if (d.localPrices?.currency && MOCK_PLAN.local[d.localPrices.currency])
+        setPracticePrice(`${d.localPrices.symbol}${MOCK_PLAN.local[d.localPrices.currency]} a month`);
+    }).catch(() => { /* dollars */ });
+    return () => { cancelled = true; };
+  }, []);
   const [mayaState, setMayaState]             = useState<"ok" | "taste" | "taste_full" | "free" | "no_addon" | null>(null);
   // "taste": the one free interview every account gets (3 questions) before the add-on.
   const isPaid = mayaState === null ? null : mayaState === "ok" || mayaState === "taste";
@@ -1987,7 +2000,7 @@ export default function MockInterviewPage() {
                     <li>Live answers for your real interviews</li>
                   </ul>
                   <p style={{ fontSize: 13.5, color: T.textMid, lineHeight: 1.55 }}>
-                    Practice is ${MOCK_PLAN.usd} a month (Rs {MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.
+                    Practice is {practicePrice}. Max includes Maya, and Pro can add her.
                   </p>
                   <a href="/pricing" style={{ alignSelf: "flex-start", marginTop: 2, padding: "13px 24px", borderRadius: 12,
                     background: T.accent, color: "white", fontSize: 15, fontWeight: 800, textDecoration: "none" }}>
