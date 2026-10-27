@@ -248,6 +248,13 @@
 .hv2-price small { font-family: 'Inter', system-ui, sans-serif; font-size: 1rem; letter-spacing: 0; color: var(--faint); }
 .hv2-plan-sub { margin: 8px 0 0; font-size: 0.9rem; color: var(--faint); }
 .hv2-plan-usage { margin: 18px 0 22px; font-size: 1rem; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.hv2-practice-jump { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+  margin-top: 22px; padding: 14px 16px 14px 20px; max-width: 640px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--paper-deep); color: var(--ink); font-size: 0.98rem; line-height: 1.45; text-decoration: none; }
+.hv2-practice-jump:hover { border-color: var(--green); }
+.hv2-practice-jump:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.hv2-practice-jump-cta { padding: 9px 16px; border-radius: 10px; background: var(--green); color: #fff; font-weight: 700;
+  font-size: 0.92rem; white-space: nowrap; }
 .hv2-plan-list { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--line); }
 .hv2-plan-list li { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.97rem; line-height: 1.5; color: var(--muted); }
 .hv2-plan-list li.off { color: var(--faint); }

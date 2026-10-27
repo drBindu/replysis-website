@@ -540,7 +540,13 @@ export default function PricingPage() {
           </p>
           <p className="hv2-fine">{india
             ? "Secure Stripe checkout. Pay once with UPI or card. Nothing renews automatically."
-            : "Secure Stripe checkout. Cancel anytime. Clear monthly limits."}</p>
+            : "Secure Stripe checkout. Cancel anytime."}</p>
+          {/* The Practice plan sits below the main plans; people judge from the top of the page and may never scroll to it
+              (owner, 2026-10-27), so it is named here with a jump to it. */}
+          <a href="#practice" className="hv2-practice-jump">
+            <span>Only want practice interviews with Maya? <strong>Practice is {practicePrice} {india ? "for 1 month" : "a month"}.</strong></span>
+            <span className="hv2-practice-jump-cta">See Practice</span>
+          </a>
         </div>
       </section>
 
@@ -669,7 +675,7 @@ export default function PricingPage() {
       </section>
 
       {/* ══ PRACTICE PLAN ═════════════════════════════════════════════════ */}
-      <section className="hv2-section" style={{ paddingTop: 24 }}>
+      <section id="practice" className="hv2-section" style={{ paddingTop: 24, scrollMarginTop: 90 }}>
         <div className="hv2-wide">
           <div className="hv2-plan" style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ flex: "1 1 340px", minWidth: 0 }}>
