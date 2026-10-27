@@ -1291,7 +1291,9 @@ export async function POST(req: Request) {
           `- Score 0-10: clarity, confidence, relevance\n` +
           `- strengths: 2-3 specific things that worked\n` +
           `- improvements: exact wording tips\n` +
-          `- betterAnswerExample: SHORT (3-5 sentences), REAL resume facts\n` +
+          `- betterAnswerExample: SHORT (3-5 sentences), REAL resume facts, in the first person as the candidate. Use the ` +
+          `candidate's own name and facts from the answer and the resume. Never use placeholders or brackets like [Your Name] ` +
+          `or [X]; where a fact is unknown, write a natural, believable example a real person could say.\n` +
           `- resume_proof: resume details used`;
         const userPrompt = `RESUME:\n${safeResume}\n\nJD:\n${safeJd || "N/A"}\n\nQ:\n${safeQ}\n\nANSWER:\n${safeA}`;
         const rawContent = await callLLM(selectedModel, systemPrompt, userPrompt, { temperature: 0.3, max_tokens: 400, json: true });
@@ -1349,8 +1351,13 @@ export async function POST(req: Request) {
         // Owner, 2026-10-25: on a phone in a room, background voices reached the transcript as jumbled words and she told the
         // candidate off every turn with the one example sentence this prompt gave her. Noise is now noise, and her words are her own.
         `What the candidate said is a live speech transcript from a phone. It can contain background voices, a TV, other ` +
-        `people, half sentences and misheard words. Jumbled, unrelated or half-finished text is noise, not the candidate ` +
-        `being rude: say naturally that you did not quite catch it and ask again (action "repeat").\n` +
+        `people, half sentences and misheard words. Only text that is clearly jumbled or unrelated is noise: then say ` +
+        `naturally that you did not quite catch it and ask again (action "repeat").\n` +
+        // Owner, 2026-10-27: "My name is Pawan" got "I didn't catch that". A short answer that makes sense is a person talking.
+        `A short answer that makes sense is NOT noise. Respond to it exactly as a person would in a real conversation. ` +
+        `If they only told you their name, greet them by it warmly (for example: Nice to meet you, Pawan.) and invite them, ` +
+        `in your own words, to tell you a bit more, like their background or what they do now (action "follow_up"). If any ` +
+        `short answer is too thin, react to what they did say, then ask for the missing part naturally (action "follow_up").\n` +
         `Only if the candidate is clearly and directly rude, insulting or crude toward you or the interview, react like a real ` +
         `interviewer would, calm and firm, in your own words (never the same sentence twice). You have already had to do this ` +
         `${warnings} time(s); after two, you may end the interview politely (action "end"). Otherwise never mention professionalism.\n` +
