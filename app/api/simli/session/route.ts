@@ -49,24 +49,18 @@ export async function POST(req: Request) {
   if (!access || (access.state !== "ok" && access.state !== "taste" && !rejoin)) {
     return NextResponse.json({ error: "Maya add-on required" }, { status: 403 });
   }
-  // The free interview is used up the moment its session is made (claimed in a transaction, so two tabs cannot both
-  // have it), and it is short.
+  // The free interview now joins on the check screen, like a paid one, so Maya is already there at Begin (owner,
+  // 2026-10-27: "make it more speed"; she took 9 s to appear after Begin). Joining no longer uses it up: /api/simli/begin
+  // claims it when the interview starts. Here only: not used, the day not full, and at most 4 joins a day per person, so
+  // joining without beginning cannot become free video.
   const taste = access.state === "taste" || rejoin;
   if (taste && !rejoin) {
-    const userRef = getFirestore().collection("users").doc(uid);
-    const dayRef = getFirestore().collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`);
-    const claimed = await getFirestore().runTransaction(async (tx) => {
-      if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return "used";
-      const today = Number((await tx.get(dayRef)).data()?.sessions ?? 0);
-      if (today >= FREE_TASTES_PER_DAY) return "full";
-      // The owner's test accounts (tester: true) must not use up the day's free interviews for real people.
-      if (userData?.tester !== true) tx.set(dayRef, { sessions: today + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      tx.set(userRef, { mayaFreeUsed: true, mayaFreeUsedAt: FieldValue.serverTimestamp() }, { merge: true });
-      return "ok";
-    }).catch(() => "error");
-    if (claimed !== "ok") {
-      return NextResponse.json({ error: claimed === "full" ? "Free interviews full today" : "Free interview already used" }, { status: 403 });
-    }
+    const today = Number(await getFirestore().collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`).get()
+      .then((d) => d.data()?.sessions ?? 0).catch(() => 0));
+    if (today >= FREE_TASTES_PER_DAY) return NextResponse.json({ error: "Free interviews full today" }, { status: 403 });
+    const joins = Number(await getFirestore().collection("avatar_usage").doc(`${uid}_${new Date().toISOString().slice(0, 10)}`).get()
+      .then((d) => d.data()?.sessions ?? 0).catch(() => 0));
+    if (joins >= 4 && userData?.tester !== true) return NextResponse.json({ error: "Too many tries today" }, { status: 429 });
   }
 
   // Interviews are counted when one starts (/api/simli/begin), never here. Here: the month's interviews must not all be
@@ -117,7 +111,8 @@ export async function POST(req: Request) {
         faceId: test.faceId,
         apiVersion: "v2",
         handleSilence: true,
-        maxSessionLength: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS,
+        // A free one joins on the check screen, so it gets the interview's 5 minutes plus 2 for the checks.
+        maxSessionLength: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds + 120 : MAX_SESSION_SECONDS,
         maxIdleTime: MAX_IDLE_SECONDS,
         audioInputFormat: "pcm16",
         // A Trinity-2 face (SIMLI_FACE_KIND=trinity2) can stream the shape of the screen it is shown on: wide for a
@@ -139,7 +134,7 @@ export async function POST(req: Request) {
     // (owner, 2026-10-27: "not fit window full"). SIMLI_FACE_FIT=cover for the live face; &fit=cover in a private test.
     const fitParam = internal && testFace ? params.get("fit") : null;
     const fit = (fitParam ?? process.env.SIMLI_FACE_FIT) === "cover" ? "cover" : "contain";
-    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds : MAX_SESSION_SECONDS, fit },
+    return NextResponse.json({ sessionToken: data.session_token, maxSeconds: rejoin ? rejoinLeft : taste ? MAYA_ADDON.tasteSeconds + 120 : MAX_SESSION_SECONDS, fit },
       { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[simli] token request error:", (e as Error)?.name ?? "Error");

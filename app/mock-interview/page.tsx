@@ -1421,8 +1421,9 @@ export default function MockInterviewPage() {
   // Maya's face speaks the question: the voice comes from our server as audio, so her mouth can follow it exactly. If that
   // voice cannot be had, the browser's own woman's voice speaks and the face makes a general talking movement instead.
   // Maya joins on the check screen, so she is on the call when the interview begins (paid users only).
-  // The free interview joins only at Begin: joining is what uses it up, and someone may still go back from the checks.
-  const maya = useMayaLive(isPaid === true && (phase === "interview" || (phase === "ready" && !taste)));
+  // Every interview joins on the check screen, the free one too (2026-10-27: it joined at Begin and took 9 s to appear);
+  // the free one is claimed at Begin by /api/simli/begin, not by joining.
+  const maya = useMayaLive(isPaid === true && (phase === "interview" || phase === "ready"));
   const faceRef = useRef(maya.face);
   // Her video takes up to ~10 s to join (the free interview only starts joining at Begin), and her voice used to start
   // first, so she talked from an empty tile (owner, 2026-10-27). Her lines wait for her face, up to 30 s.

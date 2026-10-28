@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
+import { mayaAccess } from "../../../lib/paid-plan";
+import { FREE_TASTES_PER_DAY } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,22 @@ export async function POST(req: Request) {
   const db = getFirestore();
   const user = await db.collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
   if (user?.internal === true) return NextResponse.json({ ok: true });
+  // The free interview is claimed here, when it starts, not when Maya joins (she joins on the check screen now), in a
+  // transaction so two tabs cannot both have it. The owner's test accounts (tester: true) do not use the day's count.
+  const access = user ? mayaAccess(user) : null;
+  if (access?.state === "taste") {
+    const userRef = db.collection("users").doc(uid);
+    const dayRef = db.collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`);
+    const claimed = await db.runTransaction(async (tx) => {
+      if ((await tx.get(userRef)).data()?.mayaFreeUsed === true) return "used";
+      const today = Number((await tx.get(dayRef)).data()?.sessions ?? 0);
+      if (today >= FREE_TASTES_PER_DAY) return "full";
+      if (user?.tester !== true) tx.set(dayRef, { sessions: today + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      tx.set(userRef, { mayaFreeUsed: true, mayaFreeUsedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return "ok";
+    }).catch(() => "error");
+    return NextResponse.json({ ok: claimed === "ok", free: claimed });
+  }
   const month = new Date().toISOString().slice(0, 7);
   const monthRef = db.collection("avatar_usage").doc(`${uid}_${month}`);
   await db.runTransaction(async (tx) => {
