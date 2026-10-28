@@ -91,7 +91,8 @@ export async function POST(req: Request) {
     const events = await db.collection("usage_events").where("identityId", "==", doc.id).get();
     const actions = events.docs.map((e) => String(e.data().action ?? ""));
     const answers = actions.filter((a) => a === "answer" || a === "screen").length;
-    const mock = actions.some((a) => a === "question_generation" || a.startsWith("mock_"));
+    // A Maya interview counts as trying it: cyberguru8095 had one and got the "get the app" email (2026-10-28).
+    const mock = d.mayaFreeUsed === true || actions.some((a) => a === "question_generation" || a.startsWith("mock_"));
     const appOpened = !!ms(d.appOpenedAt) || d.lastPlatform === "windows" || d.lastPlatform === "mac";
     const kind: Kind | null = answers > 0 ? null : appOpened ? "no-answer" : mock ? "mock-only" : "no-app";
     const masked = to.replace(/^(.{3}).*@/, "$1***@");

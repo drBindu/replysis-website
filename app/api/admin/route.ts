@@ -737,13 +737,21 @@ export async function GET(req: Request) {
     const days = Math.min(3650, Math.max(1, Number(query.get("days")) || 7));
     const since = new Date(Date.now() - days * 86_400_000);
     try {
-      const [userSnap, useSnap, actSnap, buySnap, passSnap] = await Promise.all([
+      const [userSnap, useSnap, actSnap, buySnap, passSnap, mayaSnap] = await Promise.all([
         db.collection("users").where("lastActive", ">=", since).limit(400).get(),
         db.collection("usage_events").where("createdAt", ">", since).limit(5000).get(),
         db.collection("activity_events").where("createdAt", ">", since).limit(5000).get(),
         db.collection("minute_purchases").get(),
         db.collection("plan_passes").get(),
+        // Paid Maya interviews (one document per person and month). The free one is on the user (mayaFreeUsedAt).
+        db.collection("avatar_usage").where("updatedAt", ">=", since).limit(1000).get(),
       ]);
+      // A customer who had a Maya interview showed as "Signed up, did nothing" (2026-10-28): Maya was never counted.
+      const mayaPaid = new Map<string, number>();
+      for (const d of mayaSnap.docs) {
+        const m = d.data();
+        if (typeof m.uid === "string") mayaPaid.set(m.uid, (mayaPaid.get(m.uid) ?? 0) + (Number(m.interviews) || 0));
+      }
       type Use = { answers: number; screens: number; mock: number; resume: number; refunds: number; ms: number[]; firstAt: number; lastAnswerAt: number };
       const use = new Map<string, Use>();
       for (const d of useSnap.docs) {
@@ -789,6 +797,8 @@ export async function GET(req: Request) {
         const paidInr = bought.get(doc.id) ?? 0;
         const paid = paidInr > 0 || ["pro", "max", "lifetime", "teams"].includes(plan);
         const got = (u?.answers ?? 0) + (u?.screens ?? 0);
+        const freeAt = anyMs(d.mayaFreeUsedAt);
+        const maya = (mayaPaid.get(doc.id) ?? 0) + (d.mayaFreeUsed === true && freeAt && freeAt >= since.getTime() ? 1 : 0);
         // The app's own minute pings (lastPlatform, lastAppVersion) count too: the activity log alone showed "not opened"
         // for a customer who got answers in the Windows app (2026-10-23). The newer of the two wins.
         const pinged = (d.lastPlatform === "windows" || d.lastPlatform === "mac") && anyMs(d.lastAppSeenAt)
@@ -797,7 +807,7 @@ export async function GET(req: Request) {
         const app = pinged && pinged.at >= (appsAt.get(doc.id) ?? -1) ? pinged.label : apps.get(doc.id) ?? pinged?.label ?? null;
         const result =
           got > 0 ? "got-answers"
-          : (u?.mock ?? 0) + (u?.resume ?? 0) > 0 ? "website-only"
+          : (u?.mock ?? 0) + (u?.resume ?? 0) + maya > 0 ? "website-only"
           // Pressed Start (listening was reported) but no answer is a real problem; opened and never pressed Start is not
           // (2026-10-23: all four "no answer" people had never pressed Start, and the red label read as a failure).
           : app ? (anyMs(d.lastListeningAt) || Number(d.audioMinutesUsed) > 0 ? "app-no-answer" : "app-not-started")
@@ -806,7 +816,7 @@ export async function GET(req: Request) {
           id: doc.id, email: typeof d.email === "string" ? d.email : null, internal: d.internal === true,
           joined: anyMs(d.createdAt), lastSeen: anyMs(d.lastActive), plan, paid, paidInr,
           minutesLeft: Number(d.minutesBalance) || 0, answersLeft: Math.floor((Number(d.credits) || 0) / 5),
-          app, answers: u?.answers ?? 0, screens: u?.screens ?? 0, mock: u?.mock ?? 0, resume: u?.resume ?? 0,
+          app, answers: u?.answers ?? 0, screens: u?.screens ?? 0, mock: u?.mock ?? 0, resume: u?.resume ?? 0, maya,
           refunds: u?.refunds ?? 0, medianMs: median(u?.ms ?? []), slowest: u?.ms.length ? Math.max(...u.ms) : null,
           lastAnswerAt: u?.lastAnswerAt || null, result,
         };

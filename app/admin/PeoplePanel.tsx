@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 type Person = {
   id: string; email: string | null; internal: boolean; joined: number | null; lastSeen: number | null;
   plan: string; paid: boolean; paidInr: number; minutesLeft: number; answersLeft: number; app: string | null;
-  answers: number; screens: number; mock: number; resume: number; refunds: number;
+  answers: number; screens: number; mock: number; resume: number; maya?: number; refunds: number;
   medianMs: number | null; slowest: number | null; lastAnswerAt: number | null;
   result: "got-answers" | "website-only" | "app-not-started" | "app-no-answer" | "signed-up-only";
 };
@@ -154,7 +154,7 @@ export default function PeoplePanel() {
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-zinc-300">{p.answers || <span className="text-zinc-700">0</span>}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-zinc-300">{p.screens || <span className="text-zinc-700">0</span>}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-zinc-400">{p.mock + p.resume || <span className="text-zinc-700">0</span>}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-zinc-400">{p.mock + p.resume + (p.maya ?? 0) || <span className="text-zinc-700">0</span>}</td>
                 <td className="px-3 py-2 text-right tabular-nums"><Speed ms={p.medianMs} /></td>
                 <td className="px-3 py-2 text-zinc-400">{p.app ?? <span className="text-zinc-700">not opened</span>}</td>
                 <td className="px-3 py-2">
