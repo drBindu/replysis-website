@@ -1031,12 +1031,14 @@ export default function MockInterviewPage() {
         early.catch(() => { /* reported where it is used */ });
         earlyMicRef.current = early;
       }
+      // The body is read at once: the 15 s limit also covers reading it, and a key read later, when a long line had
+      // ended, was cancelled ("start TimeoutError", the owner's "listening is temporarily unavailable", 2026-10-27).
       const response = fetch("/api/mock-interview/stt-token", {
         method: "GET",
         cache: "no-store",
         headers: { Authorization: `Bearer ${idToken}` },
         signal: AbortSignal.timeout(15_000),
-      });
+      }).then(async (r) => new Response(await r.text(), { status: r.status, headers: r.headers }));
       response.catch(() => { /* startRecording asks again */ });
       listenPrepRef.current = { at: Date.now(), idToken, response };
     } catch { /* startRecording does it the normal way */ }
