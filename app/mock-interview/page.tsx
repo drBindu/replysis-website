@@ -838,7 +838,16 @@ export default function MockInterviewPage() {
   const setupAndFeedbackCredits = CREDIT_ACTION_COSTS.question_generation + estimatedCredits;
   const maxQ              = taste ? MAYA_ADDON.tasteQuestions : PLAN_MAX_QUESTIONS[userPlan] ?? MAX_QUESTIONS_FREE;
   const sliderPct         = Math.round(((questionCount - MIN_QUESTIONS) / Math.max(maxQ - MIN_QUESTIONS, 1)) * 100);
-  const currentQ          = questions[index] ?? "Tell me about yourself.";
+  // What Maya actually asked for this question, in her words (owner, 2026-10-27: the card showed the old list text
+  // while she asked something else, and the suggested answer followed the old text). Only the question part of her
+  // line: the last sentence that asks something.
+  const [askedText, setAskedText] = useState<Record<number, string>>({});
+  const followUpIndexes = useRef(new Set<number>());
+  const currentQ          = askedText[index] ?? questions[index] ?? "Tell me about yourself.";
+  // Follow-ups are part of the question they dig into, not new questions: "Question 2 of 3", never 5 of 8.
+  const baseTotal         = Math.max(1, questions.length - followUpIndexes.current.size);
+  const baseIndex         = [...Array(index + 1).keys()].filter((k) => !followUpIndexes.current.has(k)).length;
+  const isFollowUp        = followUpIndexes.current.has(index);
   const totalQ            = questions.length || 1;
   const progress          = ((index + 1) / totalQ) * 100;
   const avgScore          = scores.length > 0
@@ -1504,7 +1513,8 @@ export default function MockInterviewPage() {
     const isLast = i >= list.length - 1;
     const baseCount = list.length - followUpIndexes.current.size;
     const canFollowUp = !isLast && !followUpIndexes.current.has(i)
-      && followUpsAsked.current < Math.max(1, Math.ceil(baseCount / 2));
+      // One follow-up per three questions (at least one): with one per two, a 5 question interview became 8 (2026-10-27).
+      && followUpsAsked.current < Math.max(1, Math.floor(baseCount / 3));
     return { question: list[i] ?? "", answer, nextQuestion: isLast ? "" : list[i + 1], canFollowUp };
   };
   const earlyTurn = useRef<{ key: string; turn: Promise<MayaTurn | null> } | null>(null);
@@ -1586,12 +1596,22 @@ export default function MockInterviewPage() {
       window.speechSynthesis.speak(utter);
     });
   }, [ttsEnabled, startRecording, fetchVoice, prepareListening]);
-  const speakQuestion = useCallback((text: string) => speakLine(text, true), [speakLine]);
+  // `at` is the question this line asks, so the card and the suggested answer show what she really asked.
+  const speakQuestion = useCallback((text: string, at?: number) => {
+    if (typeof at === "number" && text) {
+      const parts = text.split(/(?<=[.!?])\s+/);
+      let k = parts.length - 1;
+      while (k >= 0 && !parts[k].includes("?")) k--;
+      const asked = k >= 0 ? parts.slice(k).join(" ") : text;
+      setAskedText((prev) => ({ ...prev, [at]: asked }));
+    }
+    return speakLine(text, true);
+  }, [speakLine]);
 
   // ── Suggested answer for the current question, made when the eye is on ──
   useEffect(() => {
     if (!showSuggested || phase !== "interview") return;
-    const q = questions[index];
+    const q = askedText[index] ?? questions[index];
     if (!q || suggestions[q]) return;
     setSuggestions(prev => ({ ...prev, [q]: { text: "", loading: true } }));
     void (async () => {
@@ -1603,13 +1623,12 @@ export default function MockInterviewPage() {
         setSuggestions(prev => ({ ...prev, [q]: { text: "", loading: false, failed: true } }));
       }
     })();
-  }, [showSuggested, phase, questions, index, suggestions, resumeText, jdText, selectedModel]);
+  }, [showSuggested, phase, questions, index, suggestions, resumeText, jdText, selectedModel, askedText]);
 
   // ── After an answer (real interview mode) ────────────────
   // Maya's reply was asked for at the candidate's first pause, so usually it is already there. It decides what happens:
   // a reaction and the next question in her words, one follow-up on what they said (inserted as its own question, so it
   // gets its own feedback), the question again in simpler words, or a goodbye. Without a reply: the plain next question.
-  const followUpIndexes = useRef(new Set<number>());
   const continueAfterAnswer = async (i: number, question: string, answer: string) => {
     const list = questionsRef.current;
     const isLast = i >= list.length - 1;
@@ -1630,13 +1649,13 @@ export default function MockInterviewPage() {
       setQuestions(updated);
       setIndex(i + 1);
       resetAnswer();
-      void speakQuestion(turn.say);
+      void speakQuestion(turn.say, i + 1);
       prepareAfter(i + 1);
       return;
     }
     if (turn?.action === "repeat") {
       resetAnswer();
-      void speakQuestion(turn.say);
+      void speakQuestion(turn.say, i);
       return;
     }
     if (isLast || turn?.action === "end") {
@@ -1647,7 +1666,7 @@ export default function MockInterviewPage() {
     }
     setIndex(i + 1);
     resetAnswer();
-    void speakQuestion(turn?.say ?? list[i + 1]);
+    void speakQuestion(turn?.say ?? list[i + 1], i + 1);
     prepareAfter(i + 1);
   };
   const continueAfterAnswerRef = useRef(continueAfterAnswer);
@@ -1667,7 +1686,7 @@ export default function MockInterviewPage() {
     setIndex(next);
     setAnswer(""); answerRef.current = "";
     setPartial(""); setFeedback(null); setShowFeedback(false); setFeedbackFailed(false);
-    setTimeout(() => { void speakQuestion(questions[next]); prepareAfter(next); }, 150);
+    setTimeout(() => { void speakQuestion(questions[next], next); prepareAfter(next); }, 150);
   };
 
   // ── Auto mode: after the score and the better answer have been up for a while, the next question starts by itself ──
@@ -1815,11 +1834,14 @@ export default function MockInterviewPage() {
     prepareAfter(0);
     mayaHistory.current = [];
     mayaWarnings.current = 0;
+    setAskedText({});
+    followUpIndexes.current = new Set();
+    followUpsAsked.current = 0;
     const first = questions[0] ?? "Tell me about yourself.";
     const opening = openingTurn.current ?? mayaTurn({ opening: true, question: first, answer: "", nextQuestion: "", canFollowUp: false });
     openingTurn.current = null;
     void maya.whenReady(25_000).then(() => opening)
-      .then((t) => speakQuestion(t?.say ?? first));
+      .then((t) => speakQuestion(t?.say ?? first, 0));
   };
 
   // ── File upload ────────────────────────────────────────────
@@ -2529,7 +2551,7 @@ export default function MockInterviewPage() {
                       <Clock size={10} style={{ display: "inline", marginRight: 4 }} />{formatTime(sessionTime)}
                     </span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: T.textMid }}>
-                      {index + 1} / {totalQ}
+                      {Math.max(1, baseIndex)} / {baseTotal}
                     </span>
                     <button onClick={toggleCallView}
                       title={callView ? "Exit full screen" : "Full screen: just you and the interviewer"}
@@ -2751,7 +2773,7 @@ export default function MockInterviewPage() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: T.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                        Question {index + 1} of {totalQ}
+                        Question {Math.max(1, baseIndex)} of {baseTotal}{isFollowUp ? " · follow-up" : ""}
                       </span>
                       {taggedQuestions[index] && (
                         <DifficultyBadge

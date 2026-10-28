@@ -1261,7 +1261,8 @@ export async function POST(req: Request) {
           `You're helping someone practice their interview. Write a natural, conversational answer.\n` +
           `Return ONLY this JSON: {"betterAnswerExample":"...","resume_proof":"..."}\n` +
           `- 3-5 sentences max, SHORT and SPECIFIC\n` +
-          `- Use REAL facts from the resume\n` +
+          `- Use REAL facts from the resume. Never placeholders like XYZ, Acme Corp, [Company] or [X]: without a resume, ` +
+          `write a natural, believable answer a real person in this role could give, in the first person\n` +
           `- Start: "Yeah so...", "So for that..."\n` +
           `- resume_proof: specific resume detail used`;
         const userPrompt = `RESUME:\n${safeResume}\n\nJD:\n${safeJd || "N/A"}\n\nQ:\n${safeQ}\n\nANSWER:\n${safeA}`;
