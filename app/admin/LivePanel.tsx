@@ -22,10 +22,10 @@ export type LiveEvent = {
   detail: string;
   more?: string;
   credits?: number;
-  app?: "windows" | "mac";
+  app?: "windows" | "mac" | "android" | "ios";
 };
 
-type AppKind = "windows" | "mac" | "app" | "web";
+type AppKind = "windows" | "mac" | "android" | "ios" | "app" | "web";
 
 type OnlineUser = {
   id: string; email: string | null; plan: string;
@@ -81,15 +81,18 @@ export function overallState(systems: Systems | undefined): PartState | "unknown
 const APP_LOOK: Record<AppKind, { label: string; tone: string }> = {
   windows: { label: "Windows",            tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
   mac:     { label: "Mac",                tone: "border-violet-500/30 bg-violet-500/10 text-violet-300" },
+  android: { label: "Android phone",      tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
+  ios:     { label: "iPhone",             tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
   app:     { label: "App, older version", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
   web:     { label: "Website",            tone: "border-white/10 bg-white/5 text-zinc-400" },
 };
 
-type Filter = "all" | "answers" | "screens" | "people" | "problems";
+type Filter = "all" | "answers" | "screens" | "phone" | "people" | "problems";
 const FILTERS: Array<[Filter, string, (e: LiveEvent) => boolean]> = [
   ["all",      "Everything",   () => true],
   ["answers",  "Answers",      (e) => e.kind === "answer"],
   ["screens",  "Screen reads", (e) => e.kind === "screen"],
+  ["phone",    "Phone app",    (e) => e.app === "android" || e.app === "ios"],
   ["people",   "People",       (e) => e.kind === "signup" || e.kind === "download"],
   ["problems", "Problems",     (e) => e.kind === "error" || e.kind === "refund" || e.kind === "alert"],
 ];
@@ -310,11 +313,11 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
     [online],
   );
   const byApp = useMemo(() => {
-    const n = { windows: 0, mac: 0, app: 0, web: 0 } as Record<AppKind, number>;
+    const n = { windows: 0, mac: 0, android: 0, ios: 0, app: 0, web: 0 } as Record<AppKind, number>;
     for (const u of online) for (const w of u.where) n[w.app] += 1;
     return n;
   }, [online]);
-  const appSummary = (["windows", "mac", "app", "web"] as AppKind[])
+  const appSummary = (["windows", "mac", "android", "ios", "app", "web"] as AppKind[])
     .filter((k) => byApp[k] > 0)
     .map((k) => `${byApp[k]} ${k === "app" ? "older app" : APP_LOOK[k].label}`)
     .join(", ");

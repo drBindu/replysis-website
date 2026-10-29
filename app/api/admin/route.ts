@@ -347,9 +347,24 @@ type LiveEvent = {
   who: string | null;
   detail: string;
   credits?: number;
-  app?: "windows" | "mac";
+  app?: AppName;
   more?: string;   // the app's setup lines for a problem
 };
+
+// The phone app sends "android" or "ios" (2026-10-24); admin only knew Windows and Mac, so phone users showed with no app (2026-10-28).
+type AppName = "windows" | "mac" | "android" | "ios";
+function appName(p: unknown): AppName | undefined {
+  return p === "windows" || p === "mac" || p === "android" || p === "ios" ? p : undefined;
+}
+// A problem report carries no platform field, only the os text ("android 35", "ios 18.1", "Microsoft Windows NT ...").
+function appOfReport(d: Record<string, unknown>): AppName | undefined {
+  const os = typeof d.os === "string" ? d.os.toLowerCase() : "";
+  if (os.startsWith("android")) return "android";
+  if (os.startsWith("ios")) return "ios";
+  if (os.includes("windows")) return "windows";
+  if (os.includes("mac") || os.includes("darwin")) return "mac";
+  return undefined;
+}
 
 // An app tells the server who it is (platform and version) whenever it makes an account call, and the server writes that down at
 // most every ten minutes. Only builds that predate the once-a-minute "I am open" ping are judged by it, so it keeps a long window.
@@ -361,7 +376,7 @@ const PRESENCE_WINDOW_MS = 120_000;
 // How far lastActive may run ahead of the last ping before something other than a pinging surface must be writing it.
 const UNEXPLAINED_GAP_MS = 90_000;
 
-type Surface = { app: "windows" | "mac" | "app" | "web"; version: string };
+type Surface = { app: AppName | "app" | "web"; version: string };
 
 /**
  * Where a person is open right now, as a list, because one person can have the website and an app open together.
@@ -377,13 +392,13 @@ type Surface = { app: "windows" | "mac" | "app" | "web"; version: string };
 function surfacesOf(d: Record<string, unknown>, now: number): Surface[] {
   const out: Surface[] = [];
   const version = typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "";
-  const platform = d.lastPlatform;
+  const platform = appName(d.lastPlatform);
 
   const appAt = anyMs(d.lastAppAt);
   const webAt = anyMs(d.lastWebAt);
   const here = (at: number | null, left: number | null) => !!at && now - at <= PRESENCE_WINDOW_MS && !(left && left >= at);
 
-  if (here(appAt, anyMs(d.lastAppLeftAt)) && (platform === "windows" || platform === "mac")) out.push({ app: platform, version });
+  if (here(appAt, anyMs(d.lastAppLeftAt)) && platform) out.push({ app: platform, version });
   if (here(webAt, anyMs(d.lastWebLeftAt))) out.push({ app: "web", version: "" });
   if (out.length > 0) return out;
 
@@ -392,7 +407,7 @@ function surfacesOf(d: Record<string, unknown>, now: number): Surface[] {
   if (explainedUntil > 0 && lastActive - explainedUntil <= UNEXPLAINED_GAP_MS) return [];
 
   const seenAt = anyMs(d.lastAppSeenAt);
-  if ((platform === "windows" || platform === "mac") && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) return [{ app: platform, version }];
+  if (platform && seenAt && now - seenAt <= APP_SEEN_WINDOW_MS) return [{ app: platform, version }];
   const listeningAt = anyMs(d.lastListeningAt);
   if (listeningAt && now - listeningAt <= APP_SEEN_WINDOW_MS) return [{ app: "app", version: "" }];
   return [{ app: "web", version: "" }];
@@ -501,7 +516,7 @@ async function liveView(db: Firestore, sinceMs: number) {
         : action === "mock_feedback" ? "feedback on an answer"
         : action === "mock_script" ? "a suggested answer"
         : model, credits,
-      app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
+      app: appName(d.platform),
     });
   }
 
@@ -534,6 +549,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     events.push({
       id: `e:${doc.id}`, kind: "error", at, who: typeof d.user === "string" && d.user ? d.user : null,
       detail: `${typeof d.version === "string" ? `v${d.version} ` : ""}${bits}`.slice(0, 220),
+      app: appOfReport(d),
       // The app's own setup lines for this problem (devices found, Windows' error text), from 1.0.41 on.
       ...(typeof d.detail === "string" && d.detail ? { more: d.detail.slice(0, 6000) } : {}),
     });
@@ -579,7 +595,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     events.push({
       id: `p:${doc.id}`, kind: bad ? "error" : "screen", at, who,
       detail: typeof d.detail === "string" ? d.detail.slice(0, 200) : "",
-      app: d.platform === "windows" || d.platform === "mac" ? d.platform : undefined,
+      app: appName(d.platform),
     });
   }
 
@@ -590,7 +606,7 @@ async function liveView(db: Firestore, sinceMs: number) {
     const lastListening = anyMs(d.lastListeningAt);
     const appLeft = anyMs(d.lastAppLeftAt);
     const where = surfacesOf(d, now);
-    const appOpen = where.some((w) => w.app === "windows" || w.app === "mac");
+    const appOpen = where.some((w) => w.app !== "web" && w.app !== "app");
     // Listening is what the app says right now (it tells the server the moment a session starts or stops), or a minute of audio
     // reported lately, unless the app has been closed since.
     const reportedLately = lastListening !== null && lastListening >= activeSince.getTime() && !(appLeft && appLeft >= lastListening);
@@ -619,7 +635,7 @@ async function liveView(db: Firestore, sinceMs: number) {
       id: doc.id,
       email: typeof d.email === "string" ? d.email : null,
       plan: d.planSource === "trial" ? "trial" : typeof d.plan === "string" ? d.plan : "free",
-      app: viaApp ? (d.lastPlatform === "mac" ? "mac" : "windows") : "web",
+      app: viaApp ? appName(d.lastPlatform) ?? "windows" : "web",
       version: viaApp && typeof d.lastAppVersion === "string" ? d.lastAppVersion.slice(0, 24) : "",
       leftAt,
       openedAt: openedAt && leftAt && openedAt < leftAt ? openedAt : null,
@@ -801,7 +817,7 @@ export async function GET(req: Request) {
         const maya = (mayaPaid.get(doc.id) ?? 0) + (d.mayaFreeUsed === true && freeAt && freeAt >= since.getTime() ? 1 : 0);
         // The app's own minute pings (lastPlatform, lastAppVersion) count too: the activity log alone showed "not opened"
         // for a customer who got answers in the Windows app (2026-10-23). The newer of the two wins.
-        const pinged = (d.lastPlatform === "windows" || d.lastPlatform === "mac") && anyMs(d.lastAppSeenAt)
+        const pinged = appName(d.lastPlatform) && anyMs(d.lastAppSeenAt)
           ? { at: anyMs(d.lastAppSeenAt) ?? 0, label: `${d.lastPlatform} ${typeof d.lastAppVersion === "string" ? d.lastAppVersion : ""}`.trim() }
           : null;
         const app = pinged && pinged.at >= (appsAt.get(doc.id) ?? -1) ? pinged.label : apps.get(doc.id) ?? pinged?.label ?? null;
