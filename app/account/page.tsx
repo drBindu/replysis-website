@@ -24,7 +24,7 @@ import {
 import { db } from "../firebaseConfig";
 import { useAuth } from "../../components/AuthProvider";
 import { PageHeader } from "../../components/PageShell";
-import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, TRIAL_ANSWERS, TRIAL_CREDITS, TRIAL_DAYS, answerCount, type PlanId } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, PUBLIC_PLAN_CAPACITY, TRIAL_ANSWERS, TRIAL_CREDITS, TRIAL_LENGTH, answerCount, type PlanId } from "../../data/productFacts";
 import { MOCK_PLAN } from "../../data/mayaAddon";
 import AnswerPacks from "../../components/AnswerPacks";
 import InterviewMinutes from "../../components/InterviewMinutes";
@@ -158,10 +158,10 @@ export default function AccountPage() {
   // The Practice plan (2026-10-27) sits on a free account: shown as Practice, with its own monthly numbers.
   const practice = plan === "free"
     && (profile?.mockPlan === true || Date.parse(String(profile?.mockPlanUntil ?? "")) > Date.now());
-  // The 3 day trial runs on the Pro plan but is free, so it is never called Pro (owner, 2026-10-27).
+  // The 1 day trial runs on the Pro plan but is free, so it is never called Pro (owner, 2026-10-27).
   const trial = profile?.planSource === "trial";
   const planFacts = trial
-    ? { label: "Free trial", summary: `${TRIAL_ANSWERS} answers to try everything, for ${TRIAL_DAYS} days` }
+    ? { label: "Free trial", summary: `${TRIAL_ANSWERS} answers to try everything, for ${TRIAL_LENGTH}` }
     : practice
     ? { label: "Practice", summary: "Interviews with Maya and live answers every month" }
     : plan === "lifetime"

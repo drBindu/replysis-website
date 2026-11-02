@@ -7,7 +7,7 @@ import { auth, db } from "../app/firebaseConfig";
 import { CREDIT_COSTS } from "../app/lib/credits";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, TRIAL_CREDITS, TRIAL_DAYS, answersFor, answerCount, answersLabel } from "../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, ANSWER_CREDIT_COST, TRIAL_CREDITS, TRIAL_LENGTH, answersFor, answerCount, answersLabel } from "../data/productFacts";
 
 type PlanKey = "free" | "pro" | "max" | "lifetime" | "teams";
 
@@ -146,7 +146,7 @@ export default function CreditsBadge() {
 
   if (!uid || credits === null) return null;
 
-  // The 3 day trial runs on the Pro plan but nobody has paid for it, so it is shown as a free trial, never as Pro (owner,
+  // The 1 day trial runs on the Pro plan but nobody has paid for it, so it is shown as a free trial, never as Pro (owner,
   // 2026-10-27: "that's not Pro, it's just the free tier").
   const meta           = trial ? { ...PLAN_META.free, label: "Free trial" } : PLAN_META[plan] ?? PLAN_META.free;
   const max            = trial ? TRIAL_CREDITS : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
@@ -206,7 +206,7 @@ export default function CreditsBadge() {
                     {isPaid ? `${meta.label} Plan` : trial ? "Free trial" : "Starter Plan"}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
-                    {isPaid ? `${answersLabel(max)} per month` : trial ? `${answersFor(max)} answers to try everything, for ${TRIAL_DAYS} days` : `${answersFor(max)} free answers, once`}
+                    {isPaid ? `${answersLabel(max)} per month` : trial ? `${answersFor(max)} answers to try everything, for ${TRIAL_LENGTH}` : `${answersFor(max)} free answers, once`}
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"

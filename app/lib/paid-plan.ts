@@ -1,7 +1,7 @@
 import { MAYA_ADDON, MAX_INCLUDES_MAYA } from "../../data/mayaAddon";
 
 /**
- * Whether a user has paid: any plan above free, except the 3 day Pro trial (planSource "trial"), which has paid nothing.
+ * Whether a user has paid: any plan above free, except the 1 day Pro trial (planSource "trial"), which has paid nothing.
  */
 export function isPaidPlan(user: { plan?: unknown; planSource?: unknown } | undefined | null): boolean {
   if (!user) return false;

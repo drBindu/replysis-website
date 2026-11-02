@@ -1,8 +1,8 @@
-// One follow-up email a day after sign-up, chosen by what the person actually did (owner, 2026-10-26: "follow up every
+// One follow-up email a few hours after sign-up, chosen by what the person actually did (owner, 2026-10-26: "follow up every
 // user who signs up"). 11 of 15 new accounts in a week never opened the app; one person tried Maya for a minute and left.
 //
 // Called every hour by a timer on the server (podman exec into this container, so the token never leaves it). Looks at
-// accounts made 20 to 72 hours ago, sends each at most one email, ever (claimed in _alerts/followup-<uid> first, so two
+// accounts made 6 to 72 hours ago (6: the 1 day trial must still be running when it arrives), sends each at most one email, ever (claimed in _alerts/followup-<uid> first, so two
 // website copies can never both send), and none to anyone already getting answers, anyone who unsubscribed, or test
 // accounts. Every email has the one-click unsubscribe line (sendMails).
 import { NextResponse } from "next/server";
@@ -21,7 +21,7 @@ type Kind = "no-app" | "mock-only" | "no-answer";
 
 function email(kind: Kind, first: string, trial: boolean): { subject: string; text: string } {
   const hi = `Hi${first ? " " + first : ""},`;
-  const offer = trial ? "Your 3 day free trial with 50 answers" : "Your free answers";
+  const offer = trial ? "Your 1 day free trial with 50 answers" : "Your free answers";
   if (kind === "no-app") return {
     subject: trial ? "Your Replysis free trial is waiting" : "Your first Replysis answer",
     text: `${hi}
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   const now = Date.now();
   const users = await db.collection("users")
     .where("createdAt", ">=", Timestamp.fromMillis(now - 72 * 3600_000))
-    .where("createdAt", "<=", Timestamp.fromMillis(now - 20 * 3600_000))
+    .where("createdAt", "<=", Timestamp.fromMillis(now - 6 * 3600_000))
     .get();
 
   const report: { who: string; kind: string }[] = [];
