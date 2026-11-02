@@ -155,10 +155,13 @@ export async function POST(req: Request) {
     // the self-service billing portal ships.
     // The end of a running India month paid once, so AutoPay bought during it starts charging when it ends.
     let passEndMs = NaN;
+    let customerId: string | null = null;
     try {
       const profile = await getFirestore().collection("users").doc(verifiedUid).get();
       const activeSubscriptionId = profile.data()?.stripeSubscriptionId;
-      if (profile.data()?.planSource === "pass") passEndMs = Date.parse(String(profile.data()?.passExpiresAt ?? ""));
+      // Only for the same plan: moving up to Max starts charging now, or Max would be free until the month ends.
+      if (profile.data()?.planSource === "pass" && profile.data()?.plan === plan) passEndMs = Date.parse(String(profile.data()?.passExpiresAt ?? ""));
+      customerId = storedCustomer(profile.data());
       if (!isCreditPack && typeof activeSubscriptionId === "string" && activeSubscriptionId.length > 0) {
         return NextResponse.json({ error: "An active subscription already exists" }, { status: 409 });
       }
@@ -198,7 +201,7 @@ export async function POST(req: Request) {
         console.log(`[checkout] India: charging the rupee price for ${priceKey}`);
         // India plans are paid once for 30 days, never a subscription: a monthly UPI or card charge needs an AutoPay
         // mandate, and a customer's Rs 699 failed that way (2026-10-21). Paying again adds 30 more days.
-        if (!isCreditPack && autopay !== true) return buyPlanPass(req, plan, rupees, uid, email, withMaya);
+        if (!isCreditPack && autopay !== true) return buyPlanPass(req, plan, rupees, uid, email, withMaya, customerId);
         // AutoPay (owner, 2026-10-23): a monthly rupee subscription, card only. A UPI AutoPay mandate is what failed
         // on 2026-10-21; a card e-mandate is approved with the card's OTP during checkout.
         if (!isCreditPack) indiaAutopay = true;
@@ -270,7 +273,7 @@ export async function POST(req: Request) {
     // pricing page any more), so it returns there.
     params.append("success_url", isCreditPack ? `${origin}/account?answers=added` : `${origin}/pricing?success=true`);
     params.append("cancel_url", isCreditPack ? `${origin}/account#add-answers` : `${origin}/pricing?canceled=true`);
-    params.append("customer_email", email || "");
+    payer(params, customerId, email || "");
     // Keep Checkout Stripe-hosted for speed and buyer trust, while giving it
     // the same polished Replysis identity as the rest of the product.
     params.append("branding_settings[display_name]", "Replysis");
@@ -311,16 +314,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
-    const session = await response.json();
+    const { session } = await openCheckout(params, email || "");
 
     if (session.error) {
       console.error("Stripe error:", session.error);
@@ -334,6 +328,39 @@ export async function POST(req: Request) {
   }
 }
 
+function storedCustomer(user: Record<string, unknown> | undefined): string | null {
+  const id = user?.stripeCustomerId;
+  return typeof id === "string" && id.startsWith("cus_") ? id : null;
+}
+
+/**
+ * Who pays. An account has one Stripe customer: customer_email made a new one per purchase, which hid the older
+ * subscription from the billing portal and the saved card from auto add.
+ */
+function payer(params: URLSearchParams, customerId: string | null, email: string, createCustomer = false) {
+  if (customerId) { params.append("customer", customerId); return; }
+  params.append("customer_email", email);
+  if (createCustomer) params.append("customer_creation", "always");
+}
+
+/** Opens the Stripe page. A stored customer Stripe no longer knows falls back to the email, so nobody is stopped from paying. */
+async function openCheckout(params: URLSearchParams, email: string, createCustomer = false) {
+  const post = () => fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+  let response = await post();
+  let session = await response.json();
+  if (session?.error?.code === "resource_missing" && session?.error?.param === "customer") {
+    params.delete("customer");
+    payer(params, null, email, createCustomer);
+    response = await post();
+    session = await response.json();
+  }
+  return { response, session };
+}
+
 /**
  * Interview minutes, India only: Rs 5 a minute, any amount from 15 to 600 (owner, 2026-10-16).
  *
@@ -345,7 +372,7 @@ export async function POST(req: Request) {
  * India: one month of Pro or Max, paid once (UPI or card), no AutoPay. The amount is read from the rupee price already
  * set up in Stripe, so the price stays managed in one place. The webhook gives 30 days per payment (purchaseType plan_pass).
  */
-async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid: string, email: string, withMaya = false) {
+async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid: string, email: string, withMaya = false, customerId: string | null = null) {
   const priceRes = await fetch(`https://api.stripe.com/v1/prices/${rupeePriceId}`,
     { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
   const price = await priceRes.json();
@@ -374,8 +401,7 @@ async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid
   }
   params.append("success_url", `${origin}/pricing?success=true`);
   params.append("cancel_url", `${origin}/pricing?canceled=true`);
-  params.append("customer_email", email);
-  params.append("customer_creation", "always");
+  payer(params, customerId, email, true);
   params.append("submit_type", "pay");
   params.append("branding_settings[display_name]", "Replysis");
   params.append("branding_settings[button_color]", "#267B42");
@@ -388,12 +414,7 @@ async function buyPlanPass(req: Request, plan: string, rupeePriceId: string, uid
   params.append("payment_intent_data[metadata][purchaseType]", "plan_pass");
   params.append("payment_intent_data[description]", name);
 
-  const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  const session = await response.json();
+  const { response, session } = await openCheckout(params, email, true);
   if (!response.ok || typeof session?.url !== "string") {
     console.error("[checkout] India pass session failed:", session?.error?.message ?? response.status);
     return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
@@ -430,7 +451,7 @@ async function buyMockPlan(req: Request, uid: unknown, verifiedUid: string, veri
   params.append("line_items[0][quantity]", "1");
   params.append("success_url", `${origin}/mock-interview?mock=added`);
   params.append("cancel_url", `${origin}/pricing?canceled=true`);
-  params.append("customer_email", verifiedEmail ?? "");
+  payer(params, storedCustomer(d), verifiedEmail ?? "", india);
   params.append("submit_type", india ? "pay" : "subscribe");
   params.append("branding_settings[display_name]", "Replysis");
   params.append("branding_settings[button_color]", "#267B42");
@@ -440,19 +461,13 @@ async function buyMockPlan(req: Request, uid: unknown, verifiedUid: string, veri
   params.append("metadata[uid]", uid);
   params.append("metadata[purchaseType]", india ? "mock_pass" : "mock_plan");
   if (india) {
-    params.append("customer_creation", "always");
     params.append("payment_intent_data[metadata][uid]", uid);
     params.append("payment_intent_data[metadata][purchaseType]", "mock_pass");
   } else {
     params.append("subscription_data[metadata][uid]", uid);
     params.append("subscription_data[metadata][kind]", "mock");
   }
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  const session = await res.json();
+  const { response: res, session } = await openCheckout(params, verifiedEmail ?? "", india);
   if (!res.ok || typeof session?.url !== "string") {
     console.error("[checkout] Mock plan session failed:", session?.error?.message ?? res.status);
     return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
@@ -484,7 +499,7 @@ async function addMaya(req: Request, uid: unknown, verifiedUid: string, verified
     params.append("line_items[0][quantity]", "1");
     params.append("success_url", `${origin}/mock-interview?maya=added`);
     params.append("cancel_url", `${origin}/mock-interview`);
-    params.append("customer_email", verifiedEmail ?? "");
+    payer(params, storedCustomer(d), verifiedEmail ?? "");
     params.append("submit_type", "pay");
     params.append("branding_settings[display_name]", "Replysis");
     params.append("branding_settings[button_color]", "#267B42");
@@ -493,10 +508,7 @@ async function addMaya(req: Request, uid: unknown, verifiedUid: string, verified
     params.append("metadata[purchaseType]", "maya_pass");
     params.append("payment_intent_data[metadata][uid]", uid);
     params.append("payment_intent_data[metadata][purchaseType]", "maya_pass");
-    const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST", headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(),
-    });
-    const session = await res.json();
+    const { response: res, session } = await openCheckout(params, verifiedEmail ?? "");
     if (!res.ok || typeof session?.url !== "string") {
       console.error("[checkout] Maya pass session failed:", session?.error?.message ?? res.status);
       return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });

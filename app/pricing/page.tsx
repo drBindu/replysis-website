@@ -460,7 +460,11 @@ export default function PricingPage() {
     setPendingPlan(null);
     if (planToBuy) void handleCheckout(planToBuy, signedInUser, pendingAutopay);
     else if (stayAfterAuth) setStayAfterAuth(false);
-    else window.location.href = "/real-interview";
+    else {
+      // A brand new account goes to /start first, as from the home page.
+      const created = Date.parse(signedInUser?.metadata?.creationTime ?? "");
+      window.location.href = Number.isFinite(created) && Date.now() - created < 10 * 60 * 1000 ? "/start" : "/real-interview";
+    }
   };
 
   const clearCheckoutReturn = () => {
@@ -501,7 +505,7 @@ export default function PricingPage() {
                 ? "Checkout canceled. You were not charged."
                 : checkoutReturn === "credits"
                   ? "Payment received. Your extra answers are being added now."
-                : currentPlan === "pro" || currentPlan === "max"
+                : (currentPlan === "pro" || currentPlan === "max") && profile?.planSource !== "trial"
                   ? `Your ${currentPlan === "pro" ? "Pro" : "Max"} plan is active. Your monthly answers are ready.`
                   : "We’re confirming your checkout and activating your plan. This usually takes only a few seconds."}
             </span>
@@ -639,7 +643,7 @@ export default function PricingPage() {
                       <button onClick={() => handleCheckout(plan.id as "pro" | "max")}
                         disabled={!!loading}
                         className="hv2-btn hv2-btn-block">
-                        {loading === plan.id ? "Redirecting..." : india && !annual && isCurrent ? "Add 1 more month" : plan.cta}
+                        {loading === plan.id ? "Redirecting..." : india && !annual && isCurrent && profile?.planSource !== "trial" ? "Add 1 more month" : plan.cta}
                       </button>
                       </>
                     )

@@ -16,10 +16,11 @@ import { NextResponse }  from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import crypto            from "node:crypto";
-import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE } from "../../../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE, nextMonthStartISO as getNextResetDate } from "../../../../data/productFacts";
 import { validMinutes } from "../../../../data/interviewMinutes";
 import { MAYA_ADDON, MOCK_PLAN } from "../../../../data/mayaAddon";
 import { sendOwnerAlert } from "../../../lib/user-mail";
+import { practiceActive } from "../../../lib/paid-plan";
 
 /** Tells the owner a Maya add-on was bought, so the Simli plan can be raised before it is needed (owner, 2026-10-26). */
 const alertMayaBought = (how: string) => sendOwnerAlert(`Maya add-on bought (${how})`, `Someone just bought the mock interview add-on (Maya).\n\nIf Simli is still on the Free plan, upgrade it to Hobby now so Maya can join for them:\nhttps://app.simli.com/billing  (account booms5089@gmail.com)\n\nThe Free plan allows only one live Maya at a time and 50 minutes a month.`);
@@ -193,12 +194,34 @@ function verifyStripeSignature(
   }
 }
 
-function getNextResetDate(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+/** A month's answers for this plan: a rupee subscription carries its own, smaller number. */
+function monthCredits(plan: string, rupees: boolean): number {
+  const india = rupees ? INDIA_PLAN_ALLOWANCE[plan as keyof typeof INDIA_PLAN_ALLOWANCE] : undefined;
+  return india?.credits ?? PLAN_CREDITS[plan] ?? 1000;
+}
+
+/**
+ * When a subscription's lazy refill may run. Stripe refills a monthly plan at each renewal, so the date sits just past
+ * the renewal: on the 1st of the month it gave every subscriber a second refill. Annual plans are refilled monthly by that
+ * lazy reset, so they keep the 1st.
+ */
+function subscriptionResetDate(interval: unknown, periodEnd: number | null): string {
+  if (interval === "annual") return getNextResetDate();
+  const end = periodEnd ? periodEnd * 1000 : Date.now() + 31 * 86_400_000;
+  return new Date(end + 86_400_000).toISOString();
+}
+
+/** A first Stripe customer sticks: a new id would hide the older subscription and saved card from the billing portal. */
+function keptCustomer(stored: unknown, incoming: unknown): unknown {
+  return typeof stored === "string" && stored.startsWith("cus_") ? stored : incoming ?? null;
+}
+
+/** The account's numbers once its Pro or Max has gone: Practice carries on if it is running. */
+function afterSubscription(d: Record<string, unknown>): Record<string, unknown> {
+  if (!practiceActive(d)) return { credits: PLAN_MONTHLY_CREDITS.free, audioMinutesAllowance: FieldValue.delete() };
+  const india = d.mayaMonthly === MOCK_PLAN.interviewsIndia;
+  return { credits: india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits,
+           audioMinutesAllowance: india ? MOCK_PLAN.audioMinutesIndia : MOCK_PLAN.audioMinutes };
 }
 
 // Stripe API versions from 2025-03-31.basil onward moved an invoice's
@@ -262,6 +285,7 @@ async function applyUserUpdate(uid: string, eventCreated: number, updates: Recor
     if (lastEventCreated > eventCreated) return;
 
     const nextUpdates = { ...updates };
+    if ("stripeCustomerId" in updates) nextUpdates.stripeCustomerId = keptCustomer(current.data()?.stripeCustomerId, updates.stripeCustomerId);
     if (typeof updates.credits === "number") {
       nextUpdates.credits = updates.credits + Math.max(0, Number(current.data()?.purchasedCredits ?? 0));
     }
@@ -307,7 +331,7 @@ async function applyActiveSubscription(uid: string, eventCreated: number, plan: 
       // one, so somebody who moves from a rupee plan to a dollar plan is not
       // still capped at the smaller allowance.
       audioMinutesAllowance: indiaAllowance?.audioMinutes ?? FieldValue.delete(),
-      stripeCustomerId: subscription.customer ?? currentData.stripeCustomerId ?? null,
+      stripeCustomerId: keptCustomer(currentData.stripeCustomerId, subscription.customer),
       stripeSubscriptionId: subscription.id ?? currentData.stripeSubscriptionId ?? null,
       stripeSubscriptionStatus: subscription.status ?? "active",
       stripeCancelAtPeriodEnd: subscription.cancel_at_period_end === true,
@@ -352,7 +376,7 @@ async function addBoughtMinutes(session: any) {
     const updates: Record<string, unknown> = {
       minutesBalance: FieldValue.increment(minutes),
       minutesBought: FieldValue.increment(minutes),
-      stripeCustomerId: session.customer ?? current.data()?.stripeCustomerId ?? null,
+      stripeCustomerId: keptCustomer(current.data()?.stripeCustomerId, session.customer),
       lastMinutesPurchaseAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
@@ -399,7 +423,8 @@ async function applyPlanPass(session: any) {
       creditsUsed: 0,
       creditsResetDate: new Date(end.getTime() + 86_400_000).toISOString(),
       audioMinutesAllowance: allowance.audioMinutes,
-      stripeCustomerId: session.customer ?? d.stripeCustomerId ?? null,
+      audioMinutesUsed: 0,
+      stripeCustomerId: keptCustomer(d.stripeCustomerId, session.customer),
       lastPaymentFailedAt: null,
       lastPassPurchaseAt: FieldValue.serverTimestamp(),
       // The Maya add-on bought with this month runs for the same 30 days.
@@ -417,28 +442,46 @@ async function applyPlanPass(session: any) {
  * once (mock_pass, `mockPlanUntil`). Its answers are given as credits, and its listening time as audioMinutesAllowance
  * (the Java backend reads that for any plan). A Pro or Max on the same account keeps its own, larger numbers.
  */
-async function applyPractice(uid: string, opts: { india: boolean; subscriptionId?: string; until?: Date; customer?: string }) {
+async function applyPractice(uid: string, opts: { india: boolean; subscriptionId?: string; session?: any; customer?: string }): Promise<boolean> {
   const userRef = db!.collection("users").doc(uid);
-  await db!.runTransaction(async (tx) => {
+  // An India month is keyed on its checkout session, in the same transaction as the grant: a receipt written first left
+  // a failed grant marked as done, so Stripe's retry gave nothing.
+  const receiptRef = opts.session ? db!.collection("plan_passes").doc(`mock_${String(opts.session.id)}`) : null;
+  const fresh = await db!.runTransaction(async (tx) => {
+    if (receiptRef && (await tx.get(receiptRef)).exists) return false;
     const current = await tx.get(userRef);
     if (!current.exists) throw new Error("Practice buyer not found");
     const d = current.data() ?? {};
     const onPlan = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
     const purchased = Math.max(0, Number(d.purchasedCredits ?? 0));
+    const size = opts.india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits;
+    // Paying again before an India month ends adds 30 days, and keeps what is left of the month.
+    const running = Date.parse(String(d.mockPlanUntil ?? ""));
+    const stacking = !!receiptRef && Number.isFinite(running) && running > Date.now();
+    const until = receiptRef ? new Date((stacking ? running : Date.now()) + 30 * 86_400_000) : null;
+    if (receiptRef) {
+      tx.set(receiptRef, { uid, kind: "practice", amount: opts.session.amount_total ?? null, currency: opts.session.currency ?? "inr",
+                           createdAt: FieldValue.serverTimestamp() });
+    }
     tx.set(userRef, {
       ...(opts.subscriptionId ? { mockPlan: true, mockSubscriptionId: opts.subscriptionId } : {}),
-      ...(opts.until ? { mockPlanUntil: opts.until.toISOString() } : {}),
+      ...(until ? { mockPlanUntil: until.toISOString() } : {}),
       mayaMonthly: opts.india ? MOCK_PLAN.interviewsIndia : MOCK_PLAN.interviews,
       // A paid Pro or Max already has more of both; only a free or trial account takes the Practice numbers.
       ...(onPlan ? {} : {
-        credits: purchased + (opts.india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits),
+        credits: (stacking ? Math.max(purchased, Number(d.credits ?? 0)) : purchased) + size,
+        creditsUsed: 0,
+        audioMinutesUsed: 0,
         audioMinutesAllowance: opts.india ? MOCK_PLAN.audioMinutesIndia : MOCK_PLAN.audioMinutes,
       }),
-      stripeCustomerId: opts.customer ?? d.stripeCustomerId ?? null,
+      stripeCustomerId: keptCustomer(d.stripeCustomerId, opts.customer),
+      lastPaymentFailedAt: null,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
+    return true;
   });
   console.log(`PRACTICE: ${uid}${opts.india ? " (India)" : ""}`);
+  return fresh;
 }
 
 /** The Practice subscription ended: Maya and its answers stop (a Pro or Max on the account is untouched). */
@@ -549,20 +592,7 @@ export async function POST(req: Request) {
       const uid = session.metadata?.uid;
       if (typeof uid === "string" && uid && session.payment_status === "paid") {
         if (session.metadata.purchaseType === "mock_pass") {
-          const receiptRef = db.collection("plan_passes").doc(`mock_${String(session.id)}`);
-          const fresh = await db.runTransaction(async (tx) => {
-            if ((await tx.get(receiptRef)).exists) return false;
-            tx.set(receiptRef, { uid, kind: "practice", amount: session.amount_total ?? null, currency: session.currency ?? "inr",
-                                 createdAt: FieldValue.serverTimestamp() });
-            return true;
-          });
-          if (fresh) {
-            const d = (await db.collection("users").doc(uid).get()).data() ?? {};
-            const running = Date.parse(String(d.mockPlanUntil ?? ""));
-            const start = Number.isFinite(running) && running > Date.now() ? running : Date.now();
-            await applyPractice(uid, { india: true, until: new Date(start + 30 * 86_400_000), customer: session.customer });
-            await alertMayaBought("Practice plan, India");
-          }
+          if (await applyPractice(uid, { india: true, session, customer: session.customer })) await alertMayaBought("Practice plan, India");
         } else {
           await applyPractice(uid, { india: session.currency === "inr", subscriptionId: session.subscription, customer: session.customer });
           await alertMayaBought("Practice plan");
@@ -600,6 +630,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
+    // ── ANSWER PACK  -  added once the money is in, once per session ──
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && event.data?.object?.metadata?.purchaseType === "credit_pack") {
+      const session = event.data.object;
+      const uid = session.metadata?.uid;
+      const purchased = Number(session.metadata?.credits);
+      if (uid && session.payment_status === "paid") {
+        if (![500, 1500, 5000].includes(purchased)) throw new Error("Invalid credit pack metadata");
+        const userRef = db.collection("users").doc(uid);
+        const receiptRef = db.collection("plan_passes").doc(`pack_${String(session.id)}`);
+        await db.runTransaction(async transaction => {
+          if ((await transaction.get(receiptRef)).exists) return;
+          const current = await transaction.get(userRef);
+          if (!current.exists) throw new Error("Credit purchaser not found");
+          transaction.set(receiptRef, { uid, kind: "pack", credits: purchased, amount: session.amount_total ?? null,
+                                        currency: session.currency ?? null, createdAt: FieldValue.serverTimestamp() });
+          transaction.set(userRef, {
+            credits: FieldValue.increment(purchased),
+            purchasedCredits: FieldValue.increment(purchased),
+            creditPurchasesCount: FieldValue.increment(1),
+            stripeCustomerId: keptCustomer(current.data()?.stripeCustomerId, session.customer),
+            lastCreditPurchaseAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          }, { merge: true });
+        });
+        console.log(`CREDIT PACK: ${uid} +${purchased}`);
+      } else if (session.payment_status !== "paid") console.log(`[webhook] answer pack not paid yet (${session.payment_status})`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
     // ── CHECKOUT COMPLETED  -  user just paid ──────────────────────
     if (event.type === "checkout.session.completed") {
       const session      = event.data.object;
@@ -608,33 +669,27 @@ export async function POST(req: Request) {
       const customerId   = session.customer;
       const subscriptionId = session.subscription;
 
-      if (uid && session.metadata?.purchaseType === "credit_pack") {
-        const purchased = Number(session.metadata?.credits);
-        if (![500, 1500, 5000].includes(purchased)) throw new Error("Invalid credit pack metadata");
-        const userRef = db.collection("users").doc(uid);
-        await db.runTransaction(async transaction => {
-          const current = await transaction.get(userRef);
-          if (!current.exists) throw new Error("Credit purchaser not found");
-          transaction.set(userRef, {
-            credits: FieldValue.increment(purchased),
-            purchasedCredits: FieldValue.increment(purchased),
-            creditPurchasesCount: FieldValue.increment(1),
-            stripeCustomerId: customerId ?? current.data()?.stripeCustomerId ?? null,
-            lastCreditPurchaseAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          }, { merge: true });
-        });
-        console.log(`CREDIT PACK: ${uid} +${purchased}`);
-      } else if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
+      if (uid && plan && ["pro", "max", "lifetime", "teams"].includes(plan)) {
         console.log(`✅ PAYMENT: ${uid} → ${plan} | Customer: ${customerId}`);
-        const credits = PLAN_CREDITS[plan] ?? 1000;
+        const rupees = session.currency === "inr";
+        const credits = monthCredits(plan, rupees);
+        const allowance = rupees ? INDIA_PLAN_ALLOWANCE[plan as keyof typeof INDIA_PLAN_ALLOWANCE] : undefined;
+        // Two open checkouts both complete: each subscription charges, and only the newest is stored. Stripe cannot refuse
+        // this, so the owner is told at once.
+        const stored = (await db.collection("users").doc(uid).get()).data()?.stripeSubscriptionId;
+        if (typeof stored === "string" && stored && stored !== subscriptionId) {
+          await sendOwnerAlert("Replysis: a customer has two subscriptions", `Account ${uid} now has two subscriptions in Stripe: ${stored} and ${subscriptionId}. Both will charge. Cancel the one not wanted and refund it.`);
+        }
         // India AutoPay bought during a month paid once: that month carries on with its answers, and the subscription
         // (free until the month ends) takes over from then. planSource "subscription" stops the pass expiry job.
         const afterPass = session.metadata?.startsAfterPass === "1";
         await applyUserUpdate(uid, eventCreated, {
           plan,
           planSource: "subscription",
-          ...(afterPass ? {} : { credits, creditsUsed: 0, creditsResetDate: getNextResetDate() }),
+          ...(afterPass ? {} : { credits, creditsUsed: 0, audioMinutesUsed: 0,
+                                 creditsResetDate: subscriptionResetDate(session.metadata?.interval, null) }),
+          // Written here too: subscription.updated, which also writes it, is dropped if it arrives out of order.
+          audioMinutesAllowance: allowance?.audioMinutes ?? FieldValue.delete(),
           stripeCustomerId: customerId ?? null,
           stripeSubscriptionId: subscriptionId ?? null,
           stripeSubscriptionStatus: "active",
@@ -655,11 +710,13 @@ export async function POST(req: Request) {
       const subscription = event.data.object;
       const uid          = subscription.metadata?.uid;
 
-      if (uid) {
+      const d = uid ? (await db.collection("users").doc(uid).get()).data() ?? {} : {};
+      // Only the subscription this account runs on may end it: with two, cancelling the spare must not downgrade anyone.
+      if (uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)) {
         console.log(`⚠️ CANCELED: ${uid}`);
         await applyUserUpdate(uid, eventCreated, {
           plan:                 "free",
-          credits:              PLAN_MONTHLY_CREDITS.free,
+          ...afterSubscription(d),
           creditsResetDate:     getNextResetDate(),
           stripeSubscriptionId: null,
           mayaAddon: false,
@@ -688,16 +745,19 @@ export async function POST(req: Request) {
         if (sub.metadata?.kind === "mock" && typeof uid === "string" && invoice.billing_reason === "subscription_cycle") {
           await applyPractice(uid, { india: String(invoice.currency) === "inr", subscriptionId: subscriptionId, customer: sub.customer });
         }
+        // A plan change or add-on charged mid-month is not a renewal either.
+        const midMonth = invoice.billing_reason === "subscription_update";
         // The free invoice that opens an AutoPay waiting for a paid month to end is not a renewal: no refill.
         const freeTrialStart = Number(invoice.amount_paid ?? 0) === 0 && sub.status === "trialing";
 
-        if (uid && plan && ["pro", "max", "teams"].includes(plan) && !freeTrialStart) { // lifetime is one-time, no renewal
-          const credits = PLAN_CREDITS[plan] ?? 1000;
+        if (uid && plan && ["pro", "max", "teams"].includes(plan) && !freeTrialStart && !midMonth) { // lifetime is one-time, no renewal
+          const credits = monthCredits(plan, boughtInRupees(sub));
           await applyUserUpdate(uid, eventCreated, {
             plan,
             credits,
             creditsUsed:      0,
-            creditsResetDate: getNextResetDate(),
+            audioMinutesUsed: 0,
+            creditsResetDate: subscriptionResetDate(subscriptionInterval(sub), subscriptionPeriodEnd(sub)),
             stripeCustomerId: sub.customer ?? null,
             stripeSubscriptionId: subscriptionId,
             stripeSubscriptionStatus: sub.status ?? "active",
@@ -721,17 +781,20 @@ export async function POST(req: Request) {
       const plan = subscriptionPlan(sub);
       const dead = ["canceled", "unpaid", "incomplete_expired"];
       if (uid && dead.includes(sub.status)) {
-        console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
-        await applyUserUpdate(uid, eventCreated, {
-          plan:                 "free",
-          credits:              PLAN_MONTHLY_CREDITS.free,
-          creditsResetDate:     getNextResetDate(),
-          stripeSubscriptionId: null,
-          mayaAddon: false,
-          stripeSubscriptionStatus: sub.status,
-          stripeCancelAtPeriodEnd: false,
-          stripeCurrentPeriodEnd: null,
-        });
+        const d = (await db.collection("users").doc(uid).get()).data() ?? {};
+        if (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id) {
+          console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
+          await applyUserUpdate(uid, eventCreated, {
+            plan:                 "free",
+            ...afterSubscription(d),
+            creditsResetDate:     getNextResetDate(),
+            stripeSubscriptionId: null,
+            mayaAddon: false,
+            stripeSubscriptionStatus: sub.status,
+            stripeCancelAtPeriodEnd: false,
+            stripeCurrentPeriodEnd: null,
+          });
+        }
       } else if (uid && plan && ["pro", "max", "teams"].includes(plan)) {
         await applyActiveSubscription(uid, eventCreated, plan, sub);
         console.log(`🔁 SUBSCRIPTION UPDATED: ${uid} → ${plan} (${String(sub.status)})`);
@@ -759,7 +822,8 @@ export async function POST(req: Request) {
             console.warn(`⚠️ PAYMENT FAILED (renewal): ${uid} — Stripe will retry`);
             await applyUserUpdate(uid, eventCreated, {
               lastPaymentFailedAt: new Date().toISOString(),
-              stripeSubscriptionStatus: sub.status ?? "past_due",
+              // A Practice subscription has its own life: this field describes Pro or Max.
+              ...(sub.metadata?.kind === "mock" ? {} : { stripeSubscriptionStatus: sub.status ?? "past_due" }),
             });
           }
         } catch (e) {

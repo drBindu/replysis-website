@@ -6,7 +6,7 @@
 
 import { doc, getDoc, updateDoc, setDoc, increment, runTransaction, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, creditsAfterMonthlyReset, type PlanId } from "../../data/productFacts";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS, creditsAfterMonthlyReset, nextMonthStartISO as getNextResetDate, type PlanId } from "../../data/productFacts";
 
 // ── CREDIT COSTS PER ACTION ──
 export const CREDIT_COSTS = CREDIT_ACTION_COSTS;
@@ -217,7 +217,7 @@ export async function deductCredits(uid: string, action: CreditAction): Promise<
 
       // Check balance inside the transaction  -  prevents TOCTOU race
       if (credits < cost) {
-        if (didReset) transaction.update(ref, { credits, creditsUsed: 0, creditsResetDate: getNextResetDate() });
+        if (didReset) transaction.update(ref, { credits, creditsUsed: 0, audioMinutesUsed: 0, creditsResetDate: getNextResetDate() });
         return { success: false, remaining: credits };
       }
 
@@ -227,6 +227,7 @@ export async function deductCredits(uid: string, action: CreditAction): Promise<
         transaction.update(ref, {
           credits:          credits - cost,
           creditsUsed:      cost,
+          audioMinutesUsed: 0,
           purchasedCredits,
           creditsResetDate: getNextResetDate(),
         });
@@ -282,11 +283,3 @@ export async function cancelPlan(uid: string) {
   });
 }
 
-// ── HELPER ──
-function getNextResetDate(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}

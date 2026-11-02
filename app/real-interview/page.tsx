@@ -47,14 +47,14 @@ function sanitizeText(text: string): string {
 // CREDITS DISPLAY
 // ─────────────────────────────────────────────
 function CreditsDisplay({
-  credits, plan, loading, onUpgrade, minutesLeft,
+  credits, plan, trial, loading, onUpgrade, minutesLeft,
 }: {
-  credits: number; plan: string;
+  credits: number; plan: string; trial: boolean;
   loading: boolean; onUpgrade: () => void;
   minutesLeft: number;
 }) {
   const cap = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
-  const isPaid = plan !== "free";
+  const isPaid = plan !== "free" && !trial;
 
   // One meter: credits. Listening time is a fair use guard on the server and
   // is shown only in words, and only if it is ever reached, so that credits
@@ -62,7 +62,7 @@ function CreditsDisplay({
   const timeEmpty = minutesLeft <= 0;
   const isLow = credits <= Math.max(10, Math.round(cap * 0.05));
   const isEmpty = credits <= 0 || timeEmpty;
-  const planLabel = ({ free: "Starter", pro: "Pro", max: "Max", lifetime: "Lifetime", teams: "Teams" } as Record<string, string>)[plan] ?? "Starter";
+  const planLabel = trial ? "Free trial" : ({ free: "Starter", pro: "Pro", max: "Max", lifetime: "Lifetime", teams: "Teams" } as Record<string, string>)[plan] ?? "Starter";
 
   if (loading) return (
     <div className="h-7 w-28 rounded-lg animate-pulse"
@@ -116,6 +116,8 @@ export default function RealInterviewPage() {
   const [showAuth, setShowAuth]             = useState(false);
   const [credits, setCredits]               = useState<number>(0);
   const [plan, setPlan]                     = useState<string>("free");
+  const [trial, setTrial]                   = useState(false);
+  const [ownAllowance, setOwnAllowance]     = useState(0);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
   // The second limit. Credits meter questions; the microphone bills by the
@@ -134,6 +136,8 @@ export default function RealInterviewPage() {
           const data = snap.data();
           setCredits(data.credits ?? 0);
           setPlan(data.plan ?? "free");
+          setTrial(data.planSource === "trial");
+          setOwnAllowance(Number(data.audioMinutesAllowance) || 0);
           setAudioMinutesUsed(Math.max(0, Number(data.audioMinutesUsed ?? 0)));
         }
       } catch (err) { console.error("[Replysis] Could not load credits:", (err as Error)?.name ?? "Error"); }
@@ -145,8 +149,9 @@ export default function RealInterviewPage() {
   // Must match PLAN_MONTHLY_AUDIO_MINUTES in the STT token route and in the
   // Java backend. All of them read the same audioMinutesUsed field, so one
   // allowance covers the website and the desktop apps together.
-  const audioAllowance =
-    ({ free: 10, pro: 900, max: 1800, lifetime: 1800, teams: 6000 } as Record<string, number>)[plan] ?? 10;
+  // A trial, an India month or Practice carries its own number on the account.
+  const audioAllowance = ownAllowance > 0 ? ownAllowance
+    : ({ free: 10, pro: 900, max: 1800, lifetime: 1800, teams: 6000 } as Record<string, number>)[plan] ?? 10;
   const audioMinutesLeft = Math.max(0, audioAllowance - audioMinutesUsed);
 
   const handleStart = (cfg: InterviewConfig) => {
@@ -220,7 +225,7 @@ export default function RealInterviewPage() {
               {/* Right */}
               <div className="flex items-center gap-3">
                 <CreditsDisplay
-                  credits={credits} plan={plan}
+                  credits={credits} plan={plan} trial={trial}
                   minutesLeft={audioMinutesLeft}
                   loading={creditsLoading}
                   onUpgrade={() => router.push("/pricing")}

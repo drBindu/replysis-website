@@ -40,6 +40,11 @@ export function creditsAfterMonthlyReset(plan: string, currentCredits: number, p
   return PLAN_MONTHLY_CREDITS[key] + Math.max(0, purchasedCredits);
 }
 
+/** First day of next month, UTC, when a monthly allowance refills. Setting the date first: from the 31st, moving the month first skipped one. */
+export function nextMonthStartISO(now = new Date()): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+}
+
 /**
  * Monthly listening time, the second limit.
  *

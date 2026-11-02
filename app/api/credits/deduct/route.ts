@@ -5,7 +5,8 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset } from "../../../../data/productFacts";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset, nextMonthStartISO as nextResetISO } from "../../../../data/productFacts";
+import { chargeCap } from "../../../lib/paid-plan";
 
 function getDb() {
   if (getApps().length) return getFirestore();
@@ -60,14 +61,6 @@ const CREDIT_COSTS: Record<string, number> = CREDIT_ACTION_COSTS;
 const PLAN_MONTHLY_CREDITS: Record<string, number> = PLAN_CAPS;
 const OWNER_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const MAX_REQUEST_BYTES = 32 * 1024;
-
-function nextResetISO(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
 
 export async function POST(req: Request) {
   try {
@@ -154,16 +147,17 @@ export async function POST(req: Request) {
       if (resetAt && Date.now() >= resetAt) { credits = creditsAfterMonthlyReset(plan, credits, purchasedCredits); used = 0; didReset = true; }
 
       if (credits < cost) {
-        if (didReset) transaction.update(userRef, { credits, creditsUsed: 0, creditsResetDate: nextResetISO() });
+        if (didReset) transaction.update(userRef, { credits, creditsUsed: 0, audioMinutesUsed: 0, creditsResetDate: nextResetISO() });
         throw Object.assign(new Error("Insufficient credits"), { status: 402, remaining: credits, needed: cost, plan });
       }
 
-      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - cap));
+      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - chargeCap(userData)));
       purchasedCredits = Math.max(0, purchasedCredits - purchasedSpend);
       if (didReset) {
         transaction.update(userRef, {
           credits:          credits - cost,
           creditsUsed:      cost,
+          audioMinutesUsed: 0,   // the listening month ends with the credits month
           purchasedCredits,
           creditsResetDate: nextResetISO(),
         });

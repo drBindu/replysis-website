@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     // Claimed before sending: if two copies of the site run this together, only one sends.
     try { await db.collection("_alerts").doc(`followup-${doc.id}`).create({ sentAt: now, kind }); }
     catch { continue; }
-    const first = String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "";
+    const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
     const m = email(kind, first, d.planSource === "trial");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
     await doc.ref.set({ followupKind: kind, followupSentAt: new Date(), followupSent: result.sent === 1 }, { merge: true });

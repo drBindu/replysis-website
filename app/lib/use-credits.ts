@@ -32,6 +32,7 @@ export function useCredits() {
   // thousand credits on screen and no listening time left reads a healthy
   // number and a dead microphone, and concludes the product is broken.
   const [audioMinutesUsed, setAudioMinutesUsed] = useState<number>(0);
+  const [ownAllowance, setOwnAllowance] = useState<number>(0);
 
   // Paywall state
   const [showPaywall, setShowPaywall] = useState(false);
@@ -65,6 +66,7 @@ export function useCredits() {
         setCredits(data.credits || 0);
         setPlan((data.plan as PlanId) || "free");
         setAudioMinutesUsed(Math.max(0, Number(data.audioMinutesUsed ?? 0)));
+        setOwnAllowance(Number(data.audioMinutesAllowance) || 0);
       }
       setLoading(false);
     });
@@ -126,7 +128,8 @@ export function useCredits() {
   // Java backend's FirestoreCreditsService. All three read and write the same
   // audioMinutesUsed field, so a user of the website and the desktop apps has
   // one allowance rather than three that each look generous alone.
-  const audioAllowance = PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
+  // A trial, an India month or Practice carries its own number on the account.
+  const audioAllowance = ownAllowance > 0 ? ownAllowance : PLAN_MONTHLY_AUDIO_MINUTES[plan] ?? PLAN_MONTHLY_AUDIO_MINUTES.free;
   const audioMinutesLeft = Math.max(0, audioAllowance - audioMinutesUsed);
 
   return {

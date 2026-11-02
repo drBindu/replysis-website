@@ -38,14 +38,6 @@ const cookieOptions = {
   maxAge: 60 * 60,
 };
 
-function nextResetDate(): string {
-  const reset = new Date();
-  reset.setMonth(reset.getMonth() + 1);
-  reset.setDate(1);
-  reset.setHours(0, 0, 0, 0);
-  return reset.toISOString();
-}
-
 async function ensureUserProfile(uid: string, email: string, displayName: string) {
   const db = getFirestore();
   const ref = db.collection("users").doc(uid);
@@ -58,7 +50,8 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       const data = snapshot.data() ?? {};
       const update: Record<string, unknown> = { lastLogin: FieldValue.serverTimestamp() };
       if (!data.email && email) update.email = email;
-      if (!data.displayName) update.displayName = displayName || "User";
+      // "User" is only the placeholder: sign-up sets the real name a moment after the first profile write.
+      if (!data.displayName || (data.displayName === "User" && displayName)) update.displayName = displayName || "User";
       transaction.update(ref, update);
       return;
     }

@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { clientIp, rateLimit } from "../../lib/rate-limit";
+import { isPaidPlan } from "../../lib/paid-plan";
 
 function getDb() {
   if (!getApps().length) {
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
 
   const profile = await db.collection("users").doc(decoded.uid).get();
   const profileData = profile.data() ?? {};
-  const verifiedPurchase = profileData.plan !== "free" && Boolean(profileData.plan)
+  const verifiedPurchase = isPaidPlan(profileData)
     || Boolean(profileData.stripeCustomerId)
     || Number(profileData.creditPurchasesCount ?? 0) > 0;
   if (!verifiedPurchase) {

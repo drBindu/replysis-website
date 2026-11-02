@@ -173,6 +173,8 @@ export default function AccountPage() {
   const cap = trial ? TRIAL_CREDITS : practice ? MOCK_PLAN.credits : PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
   const percentage = Math.max(0, Math.min(100, Math.round((Math.min(credits, cap) / cap) * 100)));
   const hasBillingAccount = typeof profile?.stripeCustomerId === "string" && profile.stripeCustomerId.startsWith("cus_");
+  // Practice bought during the trial or on a free account is a subscription to manage.
+  const managesPractice = hasBillingAccount && profile?.mockPlan === true;
   const isPaid = (plan !== "free" && !trial) || practice;
   const paymentNeedsAttention = Boolean(profile?.lastPaymentFailedAt);
   const isCanceling = Boolean(profile?.stripeCancelAtPeriodEnd);
@@ -324,11 +326,11 @@ export default function AccountPage() {
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {profile?.planSource === "pass" || profile?.planSource === "trial" ? (
+                {(profile?.planSource === "pass" || profile?.planSource === "trial") && !managesPractice ? (
                   <Link href="/pricing" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#1C7A3E] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#176533]">
                     {profile?.planSource === "trial" ? "Choose a plan" : "Add 1 more month"} <ArrowRight className="h-4 w-4" />
                   </Link>
-                ) : isPaid ? (
+                ) : isPaid || managesPractice ? (
                   <button
                     type="button"
                     onClick={openBillingPortal}
