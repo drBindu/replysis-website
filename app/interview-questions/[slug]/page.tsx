@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = QUESTION_GUIDES[q.id];
   const description = `${guide?.testing ?? q.focus} A step by step outline for this ${q.category.toLowerCase()} interview question, with the mistake to avoid.`;
   return {
-    title: `${title}  -  Replysis`,
-    description: description.slice(0, 300),
+    title: `${title} | Replysis`,
+    description: description.length > 160 ? `${description.slice(0, 157).replace(/\s+\S*$/, "")}...` : description,
     alternates: { canonical: `${SITE}${questionPath(q)}` },
     openGraph: { title, description: description.slice(0, 200), url: `${SITE}${questionPath(q)}`, type: "article" },
   };

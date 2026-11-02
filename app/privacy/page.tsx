@@ -4,8 +4,9 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy  -  Replysis",
-  description: "How Replysis collects, uses, and protects your data.",
+  alternates: { canonical: "/privacy" },
+  title: "Privacy Policy | Replysis",
+  description: "What Replysis collects, how audio, resumes and screen captures are used, who processes them, and how to delete your data.",
 };
 
 const LAST_UPDATED = "October 27, 2026";

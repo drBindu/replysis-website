@@ -5,7 +5,8 @@ import "../home-v2.css";
 import { PUBLIC_PLAN_CAPACITY, TRUST_FACTS, answersLabel } from "../../data/productFacts";
 
 export const metadata: Metadata = {
-  title: "Trust Center - Replysis",
+  alternates: { canonical: "/trust" },
+  title: "Trust Center | Replysis",
   description: "Clear information about Replysis data handling, security controls, AI limitations, screen capture, and plan capacity.",
 };
 

@@ -595,7 +595,7 @@ function CreditHistoryDrawer({ history, credits, max, isUnlimited, plan, onClose
                 boxShadow:"0 4px 14px rgba(45,91,227,0.3)" }}>
               <Crown size={15} /> Upgrade for more answers
             </button>
-            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro includes {answerCount(PLAN_CONFIG.pro.totalCredits).toLocaleString("en-US")} answers refreshed monthly</p>
+            <p style={{ fontSize:10, color:T.textTertiary, textAlign:"center", marginTop:8 }}>Pro answers refresh every month</p>
           </div>
         )}
       </motion.div>

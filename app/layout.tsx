@@ -16,12 +16,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://replysis.com'),
   alternates: { canonical: '/' },
-  title: 'Replysis - Master Every Interview',
+  title: 'Replysis | Live interview answers',
   description: 'Prepare your resume, practice realistic interviews, and stream resume-grounded answer suggestions in real time. Free to start with clear monthly limits.',
   keywords: ['AI interview assistant', 'interview copilot', 'real-time interview help', 'mock interview AI', 'job interview preparation', 'AI coaching', 'career'],
   authors: [{ name: 'Replysis' }],
+  twitter: { card: 'summary', images: ['/icon.png'] },
   openGraph: {
-    title: 'Replysis - Master Every Interview',
+    title: 'Replysis | Live interview answers',
+    images: ['/icon.png'],
     description: 'AI interview workspace for resume preparation, mock practice, and fast resume-grounded answer suggestions. Free to start.',
     type: 'website',
   },

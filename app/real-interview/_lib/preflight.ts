@@ -26,7 +26,7 @@ function wait(ms: number) {
 
 async function checkNetwork(): Promise<PreflightCheck> {
   if (!navigator.onLine) {
-    return { id: "network", label: "Connection", status: "fail", detail: "You are offline. Reconnect to the internet and run the check again." };
+    return { id: "network", label: "Connection", status: "fail", detail: "Replysis could not be reached from this browser. Run the check again in a moment." };
   }
 
   const started = performance.now();
@@ -43,10 +43,10 @@ async function checkNetwork(): Promise<PreflightCheck> {
       status: latency <= 1500 ? "pass" : "warn",
       detail: latency <= 1500
         ? `Replysis is reachable (${latency} ms).`
-        : `Replysis is reachable, but the connection is slow (${latency} ms). Answers may take longer.`,
+        : `Replysis is reachable, but it is responding slowly (${latency} ms). Answers may take longer.`,
     };
   } catch {
-    return { id: "network", label: "Connection", status: "fail", detail: "Replysis could not be reached. Check your network or VPN, then try again." };
+    return { id: "network", label: "Connection", status: "fail", detail: "Replysis could not be reached. Run the check again in a moment. If you use a VPN, try turning it off." };
   }
 }
 

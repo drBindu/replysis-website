@@ -4,8 +4,9 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "Terms of Service  -  Replysis",
-  description: "Terms governing your use of Replysis.",
+  alternates: { canonical: "/terms" },
+  title: "Terms of Service | Replysis",
+  description: "The terms for using Replysis: your account, plans and payments, acceptable use, and how to cancel or contact us.",
 };
 
 const LAST_UPDATED = "October 27, 2026";

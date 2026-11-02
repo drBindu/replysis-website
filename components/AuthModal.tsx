@@ -39,7 +39,7 @@ const FRIENDLY: Record<string, string> = {
   "auth/invalid-credential":   "Invalid email or password.",
   "auth/popup-closed-by-user": "Google sign-in was cancelled.",
   "auth/popup-blocked":        "Your browser blocked the sign-in popup. Allow popups and try again.",
-  "auth/network-request-failed": "We could not reach Replysis. Check your connection and try again.",
+  "auth/network-request-failed": "That did not go through. Please try again.",
   // The four below are server-side misconfigurations. There is nothing the
   // person signing in can do about them, so they get one calm message and the
   // real cause is written to the console for whoever is on call.

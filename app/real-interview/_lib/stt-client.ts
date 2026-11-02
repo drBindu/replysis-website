@@ -156,7 +156,7 @@ export class SpeechmaticsClient {
     }
 
     if (!navigator.onLine) {
-      opts.onStatus("Connection lost — waiting for internet…");
+      opts.onStatus("Reconnecting…");
       this.removeOnlineHandler();
       this.onlineHandler = () => {
         this.removeOnlineHandler();
@@ -240,7 +240,7 @@ export class SpeechmaticsClient {
         };
         source.connect(this.workletNode);
         this.workletNode.connect(this.audioCtx.destination);
-        opts.onStatus(this.reconnects ? "Listening — connection restored" : "Listening…");
+        opts.onStatus(this.reconnects ? "Listening again" : "Listening…");
       } catch {
         const processor = this.audioCtx.createScriptProcessor(256, 1, 1);
         source.connect(processor);
@@ -248,7 +248,7 @@ export class SpeechmaticsClient {
         processor.onaudioprocess = event => {
           if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(event.inputBuffer.getChannelData(0).buffer);
         };
-        opts.onStatus(this.reconnects ? "Listening — connection restored" : "Listening (compatibility mode)…");
+        opts.onStatus(this.reconnects ? "Listening again" : "Listening (compatibility mode)…");
       }
     } catch (error) {
       const name = error instanceof DOMException ? error.name : "";

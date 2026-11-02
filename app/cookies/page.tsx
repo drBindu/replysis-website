@@ -4,8 +4,9 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy  -  Replysis",
-  description: "What cookies Replysis sets and why.",
+  alternates: { canonical: "/cookies" },
+  title: "Cookie Policy | Replysis",
+  description: "The cookies Replysis sets, why each one is needed, how long it lasts, and how you can control them in your browser.",
 };
 
 const LAST_UPDATED = "October 27, 2026";

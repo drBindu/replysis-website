@@ -241,7 +241,7 @@ export function useInterview(config: {
       const safelyRetryable = res.status === 429 || (res.status >= 500 && data?.creditsRefunded === true);
       if (safelyRetryable) {
         const retryAfter = Number(res.headers.get("Retry-After") || "1");
-        setAnswer("Connection hiccup — retrying once…");
+        setAnswer("Retrying once…");
         await wait(Math.min(3000, Math.max(500, retryAfter * 1000)));
         ({ response: res, body: data } = await sendRequest());
       }
@@ -286,7 +286,7 @@ export function useInterview(config: {
       // The request never completed, so nothing is known about the charge.
       console.error("[Replysis] Answer generation failed:", (err as Error)?.name ?? "Error");
       setAnswer(!navigator.onLine
-        ? "Your internet connection dropped. Reconnect, then press Space to try again."
+        ? "That answer did not come through. Press Space to try again."
         : failedAnswerMessage(false));
     } finally {
       // In `finally` on purpose: the failure paths above return early, and a

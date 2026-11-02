@@ -175,7 +175,7 @@ export function useSession(userEmail: string) {
       setSessions(docs);
     } catch (err: any) {
       console.error("[session] loadSessions error:", err);
-      setLoadError("Could not load sessions. Check your connection and try again.");
+      setLoadError("Could not load sessions. Please try again.");
     }
 
     setLoading(false);

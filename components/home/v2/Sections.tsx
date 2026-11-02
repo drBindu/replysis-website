@@ -17,7 +17,7 @@ export function WhatItDoes() {
     ["It knows your background.",
       "Your resume and the role you are applying for shape every answer. You read it, you change what you like, and you say it in your own words."],
     ["It answers in about a second.",
-      "On a normal connection the first words usually appear in under a second. On a weak one it sends only what it needs, so it stays quick."],
+      "The first words usually appear in under a second, and it sends only what it needs so it stays quick."],
     ["It reads your screen.",
       "A coding problem or an error message on your screen becomes part of the question, so the answer is about what is actually in front of you."],
   ];
@@ -158,7 +158,7 @@ export function PlainFacts({ onNav }: { onNav: Nav }) {
           </div>
           <div>
             <dt>Speed</dt>
-            <dd>The first words of an answer usually appear in under a second. Your connection and the length of the question change that.</dd>
+            <dd>The first words of an answer usually appear in under a second. Longer questions can take a little more.</dd>
           </div>
           <div>
             <dt>Your data</dt>

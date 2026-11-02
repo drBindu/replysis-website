@@ -95,7 +95,7 @@ export default function SessionReport({ turns }: { turns: Turn[] }) {
           {(report.strongestCompetency || report.weakestCompetency) && (
             <p className="mb-3 text-[11px] font-medium text-slate-500">
               {report.strongestCompetency && <>Strongest: <span className="font-bold text-emerald-800">{report.strongestCompetency}</span></>}
-              {report.strongestCompetency && report.weakestCompetency && "  ·  "}
+              {report.strongestCompetency && report.weakestCompetency && ", "}
               {report.weakestCompetency && <>Weakest: <span className="font-bold text-amber-700">{report.weakestCompetency}</span></>}
             </p>
           )}
@@ -118,7 +118,7 @@ export default function SessionReport({ turns }: { turns: Turn[] }) {
                   </span>
                 </div>
                 {q.flags.length > 0 && (
-                  <p className="mt-1.5 text-[10px] font-medium text-amber-700">{q.flags.join(" · ")}</p>
+                  <p className="mt-1.5 text-[10px] font-medium text-amber-700">{q.flags.join(", ")}</p>
                 )}
               </div>
             ))}
@@ -143,7 +143,7 @@ export default function SessionReport({ turns }: { turns: Turn[] }) {
           <div className="grid gap-2 sm:grid-cols-2">
             {report.sevenDayPlan.map(day => (
               <div key={day.day} className="rounded-lg border p-3" style={{ borderColor: C.border, background: C.panel }}>
-                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-800">Day {day.day} · {day.focus}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-800">Day {day.day}: {day.focus}</p>
                 <p className="mt-1 text-[11px] font-semibold leading-relaxed text-slate-600">{day.drill}</p>
               </div>
             ))}

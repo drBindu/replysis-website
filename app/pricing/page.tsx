@@ -118,7 +118,7 @@ const ALL_PLANS: {
     id: "pro",
     name: "Pro",
     emoji: "👑",
-    tagline: "The complete toolkit for an active job search.",
+    tagline: "Live answers for your interviews, every month.",
     monthlyPrice: 34.99,
     inrMonthly: 699,
     inrAnnualYearly: 6990,
@@ -149,7 +149,7 @@ const ALL_PLANS: {
     id: "max",
     name: "Max",
     emoji: "👑",
-    tagline: "Maximum access for interview-heavy weeks.",
+    tagline: "The most listening time, with Maya included.",
     monthlyPrice: 79.99,
     inrMonthly: 1299,
     inrAnnualYearly: 12990,
@@ -269,7 +269,7 @@ const FAQS = [
   },
   {
     q: "What if I want to stop paying?",
-    a: "Email support@replysis.com from your account email before the next renewal. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
+    a: "Cancel from Account & Billing before the next renewal, or email support@replysis.com from your account email and we will do it for you. You keep access until the end of the period already paid for. If something goes wrong with a charge, include the account email and payment date so we can investigate."
   },
 ];
 
@@ -863,7 +863,7 @@ export default function PricingPage() {
       {/* ══ CLOSING ═════════════════════════════════════════════════════════ */}
       <section className="hv2-section hv2-end">
         <div className="hv2-wrap">
-          <h2 className="hv2-serif hv2-h2">Your next interview is <em>your best interview.</em></h2>
+          <h2 className="hv2-serif hv2-h2">Try it before your <em>next interview.</em></h2>
           <p className="hv2-p">Start free today. No card needed. See it work in your next real interview, then decide.</p>
           <p className="hv2-fine">
             <button

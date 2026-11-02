@@ -566,7 +566,7 @@ export default function InterviewPage() {
             <div className="hidden sm:flex items-center gap-2">
               <div className="h-3 w-px bg-slate-300" />
               <span className="text-[12px] font-semibold text-slate-500 max-w-[200px] truncate">
-                {[config.role, config.companyName].filter(Boolean).join(" · ")}
+                {[config.role, config.companyName].filter(Boolean).join(", ")}
               </span>
             </div>
           )}

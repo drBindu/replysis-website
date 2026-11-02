@@ -80,7 +80,7 @@ function CreditsDisplay({
           ? <Sparkles size={10} style={{ color: isEmpty ? "#ef4444" : "#1C7A3E" }} />
           : <Coins size={10} style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#94a3b8" }} />}
         <span className="text-[11px] font-black" style={{ color: isEmpty ? "#ef4444" : isLow ? "#2E8B45" : "#475569" }}>
-          {planLabel} · {answerCount(credits).toLocaleString()}
+          {planLabel}: {answerCount(credits).toLocaleString()}
           <span className="font-normal text-[10px] ml-1 opacity-60">{answerCount(credits) === 1 ? "answer" : "answers"}</span>
           {timeEmpty && (
             <span className="font-normal text-[10px] ml-2">Monthly listening limit reached</span>
@@ -380,7 +380,7 @@ export default function RealInterviewPage() {
                 </div>
 
                 <p className="text-center text-[10px] font-semibold text-slate-400">
-                  Raw audio is not stored · AI suggestions require review
+                  Raw audio is not stored. AI suggestions need your review
                 </p>
               </motion.div>
             </div>

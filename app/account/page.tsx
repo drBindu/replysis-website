@@ -309,7 +309,7 @@ export default function AccountPage() {
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Answers left</p>
-                    <p className="mt-1 text-3xl font-black tracking-tight">{answerCount(credits).toLocaleString()} <span className="text-sm font-semibold text-slate-400">/ {answerCount(cap).toLocaleString()}</span></p>
+                    <p className="mt-1 text-3xl font-black tracking-tight">{answerCount(credits).toLocaleString()} {!isPaid && <span className="text-sm font-semibold text-slate-400">/ {answerCount(cap).toLocaleString()}</span>}</p>
                   </div>
                   <span className="text-sm font-black text-[#267b42]">{percentage}% left</span>
                 </div>
@@ -371,7 +371,7 @@ export default function AccountPage() {
               {[
                 [History, "Invoices", hasBillingAccount ? "Available in your secure Stripe portal" : "Created after your first paid checkout"],
                 [CalendarClock, "Subscription", profile?.planSource === "trial" ? `Free trial, ends ${formatDate(profile?.passExpiresAt)}` : profile?.planSource === "pass" ? `Paid once, ends ${formatDate(profile?.passExpiresAt)}` : isCanceling ? `Access continues until ${formatDate(profile?.stripeCurrentPeriodEnd)}` : isPaid ? "Renews according to your selected billing period" : "No active paid subscription"],
-                [ShieldCheck, "Payment details", "Stored and processed by Stripe—not Replysis"],
+                [ShieldCheck, "Payment details", "Stored and processed by Stripe, not Replysis"],
               ].map(([Icon, label, value]) => {
                 const ItemIcon = Icon as typeof History;
                 return (
@@ -401,7 +401,7 @@ export default function AccountPage() {
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#267b42]">Quick start</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Three simple steps—no guessing</h2>
+              <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Three simple steps</h2>
               <p className="mt-2 text-sm text-slate-600">Use this order for the strongest first Replysis experience.</p>
             </div>
             <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-500"><Sparkles className="h-4 w-4 text-[#267b42]" /> Start anywhere; your work stays in your account.</div>
@@ -430,7 +430,7 @@ export default function AccountPage() {
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#1C7A3E]"><UserRound className="h-5 w-5" /></div>
             <div>
               <h2 className="text-lg font-black">Account details</h2>
-              <p className="mt-1 text-sm text-slate-600">{profile?.displayName || user?.displayName || "Replysis user"} · {user?.email || profile?.email}</p>
+              <p className="mt-1 text-sm text-slate-600">{profile?.displayName || user?.displayName || "Replysis user"}, {user?.email || profile?.email}</p>
               <p className="mt-2 flex items-center gap-2 text-xs text-slate-500"><Check className="h-3.5 w-3.5 text-[#267b42]" /> Your sign-in and payment information are protected separately.</p>
             </div>
           </div>

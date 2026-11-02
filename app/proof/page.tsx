@@ -13,11 +13,18 @@ export default function ProofPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewState, setReviewState] = useState("");
   const [form, setForm] = useState({ rating:5, title:"", body:"", role:"", platform:"Web" });
-  const secure = typeof window !== "undefined" && window.isSecureContext;
-  const microphone = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
-  const screenCapture = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getDisplayMedia);
+  // Read after the page mounts: the server has no browser to ask, and a different first render is a hydration error.
+  const [browser, setBrowser] = useState<{ secure: boolean; microphone: boolean; screenCapture: boolean } | null>(null);
+  const secure = browser?.secure ?? false;
+  const microphone = browser?.microphone ?? false;
+  const screenCapture = browser?.screenCapture ?? false;
 
   useEffect(() => {
+    setBrowser({
+      secure: window.isSecureContext,
+      microphone: Boolean(navigator.mediaDevices?.getUserMedia),
+      screenCapture: Boolean(navigator.mediaDevices?.getDisplayMedia),
+    });
     fetch("/api/healthz", { cache:"no-store" }).then(response => setHealth(response.ok ? "online" : "unavailable")).catch(()=>setHealth("unavailable"));
     fetch("/api/reviews").then(response=>response.json()).then(data=>setReviews(data.reviews ?? [])).catch(()=>setReviews([]));
   }, []);
@@ -32,16 +39,16 @@ export default function ProofPage() {
   };
 
   const tests = [
-    { label:"Secure website context", ok:secure, detail:secure?"HTTPS security context available":"Open the production HTTPS site" },
-    { label:"Microphone API", ok:microphone, detail:microphone?"Browser exposes audio capture":"This browser cannot expose microphone capture" },
-    { label:"Screen-share API", ok:screenCapture, detail:screenCapture?"Browser exposes screen selection":"Use the Windows or macOS app for capture" },
+    { label:"Secure website context", ok:secure, detail:!browser?"Checking now…":secure?"HTTPS security context available":"Open the production HTTPS site" },
+    { label:"Microphone API", ok:microphone, detail:!browser?"Checking now…":microphone?"Browser exposes audio capture":"This browser cannot expose microphone capture" },
+    { label:"Screen-share API", ok:screenCapture, detail:!browser?"Checking now…":screenCapture?"Browser exposes screen selection":"Use the Windows or macOS app for capture" },
     { label:"Replysis API", ok:health==="online", detail:health==="checking"?"Checking now…":health==="online"?"Health endpoint responded successfully":"Health endpoint is unavailable" },
   ];
 
   return <main className="min-h-screen bg-[#eef2ee] text-slate-900">
     <nav className="border-b border-slate-200 bg-white"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5"><div className="flex items-center gap-3"><BrandIcon size={34}/><span className="font-black">Replysis</span><span className="text-xs font-black text-emerald-700">Proof Center</span></div><Link href="/trust" className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600"><ArrowLeft size={14}/> Trust Center</Link></div></nav>
     <div className="mx-auto max-w-6xl px-5 py-12">
-      <div className="grid gap-8 lg:grid-cols-[1fr_390px]"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-800">Evidence over slogans</p><h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Check the product before you trust it.</h1><p className="mt-4 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">Live compatibility checks, honest platform scope, and customer reviews that are only labeled verified after a confirmed purchase. No placeholder testimonials.</p></div><div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6"><ShieldCheck className="text-emerald-800"/><p className="mt-5 text-sm font-black">What “verified” means here</p><p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">A verified review requires a paid plan or an answer pack purchase and is moderated before publication. It does not mean Replysis is SOC 2 certified or independently endorsed.</p></div></div>
+      <div className="grid gap-8 lg:grid-cols-[1fr_390px]"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-800">Checks and reviews</p><h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Check the product before you trust it.</h1><p className="mt-4 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">Live compatibility checks, honest platform scope, and customer reviews that are only labeled verified after a confirmed purchase. No placeholder testimonials.</p></div><div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6"><ShieldCheck className="text-emerald-800"/><p className="mt-5 text-sm font-black">What “verified” means here</p><p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">A verified review requires a paid plan or an answer pack purchase and is moderated before publication. It does not mean Replysis is SOC 2 certified or independently endorsed.</p></div></div>
 
       <section className="mt-10"><div className="mb-4 flex items-center gap-2"><Activity size={17} className="text-emerald-800"/><h2 className="text-xl font-black">This browser’s compatibility check</h2></div><div className="grid gap-3 md:grid-cols-2">{tests.map(test=><div key={test.label} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><span className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full ${test.ok?"bg-emerald-50 text-emerald-800":"bg-amber-50 text-amber-700"}`}>{test.ok?<Check size={14}/>:<CircleAlert size={14}/>}</span><div><p className="text-sm font-black">{test.label}</p><p className="mt-1 text-xs font-medium text-slate-500">{test.detail}</p></div></div>)}</div></section>
 

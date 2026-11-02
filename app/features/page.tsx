@@ -4,7 +4,8 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "Features  -  Replysis",
+  alternates: { canonical: "/features" },
+  title: "Features | Replysis",
   description: "A connected toolkit for resume preparation, interview practice, and live guidance.",
 };
 
@@ -48,7 +49,7 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Fast Streaming Responses",
     tagline: "Suggestions stream as they generate.",
-    desc: "Replysis is designed around a sub-two-second response target for live use. Exact timing depends on the network, transcription, question length, model, and provider availability.",
+    desc: "Replysis is designed around a sub-two-second response target for live use. Exact timing depends on transcription, question length, model, and provider availability.",
     points: ["Token-by-token answer streaming", "Low-latency transcription", "Sub-two-second response target", "Clear service-state feedback"],
   },
   {

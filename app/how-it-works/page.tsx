@@ -4,7 +4,8 @@ import { PageHeader } from "../../components/PageShell";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "How It Works  -  Replysis",
+  alternates: { canonical: "/how-it-works" },
+  title: "How It Works | Replysis",
   description: "Three steps: upload your resume, start your interview, get the answer.",
 };
 
@@ -50,7 +51,7 @@ const STEPS = [
     detail: [
       { label: "What you see", value: "A focused floating overlay showing the suggestion, streaming token-by-token." },
       { label: "Capture behavior", value: "The desktop app targets standard screen-share paths. Coverage depends on the operating system and capture tool." },
-      { label: "Speed", value: "Designed for a sub-two-second response start; network and provider conditions can affect timing." },
+      { label: "Speed", value: "Designed for a sub-two-second response start; provider conditions can affect timing." },
     ],
     tip: "Do not read the answer word-for-word. Use it as a structured outline, verify the facts, and respond naturally in your own words.",
   },
@@ -126,7 +127,7 @@ export default function HowItWorksPage() {
       <section className="hv2-section hv2-end">
         <div className="hv2-wrap">
           <h2 className="hv2-serif hv2-h2">Start your first <em>session.</em></h2>
-          <p className="hv2-p">Free mock interviews, no credit card. See exactly how it feels before your real interview.</p>
+          <p className="hv2-p">One free mock interview, no credit card. See exactly how it feels before your real interview.</p>
           <p className="hv2-fine">
             <Link href="/mock-interview" className="hv2-btn">Try a mock interview free</Link>
             <Link href="/features" className="hv2-link" style={{ marginLeft: 22 }}>See all features</Link>

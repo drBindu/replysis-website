@@ -64,7 +64,7 @@ export default function AnswerPacks() {
         : "We could not start checkout. You have not been charged. Please try again.");
     } catch (err) {
       console.error("[Replysis] Answer pack checkout request failed:", (err as Error)?.name ?? "Error");
-      setError("We could not reach checkout. Check your connection. You have not been charged.");
+      setError("Checkout did not open. You have not been charged. Please try again.");
     }
     setLoading(null);
   };

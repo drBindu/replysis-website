@@ -263,7 +263,7 @@ export default function SetupForm({ onStart, onDashboard }: Props) {
                 <><UploadCloud size={28} className="text-slate-400" />
                   <div className="text-center">
                     <p className="text-slate-600 font-semibold text-sm mb-1">Click to upload resume</p>
-                    <p className="text-slate-400 text-xs">PDF or TXT · For Word docs, save as PDF first</p>
+                    <p className="text-slate-400 text-xs">PDF or TXT. For Word docs, save as PDF first</p>
                   </div></>
               )}
             </motion.div>

@@ -6,8 +6,8 @@ import { questionPath } from "../../data/questionSlugs";
 import "../home-v2.css";
 
 export const metadata: Metadata = {
-  title: "Interview Questions and How to Answer Them  -  Replysis",
-  description: "Common interview questions for any role, India fresher interview questions, and role specific questions for software, product, data, sales and leadership, each with an outline of a strong answer and the mistake to avoid.",
+  title: "Interview Questions and How to Answer Them | Replysis",
+  description: "Interview questions for any role, freshers in India, software, product, data, sales and leadership, each with a strong answer outline.",
   alternates: { canonical: "https://replysis.com/interview-questions" },
 };
 

@@ -12,7 +12,7 @@ export type InterviewQuestion = {
 // "useful for preparing for this interview style"; these are not leaked,
 // guaranteed, or officially supplied questions from those companies.
 export const INTERVIEW_QUESTIONS: InterviewQuestion[] = [
-  { id:"g-se-1", company:"General", role:"Software Engineering", category:"Behavioral", difficulty:"Foundation", question:"Tell me about yourself and why this role is the right next step.", focus:"A focused 60–90 second career narrative" },
+  { id:"g-se-1", company:"General", role:"Software Engineering", category:"Behavioral", difficulty:"Foundation", question:"Tell me about yourself and why this role is the right next step.", focus:"A focused 60 to 90 second career narrative" },
   { id:"g-se-2", company:"General", role:"Software Engineering", category:"Coding", difficulty:"Foundation", question:"Given a string, return the first non-repeating character and explain the complexity.", focus:"Hash maps, edge cases, complexity" },
   { id:"g-se-3", company:"General", role:"Software Engineering", category:"Coding", difficulty:"Intermediate", question:"Design an LRU cache with O(1) get and put operations.", focus:"Data structure composition and invariants" },
   { id:"g-se-4", company:"General", role:"Software Engineering", category:"System Design", difficulty:"Advanced", question:"Design a notification service for email, SMS, and push at large scale.", focus:"Queues, preferences, retries, idempotency" },

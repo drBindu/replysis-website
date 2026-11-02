@@ -210,9 +210,9 @@ export function analyzeInterviewTurns(
   const paceLabel = paceWpm == null
     ? "Practice recording required"
     : paceWpm < 105
-      ? "Slow — add energy"
+      ? "Slow, add energy"
       : paceWpm > 175
-        ? "Fast — add pauses"
+        ? "Fast, add pauses"
         : "Clear conversational pace";
 
   const lengthScore = answers.length === 0 ? 0
@@ -268,9 +268,9 @@ export function analyzeInterviewTurns(
   if (fillerTotal > Math.max(2, answers.length)) improvementPlan.push(`Replace repeated filler phrases with a one-second pause; ${fillers[0]?.phrase ?? "fillers"} appeared most often.`);
   if (paceWpm != null && paceWpm > 175) improvementPlan.push("Slow down at transitions and pause before the result so the key point lands.");
   if (paceWpm != null && paceWpm < 105) improvementPlan.push("Increase energy by shortening setup and moving to the action sooner.");
-  if (averageAnswerWords > 180) improvementPlan.push("Aim for 60–150 words per behavioral answer unless the interviewer asks for more detail.");
+  if (averageAnswerWords > 180) improvementPlan.push("Aim for 60 to 150 words per behavioral answer unless the interviewer asks for more detail.");
   if (averageAnswerWords > 0 && averageAnswerWords < 35) improvementPlan.push("Add one concrete action and one outcome; the current answers are too brief to prove impact.");
-  if (repeatedAnswers.length > 0) improvementPlan.push("Two or more answers overlap heavily — prepare a distinct story for each question category.");
+  if (repeatedAnswers.length > 0) improvementPlan.push("Two or more answers overlap heavily, so prepare a distinct story for each question category.");
   if (improvementPlan.length === 0 && answers.length > 0) improvementPlan.push("Raise the difficulty and practice one follow-up question for every example.");
 
   const sevenDayPlan = buildSevenDayPlan(star, fillerTotal, answers.length, paceWpm, weakestCompetency, repeatedAnswers.length > 0);

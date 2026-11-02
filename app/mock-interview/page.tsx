@@ -569,7 +569,7 @@ function AuthGate({ onSignIn }: { onSignIn: () => void }) {
           <LogIn size={16} /> Sign in / Create account
         </button>
         <p style={{ fontSize: 11, color: T.textFaint, marginTop: 16 }}>
-          Secure sign-in · Monthly usage shown before you begin
+          Secure sign-in. Monthly usage shown before you begin
         </p>
       </motion.div>
     </div>
@@ -1130,7 +1130,7 @@ export default function MockInterviewPage() {
               ? "Listening is unavailable for this account right now. Try again later or contact support."
               : NO_ANSWERS_LEFT
             : tokenRes.status === 429
-              ? "Too many connection attempts. Please wait a moment and try again."
+              ? "Too many attempts. Please wait a moment and try again."
             : LISTENING_UNAVAILABLE);
         releaseEarlyMic();
         return;
@@ -2145,7 +2145,7 @@ export default function MockInterviewPage() {
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Job Description</p>
-                      <p style={{ fontSize: 11, color: T.textFaint }}>Optional · Strongly recommended for targeted questions</p>
+                      <p style={{ fontSize: 11, color: T.textFaint }}>Optional, strongly recommended for targeted questions</p>
                     </div>
                   </div>
                   <textarea
@@ -2174,7 +2174,7 @@ export default function MockInterviewPage() {
                       <div style={{ textAlign: "left" }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>AI Model</p>
                         <p style={{ fontSize: 11, color: T.textFaint }}>
-                          {activeModel.name} · {activeModel.speed}
+                          {activeModel.name}, {activeModel.speed}
                         </p>
                       </div>
                     </div>
@@ -2210,7 +2210,7 @@ export default function MockInterviewPage() {
                       <div style={{ textAlign: "left" }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Difficulty</p>
                         <p style={{ fontSize: 11, color: T.textFaint }}>
-                          {activeDiff.label} · {activeDiff.sub}
+                          {activeDiff.label}, {activeDiff.sub}
                         </p>
                       </div>
                     </div>
@@ -2440,7 +2440,7 @@ export default function MockInterviewPage() {
                         <p style={{ fontSize: 20, fontWeight: 900, color: T.warn, lineHeight: 1.1, marginTop: 2 }}>
                           {loadingCredits
                             ? <Loader2 size={15} style={{ display: "inline", animation: "spin 1s linear infinite" }} />
-                            : credits !== null ? answerCount(credits).toLocaleString() : "—"}
+                            : credits !== null ? answerCount(credits).toLocaleString() : ""}
                         </p>
                       </div>
                     </div>
@@ -2543,7 +2543,7 @@ export default function MockInterviewPage() {
                       ))}
                     </div>
                     <span style={{ fontSize: 11.5, fontWeight: 600, color: T.textFaint }}>
-                      Interview · {activeModel.name}
+                      Interview with {activeModel.name}
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2773,7 +2773,7 @@ export default function MockInterviewPage() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 10, fontWeight: 800, color: T.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                        Question {Math.max(1, baseIndex)} of {baseTotal}{isFollowUp ? " · follow-up" : ""}
+                        Question {Math.max(1, baseIndex)} of {baseTotal}{isFollowUp ? ", follow-up" : ""}
                       </span>
                       {taggedQuestions[index] && (
                         <DifficultyBadge
@@ -2937,7 +2937,7 @@ export default function MockInterviewPage() {
                   Results
                 </h2>
                 <p style={{ fontSize: 13, color: T.textMid }}>
-                  {scores.length} of {questions.length} questions answered · {activeModel.name}
+                  {scores.length} of {questions.length} questions answered with {activeModel.name}
                 </p>
               </div>
 

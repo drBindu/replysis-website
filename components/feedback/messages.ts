@@ -41,7 +41,7 @@ export type FailureCopy = {
 export const FAILURE_COPY: Record<FailureKind, FailureCopy> = {
   offline: {
     title: "You are offline",
-    body: "We could not reach Replysis right now. Anything already saved remains available. Check your connection and try again.",
+    body: "That did not go through. Anything already saved remains available. Please try again.",
     action: "Try again",
   },
   timeout: {

@@ -19,7 +19,8 @@ const FIREBASE_JWKS = createRemoteJWKSet(
 function redirectToAuth(request: NextRequest, pathname: string) {
   const url = request.nextUrl.clone();
   url.pathname = "/";
-  url.searchParams.set("auth", "required");
+  // The free tries on the site are how new people arrive: they need an account, not a sign-in box.
+  url.searchParams.set("auth", pathname === "/mock-interview" || pathname === "/real-interview" ? "signup" : "required");
   url.searchParams.set("next", pathname);
   return NextResponse.redirect(url);
 }
