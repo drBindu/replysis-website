@@ -56,3 +56,6 @@ export const FREE_TASTES_PER_DAY = 3;
  * sessions without interviews); nobody practising ever reaches it.
  */
 export const MAYA_CONNECTIONS_PER_DAY = 40;
+
+/** Times one account may bring Maya in for its free interview without starting it. Stops free video, not real tries. */
+export const MAYA_TASTE_JOINS = 12;

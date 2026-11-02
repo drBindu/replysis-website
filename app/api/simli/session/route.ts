@@ -11,7 +11,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
-import { FREE_TASTES_PER_DAY, MAYA_ADDON, MAYA_CONNECTIONS_PER_DAY } from "../../../../data/mayaAddon";
+import { FREE_TASTES_PER_DAY, MAYA_ADDON, MAYA_CONNECTIONS_PER_DAY, MAYA_TASTE_JOINS } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +61,10 @@ export async function POST(req: Request) {
     const joins = Number(await getFirestore().collection("avatar_usage").doc(`${uid}_${new Date().toISOString().slice(0, 10)}`).get()
       .then((d) => d.data()?.sessions ?? 0).catch(() => 0));
     if (joins >= 4 && userData?.tester !== true) return NextResponse.json({ error: "Too many tries today" }, { status: 429 });
+    // The 4 a day came back every day, so an unused free interview was free video for ever.
+    if (Number(userData?.mayaTasteJoins ?? 0) >= MAYA_TASTE_JOINS && userData?.tester !== true && !internal) {
+      return NextResponse.json({ error: "Too many tries today" }, { status: 429 });
+    }
   }
 
   // Interviews are counted when one starts (/api/simli/begin), never here. Here: the month's interviews must not all be
@@ -75,6 +79,7 @@ export async function POST(req: Request) {
     if (connections >= MAYA_CONNECTIONS_PER_DAY) return "day";
     if (!taste && interviews >= access.monthly) return "month";
     tx.set(usageRef, { uid, day, sessions: connections + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    if (taste && !rejoin) tx.set(getFirestore().collection("users").doc(uid), { mayaTasteJoins: FieldValue.increment(1) }, { merge: true });
     return "ok";
   }).catch(() => "error");
   if (allowed !== "ok") {

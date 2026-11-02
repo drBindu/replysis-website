@@ -5,8 +5,10 @@
 
 import { NextResponse } from "next/server";
 import { getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../lib/rate-limit";
 import { verifiedUid } from "../../lib/verify-user";
+import { mockConversationAllowed } from "../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,19 @@ async function cloudVoice(text: string, rate: number): Promise<Buffer | null> {
   }
 }
 
+// Her lines arrive a sentence at a time, and a Firestore read before each would be heard: a yes holds for a minute.
+const voiceAllowedUntil = new Map<string, number>();
+
+async function voiceAllowed(uid: string): Promise<boolean> {
+  if ((voiceAllowedUntil.get(uid) ?? 0) > Date.now()) return true;
+  // A store fault must not silence an interview.
+  const user = await getFirestore().collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
+  if (user && !mockConversationAllowed(user)) return false;
+  if (voiceAllowedUntil.size > 5000) voiceAllowedUntil.clear();
+  voiceAllowedUntil.set(uid, Date.now() + 60_000);
+  return true;
+}
+
 export async function POST(req: Request) {
   const uid = await verifiedUid(req);
   if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -70,6 +85,7 @@ export async function POST(req: Request) {
   }
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ error: "Voice unavailable" }, { status: 503 });
+  if (!(await voiceAllowed(uid))) return NextResponse.json({ error: "No interview to voice" }, { status: 402 });
 
   const body = await req.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.replace(/\s+/g, " ").trim() : "";

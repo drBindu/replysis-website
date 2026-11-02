@@ -1063,24 +1063,28 @@ export default function ResumePage() {
   };
 
   /* ── AI REWRITE BULLET ── */
+  // The server charges these, and gives the answer back if it could not write anything.
   const handleRewriteBullet = async (section: string, itemIdx: number, bulletIdx: number) => {
-    const ok = await checkAndDeduct("mock_script"); if (!ok) return;
     const key = `${section}-${itemIdx}-${bulletIdx}`;
     setRewritingBullet(key);
     try {
       const data = await fetchAi({ mode:"rewrite_bullet", bullet:resumeData[section][itemIdx].bullets[bulletIdx], resume:JSON.stringify(resumeData), jd:jd||"N/A", provider:aiProvider });
       if (data?.rewritten||data?.bullet) { updateBullet(section,itemIdx,bulletIdx,data.rewritten||data.bullet); recordCreditUsage("Bullet rewritten","mock_script",5); }
-    } catch { /* silent */ }
+      else notifyFailure("ai");
+    } catch (err) {
+      console.error("[Replysis] Bullet rewrite failed:", (err as Error)?.name ?? "Error");
+      notifyFailure("ai");
+    }
     setRewritingBullet(null);
   };
 
   /* ── AI GENERATE SUMMARY ── */
   const handleGenerateSummary = async () => {
-    const ok = await checkAndDeduct("mock_script"); if (!ok) return;
     setLoading(true); setAiAction("summary");
     try {
       const data = await fetchAi({ mode:"generate_summary", resume:JSON.stringify(resumeData), jd:jd||"N/A", provider:aiProvider });
       if (data?.summary) { set(d=>({...d,summary:data.summary})); recordCreditUsage("Summary written","mock_script",5); }
+      else notifyFailure("ai");
     } catch (err) {
       console.error("[Replysis] Summary generation failed:", (err as Error)?.name ?? "Error");
       notifyFailure("ai");

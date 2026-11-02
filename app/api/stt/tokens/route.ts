@@ -9,8 +9,8 @@ import {
   isSmallTalk as isPleasantrySmallTalk,
   isGreetingPlusSmallTalk as isPleasantryGreetingPlusSmallTalk,
 } from "../../../real-interview/_lib/promptBuilder";
-import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset } from "../../../../data/productFacts";
-import { mockStepsFree } from "../../../lib/paid-plan";
+import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset, nextMonthStartISO as nextResetISO } from "../../../../data/productFacts";
+import { chargeCap, mockConversationAllowed, mockStepsFree } from "../../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +103,7 @@ const MAX_MESSAGES = 24;
 const MAX_MESSAGE_CHARS = 6_000;
 const VALID_MODES = new Set([
   "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up", "suggest_answer",
-  "maya_turn",
+  "maya_turn", "rewrite_bullet", "generate_summary",
 ]);
 
 function requestTooLarge(req: Request): boolean {
@@ -338,6 +338,8 @@ const CREDIT_COSTS: Record<string, number> = {
   follow_up:          0,   // the interviewer's short follow-up in a mock interview: part of the conversation, not charged
   suggest_answer:     0,   // the suggested answer a candidate can reveal with the eye button in a mock interview
   maya_turn:          0,   // what Maya says back after each answer: the conversation itself, not charged
+  rewrite_bullet:     CREDIT_ACTION_COSTS.mock_script,   // resume builder: one bullet rewritten
+  generate_summary:   CREDIT_ACTION_COSTS.mock_script,   // resume builder: the summary written
   realtime:           CREDIT_ACTION_COSTS.realtime_per_minute,
   stt_token:          CREDIT_ACTION_COSTS.live_transcription_start,
 };
@@ -413,15 +415,6 @@ const UNLIMITED_EMAILS = new Set(
     .filter(Boolean),
 );
 
-// First day of next month, midnight — when the monthly allowance refills.
-function nextResetISO(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
 /**
  * The door check for listening: is there enough left for at least one answer?
  *
@@ -460,6 +453,7 @@ async function hasCreditsToListen(
 // in the browser showed "nothing recorded" (2026-10-21). Same row shape as the Java backend's UsageEventService.
 const USAGE_ACTION: Record<string, string> = {
   realtime: "answer", generate_script: "mock_script", generate_feedback: "mock_feedback",
+  rewrite_bullet: "resume_bullet", generate_summary: "resume_summary",
   generate_questions: "question_generation", stt_token: "live_listen",
 };
 async function recordUsage(uid: string, email: string, mode: string, credits: number) {
@@ -481,6 +475,12 @@ async function checkAndDeductCredits(
   email: string,
   mode:  string
 ): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean; waived?: boolean }> {
+  // The interview's conversation costs no answers, but it does cost us a model call, so it needs a mock interview to be
+  // part of: a free interview or Maya on the plan, or answers left. Nothing here may stop an interview on a store fault.
+  if (MOCK_CONVERSATION.has(mode) && db && uid && !UNLIMITED_EMAILS.has(email.toLowerCase())) {
+    const data = await db.collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
+    if (data && !mockConversationAllowed(data)) return { allowed: false, remaining: 0 };
+  }
   // The mock interview uses no answers with the Practice plan or the Maya add-on, and its one free interview is free
   // (owner, 2026-10-26): its own steps use no answers then.
   if (MOCK_MODES.has(mode) && db && uid) {
@@ -491,6 +491,8 @@ async function checkAndDeductCredits(
   if (result.allowed) await recordUsage(uid, email, mode, CREDIT_COSTS[mode] ?? 0);
   return result;
 }
+
+const MOCK_CONVERSATION = new Set(["maya_turn", "follow_up", "suggest_answer"]);
 
 /** The mock interview's own steps (shared with nothing else that costs money). */
 const MOCK_MODES = new Set(["generate_questions", "generate_feedback", "generate_script"]);
@@ -556,6 +558,7 @@ async function checkAndDeductCreditsCore(
         credits = creditsAfterMonthlyReset(plan, credits, purchasedCredits);
         used    = 0;
         updates.creditsUsed      = 0;
+        updates.audioMinutesUsed = 0;   // the listening month ends with the credits month
         updates.creditsResetDate = nextResetISO();
       } else if (!userData.creditsResetDate) {
         // Backfill a reset date for older docs that never had one.
@@ -569,7 +572,7 @@ async function checkAndDeductCreditsCore(
 
       updates.credits     = credits - cost;
       updates.creditsUsed = used + cost;
-      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - cap));
+      const purchasedSpend = Math.min(cost, Math.max(0, used + cost - chargeCap(userData)));
       updates.purchasedCredits = Math.max(0, purchasedCredits - purchasedSpend);
       tx.update(userRef, updates);
       return { allowed: true, remaining: credits - cost };
@@ -1274,6 +1277,33 @@ export async function POST(req: Request) {
       } catch (err: any) {
         console.error(`[stt] generate_script failed type=${err?.name ?? "Error"}`);
         return await refundAndRespond({ betterAnswerExample: "", resume_proof: "", error: "Failed to generate script" });
+      }
+    }
+
+    // ════════════════════════════════════════════════════
+    // RESUME BUILDER: ONE BULLET, OR THE SUMMARY
+    // ════════════════════════════════════════════════════
+    if (mode === "rewrite_bullet" || mode === "generate_summary") {
+      const safeResume = sanitizeText(resume).slice(0, 8000);
+      const safeJd     = sanitizeText(jd).slice(0, 3000);
+      const bullet     = sanitizeText(typeof (body as any).bullet === "string" ? (body as any).bullet : "").slice(0, 1000);
+      if (mode === "rewrite_bullet" && !bullet.trim()) return await refundAndRespond({ error: "Nothing to rewrite" }, 400);
+      try {
+        const rules = "Use only facts already in the resume. Never invent numbers, employers or tools. No placeholders. Plain words, no dashes.";
+        const systemPrompt = mode === "rewrite_bullet"
+          ? `You improve one resume bullet: start with a strong verb, one line, specific. ${rules}\nReturn ONLY this JSON: {"rewritten":"..."}`
+          : `You write a resume summary: 2 or 3 sentences in the first person with no "I", matched to the job when one is given. ${rules}\nReturn ONLY this JSON: {"summary":"..."}`;
+        const userPrompt = `RESUME:\n${safeResume}\n\nJOB DESCRIPTION:\n${safeJd || "N/A"}${mode === "rewrite_bullet" ? `\n\nBULLET:\n${bullet}` : ""}`;
+        const rawContent = await callLLM(selectedModel, systemPrompt, userPrompt, { temperature: 0.4, max_tokens: 400, json: true });
+        let out: any = {};
+        try { out = JSON.parse(cleanJson(rawContent)); } catch { out = {}; }
+        const text = String((mode === "rewrite_bullet" ? out?.rewritten : out?.summary) ?? "").trim();
+        if (!text) return await refundAndRespond({ error: "Could not write that. Please try again." });
+        await logUsageAndIncrement(userEmail || "Unknown", `Resume-${provider}`, { mode, transcript: "", duration: duration || 0 });
+        return NextResponse.json(mode === "rewrite_bullet" ? { rewritten: text } : { summary: text });
+      } catch (err: any) {
+        console.error(`[stt] ${mode} failed type=${err?.name ?? "Error"}`);
+        return await refundAndRespond({ error: "Could not write that. Please try again." });
       }
     }
 
