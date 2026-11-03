@@ -8,7 +8,8 @@
 // 3. Select events: checkout.session.completed,
 //                   customer.subscription.deleted,
 //                   customer.subscription.updated,
-//                   invoice.paid, invoice.payment_failed
+//                   invoice.paid, invoice.payment_failed,
+//                   charge.refunded, charge.dispute.created
 // 4. Copy webhook signing secret → add to .env as STRIPE_WEBHOOK_SECRET
 // ═══════════════════════════════════════════════════════════════
 
@@ -21,6 +22,7 @@ import { validMinutes } from "../../../../data/interviewMinutes";
 import { MAYA_ADDON, MOCK_PLAN } from "../../../../data/mayaAddon";
 import { sendOwnerAlert } from "../../../lib/user-mail";
 import { practiceActive } from "../../../lib/paid-plan";
+import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata, type Purchase } from "../../../lib/refund-rules";
 
 /** Tells the owner a Maya add-on was bought, so the Simli plan can be raised before it is needed (owner, 2026-10-26). */
 const alertMayaBought = (how: string) => sendOwnerAlert(`Maya add-on bought (${how})`, `Someone just bought the mock interview add-on (Maya).\n\nIf Simli is still on the Free plan, upgrade it to Hobby now so Maya can join for them:\nhttps://app.simli.com/billing  (account booms5089@gmail.com)\n\nThe Free plan allows only one live Maya at a time and 50 minutes a month.`);
@@ -521,6 +523,99 @@ async function applyMayaPass(session: any) {
   await alertMayaBought("India, paid once");
 }
 
+async function stripeGet(path: string): Promise<any> {
+  const res = await fetch(`https://api.stripe.com/v1/${path}`, { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+  if (!res.ok) throw new Error(`Stripe lookup failed: ${res.status}`);
+  return res.json();
+}
+
+/** The subscription a charge paid for, if any. New Stripe API versions keep the link in invoice_payments, older ones on the charge. */
+async function subscriptionOfCharge(charge: any, paymentIntentId: string | null): Promise<any | null> {
+  let invoiceId: unknown = charge.invoice;
+  if (!invoiceId && paymentIntentId) {
+    const paid = await stripeGet(`invoice_payments?payment[type]=payment_intent&payment[payment_intent]=${encodeURIComponent(paymentIntentId)}&limit=1`);
+    invoiceId = paid?.data?.[0]?.invoice;
+  }
+  const id = typeof invoiceId === "string" ? invoiceId : (invoiceId as any)?.id;
+  if (!id) return null;
+  const subscriptionId = getInvoiceSubscriptionId(await stripeGet(`invoices/${encodeURIComponent(id)}`));
+  return subscriptionId ? stripeGet(`subscriptions/${encodeURIComponent(subscriptionId)}`) : null;
+}
+
+/** Takes one one-time purchase back. In one transaction with its receipt, so a charge is only ever taken back once. */
+async function takeBackPurchase(uid: string, chargeId: string, purchase: Purchase) {
+  const userRef = db!.collection("users").doc(uid);
+  const receiptRef = db!.collection("plan_passes").doc(`refund_${chargeId}`);
+  await db!.runTransaction(async (tx) => {
+    if ((await tx.get(receiptRef)).exists) return;
+    const current = await tx.get(userRef);
+    if (!current.exists) throw new Error("Refunded account not found");
+    const d = current.data() ?? {};
+    const purchased = Math.max(0, Number(d.purchasedCredits ?? 0));
+    const now = Date.now();
+    const u: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
+    if (purchase.kind === "pack") {
+      u.credits = afterTakingBack(d.credits, purchase.credits);
+      u.purchasedCredits = afterTakingBack(d.purchasedCredits, purchase.credits);
+    } else if (purchase.kind === "minutes") {
+      u.minutesBalance = afterTakingBack(d.minutesBalance, purchase.minutes);
+    } else if (purchase.kind === "maya_pass") {
+      u.mayaAddonUntil = FieldValue.delete();
+    } else if (purchase.kind === "mock_pass") {
+      const left = endAfterTakingBackMonth(d.mockPlanUntil, now);
+      const onPlan = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
+      u.mockPlanUntil = left ?? FieldValue.delete();
+      if (!left && !onPlan) { u.credits = purchased; u.audioMinutesAllowance = FieldValue.delete(); }
+    } else if (d.planSource === "pass") {
+      const left = endAfterTakingBackMonth(d.passExpiresAt, now);
+      if (left) {
+        const allowance = INDIA_PLAN_ALLOWANCE[d.plan as keyof typeof INDIA_PLAN_ALLOWANCE];
+        u.passExpiresAt = left;
+        u.creditsResetDate = new Date(Date.parse(left) + 86_400_000).toISOString();
+        u.credits = afterTakingBack(d.credits, allowance?.credits ?? 0);
+      } else {
+        u.plan = "free";
+        u.planSource = "pass-refunded";
+        u.passExpiresAt = FieldValue.delete();
+        u.mayaAddonUntil = FieldValue.delete();
+        u.credits = purchased;
+        u.audioMinutesAllowance = FieldValue.delete();
+      }
+    }
+    tx.set(receiptRef, { uid, kind: `refund_${purchase.kind}`, createdAt: FieldValue.serverTimestamp() });
+    tx.set(userRef, u, { merge: true });
+  });
+}
+
+/**
+ * A charge was fully refunded or fully disputed: what it bought goes. A subscription is cancelled at Stripe at once, or it
+ * would keep charging an account with no access, and its subscription.deleted event then downgrades the account as a
+ * normal cancellation does. Anything that cannot be matched to an account is left for the owner.
+ */
+async function takeBackCharge(charge: any, why: string) {
+  const paymentIntentId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id ?? null;
+  const intent = paymentIntentId ? await stripeGet(`payment_intents/${encodeURIComponent(paymentIntentId)}`) : null;
+  const metadata = { ...charge.metadata, ...intent?.metadata };
+  const purchase = purchaseFromMetadata(metadata);
+  if (purchase && typeof metadata.uid === "string" && metadata.uid) {
+    await takeBackPurchase(metadata.uid, String(charge.id), purchase);
+    await sendOwnerAlert(`Replysis: ${why}`, `Charge ${charge.id} (${purchase.kind}) on account ${metadata.uid}: what it bought has been taken back.`);
+    return;
+  }
+  const sub = await subscriptionOfCharge(charge, paymentIntentId);
+  const uid = sub?.metadata?.uid;
+  if (!sub || typeof uid !== "string" || !uid) {
+    await sendOwnerAlert(`Replysis: ${why}, please check`, `Charge ${charge.id} could not be matched to an account, so nothing was changed.`);
+    return;
+  }
+  if (sub.status !== "canceled") {
+    const res = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(sub.id)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+    if (!res.ok) throw new Error(`Stripe cancel failed: ${res.status}`);
+  }
+  await sendOwnerAlert(`Replysis: ${why}`, `Charge ${charge.id} on account ${uid}: subscription ${sub.id} has been cancelled and its paid access ends now.`);
+}
+
 // ── POST /api/stripe/webhook ─────────────────────────────────────
 export async function POST(req: Request) {
   // Must read raw body BEFORE any JSON parsing  -  Stripe verifies against raw bytes
@@ -554,8 +649,8 @@ export async function POST(req: Request) {
   if (typeof event.id !== "string" || event.id.length === 0 || event.id.length > 255 || typeof event.type !== "string") {
     return NextResponse.json({ error: "Invalid Stripe event" }, { status: 400 });
   }
-  if (event.type === "invoice.paid" && !STRIPE_SECRET) {
-    console.error("[webhook] STRIPE_SECRET_KEY is required to process invoice.paid");
+  if ((event.type === "invoice.paid" || event.type === "charge.refunded" || event.type === "charge.dispute.created") && !STRIPE_SECRET) {
+    console.error(`[webhook] STRIPE_SECRET_KEY is required to process ${event.type}`);
     return NextResponse.json({ error: "Billing service not configured" }, { status: 503 });
   }
 
@@ -572,6 +667,23 @@ export async function POST(req: Request) {
     : Math.floor(Date.now() / 1000);
 
   try {
+    // ── REFUNDS AND DISPUTES  -  only the whole charge removes access ──
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object;
+      if (isFullRefund(charge)) await takeBackCharge(charge, "a charge was refunded in full");
+      else await sendOwnerAlert("Replysis: a partial refund", `Charge ${charge.id} was partly refunded (${charge.amount_refunded} of ${charge.amount}, ${charge.currency}). Nothing was changed on the account.`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+    if (event.type === "charge.dispute.created") {
+      const dispute = event.data.object;
+      const charge = await stripeGet(`charges/${encodeURIComponent(String(dispute.charge))}`);
+      if (isFullDispute(dispute.amount, charge.amount)) await takeBackCharge(charge, "a charge was disputed");
+      else await sendOwnerAlert("Replysis: a partial dispute", `Charge ${charge.id} is disputed for ${dispute.amount} of ${charge.amount} (${charge.currency}). Nothing was changed on the account.`);
+      await completeEvent(event.id);
+      return NextResponse.json({ received: true });
+    }
+
     // ── INTERVIEW MINUTES (India)  -  added once the money is in ───────
     // A card is paid at completion. UPI can complete first and settle a moment later, which arrives
     // as async_payment_succeeded; the minutes are added on whichever of the two says paid.
