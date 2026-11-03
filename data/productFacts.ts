@@ -162,6 +162,10 @@ export const ANSWERS_PER_INTERVIEW = 30;
 export const interviewsFor = (credits: number) =>
   Math.max(1, Math.floor(answersFor(credits) / ANSWERS_PER_INTERVIEW / 5) * 5);
 
+export const TRIAL_DAYS = 1;
+/** For sentences like "for 1 day". */
+export const TRIAL_LENGTH = `${TRIAL_DAYS} day${(TRIAL_DAYS as number) === 1 ? "" : "s"}`;
+
 export const PUBLIC_PLAN_CAPACITY = {
   free: {
     label: "Starter",
@@ -233,9 +237,6 @@ export const TRUST_FACTS = {
  * and 2 hours of listening so one heavy trial costs about Rs 20. When it ends the account is Free (PassExpiryService on
  * the server). The server's FirestoreCreditsService.newAccountFields writes the same numbers.
  */
-export const TRIAL_DAYS = 1;
-/** For sentences like "for 1 day". */
-export const TRIAL_LENGTH = `${TRIAL_DAYS} day${(TRIAL_DAYS as number) === 1 ? "" : "s"}`;
 export const TRIAL_ANSWERS = 50;
 export const TRIAL_CREDITS = TRIAL_ANSWERS * 5;
 export const TRIAL_AUDIO_MINUTES = 120;
