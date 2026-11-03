@@ -49,8 +49,8 @@ const FEATURES = [
     accent: "text-zinc-900",
     title: "Fast Streaming Responses",
     tagline: "Suggestions stream as they generate.",
-    desc: "Replysis is designed around a sub-two-second response target for live use. Exact timing depends on transcription, question length, model, and provider availability.",
-    points: ["Token-by-token answer streaming", "Low-latency transcription", "Sub-two-second response target", "Clear service-state feedback"],
+    desc: "Answers start in about a second in live use. Exact timing depends on transcription, question length, model, and provider availability.",
+    points: ["Token-by-token answer streaming", "Low-latency transcription", "Answers start in about a second", "Clear service-state feedback"],
   },
   {
     icon: (

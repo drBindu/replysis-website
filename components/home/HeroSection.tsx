@@ -2,7 +2,7 @@
 import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import BrandIcon from "../BrandIcon";
-import { FREE_TRIAL_ANSWERS } from "../../data/productFacts";
+import { TRIAL_ANSWERS as FREE_TRIAL_ANSWERS } from "../../data/productFacts";
 
 interface Props {
   mounted: boolean;

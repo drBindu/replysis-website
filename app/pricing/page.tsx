@@ -28,7 +28,6 @@ const ANNUAL_ENABLED = false;
 
 // Every count on this page comes from the same numbers the server enforces.
 const fmt = (n: number) => n.toLocaleString("en-US");
-const FREE_ANSWERS = answersFor(PLAN_MONTHLY_CREDITS.free);
 const MOCK_CREDITS = 20;   // what one guided mock session costs on average, see PUBLIC_CREDIT_COSTS
 
 function Check({ color = "violet" }: { color?: "violet" | "emerald" | "orange" | "blue" | "gray" }) {
@@ -99,7 +98,7 @@ const ALL_PLANS: {
     special: null,
     usagePool: PUBLIC_PLAN_CAPACITY.free.summary,
     features: [
-      "Live AI answers with a sub-two-second response target",
+      "Live AI answers in about a second",
       "Answers tailored to your resume and role",
       "Designed for common Zoom, Meet, Teams and phone workflows",
       "Resume builder with free PDF download",
@@ -219,8 +218,8 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false, local: 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
-  { cat: "Live Copilot",  label: "Answer response target",               free: "<2 sec target", pro: "<2 sec target", max: "<2 sec target"},
-  { cat: "Live Copilot",  label: "Live answers",                         free: `${FREE_ANSWERS}, once`,               pro: "Every month",               max: "Largest allowance, every month"},
+  { cat: "Live Copilot",  label: "Answer speed",                         free: "About a second", pro: "About a second", max: "About a second"},
+  { cat: "Live Copilot",  label: "Live answers",                         free: "Free trial",               pro: "Every month",               max: "Largest allowance, every month"},
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
@@ -232,7 +231,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Resume",        label: "AI rewrite for any job posting",       free: false,          pro: true,          max: true},
   { cat: "Apps",          label: "Web app, no install needed",           free: true,           pro: true,          max: true},
   { cat: "Apps",          label: "Windows desktop app",                  free: true,           pro: true,          max: true},
-  { cat: "Apps",          label: "macOS desktop app",                    free: false,          pro: true,          max: true},
+  { cat: "Apps",          label: "macOS desktop app",                    free: true,           pro: true,          max: true},
   { cat: "AI",            label: "AI model",                             free: "Standard",     pro: "Best",        max: "Best"},
   { cat: "Billing",       label: "Future features included",             free: false,          pro: true,          max: true},
 ];

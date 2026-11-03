@@ -28,7 +28,7 @@ function email(kind: Kind, first: string, trial: boolean): { subject: string; te
 
 Thanks for signing up for Replysis. ${offer} ${trial ? "is" : "are"} ready for you.
 
-Replysis works during the real interview: it listens with you and shows a clear answer on your screen in under a second. To try it:
+Replysis works during the real interview: it listens with you and shows a clear answer on your screen in about a second. To try it:
 
 1. Get the app for Windows or Mac: https://replysis.com/start
 2. Open it, sign in, and press Start
@@ -46,7 +46,7 @@ The Replysis team`,
 
 Thank you for trying a mock interview with Maya. A tip for your next practice: use headphones in a quiet room and answer her out loud, the way you would in a real interview. At the end she shows feedback on every answer and a stronger version to learn from.
 
-When your real interview comes, the Replysis app for Windows or Mac listens with you and shows a clear answer on your screen in under a second. ${offer} ${trial ? "includes" : "work in"} the app: https://replysis.com/start
+When your real interview comes, the Replysis app for Windows or Mac listens with you and shows a clear answer on your screen in about a second. ${offer} ${trial ? "includes" : "work in"} the app: https://replysis.com/start
 
 If anything did not work or was unclear, just reply to this email and we will help you right away.
 
@@ -60,7 +60,7 @@ Thanks for installing Replysis. Here is the quickest way to your first answer:
 
 1. Open Replysis and press Start
 2. Ask an interview question out loud, or play an interview question video
-3. The answer appears on your screen in under a second
+3. The answer appears on your screen in about a second
 
 If no words appear while someone is speaking, open Settings in the app and check that the microphone and speaker are the ones you use. Or just reply to this email and we will help you set it up.
 

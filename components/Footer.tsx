@@ -20,7 +20,6 @@ const GROUPS = [
     title: "Trust",
     links: [
       { label: "Trust Center", href: "/trust" },
-      { label: "Proof Center", href: "/proof" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
       { label: "Cookie Policy", href: "/cookies" },

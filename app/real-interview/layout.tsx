@@ -2,7 +2,7 @@
 
 export const metadata: Metadata = {
   title: "Real-Time Interview Copilot | Replysis",
-  description: "AI-powered real-time interview assistant with resume-grounded suggestions and a sub-two-second response target.",
+  description: "AI-powered real-time interview assistant with resume-grounded suggestions that start in about a second.",
 };
 
 export default function RealInterviewLayout({

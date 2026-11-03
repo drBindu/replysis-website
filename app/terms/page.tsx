@@ -74,9 +74,10 @@ export default function TermsPage() {
             <div className="space-y-4">
               {[
                 { label: "Free tier", body: "A free tier with limited usage is available. No credit card required to start. Each account can have one free mock interview with Maya, and only a few free interviews are available each day across everyone, so on a busy day you may be asked to come back tomorrow." },
+                { label: "Free trial", body: "Each new account gets a 1 day free trial with a limited number of answers. No card is needed and nothing is charged. When it ends, the account moves to Starter unless you choose a paid plan." },
                 { label: "Paid plans", body: "Billed monthly or annually via Stripe. Prices are shown on the pricing page and may change with 30 days' notice. Pro and Max include a monthly allowance of answers. The Practice plan includes mock interviews with Maya and live answers. Max includes Maya, and Pro can add her for a monthly fee." },
                 { label: "Fair use", body: "Every plan has fair use limits that keep the Service fast and available for everyone. They are set well above normal use for interview preparation, and the Service tells you if you reach one." },
-                { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact support@replysis.com and we will review your request. Purchases made through an app store follow that store's refund policy." },
+                { label: "Refunds", body: "Refunds are handled case by case at our discretion. Contact support@replysis.com and we will review your request. A full refund or a payment dispute ends what that payment bought. Purchases made through an app store follow that store's refund policy." },
                 { label: "Cancellations", body: "Cancel any time. Your access continues until the end of the current billing period." },
                 { label: "Answers", body: "Unused answers do not roll over between billing periods and have no cash value." },
               ].map((c, i) => (

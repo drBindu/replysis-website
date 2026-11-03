@@ -60,7 +60,7 @@ const TRUST = [
       </svg>
     ),
     title: "Fast streaming responses",
-    desc: "Answer suggestions stream as they are generated, with the live experience designed around a sub-two-second response target.",
+    desc: "Answer suggestions stream as they are generated, and start in about a second.",
     color: "text-zinc-900",
     bg: "bg-zinc-100",
     border: "border-zinc-200",

@@ -166,8 +166,8 @@ export const PUBLIC_PLAN_CAPACITY = {
   free: {
     label: "Starter",
     credits: PLAN_MONTHLY_CREDITS.free,
-    summary: `${answersFor(PLAN_MONTHLY_CREDITS.free)} answers to try it, once`,
-    example: "Enough to see live answers work in a real interview. Pro gives you a month of them.",
+    summary: `A ${TRIAL_DAYS} day free trial to try it`,
+    example: "Enough to see live answers work in a real interview. Pro gives you them every month.",
   },
   pro: {
     label: "Pro",

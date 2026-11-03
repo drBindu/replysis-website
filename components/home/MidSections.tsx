@@ -2,7 +2,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { FadeUp, FadeIn, BlurFade } from "./shared";
-import { PLAN_MONTHLY_CREDITS, FREE_TRIAL_ANSWERS, answersFor } from "../../data/productFacts";
+import { PLAN_MONTHLY_CREDITS, TRIAL_ANSWERS as FREE_TRIAL_ANSWERS, answersFor } from "../../data/productFacts";
 
 /* ── VERIFIABLE PRODUCT FACTS ───────────────────────────────── */
 export function TrustedBySection() {
@@ -121,7 +121,7 @@ export function HowItWorksSection() {
     {
       n: "03", icon: "⚡", title: "Get Tailored Suggestions",
       desc: "Tailored answer suggestions stream to the desktop overlay. Capture controls are designed for standard screen-share paths on supported setups.",
-      time: "Target under 2 seconds",
+      time: "About a second",
       color: "bg-zinc-900", border: "border-zinc-300 bg-zinc-100/50",
       accent: "text-zinc-900", ring: "ring-zinc-300",
     },
@@ -208,7 +208,7 @@ export function CtaSection({ onNav }: { onNav: (p: string) => void }) {
                 </span>
               </h2>
               <p className="text-gray-600 text-lg max-w-xl mx-auto mb-3 leading-relaxed">
-                Replysis listens live, uses your resume as context, and is designed around a sub-two-second response-start target. Network and provider conditions can affect timing.
+                Replysis listens live, uses your resume as context, and starts an answer in about a second.
               </p>
               <p className="text-gray-400 text-sm mb-10">Start with {FREE_TRIAL_ANSWERS} free answers. No payment details are required to try the product.</p>
 

@@ -206,7 +206,7 @@ export default function CreditsBadge() {
                     {isPaid ? `${meta.label} Plan` : trial ? "Free trial" : "Starter Plan"}
                   </p>
                   <p className="text-[11px] text-gray-400 mt-0.5">
-                    {isPaid ? "Your answers refresh every month" : trial ? `${answersFor(max)} answers to try everything, for ${TRIAL_LENGTH}` : `${answersFor(max)} free answers, once`}
+                    {isPaid ? "Your answers refresh every month" : trial ? `${answersFor(max)} answers to try everything, for ${TRIAL_LENGTH}` : "Free answers do not refresh"}
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
