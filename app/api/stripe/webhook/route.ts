@@ -248,10 +248,7 @@ function afterSubscription(d: Record<string, unknown>): Record<string, unknown> 
  */
 async function otherLivePlan(customer: unknown, endedId: unknown): Promise<{ plan: string; sub: any } | null> {
   if (typeof customer !== "string" || !customer.startsWith("cus_") || !STRIPE_SECRET) return null;
-  const res = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(customer)}&status=all&limit=20`,
-    { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
-  if (!res.ok) throw new Error(`Stripe subscription list failed: ${res.status}`);
-  const list = (await res.json())?.data ?? [];
+  const list = (await stripeGet(`subscriptions?customer=${encodeURIComponent(customer)}&status=all&limit=20`))?.data ?? [];
   for (const sub of list) {
     if (sub?.id === endedId || sub?.metadata?.kind === "mock") continue;
     if (!["active", "trialing", "past_due"].includes(sub?.status)) continue;
@@ -259,6 +256,32 @@ async function otherLivePlan(customer: unknown, endedId: unknown): Promise<{ pla
     if (plan && ["pro", "max", "teams"].includes(plan)) return { plan, sub };
   }
   return null;
+}
+
+/**
+ * A Pro or Max subscription ended (deleted, or updated to a dead status). Only the subscription this account runs on may
+ * end it: with two, cancelling the spare must not downgrade anyone, and ending the stored one moves onto the other.
+ */
+async function endSubscription(uid: string, eventCreated: number, sub: any, status: string) {
+  const d = (await db!.collection("users").doc(uid).get()).data() ?? {};
+  if (d.stripeSubscriptionId && d.stripeSubscriptionId !== sub.id) return;
+  const other = await otherLivePlan(sub.customer, sub.id);
+  if (other) {
+    console.log(`🔁 SUBSCRIPTION ${status.toUpperCase()} ${sub.id}: ${uid} carries on with ${other.sub.id}`);
+    await applyActiveSubscription(uid, eventCreated, other.plan, other.sub);
+    return;
+  }
+  console.log(`⚠️ SUBSCRIPTION ${status.toUpperCase()}: ${uid} → free`);
+  await applyUserUpdate(uid, eventCreated, {
+    plan:                 "free",
+    ...afterSubscription(d),
+    creditsResetDate:     getNextResetDate(),
+    stripeSubscriptionId: null,
+    mayaAddon: false,
+    stripeSubscriptionStatus: status,
+    stripeCancelAtPeriodEnd: false,
+    stripeCurrentPeriodEnd: null,
+  });
 }
 
 // Stripe API versions from 2025-03-31.basil onward moved an invoice's
@@ -578,12 +601,15 @@ async function subscriptionOfCharge(charge: any, paymentIntentId: string | null)
   return subscriptionId ? stripeGet(`subscriptions/${encodeURIComponent(subscriptionId)}`) : null;
 }
 
-/** Takes one one-time purchase back. In one transaction with its receipt, so a charge is only ever taken back once. */
-async function takeBackPurchase(uid: string, chargeId: string, purchase: Purchase) {
+/**
+ * Takes one one-time purchase back. In one transaction with its receipt, so a charge is only ever taken back once.
+ * False when there was nothing running to take back (an India month already ended or moved onto AutoPay).
+ */
+async function takeBackPurchase(uid: string, chargeId: string, purchase: Purchase): Promise<boolean> {
   const userRef = db!.collection("users").doc(uid);
   const receiptRef = db!.collection("plan_passes").doc(`refund_${chargeId}`);
-  await db!.runTransaction(async (tx) => {
-    if ((await tx.get(receiptRef)).exists) return;
+  return db!.runTransaction(async (tx) => {
+    if ((await tx.get(receiptRef)).exists) return true;
     const current = await tx.get(userRef);
     if (!current.exists) throw new Error("Refunded account not found");
     const d = current.data() ?? {};
@@ -608,7 +634,8 @@ async function takeBackPurchase(uid: string, chargeId: string, purchase: Purchas
         const allowance = INDIA_PLAN_ALLOWANCE[d.plan as keyof typeof INDIA_PLAN_ALLOWANCE];
         u.passExpiresAt = left;
         u.creditsResetDate = new Date(Date.parse(left) + 86_400_000).toISOString();
-        u.credits = afterTakingBack(d.credits, allowance?.credits ?? 0);
+        // Only the month's own answers go down: bought packs sit inside credits too and were not refunded.
+        u.credits = afterTakingBack(Number(d.credits ?? 0) - purchased, allowance?.credits ?? 0) + purchased;
       } else {
         u.plan = "free";
         u.planSource = "pass-refunded";
@@ -617,9 +644,13 @@ async function takeBackPurchase(uid: string, chargeId: string, purchase: Purchas
         u.credits = purchased;
         u.audioMinutesAllowance = FieldValue.delete();
       }
+    } else {
+      tx.set(receiptRef, { uid, kind: `refund_${purchase.kind}`, nothingRunning: true, createdAt: FieldValue.serverTimestamp() });
+      return false;
     }
     tx.set(receiptRef, { uid, kind: `refund_${purchase.kind}`, createdAt: FieldValue.serverTimestamp() });
     tx.set(userRef, u, { merge: true });
+    return true;
   });
 }
 
@@ -634,8 +665,11 @@ async function takeBackCharge(charge: any, why: string) {
   const metadata = { ...charge.metadata, ...intent?.metadata };
   const purchase = purchaseFromMetadata(metadata);
   if (purchase && typeof metadata.uid === "string" && metadata.uid) {
-    await takeBackPurchase(metadata.uid, String(charge.id), purchase);
-    await sendOwnerAlert(`Replysis: ${why}`, `Charge ${charge.id} (${purchase.kind}) on account ${metadata.uid}: what it bought has been taken back.`);
+    if (await takeBackPurchase(metadata.uid, String(charge.id), purchase)) {
+      await sendOwnerAlert(`Replysis: ${why}`, `Charge ${charge.id} (${purchase.kind}) on account ${metadata.uid}: what it bought has been taken back.`);
+    } else {
+      await sendOwnerAlert(`Replysis: ${why}, please check`, `Charge ${charge.id} (${purchase.kind}) on account ${metadata.uid}: the account has no India month running any more (ended, or moved onto AutoPay), so nothing was changed. Check its plan and any subscription by hand.`);
+    }
     return;
   }
   const sub = await subscriptionOfCharge(charge, paymentIntentId);
@@ -857,27 +891,7 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object;
       const uid          = subscription.metadata?.uid;
-
-      const d = uid ? (await db.collection("users").doc(uid).get()).data() ?? {} : {};
-      // Only the subscription this account runs on may end it: with two, cancelling the spare must not downgrade anyone.
-      const other = uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)
-        ? await otherLivePlan(subscription.customer, subscription.id) : null;
-      if (uid && other) {
-        console.log(`🔁 CANCELED ${subscription.id}, ${uid} carries on with ${other.sub.id}`);
-        await applyActiveSubscription(uid, eventCreated, other.plan, other.sub);
-      } else if (uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)) {
-        console.log(`⚠️ CANCELED: ${uid}`);
-        await applyUserUpdate(uid, eventCreated, {
-          plan:                 "free",
-          ...afterSubscription(d),
-          creditsResetDate:     getNextResetDate(),
-          stripeSubscriptionId: null,
-          mayaAddon: false,
-          stripeSubscriptionStatus: "canceled",
-          stripeCancelAtPeriodEnd: false,
-          stripeCurrentPeriodEnd: null,
-        });
-      }
+      if (uid) await endSubscription(uid, eventCreated, subscription, "canceled");
     }
 
     // ── INVOICE PAID  -  monthly credit renewal ────────────────────
@@ -934,25 +948,7 @@ export async function POST(req: Request) {
       const plan = subscriptionPlan(sub);
       const dead = ["canceled", "unpaid", "incomplete_expired"];
       if (uid && dead.includes(sub.status)) {
-        const d = (await db.collection("users").doc(uid).get()).data() ?? {};
-        const other = (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id)
-          ? await otherLivePlan(sub.customer, sub.id) : null;
-        if (other) {
-          console.log(`🔁 SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} carries on with ${other.sub.id}`);
-          await applyActiveSubscription(uid, eventCreated, other.plan, other.sub);
-        } else if (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id) {
-          console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
-          await applyUserUpdate(uid, eventCreated, {
-            plan:                 "free",
-            ...afterSubscription(d),
-            creditsResetDate:     getNextResetDate(),
-            stripeSubscriptionId: null,
-            mayaAddon: false,
-            stripeSubscriptionStatus: sub.status,
-            stripeCancelAtPeriodEnd: false,
-            stripeCurrentPeriodEnd: null,
-          });
-        }
+        await endSubscription(uid, eventCreated, sub, String(sub.status));
       } else if (uid && plan && ["pro", "max", "teams"].includes(plan)) {
         await applyActiveSubscription(uid, eventCreated, plan, sub);
         console.log(`🔁 SUBSCRIPTION UPDATED: ${uid} → ${plan} (${String(sub.status)})`);
@@ -982,8 +978,10 @@ export async function POST(req: Request) {
               lastPaymentFailedAt: new Date().toISOString(),
               // A Practice subscription has its own life: this field describes Pro or Max.
               // While Stripe retries, the lazy monthly refill is held off: the paid renewal's invoice.paid sets the real date.
+              // Only a failed renewal holds it: a failed mid-month charge (an add-on, a plan change) leaves the month alone.
               ...(sub.metadata?.kind === "mock" ? {} : { stripeSubscriptionStatus: sub.status ?? "past_due",
-                                                         creditsResetDate: new Date(Date.now() + 30 * 86_400_000).toISOString() }),
+                ...(invoice.billing_reason === "subscription_cycle"
+                  ? { creditsResetDate: new Date(Date.now() + 30 * 86_400_000).toISOString() } : {}) }),
             });
           }
         } catch (e) {

@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     if (joins >= 4 && userData?.tester !== true) return NextResponse.json({ error: "Too many tries today" }, { status: 429 });
     // The 4 a day came back every day, so an unused free interview was free video for ever.
     if (Number(userData?.mayaTasteJoins ?? 0) >= MAYA_TASTE_JOINS && userData?.tester !== true && !internal) {
-      return NextResponse.json({ error: "Too many tries today" }, { status: 429 });
+      return NextResponse.json({ error: "Free interview joins used" }, { status: 429 });
     }
   }
 

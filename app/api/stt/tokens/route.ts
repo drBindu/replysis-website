@@ -477,9 +477,13 @@ async function checkAndDeductCredits(
 ): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean; waived?: boolean }> {
   // The interview's conversation costs no answers, but it does cost us a model call, so it needs a mock interview to be
   // part of: a free interview or Maya on the plan, or answers left. Nothing here may stop an interview on a store fault.
-  if (MOCK_CONVERSATION.has(mode) && db && uid && !UNLIMITED_EMAILS.has(email.toLowerCase())) {
+  // A yes holds for a minute, so each of Maya's turns does not wait on a store read (same rule as the voice route).
+  if (MOCK_CONVERSATION.has(mode) && db && uid && !UNLIMITED_EMAILS.has(email.toLowerCase())
+      && (conversationAllowedUntil.get(uid) ?? 0) <= Date.now()) {
     const data = await db.collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
     if (data && !mockConversationAllowed(data)) return { allowed: false, remaining: 0 };
+    if (conversationAllowedUntil.size > 5000) conversationAllowedUntil.clear();
+    conversationAllowedUntil.set(uid, Date.now() + 60_000);
   }
   // The mock interview uses no answers with the Practice plan or the Maya add-on, and its one free interview is free
   // (owner, 2026-10-26): its own steps use no answers then.
@@ -493,6 +497,7 @@ async function checkAndDeductCredits(
 }
 
 const MOCK_CONVERSATION = new Set(["maya_turn", "follow_up", "suggest_answer"]);
+const conversationAllowedUntil = new Map<string, number>();
 
 /** The mock interview's own steps (shared with nothing else that costs money). */
 const MOCK_MODES = new Set(["generate_questions", "generate_feedback", "generate_script"]);
@@ -597,8 +602,8 @@ async function refundCredits(uid: string, email: string, mode: string): Promise<
       if (!snapshot.exists) return;
       const data = snapshot.data() ?? {};
       if (mode === LIVE_MODE && Number(data.minutesBalance ?? 0) > 0) return;   // nothing was charged inside bought minutes
-      const plan = typeof data.plan === "string" ? data.plan : "free";
-      const cap = PLAN_MONTHLY_CREDITS[plan] ?? PLAN_MONTHLY_CREDITS.free;
+      // The same cap the charge used: with the free plan's 25, a refund cut a Practice month down to 25 credits.
+      const cap = chargeCap(data);
       const credits = typeof data.credits === "number" ? data.credits : cap;
       const used = typeof data.creditsUsed === "number" ? data.creditsUsed : 0;
       const purchasedCredits = Math.max(0, Number(data.purchasedCredits ?? 0));

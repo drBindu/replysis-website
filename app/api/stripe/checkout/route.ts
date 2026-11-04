@@ -353,6 +353,9 @@ async function openCheckout(params: URLSearchParams, email: string, createCustom
   let response = await post();
   let session = await response.json();
   if (session?.error?.code === "resource_missing" && session?.error?.param === "customer") {
+    // The webhook keeps a stored customer over a new one, so a stale id must go or it would stay for ever.
+    const uid = params.get("metadata[uid]");
+    if (uid) await getFirestore().collection("users").doc(uid).set({ stripeCustomerId: FieldValue.delete() }, { merge: true }).catch(() => {});
     params.delete("customer");
     payer(params, null, email, createCustomer);
     response = await post();
