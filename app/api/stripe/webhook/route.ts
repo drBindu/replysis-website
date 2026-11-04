@@ -210,20 +210,55 @@ function monthCredits(plan: string, rupees: boolean): number {
 function subscriptionResetDate(interval: unknown, periodEnd: number | null): string {
   if (interval === "annual") return getNextResetDate();
   const end = periodEnd ? periodEnd * 1000 : Date.now() + 31 * 86_400_000;
-  return new Date(end + 86_400_000).toISOString();
+  // Three days past the renewal, not one: the renewal's own invoice.paid refills the month, and an Indian card mandate
+  // charges a day or more late. A day's slack let the lazy reset hand out a fresh month before the money came.
+  return new Date(end + RENEWAL_SLACK_MS).toISOString();
 }
+
+const RENEWAL_SLACK_MS = 3 * 86_400_000;
 
 /** A first Stripe customer sticks: a new id would hide the older subscription and saved card from the billing portal. */
 function keptCustomer(stored: unknown, incoming: unknown): unknown {
   return typeof stored === "string" && stored.startsWith("cus_") ? stored : incoming ?? null;
 }
 
-/** The account's numbers once its Pro or Max has gone: Practice carries on if it is running. */
+/** Whether the running Practice was bought in rupees. mayaMonthly cannot say: a rupee Pro overwrites it. */
+function practiceInIndia(d: Record<string, unknown>): boolean {
+  if (typeof d.mockIndia === "boolean") return d.mockIndia;
+  // Bought before mockIndia was stored: an India month paid once is the only Practice without a subscription.
+  return d.mockPlan !== true && typeof d.mockPlanUntil === "string";
+}
+
+/**
+ * The account's numbers once its Pro or Max has gone: Practice carries on if it is running. The month's counters start
+ * again: left at the Pro or Max total, every answer was taken from bought packs instead of the Practice month.
+ */
 function afterSubscription(d: Record<string, unknown>): Record<string, unknown> {
-  if (!practiceActive(d)) return { credits: PLAN_MONTHLY_CREDITS.free, audioMinutesAllowance: FieldValue.delete() };
-  const india = d.mayaMonthly === MOCK_PLAN.interviewsIndia;
+  // Bought packs are added on top by applyUserUpdate.
+  if (!practiceActive(d)) return { credits: PLAN_MONTHLY_CREDITS.free, creditsUsed: 0, audioMinutesAllowance: FieldValue.delete() };
+  const india = practiceInIndia(d);
   return { credits: india ? MOCK_PLAN.creditsIndia : MOCK_PLAN.credits,
+           creditsUsed: 0, audioMinutesUsed: 0,
            audioMinutesAllowance: india ? MOCK_PLAN.audioMinutesIndia : MOCK_PLAN.audioMinutes };
+}
+
+/**
+ * Another live Pro or Max subscription on the same Stripe customer, if there is one. With two, ending the stored one
+ * must move the account onto the other, not to free while the other keeps charging.
+ */
+async function otherLivePlan(customer: unknown, endedId: unknown): Promise<{ plan: string; sub: any } | null> {
+  if (typeof customer !== "string" || !customer.startsWith("cus_") || !STRIPE_SECRET) return null;
+  const res = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(customer)}&status=all&limit=20`,
+    { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+  if (!res.ok) throw new Error(`Stripe subscription list failed: ${res.status}`);
+  const list = (await res.json())?.data ?? [];
+  for (const sub of list) {
+    if (sub?.id === endedId || sub?.metadata?.kind === "mock") continue;
+    if (!["active", "trialing", "past_due"].includes(sub?.status)) continue;
+    const plan = subscriptionPlan(sub);
+    if (plan && ["pro", "max", "teams"].includes(plan)) return { plan, sub };
+  }
+  return null;
 }
 
 // Stripe API versions from 2025-03-31.basil onward moved an invoice's
@@ -469,6 +504,7 @@ async function applyPractice(uid: string, opts: { india: boolean; subscriptionId
       ...(opts.subscriptionId ? { mockPlan: true, mockSubscriptionId: opts.subscriptionId } : {}),
       ...(until ? { mockPlanUntil: until.toISOString() } : {}),
       mayaMonthly: opts.india ? MOCK_PLAN.interviewsIndia : MOCK_PLAN.interviews,
+      mockIndia: opts.india,
       // A paid Pro or Max already has more of both; only a free or trial account takes the Practice numbers.
       ...(onPlan ? {} : {
         credits: (stacking ? Math.max(purchased, Number(d.credits ?? 0)) : purchased) + size,
@@ -824,7 +860,12 @@ export async function POST(req: Request) {
 
       const d = uid ? (await db.collection("users").doc(uid).get()).data() ?? {} : {};
       // Only the subscription this account runs on may end it: with two, cancelling the spare must not downgrade anyone.
-      if (uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)) {
+      const other = uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)
+        ? await otherLivePlan(subscription.customer, subscription.id) : null;
+      if (uid && other) {
+        console.log(`🔁 CANCELED ${subscription.id}, ${uid} carries on with ${other.sub.id}`);
+        await applyActiveSubscription(uid, eventCreated, other.plan, other.sub);
+      } else if (uid && (!d.stripeSubscriptionId || d.stripeSubscriptionId === subscription.id)) {
         console.log(`⚠️ CANCELED: ${uid}`);
         await applyUserUpdate(uid, eventCreated, {
           plan:                 "free",
@@ -894,7 +935,12 @@ export async function POST(req: Request) {
       const dead = ["canceled", "unpaid", "incomplete_expired"];
       if (uid && dead.includes(sub.status)) {
         const d = (await db.collection("users").doc(uid).get()).data() ?? {};
-        if (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id) {
+        const other = (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id)
+          ? await otherLivePlan(sub.customer, sub.id) : null;
+        if (other) {
+          console.log(`🔁 SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} carries on with ${other.sub.id}`);
+          await applyActiveSubscription(uid, eventCreated, other.plan, other.sub);
+        } else if (!d.stripeSubscriptionId || d.stripeSubscriptionId === sub.id) {
           console.log(`⚠️ SUBSCRIPTION ${String(sub.status).toUpperCase()}: ${uid} → free`);
           await applyUserUpdate(uid, eventCreated, {
             plan:                 "free",
@@ -935,7 +981,9 @@ export async function POST(req: Request) {
             await applyUserUpdate(uid, eventCreated, {
               lastPaymentFailedAt: new Date().toISOString(),
               // A Practice subscription has its own life: this field describes Pro or Max.
-              ...(sub.metadata?.kind === "mock" ? {} : { stripeSubscriptionStatus: sub.status ?? "past_due" }),
+              // While Stripe retries, the lazy monthly refill is held off: the paid renewal's invoice.paid sets the real date.
+              ...(sub.metadata?.kind === "mock" ? {} : { stripeSubscriptionStatus: sub.status ?? "past_due",
+                                                         creditsResetDate: new Date(Date.now() + 30 * 86_400_000).toISOString() }),
             });
           }
         } catch (e) {
