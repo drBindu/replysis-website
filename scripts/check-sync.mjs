@@ -358,7 +358,9 @@ const yearlyOn = /const ANNUAL_ENABLED = true;/.test(pricing || "");
 // ---------- 5e. the reset rule has one home -------------------------------------------
 console.log("\nFree is one time, and every reset uses the same rule");
 (/export function creditsAfterMonthlyReset/.test(facts || "") ? ok : bad)("the website has one reset rule (creditsAfterMonthlyReset)");
-for (const [n, t] of [["credits library", libCredits], ["deduct route", deduct], ["token route", tokens]])
+// The credits library is shared with the browser, so it must never write a balance or a plan: the server owns those.
+if (libCredits) (!/firebase\/firestore|updateDoc|setDoc|runTransaction/.test(stripTsComments(libCredits)) ? ok : bad)("the credits library writes nothing (no browser-side balance or plan writes)");
+for (const [n, t] of [["deduct route", deduct], ["token route", tokens]])
   if (t) {
     (/creditsAfterMonthlyReset\(/.test(t) ? ok : bad)(`${n} resets through the shared rule`);
     (!/credits\s*=\s*(?:cap|plan\.totalCredits)\s*\+\s*purchasedCredits\s*;/.test(stripTsComments(t)) ? ok : bad)(`${n} has no private copy of the old "refill to the cap" rule`);
