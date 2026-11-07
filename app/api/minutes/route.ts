@@ -13,6 +13,7 @@ import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../lib/rate-limit";
 import { AUTO_ADD_MINUTES, AUTO_ADD_WHEN_LEFT, rupeesFor } from "../../../data/interviewMinutes";
+import { sendOwnerAlert } from "../../lib/user-mail";
 
 export const dynamic = "force-dynamic";
 
@@ -130,7 +131,9 @@ async function autoAdd(uid: string, userRef: FirebaseFirestore.DocumentReference
   const pi = await res.json().catch(() => ({}));
 
   if (res.ok && pi.status === "succeeded") {
-    await getFirestore().runTransaction(async (tx) => {
+    // The card is charged: the minutes must land. Nothing else adds them (no webhook carries this payment), so a failed
+    // write is tried again, and the owner is told if it still fails, rather than the person paying with nothing to show.
+    const grant = () => getFirestore().runTransaction(async (tx) => {
       const receiptRef = getFirestore().collection("minute_purchases").doc(String(pi.id));
       if ((await tx.get(receiptRef)).exists) return;
       tx.set(receiptRef, { uid, minutes: AUTO_ADD_MINUTES, amount, currency: "inr", auto: true,
@@ -142,6 +145,16 @@ async function autoAdd(uid: string, userRef: FirebaseFirestore.DocumentReference
         minutesAddStartedAt: 0,
       });
     });
+    let granted = false;
+    for (let attempt = 0; attempt < 3 && !granted; attempt++) {
+      try { await grant(); granted = true; }
+      catch (e) { console.error(`[minutes] auto add write failed (try ${attempt + 1}):`, (e as Error)?.name ?? "Error"); }
+    }
+    if (!granted) {
+      await sendOwnerAlert("Replysis: auto add charged but minutes not added",
+        `Payment ${pi.id} charged account ${uid} for ${AUTO_ADD_MINUTES} interview minutes, but they could not be added. Add them by hand or refund the payment.`);
+      return NextResponse.json({ error: "Your minutes are on their way. If they do not show soon, write to support." }, { status: 503 });
+    }
     console.log(`MINUTES AUTO ADD: ${uid} +${AUTO_ADD_MINUTES}`);
     return NextResponse.json({ ...claim.s, minutesBalance: claim.s.minutesBalance + AUTO_ADD_MINUTES, added: AUTO_ADD_MINUTES });
   }
@@ -172,6 +185,10 @@ async function approvalCheckout(uid: string, customer: string, req: Request): Pr
   params.append("metadata[purchaseType]", "minutes");
   params.append("metadata[minutes]", String(AUTO_ADD_MINUTES));
   params.append("metadata[autoAdd]", "1");
+  // On the payment too, so a refund or dispute of it can be matched to the account and its minutes taken back.
+  params.append("payment_intent_data[metadata][uid]", uid);
+  params.append("payment_intent_data[metadata][purchaseType]", "minutes");
+  params.append("payment_intent_data[metadata][minutes]", String(AUTO_ADD_MINUTES));
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: { Authorization: `Bearer ${STRIPE_SECRET}`, "Content-Type": "application/x-www-form-urlencoded" },

@@ -22,7 +22,7 @@ import { validMinutes } from "../../../../data/interviewMinutes";
 import { MAYA_ADDON, MOCK_PLAN } from "../../../../data/mayaAddon";
 import { sendOwnerAlert } from "../../../lib/user-mail";
 import { practiceActive } from "../../../lib/paid-plan";
-import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata, type Purchase } from "../../../lib/refund-rules";
+import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata, subscriptionRefundScope, type Purchase } from "../../../lib/refund-rules";
 
 /** Tells the owner a Maya add-on was bought, so the Simli plan can be raised before it is needed (owner, 2026-10-26). */
 const alertMayaBought = (how: string) => sendOwnerAlert(`Maya add-on bought (${how})`, `Someone just bought the mock interview add-on (Maya).\n\nIf Simli is still on the Free plan, upgrade it to Hobby now so Maya can join for them:\nhttps://app.simli.com/billing  (account booms5089@gmail.com)\n\nThe Free plan allows only one live Maya at a time and 50 minutes a month.`);
@@ -588,8 +588,8 @@ async function stripeGet(path: string): Promise<any> {
   return res.json();
 }
 
-/** The subscription a charge paid for, if any. New Stripe API versions keep the link in invoice_payments, older ones on the charge. */
-async function subscriptionOfCharge(charge: any, paymentIntentId: string | null): Promise<any | null> {
+/** The invoice and subscription a charge paid for, if any. New Stripe API versions keep the link in invoice_payments, older ones on the charge. */
+async function subscriptionOfCharge(charge: any, paymentIntentId: string | null): Promise<{ sub: any; invoice: any } | null> {
   let invoiceId: unknown = charge.invoice;
   if (!invoiceId && paymentIntentId) {
     const paid = await stripeGet(`invoice_payments?payment[type]=payment_intent&payment[payment_intent]=${encodeURIComponent(paymentIntentId)}&limit=1`);
@@ -597,8 +597,9 @@ async function subscriptionOfCharge(charge: any, paymentIntentId: string | null)
   }
   const id = typeof invoiceId === "string" ? invoiceId : (invoiceId as any)?.id;
   if (!id) return null;
-  const subscriptionId = getInvoiceSubscriptionId(await stripeGet(`invoices/${encodeURIComponent(id)}`));
-  return subscriptionId ? stripeGet(`subscriptions/${encodeURIComponent(subscriptionId)}`) : null;
+  const invoice = await stripeGet(`invoices/${encodeURIComponent(id)}`);
+  const subscriptionId = getInvoiceSubscriptionId(invoice);
+  return subscriptionId ? { sub: await stripeGet(`subscriptions/${encodeURIComponent(subscriptionId)}`), invoice } : null;
 }
 
 /**
@@ -672,10 +673,25 @@ async function takeBackCharge(charge: any, why: string) {
     }
     return;
   }
-  const sub = await subscriptionOfCharge(charge, paymentIntentId);
+  const found = await subscriptionOfCharge(charge, paymentIntentId);
+  const sub = found?.sub;
   const uid = sub?.metadata?.uid;
   if (!sub || typeof uid !== "string" || !uid) {
     await sendOwnerAlert(`Replysis: ${why}, please check`, `Charge ${charge.id} could not be matched to an account, so nothing was changed.`);
+    return;
+  }
+  // A mid-month charge paid only for a change: refunding the Maya add-on takes the add-on off, never the whole plan.
+  if (subscriptionRefundScope(found!.invoice?.billing_reason) === "change") {
+    const items: any[] = Array.isArray(sub?.items?.data) ? sub.items.data : [];
+    const maya = items.find((it) => MAYA_PRICE_IDS.has(it?.price?.id));
+    if (maya && sub.status !== "canceled") {
+      const res = await fetch(`https://api.stripe.com/v1/subscription_items/${encodeURIComponent(maya.id)}?proration_behavior=none`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
+      if (!res.ok) throw new Error(`Stripe add-on removal failed: ${res.status}`);
+      await sendOwnerAlert(`Replysis: ${why}`, `Charge ${charge.id} on account ${uid} paid for the Maya add-on mid-month: the add-on has been taken off subscription ${sub.id}. The plan itself carries on.`);
+    } else {
+      await sendOwnerAlert(`Replysis: ${why}, please check`, `Charge ${charge.id} on account ${uid} paid for a mid-month change to subscription ${sub.id} (not a month of the plan), so the plan was not cancelled. Check the plan by hand.`);
+    }
     return;
   }
   if (sub.status !== "canceled") {

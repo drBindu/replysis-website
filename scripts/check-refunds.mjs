@@ -1,6 +1,6 @@
 // Checks the refund and dispute rules. Run: node --experimental-strip-types scripts/check-refunds.mjs
 import assert from "node:assert/strict";
-import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata } from "../app/lib/refund-rules.ts";
+import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata, subscriptionRefundScope } from "../app/lib/refund-rules.ts";
 
 const now = Date.parse("2026-11-02T00:00:00Z");
 const day = 86_400_000;
@@ -25,5 +25,11 @@ assert.equal(afterTakingBack(100, 500), 0, "already spent: stops at zero");
 assert.equal(endAfterTakingBackMonth(new Date(now + 10 * day).toISOString(), now), null, "the only month goes");
 assert.equal(endAfterTakingBackMonth(new Date(now + 40 * day).toISOString(), now), new Date(now + 10 * day).toISOString(), "a second month paid stays");
 assert.equal(endAfterTakingBackMonth(undefined, now), null);
+
+assert.equal(subscriptionRefundScope("subscription_update"), "change", "a refunded add-on or plan change never cancels the plan");
+assert.equal(subscriptionRefundScope("subscription_cycle"), "plan");
+assert.equal(subscriptionRefundScope("subscription_create"), "plan");
+assert.equal(subscriptionRefundScope(undefined), "plan");
+assert.deepEqual(purchaseFromMetadata({ uid: "a", purchaseType: "minutes", minutes: "15" }), { kind: "minutes", minutes: 15 }, "an auto add approved by checkout is matched");
 
 console.log("refund rules ok");

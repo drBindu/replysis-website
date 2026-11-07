@@ -20,6 +20,14 @@ export function purchaseFromMetadata(metadata: Record<string, unknown> | null | 
   return null;
 }
 
+/**
+ * What a full refund of a subscription invoice takes back. A mid-month invoice ("subscription_update": the Maya add-on
+ * added to a running plan, or a plan change) only paid for that change, so it never cancels the whole plan.
+ */
+export function subscriptionRefundScope(billingReason: unknown): "plan" | "change" {
+  return billingReason === "subscription_update" ? "change" : "plan";
+}
+
 export function isFullRefund(charge: { refunded?: unknown; amount?: unknown; amount_refunded?: unknown }): boolean {
   const amount = Number(charge.amount ?? 0);
   return charge.refunded === true || (amount > 0 && Number(charge.amount_refunded ?? 0) >= amount);
