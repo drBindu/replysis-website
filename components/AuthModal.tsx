@@ -146,7 +146,12 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
       if (mode === "signup") {
         result = await createUserWithEmailAndPassword(auth, email, password);
         if (result.user) {
-          if (name.trim()) await updateProfile(result.user, { displayName: name.trim() });
+          if (name.trim()) {
+            await updateProfile(result.user, { displayName: name.trim() });
+            // The token made at sign-up has no name in it, and the session route reads the name from the token, so without a
+            // fresh one the account record keeps the "User" placeholder.
+            await result.user.getIdToken(true);
+          }
           // Email verification is important, but delivery must not strand a
           // person who has already created and authenticated their account.
           try { await sendEmailVerification(result.user); } catch {}
