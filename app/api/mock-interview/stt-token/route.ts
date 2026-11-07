@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+/** Must match SttController.SPEECHMATICS_UNAVAILABLE_KEY in the backend. Never a real key. */
+const SPEECHMATICS_UNAVAILABLE_KEY = "speech-backup-unavailable";
+
 // Mock interview uses the same authenticated STT token service as the Windows
 // app. The website's older, separately configured Speechmatics key can expire
 // independently and leave the browser unable to start listening.
@@ -32,7 +35,9 @@ export async function GET(req: Request) {
     }
 
     const body = await response.json();
-    const speechmatics = typeof body?.key === "string" && body.key ? body.key : undefined;
+    // "speech-backup-unavailable" is the server's stand-in when Speechmatics gave no key (2026-11-04). The browser must not
+    // fall back to it: it would open a connection that can only be refused, and show "Listening is unavailable" late.
+    const speechmatics = typeof body?.key === "string" && body.key && body.key !== SPEECHMATICS_UNAVAILABLE_KEY ? body.key : undefined;
     const deepgram = typeof body?.deepgramToken === "string" && body.deepgramToken ? body.deepgramToken : undefined;
     if (!speechmatics && !deepgram) {
       console.error("[mock STT] backend returned no speech token");
