@@ -105,7 +105,7 @@ export default function FirstRunGuide() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="relative w-full max-w-2xl overflow-hidden rounded-[28px] border border-white/70 bg-[#fbfcf9] shadow-[0_35px_100px_rgba(15,23,42,0.35)]"
+            className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-[28px] border border-white/70 bg-[#fbfcf9] shadow-[0_35px_100px_rgba(15,23,42,0.35)]"
           >
             <div className="h-1.5 bg-gradient-to-r from-[#176533] via-[#3b9b59] to-[#74bf80]" />
             <button

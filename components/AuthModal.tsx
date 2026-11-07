@@ -197,7 +197,7 @@ export default function AuthModal({ open, initialMode = "signin", onClose, onSuc
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
-              className="w-full max-w-[400px] bg-white rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+              className="w-full max-w-[400px] max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain bg-white rounded-2xl shadow-2xl pointer-events-auto"
               style={{ boxShadow: "0 32px 80px rgba(0,0,0,0.16), 0 8px 24px rgba(31,138,62,0.10)" }}>
 
               {/* Header */}
