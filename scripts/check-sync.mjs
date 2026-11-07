@@ -146,6 +146,17 @@ const jGuest = java ? num((java.match(/GUEST_FREE_CREDITS\s*=\s*([\w_]+)\s*;/) |
   ? (java.match(/FREE_TRIAL_CREDITS\s*=\s*([\d_]+)/) || [])[1] : (java.match(/GUEST_FREE_CREDITS\s*=\s*([\d_]+)/) || [])[1]) : null;
 if (jGuest) (jGuest === fCredits?.free ? ok : bad)(`a guest gets the same free answers as a free account (${jGuest} vs ${fCredits?.free})`);
 
+// The free trial every new account starts on: the website writes it, the server can write it first, and the Windows
+// app states it. A trial customer was shown "pro plan" and "500 answers each month" by the Windows app (2026-11-07).
+{
+  const fTrial = facts ? num((facts.match(/TRIAL_ANSWERS\s*=\s*([\d_]+)/) || [])[1]) * 5 : null;
+  const jTrial = java ? num((java.match(/\bTRIAL_CREDITS\s*=\s*([\d_]+)/) || [])[1]) : null;
+  const wTrial = winPlan ? num((winPlan.match(/const int TrialCredits\s*=\s*([\d_]+)/) || [])[1]) : null;
+  if (fTrial && jTrial) (fTrial === jTrial ? ok : bad)(`server trial equals website trial (${jTrial} vs ${fTrial} credits)`);
+  if (fTrial && winPlan) (wTrial === fTrial ? ok : bad)(`Windows app (PlanFacts.cs) trial equals website trial (${wTrial} vs ${fTrial} credits)`);
+  if (winMain) (/PlanFacts\.PlanFromReply\(/.test(winMain) ? ok : bad)("Windows app reads the server's trial flag, so the trial is never shown as Pro");
+}
+
 // India: a rupee subscriber gets the same credits, with their own (smaller) hidden guard.
 const india = tsMap(facts, "INDIA_PLAN_ALLOWANCE");
 {

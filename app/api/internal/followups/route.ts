@@ -136,15 +136,16 @@ export async function POST(req: Request) {
     if (dry) { report.push({ who: masked, kind: `would send ${kind}` }); continue; }
     try { await db.collection("_alerts").doc(`upgrade-${kind}-${doc.id}`).create({ sentAt: now, kind }); }
     catch { continue; }
-    const first = String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "";
-    const m = upgradeEmail(kind, first);
+    // "User" is only the placeholder name: "Hi User" read as a mass mail (the follow-up above already drops it).
+    const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
+    const m = upgradeEmail(kind, first, d.planSource === "trial-ended");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
     report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });
   }
   return NextResponse.json({ checked: users.size, report });
 }
 
-function upgradeEmail(kind: "maya-taste" | "out-of-answers", first: string): { subject: string; text: string } {
+function upgradeEmail(kind: "maya-taste" | "out-of-answers", first: string, trialEnded = false): { subject: string; text: string } {
   const hi = `Hi${first ? " " + first : ""},`;
   if (kind === "maya-taste") return {
     subject: "Keep practising with Maya",
@@ -155,6 +156,22 @@ Thanks for your interview with Maya. The more you practise out loud, the calmer 
 The Practice plan gives you interviews with Maya every month, with feedback and a stronger answer for every question, plus live answers for your real interviews. It is $${MOCK_PLAN.usd} a month (Rs ${MOCK_PLAN.inr} in India). Max includes Maya, and Pro can add her.
 
 See the plans: https://replysis.com/pricing
+
+Once you have a plan, it works on the website and in the Replysis apps with the same account.
+
+The Replysis team`,
+  };
+  // A trial that ran out of time holds 0 answers too, but its owner did not use them all: telling them they had was
+  // simply wrong (2026-11-07, the trial is 1 day, so most trial accounts end this way).
+  if (trialEnded) return {
+    subject: "Your Replysis free trial has ended",
+    text: `${hi}
+
+Your free trial has ended, so answers are paused for now. To keep getting answers in your interviews, choose a plan here:
+
+https://replysis.com/pricing
+
+Pro and Max give you answers every month. If you mostly want to practise, the Practice plan includes interviews with Maya and live answers.
 
 Once you have a plan, it works on the website and in the Replysis apps with the same account.
 
