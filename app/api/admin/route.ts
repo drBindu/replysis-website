@@ -12,6 +12,7 @@ import {
 import { clientIp, rateLimit } from "../../lib/rate-limit";
 import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
 
+import { indiaSales, manualPlanFields, realPlanCounts } from "../../lib/admin-metrics";
 const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
 export const runtime = "nodejs";
@@ -896,6 +897,9 @@ export async function GET(req: Request) {
       minutePurchases,
       planPasses,
       trialCount,
+      internalTrial,
+      passPro,
+      passMax,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -923,30 +927,20 @@ export async function GET(req: Request) {
       db.collection("plan_passes").get(),
       // Trial accounts sit on Pro with nothing paid; taken out of the paid and Pro counts below.
       users.where("planSource", "==", "trial").count().get(),
+      users.where("internal", "==", true).where("planSource", "==", "trial").count().get(),
+      users.where("planSource", "==", "pass").where("plan", "==", "pro").count().get(),
+      users.where("planSource", "==", "pass").where("plan", "==", "max").count().get(),
     ]);
-    const paidMinutes = new Map<string, { inr: number; minutes: number; count: number; last: number }>();
-    let minuteRevenueInr = 0;
-    // India one-month plans (paid once in rupees) are money in too; they were missing from every total (2026-10-22).
-    for (const d of planPasses.docs) {
-      const p = d.data();
-      if (typeof p.uid !== "string") continue;
-      const inr = (Number(p.amount) || 0) / 100;
-      minuteRevenueInr += inr;
-      const cur = paidMinutes.get(p.uid) ?? { inr: 0, minutes: 0, count: 0, last: 0 };
-      cur.inr += inr; cur.count += 1;
-      cur.last = Math.max(cur.last, anyMs(p.createdAt) ?? 0);
-      paidMinutes.set(p.uid, cur);
-    }
-    for (const d of minutePurchases.docs) {
-      const p = d.data();
-      if (typeof p.uid !== "string") continue;
-      const inr = (Number(p.amount) || 0) / 100;
-      minuteRevenueInr += inr;
-      const cur = paidMinutes.get(p.uid) ?? { inr: 0, minutes: 0, count: 0, last: 0 };
-      cur.inr += inr; cur.minutes += Number(p.minutes) || 0; cur.count += 1;
-      cur.last = Math.max(cur.last, anyMs(p.createdAt) ?? 0);
-      paidMinutes.set(p.uid, cur);
-    }
+    // India money in. plan_passes also holds dollar pack receipts and refund receipts, which are not rupee sales.
+    const sales = indiaSales([...planPasses.docs, ...minutePurchases.docs].map((d) => ({ id: d.id, ...d.data() })), anyMs);
+    const paidMinutes = sales.perUser;
+    const minuteRevenueInr = sales.totalInr;
+    const real = realPlanCounts({
+      paid: paidCount.data().count, pro: proCount.data().count, max: maxCount.data().count, trial: trialCount.data().count,
+      internal: internalCount.data().count, internalPaid: internalPaid.data().count, internalPro: internalPro.data().count,
+      internalMax: internalMax.data().count, internalTrial: internalTrial.data().count,
+      passPro: passPro.data().count, passMax: passMax.data().count,
+    });
 
     const hasMore = userPage.docs.length > requestedPageSize;
     const listedDocs = userPage.docs.slice(0, requestedPageSize);
@@ -981,11 +975,11 @@ export async function GET(req: Request) {
         macDownloads: macDownloads.data().count,
         internalUsers: internalCount.data().count,
         realUsers: Math.max(0, userCount.data().count - internalCount.data().count),
-        realPaid: Math.max(0, paidCount.data().count - internalPaid.data().count - trialCount.data().count),
-        realPro: Math.max(0, proCount.data().count - internalPro.data().count - trialCount.data().count),
-        realMax: Math.max(0, maxCount.data().count - internalMax.data().count),
+        ...real,
         minuteBuyers: paidMinutes.size,
         minuteRevenueInr: Math.round(minuteRevenueInr),
+        indiaSalesLast30Inr: Math.round(sales.last30Inr),
+        refunds: sales.refunds,
       },
       page: {
         nextCursor: hasMore ? listedDocs.at(-1)?.id ?? null : null,
@@ -1056,13 +1050,14 @@ export async function POST(req: Request) {
         const existing = await transaction.get(userRef);
         if (!existing.exists) throw new HttpError(404, "User not found");
         const current = existing.data() ?? {};
-        transaction.update(userRef, { plan, credits });
+        const fields = manualPlanFields(current.planSource, plan, credits);
+        transaction.update(userRef, fields);
         transaction.set(auditRef, auditData(
           principal,
           "updatePlan",
           userId,
-          { plan: current.plan ?? "free", credits: Number(current.credits) || 0 },
-          { plan, credits },
+          { plan: current.plan ?? "free", credits: Number(current.credits) || 0, planSource: current.planSource ?? null },
+          fields,
         ));
       });
       return NextResponse.json({ success: true });

@@ -38,12 +38,14 @@ type AdminMetrics = {
   liveUsers: number; listeningNow: number; totalUsageMinutes: number;
   winDownloads: number; macDownloads: number;
   internalUsers: number; realUsers: number; realPaid: number; realPro: number; realMax: number;
+  subPro: number; subMax: number; indiaSalesLast30Inr: number; refunds: number;
 };
 
 const EMPTY_METRICS: AdminMetrics = {
   users: 0, paidUsers: 0, proUsers: 0, maxUsers: 0,
   liveUsers: 0, listeningNow: 0, totalUsageMinutes: 0, winDownloads: 0, macDownloads: 0,
   internalUsers: 0, realUsers: 0, realPaid: 0, realPro: 0, realMax: 0,
+  subPro: 0, subMax: 0, indiaSalesLast30Inr: 0, refunds: 0,
 };
 
 type UsageRow = {
@@ -343,6 +345,10 @@ export default function AdminPage() {
         realPaid: Number(m.realPaid) || 0,
         realPro: Number(m.realPro) || 0,
         realMax: Number(m.realMax) || 0,
+        subPro: Number(m.subPro) || 0,
+        subMax: Number(m.subMax) || 0,
+        indiaSalesLast30Inr: Number(m.indiaSalesLast30Inr) || 0,
+        refunds: Number(m.refunds) || 0,
       });
       setNextCursor(typeof data.page?.nextCursor === "string" ? data.page.nextCursor : null);
 
@@ -477,8 +483,10 @@ export default function AdminPage() {
   // Revenue and customer counts leave out accounts marked as the owner's or a friend's.
   // India interview minutes are paid in rupees; without them the margin showed a loss while a customer had paid Rs 165.
   const INR_PER_USD = 88;
-  const mrr = metrics.realPro * PLAN_PRICE_USD.pro + metrics.realMax * PLAN_PRICE_USD.max
-    + (metrics.minuteRevenueInr ?? 0) / INR_PER_USD;
+  // Subscriptions at their dollar price, plus rupee sales of the last 30 days. India months paid once are in the rupee
+  // sales, so they are not priced again as subscriptions, and all time sales are not a monthly figure (round 29).
+  const mrr = metrics.subPro * PLAN_PRICE_USD.pro + metrics.subMax * PLAN_PRICE_USD.max
+    + metrics.indiaSalesLast30Inr / INR_PER_USD;
   const totals = usage?.totals;
   const refundRate = totals && totals.events > 0
     ? (totals.refunds / totals.events) * 100
@@ -1130,10 +1138,11 @@ export default function AdminPage() {
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Windows downloads" value={num(metrics.winDownloads)} icon={<Monitor size={12} />} />
           <Kpi label="Mac downloads" value={num(metrics.macDownloads)} icon={<Apple size={12} />} />
-          <Kpi label="Free accounts" value={num(Math.max(0, metrics.users - metrics.paidUsers))} icon={<Users size={12} />} />
+          <Kpi label="Free accounts" value={num(Math.max(0, metrics.realUsers - metrics.realPaid))} icon={<Users size={12} />} />
           <Kpi label="India sales (minutes + month)" value={`₹${num(metrics.minuteRevenueInr ?? 0)}`} icon={<Users size={12} />} />
-          <Kpi label="Minute buyers" value={num(metrics.minuteBuyers ?? 0)} icon={<Users size={12} />} />
-          <Kpi label="Conversion" value={`${metrics.users ? ((metrics.paidUsers / metrics.users) * 100).toFixed(1) : "0.0"}%`}
+          <Kpi label="India buyers" value={num(metrics.minuteBuyers ?? 0)}
+               sub={metrics.refunds ? `${num(metrics.refunds)} refunds taken back` : undefined} icon={<Users size={12} />} />
+          <Kpi label="Conversion" value={`${metrics.realUsers ? ((metrics.realPaid / metrics.realUsers) * 100).toFixed(1) : "0.0"}%`}
                sub="paying / total" icon={<TrendingUp size={12} />} />
         </section>
       </div>
