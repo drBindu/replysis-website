@@ -5,6 +5,7 @@ import { SpeechmaticsClient }  from "../_lib/stt-client";
 import { auth }                from "../../firebaseConfig";
 import { buildMessages }       from "../_lib/promptBuilder";
 import { cleanAnswer, formatForReading } from "../_lib/formatAnswer";
+import { cleanResumeForPrompt } from "../../lib/prompt-text";
 import type { InterviewMode } from "../_lib/interviewMode";
 import type { AnswerStyle } from "../_lib/settings";
 import {
@@ -22,19 +23,6 @@ export type Turn = { role: "interviewer" | "candidate"; text: string };
 // ─────────────────────────────────────────────
 // SANITIZE RESUME
 // ─────────────────────────────────────────────
-function sanitizeResume(text: string): string {
-  if (!text) return "";
-  return text
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[- - ]/g, "-")
-    .replace(/•/g, "•")
-    .replace(/ /g, " ")
-    .replace(/…/g, "...")
-    .replace(/[^\x20-\x7E\n\r\t•]/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
 
 // ─────────────────────────────────────────────
 // HOOK
@@ -196,8 +184,8 @@ export function useInterview(config: {
     historyRef.current = nextHistory;
 
     // Clean resume before sending
-    const cleanResume = sanitizeResume(config.resume);
-    const cleanJd     = sanitizeResume(config.jobDescription);
+    const cleanResume = cleanResumeForPrompt(config.resume);
+    const cleanJd     = cleanResumeForPrompt(config.jobDescription);
 
     try {
       // Get Firebase ID token for authenticated API call

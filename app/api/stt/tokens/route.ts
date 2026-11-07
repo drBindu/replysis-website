@@ -3,6 +3,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../../lib/rate-limit";
+import { normalizeDashes, sanitizeMessages, sanitizeText } from "../../../lib/prompt-text";
 // Shared with the browser interview so the two cannot disagree about what
 // counts as chit-chat. They did: this path carried its own six-word regex.
 import {
@@ -85,22 +86,7 @@ async function logUsageAndIncrement(email: string, service: string, details: any
 // ============================================================================
 // 3) HELPERS
 // ============================================================================
-function normalizeDashes(input: string) {
-  return (input || "").replace(/[-–−]/g, "-").replace(/\u00A0/g, " ");
-}
-
-function sanitizeText(text: string) {
-  if (!text) return "";
-  const cleaned = normalizeDashes(text).replace(/[^\x20-\x7E\n]/g, "");
-  if (cleaned.length > 30000) {
-    console.warn(`sanitizeText: input truncated from ${cleaned.length} to 30000 chars`);
-  }
-  return cleaned.slice(0, 30000);
-}
-
 const MAX_REQUEST_BYTES = 256 * 1024;
-const MAX_MESSAGES = 24;
-const MAX_MESSAGE_CHARS = 6_000;
 const VALID_MODES = new Set([
   "verify_resume", "generate_script", "generate_feedback", "generate_questions", "realtime", "follow_up", "suggest_answer",
   "maya_turn", "rewrite_bullet", "generate_summary",
@@ -111,17 +97,6 @@ function requestTooLarge(req: Request): boolean {
   return Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES;
 }
 
-function sanitizeMessages(value: unknown): Array<{ role: "system" | "user" | "assistant"; content: string }> {
-  if (!Array.isArray(value)) return [];
-  return value.slice(0, MAX_MESSAGES).flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const candidate = item as { role?: unknown; content?: unknown };
-    if (candidate.role !== "system" && candidate.role !== "user" && candidate.role !== "assistant") return [];
-    if (typeof candidate.content !== "string") return [];
-    const content = sanitizeText(candidate.content).slice(0, MAX_MESSAGE_CHARS);
-    return content ? [{ role: candidate.role, content }] : [];
-  });
-}
 
 function cleanJson(text: string) {
   try {
