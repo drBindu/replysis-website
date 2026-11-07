@@ -260,6 +260,7 @@ function Bd({ counts }: { counts: Record<string, number> }) {
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<AdminMetrics>(EMPTY_METRICS);
+  const [deletionRequests, setDeletionRequests] = useState<Array<{ uid: string; email: string; daysWaiting: number }>>([]);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<number>(30);
@@ -327,6 +328,7 @@ export default function AdminPage() {
       setServerError(null);
       setUsers(Array.isArray(data.users) ? data.users : []);
 
+      setDeletionRequests(Array.isArray(data.deletionRequests) ? data.deletionRequests : []);
       const m = data.metrics || {};
       setMetrics({
         users: Number(m.users) || 0,
@@ -603,6 +605,17 @@ export default function AdminPage() {
               <div className="mt-0.5 text-amber-200/80">
                 Ask Deepgram for a higher limit before it fills: deepgram.com/contact-us
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {deletionRequests.length ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-200">
+            <div className="font-semibold">{num(deletionRequests.length)} account deletion {deletionRequests.length === 1 ? "request is" : "requests are"} waiting</div>
+            <div className="mt-1 space-y-0.5 text-amber-200/80">
+              {deletionRequests.map((r) => (
+                <div key={r.uid}>{r.email || r.uid}, asked {r.daysWaiting === 0 ? "today" : `${num(r.daysWaiting)} days ago`}. Delete it from the user list within 30 days.</div>
+              ))}
             </div>
           </div>
         ) : null}

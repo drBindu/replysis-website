@@ -13,6 +13,7 @@ import { clientIp, rateLimit } from "../../lib/rate-limit";
 import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
 
 import { indiaSales, manualPlanFields, realPlanCounts } from "../../lib/admin-metrics";
+import { cancelChargingSubscriptions, pendingDeletionRequests } from "../../lib/account-deletion";
 const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
 export const runtime = "nodejs";
@@ -35,6 +36,7 @@ const USAGE_MAX_DAYS = 180;
 
 const BACKEND_INTERNAL_URL = (process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/$/, "");
 const ACCOUNT_DELETION_TOKEN = process.env.ACCOUNT_DELETION_TOKEN || "";
+const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 
 type AdminPrincipal = { uid: string; email: string };
 
@@ -187,6 +189,24 @@ async function deleteDocumentsByField(db: Firestore, collection: string, field: 
     snapshot.docs.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
     if (snapshot.size < 400) return;
+  }
+}
+
+async function clearFieldWhere(db: Firestore, collection: string, field: string, value: string, clear: string) {
+  let after: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+  while (true) {
+    let query = db.collection(collection).where(field, "==", value).orderBy(FieldPath.documentId()).limit(400);
+    if (after) query = query.startAfter(after);
+    const snapshot = await query.get();
+    if (snapshot.empty) return;
+    const docs = snapshot.docs.filter((doc) => doc.get(clear) != null);
+    if (docs.length) {
+      const batch = db.batch();
+      docs.forEach((doc) => batch.update(doc.ref, { [clear]: FieldValue.delete() }));
+      await batch.commit();
+    }
+    if (snapshot.size < 400) return;
+    after = snapshot.docs[snapshot.docs.length - 1];
   }
 }
 
@@ -900,6 +920,7 @@ export async function GET(req: Request) {
       internalTrial,
       passPro,
       passMax,
+      deletionSnap,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -930,6 +951,8 @@ export async function GET(req: Request) {
       users.where("internal", "==", true).where("planSource", "==", "trial").count().get(),
       users.where("planSource", "==", "pass").where("plan", "==", "pro").count().get(),
       users.where("planSource", "==", "pass").where("plan", "==", "max").count().get(),
+      // Account deletion requests waiting for the owner. Apple needs them done; the privacy page promises 30 days.
+      db.collection("deletion_requests").where("status", "==", "requested").limit(50).get().catch(() => null),
     ]);
     // India money in. plan_passes also holds dollar pack receipts and refund receipts, which are not rupee sales.
     const sales = indiaSales([...planPasses.docs, ...minutePurchases.docs].map((d) => ({ id: d.id, ...d.data() })), anyMs);
@@ -981,6 +1004,7 @@ export async function GET(req: Request) {
         indiaSalesLast30Inr: Math.round(sales.last30Inr),
         refunds: sales.refunds,
       },
+      deletionRequests: pendingDeletionRequests((deletionSnap?.docs ?? []).map((doc) => ({ id: doc.id, data: doc.data() }))),
       page: {
         nextCursor: hasMore ? listedDocs.at(-1)?.id ?? null : null,
         pageSize: requestedPageSize,
@@ -1132,6 +1156,18 @@ export async function POST(req: Request) {
 
       const userData = existing.data() ?? {};
       let email = typeof userData.email === "string" ? userData.email : "";
+
+      // Stop the card being charged first. A deleted account with a live subscription kept paying every month, and a
+      // failure here stops the deletion before anything is removed, so it can simply be tried again.
+      if (typeof userData.stripeCustomerId === "string" && userData.stripeCustomerId) {
+        try {
+          await cancelChargingSubscriptions(userData.stripeCustomerId, STRIPE_SECRET, fetch);
+        } catch (error) {
+          console.error("[admin] Stripe cancel before deletion failed", (error as Error)?.message);
+          throw new HttpError(503, "Could not cancel this account's subscription at Stripe, so nothing was deleted. Try again.");
+        }
+      }
+
       try {
         const target = await getAuth().getUser(userId);
         email = target.email ?? email;
@@ -1147,7 +1183,11 @@ export async function POST(req: Request) {
       if (email) {
         await deleteDocumentsByField(db, "api_usage_logs", "userEmail", email);
         await deleteDocumentsByField(db, "interview_sessions", "userEmail", email);
+        // Problem reports carry the person's email; the billing rows below keep their numbers but lose the email.
+        await deleteDocumentsByField(db, "client_errors", "user", email);
+        await clearFieldWhere(db, "usage_events", "email", email.toLowerCase(), "email");
       }
+      await clearFieldWhere(db, "usage_events", "identityId", userId, "email");
       try {
         await getAuth().deleteUser(userId);
       } catch (error: any) {
@@ -1156,8 +1196,12 @@ export async function POST(req: Request) {
           throw new HttpError(500, "Authentication account deletion needs retry");
         }
       }
+      const requestRef = db.collection("deletion_requests").doc(userId);
+      const request = await requestRef.get();
       await db.runTransaction(async (transaction) => {
         transaction.delete(userRef);
+        // The request is done: it no longer shows as waiting, and it keeps no email.
+        if (request.exists) transaction.set(requestRef, { status: "completed", email: FieldValue.delete(), completedAt: FieldValue.serverTimestamp() }, { merge: true });
         transaction.set(auditRef, auditData(
           principal,
           "deleteUser",

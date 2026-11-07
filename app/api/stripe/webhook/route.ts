@@ -263,7 +263,10 @@ async function otherLivePlan(customer: unknown, endedId: unknown): Promise<{ pla
  * end it: with two, cancelling the spare must not downgrade anyone, and ending the stored one moves onto the other.
  */
 async function endSubscription(uid: string, eventCreated: number, sub: any, status: string) {
-  const d = (await db!.collection("users").doc(uid).get()).data() ?? {};
+  const snap = await db!.collection("users").doc(uid).get();
+  // A deleted account: deleting it cancels the subscription, and Stripe's "ended" event must not make a new record.
+  if (!snap.exists) { console.log(`SUBSCRIPTION ${status.toUpperCase()} ${sub.id}: account ${uid} no longer exists, nothing to change`); return; }
+  const d = snap.data() ?? {};
   if (d.stripeSubscriptionId && d.stripeSubscriptionId !== sub.id) return;
   const other = await otherLivePlan(sub.customer, sub.id);
   if (other) {
