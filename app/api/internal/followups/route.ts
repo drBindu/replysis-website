@@ -9,7 +9,8 @@ import { NextResponse } from "next/server";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { ensureAdmin } from "../../../lib/verify-user";
 import { mailConfigured, sendMails, unsubscribeToken } from "../../../lib/user-mail";
-import { mayaAccess } from "../../../lib/paid-plan";
+import { isPaidPlan, mayaAccess } from "../../../lib/paid-plan";
+import { customerEmailKeys, emailedRecently, mayaTasteDue, onePerPerson } from "../../../lib/email-plan";
 import { MOCK_PLAN } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,13 @@ const ms = (v: any): number | null =>
   v?.toDate ? v.toDate().getTime() : typeof v === "string" ? Date.parse(v) || null : typeof v === "number" ? v : null;
 
 type Kind = "no-app" | "mock-only" | "no-answer";
+
+/** When we last emailed this person (follow-up, upgrade or trial reminder), from the _alerts claims. */
+async function lastEmails(db: FirebaseFirestore.Firestore, uid: string): Promise<number[]> {
+  const refs = customerEmailKeys(uid).map((k) => db.collection("_alerts").doc(k));
+  const snaps = await db.getAll(...refs);
+  return snaps.map((s) => Number(s.exists ? s.data()?.sentAt : 0) || 0);
+}
 
 function email(kind: Kind, first: string, trial: boolean): { subject: string; text: string } {
   const hi = `Hi${first ? " " + first : ""},`;
@@ -97,6 +105,8 @@ export async function POST(req: Request) {
     const kind: Kind | null = answers > 0 ? null : appOpened ? "no-answer" : mock ? "mock-only" : "no-app";
     const masked = to.replace(/^(.{3}).*@/, "$1***@");
     if (!kind) { report.push({ who: masked, kind: "already using it, no email" }); continue; }
+    // Never two emails from us within 12 hours: an upgrade email or the trial reminder may have just gone out.
+    if (emailedRecently(await lastEmails(db, doc.id), now)) { report.push({ who: masked, kind: `${kind} held: emailed recently` }); continue; }
     if (dry) { report.push({ who: masked, kind: `would send ${kind}` }); continue; }
 
     // Claimed before sending: if two copies of the site run this together, only one sends.
@@ -105,6 +115,8 @@ export async function POST(req: Request) {
     const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
     const m = email(kind, first, d.planSource === "trial");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
+    // A failed send gives the claim back, so the next hour tries again instead of the email being lost for good.
+    if (result.sent !== 1) await db.collection("_alerts").doc(`followup-${doc.id}`).delete().catch(() => {});
     await doc.ref.set({ followupKind: kind, followupSentAt: new Date(), followupSent: result.sent === 1 }, { merge: true });
     report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });
   }
@@ -113,11 +125,11 @@ export async function POST(req: Request) {
   // from the server, with the plans link: someone who used their free interview with Maya and did not buy, and someone
   // who ran out of answers. Once per person per kind, ever, and only for people active in the last two weeks.
   const recent = now - 14 * 24 * 3600_000;
-  const upgrade: { doc: FirebaseFirestore.QueryDocumentSnapshot; kind: "maya-taste" | "out-of-answers" }[] = [];
+  const upgrade: { uid: string; doc: FirebaseFirestore.QueryDocumentSnapshot; kind: "maya-taste" | "out-of-answers" }[] = [];
   const tasted = await db.collection("users").where("mayaFreeUsed", "==", true).get();
   for (const doc of tasted.docs) {
-    const at = ms(doc.data().mayaFreeUsedAt);
-    if (at && now - at > 3600_000 && now - at < 7 * 24 * 3600_000 && mayaAccess(doc.data()).state !== "ok") upgrade.push({ doc, kind: "maya-taste" });
+    const d = doc.data();
+    if (mayaTasteDue(isPaidPlan(d), mayaAccess(d, now).state === "ok", ms(d.mayaFreeUsedAt), now)) upgrade.push({ uid: doc.id, doc, kind: "maya-taste" });
   }
   const empty = await db.collection("users").where("credits", "<", 5).get();
   for (const doc of empty.docs) {
@@ -125,21 +137,30 @@ export async function POST(req: Request) {
     const seen = ms(d.lastActive) ?? 0;
     const paid = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
     if (!paid && d.mockPlan !== true && Number(d.minutesBalance ?? 0) <= 0 && seen > recent && Number(d.creditsUsed ?? 0) > 0) {
-      upgrade.push({ doc, kind: "out-of-answers" });
+      upgrade.push({ uid: doc.id, doc, kind: "out-of-answers" });
     }
   }
-  for (const { doc, kind } of upgrade) {
+  // Kinds already sent are dropped first, so a person who had the out of answers email still gets the Maya one later.
+  const pending: typeof upgrade = [];
+  for (const u of upgrade) {
+    if (!(await db.collection("_alerts").doc(`upgrade-${u.kind}-${u.uid}`).get()).exists) pending.push(u);
+  }
+  for (const { doc, kind } of onePerPerson(pending)) {
     const d = doc.data();
     const to = typeof d.email === "string" ? d.email : "";
     if (!to.includes("@") || d.emailOptOut === true || d.internal === true) continue;
     const masked = to.replace(/^(.{3}).*@/, "$1***@");
+    // Emailed anything in the last 12 hours (the follow-up above included): later.
+    const claimRef = db.collection("_alerts").doc(`upgrade-${kind}-${doc.id}`);
+    if (emailedRecently(await lastEmails(db, doc.id), now)) { report.push({ who: masked, kind: `${kind} held: emailed recently` }); continue; }
     if (dry) { report.push({ who: masked, kind: `would send ${kind}` }); continue; }
-    try { await db.collection("_alerts").doc(`upgrade-${kind}-${doc.id}`).create({ sentAt: now, kind }); }
+    try { await claimRef.create({ sentAt: now, kind }); }
     catch { continue; }
     // "User" is only the placeholder name: "Hi User" read as a mass mail (the follow-up above already drops it).
     const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
     const m = upgradeEmail(kind, first, d.planSource === "trial-ended");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
+    if (result.sent !== 1) await claimRef.delete().catch(() => {});
     report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });
   }
   return NextResponse.json({ checked: users.size, report });
