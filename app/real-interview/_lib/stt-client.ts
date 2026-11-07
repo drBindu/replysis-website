@@ -115,7 +115,7 @@ export class SpeechmaticsClient {
     ws.onopen = async () => {
       if (!this.started || this.ws !== ws) return;
       opts.onStatus(this.reconnects ? "Connection restored. Starting microphone…" : "Starting microphone…");
-      await this.setupAudio(opts);
+      await this.setupAudio(opts, ws);
       if (this.started) {
         // The clock starts when the microphone does, and a reconnect resumes
         // rather than restarting it, so a dropped connection cannot be used to
@@ -181,10 +181,20 @@ export class SpeechmaticsClient {
     this.reconnectTimer = window.setTimeout(() => this.connect(), delay);
   }
 
-  private async setupAudio(opts: StartOptions) {
+  /**
+   * True once this connection is no longer the live one: listening was stopped, or a reconnect replaced the socket,
+   * while the microphone or audio engine was still opening. Opening the microphone can take seconds (the permission
+   * prompt, a Bluetooth headset waking up), and Space pressed again in that time used to leave the microphone on with
+   * "Listening…" shown, sending nothing, until the tab was closed.
+   */
+  private superseded(ws: WebSocket): boolean {
+    return !this.started || this.ws !== ws;
+  }
+
+  private async setupAudio(opts: StartOptions, ws: WebSocket) {
     try {
       this.cleanupAudio();
-      this.stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -193,10 +203,16 @@ export class SpeechmaticsClient {
           sampleRate: 16000,
         } as MediaTrackConstraints,
       });
+      if (this.superseded(ws)) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      this.stream = stream;
 
       const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.audioCtx = new AudioCtx({ latencyHint: "interactive", sampleRate: 16000 });
       await this.audioCtx.resume();
+      if (this.superseded(ws)) { this.releaseIfStale(); return; }
 
       this.ws?.send(JSON.stringify({
         message: "StartRecognition",
@@ -233,6 +249,7 @@ export class SpeechmaticsClient {
         const blobUrl = URL.createObjectURL(blob);
         try { await this.audioCtx.audioWorklet.addModule(blobUrl); }
         finally { URL.revokeObjectURL(blobUrl); }
+        if (this.superseded(ws) || !this.audioCtx) { this.releaseIfStale(); return; }
 
         this.workletNode = new AudioWorkletNode(this.audioCtx, "pcm-processor");
         this.workletNode.port.onmessage = event => {
@@ -251,6 +268,7 @@ export class SpeechmaticsClient {
         opts.onStatus(this.reconnects ? "Listening again" : "Listening (compatibility mode)…");
       }
     } catch (error) {
+      if (this.superseded(ws)) { this.releaseIfStale(); return; }
       const name = error instanceof DOMException ? error.name : "";
       console.error("[Replysis] Audio setup error:", name || "Error");
       this.fail(name === "NotAllowedError"
@@ -283,6 +301,11 @@ export class SpeechmaticsClient {
     const onError = this.options?.onError;
     this.stop();
     onError?.(message);
+  }
+
+  /** A stopped client holds nothing; a reconnecting one leaves the audio to the new connection's own setup. */
+  private releaseIfStale() {
+    if (!this.started) this.cleanupAudio();
   }
 
   private cleanupAudio() {

@@ -307,7 +307,7 @@ export function isCompanyPitch(q: string): boolean {
 }
 
 export function getGreetingResponse(): string {
-  return "Hey, great to be here  -  really looking forward to this conversation!";
+  return "Hey, great to be here. Really looking forward to this conversation!";
 }
 
 export function getSmallTalkResponse(): string {

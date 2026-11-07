@@ -58,6 +58,10 @@ export function useSession(userEmail: string) {
   // Current live session's Firestore document ID.
   // null = no session created yet (first Q&A will create one).
   const sessionDocId = useRef<string | null>(null);
+  // Saves run one at a time. The first save creates the session, and a second one sent before that reply came back
+  // (End session pressed right after an answer, or two quick answers) also had no id yet, so it created a second
+  // copy of the same interview in the history.
+  const saveChain = useRef<Promise<void>>(Promise.resolve());
 
   // ── UPSERT SESSION ────────────────────────────────────────────────────────
   // Creates a Firestore doc on the first call, then updates it on subsequent
@@ -71,7 +75,18 @@ export function useSession(userEmail: string) {
     durationSecs:  number;
   }) => {
     if (!userEmail || !payload.turns || payload.turns.length === 0) return;
+    const run = saveChain.current.then(() => sendSave(payload));
+    saveChain.current = run.catch(() => {});
+    return run;
+  }, [userEmail, notifyFailure]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const sendSave = async (payload: {
+    companyName:   string;
+    role:          string;
+    resume:        string;
+    turns:         Turn[];
+    durationSecs:  number;
+  }) => {
     try {
       const token = await getAuthToken();
 
@@ -114,7 +129,7 @@ export function useSession(userEmail: string) {
       console.error("[Replysis] Session backup request failed:", (err as Error)?.name ?? "Error");
       notifyFailure("backup");
     }
-  }, [userEmail, notifyFailure]);
+  };
 
   // ── SAVE SESSION (kept for endSession compat) ─────────────────────────────
   const saveSession = useCallback(async (payload: {

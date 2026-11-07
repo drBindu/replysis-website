@@ -85,6 +85,11 @@ export function useInterview(config: {
   const recordingStartRef = useRef<number>(0);   // when this recording segment started
   const accumulatedRef    = useRef<number>(0);   // total seconds before current segment
   const isGeneratingRef   = useRef(false);       // race-condition guard
+  // True from the moment listening is asked for until it is stopped. startMic waits for the sign-in token before it
+  // makes the client, so a second Space press (or a held Space key repeating) in that gap used to start a second
+  // client: two microphones, the same words twice in the transcript, listening minutes counted twice, and the first
+  // client could no longer be stopped because nothing pointed at it.
+  const listeningRef      = useRef(false);
 
   // Keep historyRef in sync
   useEffect(() => { historyRef.current = history; }, [history]);
@@ -128,6 +133,7 @@ export function useInterview(config: {
       sttClient.current.stop();
       sttClient.current = null;
     }
+    listeningRef.current = false;
     setIsRecording(false);
 
     // ── ZERO-LATENCY LOCAL REPLIES ──────────────────────────────
@@ -163,7 +169,7 @@ export function useInterview(config: {
     }
 
     if (isCompanyPitch(fullText)) {
-      const reply = "That sounds like a really exciting challenge  -  I've been following what you're building and I have a lot of thoughts on how I can contribute.";
+      const reply = "That sounds like a really exciting challenge. I've been following what you're building and I have a lot of thoughts on how I can contribute.";
       setAnswer(reply);
       extractAndLockFacts(fullText, reply);
       const nextHistory: Turn[] = [
@@ -299,9 +305,13 @@ export function useInterview(config: {
 
   // ── START MIC ──────────────────────────────────────────────────
   const startMic = useCallback(async () => {
+    if (listeningRef.current) return;
+    listeningRef.current = true;
     // Get Firebase ID token before starting so STT token endpoint can verify auth
     let authToken = "";
     try { authToken = (await auth.currentUser?.getIdToken()) ?? ""; } catch {}
+    // Stopped while the token was being read: start nothing.
+    if (!listeningRef.current) return;
 
     setIsRecording(true);
     setTranscript("");
@@ -310,8 +320,9 @@ export function useInterview(config: {
     transcriptRef.current = "";
     partialRef.current    = "";
 
-    sttClient.current = new SpeechmaticsClient();
-    await sttClient.current.start({
+    const client = new SpeechmaticsClient();
+    sttClient.current = client;
+    await client.start({
       authToken,
       maxDelay:       config.maxDelay       ?? 0.3,
       operatingPoint: config.operatingPoint || "enhanced",
@@ -333,6 +344,9 @@ export function useInterview(config: {
         setPartial(""); partialRef.current = "";
       },
       onError: (msg?: string) => {
+        // Only the live client may end listening; a late error from one already replaced must not orphan the new one.
+        if (sttClient.current !== client) return;
+        listeningRef.current = false;
         setIsRecording(false);
         setMicStatus(msg || "Mic error: press Space to retry");
         sttClient.current = null;
@@ -343,12 +357,14 @@ export function useInterview(config: {
   // Always release the microphone, worklet and socket when the interview view
   // is closed or refreshed.
   useEffect(() => () => {
+    listeningRef.current = false;
     sttClient.current?.stop();
     sttClient.current = null;
   }, []);
 
   // ── STOP MIC ───────────────────────────────────────────────────
   const stopMic = useCallback(() => {
+    listeningRef.current = false;
     if (sttClient.current) {
       sttClient.current.stop();
       sttClient.current = null;
@@ -385,6 +401,8 @@ export function useInterview(config: {
     if (e.target instanceof HTMLInputElement)   return;
     if (e.target instanceof HTMLTextAreaElement) return;
     e.preventDefault();
+    // A held Space key repeats about 30 times a second; only the first press counts.
+    if (e.repeat) return;
     if (isGenerating) return; // never interrupt while AI is thinking
     if (isRecording) {
       generateAnswer(); // stop mic + generate
