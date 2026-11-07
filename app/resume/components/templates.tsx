@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import { escapeResumeText } from "../../lib/resume-text";
 
 export type TemplateId =
   | "cornerstone"
@@ -1032,7 +1033,8 @@ export function renderPreview(templateId: TemplateId, ctx: StyleCtx): React.Reac
    PRINT HTML BUILDER (unchanged)
 ================================================================ */
 export function buildPrintHTML(templateId: TemplateId, ctx: PrintCtx): string {
-  const { ff, ac, fs, lh, sg, pagePad, data, sectionOrder, fontUrl, paperSize } = ctx;
+  const { ff, ac, fs, lh, sg, pagePad, sectionOrder, fontUrl, paperSize } = ctx;
+  const data = escapeResumeText(ctx.data);
   const pi = data.personalInfo || {};
 
   const padParts = pagePad.split(" ");

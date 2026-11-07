@@ -78,7 +78,7 @@ export default function SessionReport({ turns }: { turns: Turn[] }) {
           <div className="rounded-xl border p-4" style={{ background: C.card, borderColor: C.border }}>
             <div className="mb-2 flex items-center gap-2"><MessageCircleWarning size={14} className="text-amber-700"/><p className="text-[11px] font-black uppercase tracking-widest text-slate-600">Filler check</p></div>
             <p className="text-[13px] font-bold text-slate-700">{report.fillerTotal === 0 ? "No common filler phrases in saved answers" : `${report.fillerTotal} filler phrase${report.fillerTotal === 1 ? "" : "s"} found`}</p>
-            {report.fillers.length > 0 && <p className="mt-1 text-[11px] text-slate-500">{report.fillers.slice(0, 3).map(item => `${item.phrase} ×${item.count}`).join(" · ")}</p>}
+            {report.fillers.length > 0 && <p className="mt-1 text-[11px] text-slate-500">{report.fillers.slice(0, 3).map(item => `${item.phrase} ×${item.count}`).join(", ")}</p>}
           </div>
           <div className="rounded-xl border p-4" style={{ background: C.card, borderColor: C.border }}>
             <div className="mb-2 flex items-center gap-2"><ListChecks size={14} className="text-emerald-800"/><p className="text-[11px] font-black uppercase tracking-widest text-slate-600">What to fix next</p></div>
