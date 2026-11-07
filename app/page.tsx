@@ -16,6 +16,7 @@ import { WhatItDoes, ScreenReading, PracticeAndResume, PlainFacts, ClosingCta } 
 
 // Download addresses live in app/lib/downloads.ts (the release step bumps the Windows version there).
 import { WINDOWS_DOWNLOAD, WINDOWS_DIRECT_DOWNLOAD, MAC_DOWNLOAD } from "./lib/downloads";
+import { safeInternalPath } from "./lib/safe-path";
 
 /**
  * Reading the query string opts a component out of static rendering, so it is
@@ -25,9 +26,6 @@ import { WINDOWS_DOWNLOAD, WINDOWS_DIRECT_DOWNLOAD, MAC_DOWNLOAD } from "./lib/d
  */
 type AuthEntryMode = "signin" | "signup";
 
-function safeInternalPath(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/real-interview";
-}
 
 function AuthQueryWatcher({ onAuthRequest }: { onAuthRequest: (mode: AuthEntryMode, nextPath: string) => void }) {
   const searchParams = useSearchParams();
