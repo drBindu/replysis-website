@@ -15,15 +15,19 @@ export async function POST(req: Request) {
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token || !ensureAdmin()) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
 
-  let uid = "", email = "";
+  let uid = "", email = "", verified = false;
   try {
     const decoded = await getAuth().verifyIdToken(token);
     uid = decoded.uid;
     email = typeof decoded.email === "string" ? decoded.email : "";
+    verified = decoded.email_verified === true;
   } catch {
     return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   }
   if (!email) return NextResponse.json({ error: "Your account has no email address." }, { status: 400 });
+  // Round 59: the comment above promised a verified address but nothing checked it, so anyone could sign up with a
+  // stranger's address and send them our email. Google sign in addresses are verified.
+  if (!verified) return NextResponse.json({ error: "Please confirm your email address first, using the link we sent when you signed up." }, { status: 403 });
   if (!mailConfigured()) return NextResponse.json({ error: "Email is not available right now." }, { status: 503 });
 
   const limit = rateLimit(`start-link:${uid}`, 3, 24 * 60 * 60 * 1000);

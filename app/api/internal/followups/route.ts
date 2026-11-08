@@ -6,11 +6,12 @@
 // website copies can never both send), and none to anyone already getting answers, anyone who unsubscribed, or test
 // accounts. Every email has the one-click unsubscribe line (sendMails).
 import { NextResponse } from "next/server";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { ensureAdmin } from "../../../lib/verify-user";
 import { mailConfigured, sendMails, unsubscribeToken } from "../../../lib/user-mail";
 import { isPaidPlan, mayaAccess } from "../../../lib/paid-plan";
-import { customerEmailKeys, emailedRecently, mayaTasteDue, onePerPerson } from "../../../lib/email-plan";
+import { customerEmailKeys, emailedRecently, mayaTasteDue, onePerPerson, safeFirstName } from "../../../lib/email-plan";
 import { MOCK_PLAN } from "../../../../data/mayaAddon";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,14 @@ async function lastEmails(db: FirebaseFirestore.Firestore, uid: string): Promise
   const refs = customerEmailKeys(uid).map((k) => db.collection("_alerts").doc(k));
   const snaps = await db.getAll(...refs);
   return snaps.map((s) => Number(s.exists ? s.data()?.sentAt : 0) || 0);
+}
+
+/**
+ * Whether the account proved it owns its email (round 59): anyone could sign up with someone else's address, and these
+ * emails then went to a stranger from our domain. Google sign in addresses count as proved. A lookup fault sends nothing.
+ */
+async function emailVerified(uid: string): Promise<boolean> {
+  return getAuth().getUser(uid).then((u) => u.emailVerified === true).catch(() => false);
 }
 
 function email(kind: Kind, first: string, trial: boolean): { subject: string; text: string } {
@@ -95,6 +104,7 @@ export async function POST(req: Request) {
     const d = doc.data();
     const to = typeof d.email === "string" ? d.email : "";
     if (!to.includes("@") || d.emailOptOut === true || d.internal === true) continue;
+    if (!(await emailVerified(doc.id))) continue;
 
     const events = await db.collection("usage_events").where("identityId", "==", doc.id).get();
     const actions = events.docs.map((e) => String(e.data().action ?? ""));
@@ -112,8 +122,7 @@ export async function POST(req: Request) {
     // Claimed before sending: if two copies of the site run this together, only one sends.
     try { await db.collection("_alerts").doc(`followup-${doc.id}`).create({ sentAt: now, kind }); }
     catch { continue; }
-    const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
-    const m = email(kind, first, d.planSource === "trial");
+    const m = email(kind, safeFirstName(d.displayName), d.planSource === "trial");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
     // A failed send gives the claim back, so the next hour tries again instead of the email being lost for good.
     if (result.sent !== 1) await db.collection("_alerts").doc(`followup-${doc.id}`).delete().catch(() => {});
@@ -149,6 +158,7 @@ export async function POST(req: Request) {
     const d = doc.data();
     const to = typeof d.email === "string" ? d.email : "";
     if (!to.includes("@") || d.emailOptOut === true || d.internal === true) continue;
+    if (!(await emailVerified(doc.id))) continue;
     const masked = to.replace(/^(.{3}).*@/, "$1***@");
     // Emailed anything in the last 12 hours (the follow-up above included): later.
     const claimRef = db.collection("_alerts").doc(`upgrade-${kind}-${doc.id}`);
@@ -156,9 +166,7 @@ export async function POST(req: Request) {
     if (dry) { report.push({ who: masked, kind: `would send ${kind}` }); continue; }
     try { await claimRef.create({ sentAt: now, kind }); }
     catch { continue; }
-    // "User" is only the placeholder name: "Hi User" read as a mass mail (the follow-up above already drops it).
-    const first = (String(d.displayName ?? "").trim().split(/\s+/)[0] ?? "").replace(/^User$/, "");
-    const m = upgradeEmail(kind, first, d.planSource === "trial-ended");
+    const m = upgradeEmail(kind, safeFirstName(d.displayName), d.planSource === "trial-ended");
     const result = await sendMails([{ to, uid: doc.id, subject: m.subject, text: m.text }]);
     if (result.sent !== 1) await claimRef.delete().catch(() => {});
     report.push({ who: masked, kind: result.sent === 1 ? `sent ${kind}` : `failed: ${result.error ?? ""}` });

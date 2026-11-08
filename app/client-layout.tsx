@@ -9,7 +9,7 @@ import CreditUpgradeNotice from "../components/CreditUpgradeNotice";
 import { ToastProvider } from "../components/feedback/Toast";
 import { useEffect } from "react";
 import { auth, db } from "./firebaseConfig";
-import { doc, updateDoc, serverTimestamp, arrayUnion, increment } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const PRESENCE_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "";
@@ -87,20 +87,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
         // Async work in a self-contained function so the callback stays sync
         (async () => {
-          // Keep login telemetry minimal. IP and precise geolocation are not
-          // needed to operate the product and should not be collected by a
-          // third-party browser request.
-          const loginEntry: Record<string, string> = {
-            at: new Date().toISOString(),
-          };
-
           // Write the minimal activity record to Firestore.
           try {
             const update: Record<string, any> = {
               lastLoginAt:  serverTimestamp(),
               lastEntry:    serverTimestamp(),
               loginCount:   increment(1),
-              loginHistory: arrayUnion(loginEntry),
             };
             await updateDoc(userRef, update);
           } catch (e) {

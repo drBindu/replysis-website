@@ -82,7 +82,31 @@ export function mockConversationAllowed(user: Record<string, unknown>, now = Dat
  */
 export function mockStepsFree(user: Record<string, unknown> | undefined | null, now = Date.now()): boolean {
   const access = mayaAccess(user, now);
-  if (access.state === "ok" || access.state === "taste") return true;
+  if (access.state === "ok") return true;
+  // The one free interview, within its own size (round 59): the phone never claims it, so without a limit an unused free
+  // interview gave questions, feedback and model answers for ever. Same number and field as the backend's
+  // QuestionController.TASTE_STEPS_MAX.
+  if (Number(user?.mayaTasteSteps ?? 0) >= TASTE_STEPS_MAX) return false;
+  if (access.state === "taste") return true;
   const at = user?.mayaFreeUsedAt as { toMillis?: () => number } | undefined;
   return typeof at?.toMillis === "function" && now - at.toMillis() < 30 * 60_000;
+}
+
+/** Free mock interview steps (question sets, feedback, model answers) the one free interview may use. */
+export const TASTE_STEPS_MAX = 30;
+
+/** Whether Maya is part of this account (her conversation and voice then follow only the daily ceilings below). */
+export function hasMaya(user: Record<string, unknown> | undefined | null, now = Date.now()): boolean {
+  return !!user && (user.internal === true || mayaAccess(user, now).state === "ok");
+}
+
+/** Maya's replies, follow ups and suggested answers a day for an account without Maya on its plan (about two interviews). */
+export const DAILY_TALK_WITHOUT_MAYA = 80;
+/** Characters of Maya's voice a day: with Maya on the plan, and without it. */
+export const DAILY_VOICE_CHARS_WITH_MAYA = 60_000;
+export const DAILY_VOICE_CHARS_WITHOUT_MAYA = 15_000;
+
+/** How much of a daily allowance is used today: the count only counts on the day it was written. */
+export function usedToday(day: unknown, count: unknown, today: string): number {
+  return day === today ? Math.max(0, Number(count) || 0) : 0;
 }

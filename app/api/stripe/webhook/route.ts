@@ -590,6 +590,29 @@ async function applyMayaPass(session: any) {
   await alertMayaBought("India, paid once");
 }
 
+/** The card country of a paid rupee checkout, when it can be found; a foreign one is emailed to the owner. */
+async function reportForeignCardOnRupees(session: any): Promise<void> {
+  try {
+    const pi = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+    if (!pi) return;   // a rupee AutoPay subscription pays later, on its invoice
+    const intent = await stripeGet(`payment_intents/${encodeURIComponent(pi)}?expand[]=latest_charge`);
+    const country = foreignCardCountry(intent?.latest_charge?.payment_method_details);
+    if (country) {
+      await sendOwnerAlert("Replysis: India price paid with a card from outside India, please check",
+        `Checkout ${session.id} on account ${session.metadata?.uid ?? "unknown"} paid ${session.amount_total} INR with a card from ${country}. ` +
+        `India prices are chosen from the visitor's address, so this may be a VPN. Nothing was changed; refund or keep it by hand.`);
+    }
+  } catch (e) {
+    console.error("[webhook] card country check failed:", (e as Error)?.name ?? "Error");
+  }
+}
+
+/** The card's country when it is a card from outside India, otherwise null (UPI and other methods have no card). */
+function foreignCardCountry(details: any): string | null {
+  const country = typeof details?.card?.country === "string" ? details.card.country.toUpperCase() : "";
+  return country && country !== "IN" ? country : null;
+}
+
 async function stripeGet(path: string): Promise<any> {
   const res = await fetch(`https://api.stripe.com/v1/${path}`, { headers: { Authorization: `Bearer ${STRIPE_SECRET}` } });
   if (!res.ok) throw new Error(`Stripe lookup failed: ${res.status}`);
@@ -776,6 +799,14 @@ export async function POST(req: Request) {
       else await sendOwnerAlert("Replysis: a partial dispute", `Charge ${charge.id} is disputed for ${dispute.amount} of ${charge.amount} (${charge.currency}). Nothing was changed on the account.`);
       await completeEvent(event.id);
       return NextResponse.json({ received: true });
+    }
+
+    // A rupee price is chosen from the visitor's address alone, so a VPN gets India prices (round 59). The card's country
+    // is only known once paid: a paid rupee checkout on a card from outside India is reported to the owner (never refused
+    // or refunded here: an Indian with a foreign card is a real customer). Does not hold up the grant below.
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && String(event.data?.object?.currency ?? "").toLowerCase() === "inr" && event.data?.object?.payment_status === "paid") {
+      void reportForeignCardOnRupees(event.data.object);
     }
 
     // ── INTERVIEW MINUTES (India)  -  added once the money is in ───────

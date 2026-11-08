@@ -11,7 +11,7 @@ import {
   isGreetingPlusSmallTalk as isPleasantryGreetingPlusSmallTalk,
 } from "../../../real-interview/_lib/promptBuilder";
 import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset, nextMonthStartISO as nextResetISO } from "../../../../data/productFacts";
-import { chargeCap, mockConversationAllowed, mockStepsFree } from "../../../lib/paid-plan";
+import { chargeCap, DAILY_TALK_WITHOUT_MAYA, hasMaya, mayaAccess, mockConversationAllowed, mockStepsFree, usedToday } from "../../../lib/paid-plan";
 import { listeningPeriod } from "../../../lib/listening-period";
 
 export const dynamic = "force-dynamic";
@@ -455,19 +455,37 @@ async function checkAndDeductCredits(
 ): Promise<{ allowed: boolean; remaining: number; unavailable?: boolean; waived?: boolean }> {
   // The interview's conversation costs no answers, but it does cost us a model call, so it needs a mock interview to be
   // part of: a free interview or Maya on the plan, or answers left. Nothing here may stop an interview on a store fault.
-  // A yes holds for a minute, so each of Maya's turns does not wait on a store read (same rule as the voice route).
+  // With Maya on the plan a yes holds for a minute, so each of her turns does not wait on a store read (same rule as the
+  // voice route). Without Maya it is counted each time against a day's ceiling (round 59: an account with 5 answers left
+  // could otherwise ask for suggested answers for ever, uncharged).
   if (MOCK_CONVERSATION.has(mode) && db && uid && !UNLIMITED_EMAILS.has(email.toLowerCase())
       && (conversationAllowedUntil.get(uid) ?? 0) <= Date.now()) {
-    const data = await db.collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
-    if (data && !mockConversationAllowed(data)) return { allowed: false, remaining: 0 };
-    if (conversationAllowedUntil.size > 5000) conversationAllowedUntil.clear();
-    conversationAllowedUntil.set(uid, Date.now() + 60_000);
+    const ref = db.collection("users").doc(uid);
+    const snap = await ref.get().catch(() => null);   // null: a store fault, which must not stop an interview
+    const data = snap?.data();
+    if (snap && !snap.exists) return { allowed: false, remaining: 0 };
+    if (data && hasMaya(data)) {
+      if (conversationAllowedUntil.size > 5000) conversationAllowedUntil.clear();
+      conversationAllowedUntil.set(uid, Date.now() + 60_000);
+    } else if (data) {
+      if (!mockConversationAllowed(data)) return { allowed: false, remaining: 0 };
+      const today = new Date().toISOString().slice(0, 10);
+      const used = usedToday(data.mayaTalkDay, data.mayaTalkCount, today);
+      if (used >= DAILY_TALK_WITHOUT_MAYA) return { allowed: false, remaining: 0 };
+      await ref.set(data.mayaTalkDay === today ? { mayaTalkCount: FieldValue.increment(1) } : { mayaTalkDay: today, mayaTalkCount: 1 },
+                    { merge: true }).catch(() => {});
+    }
   }
   // The mock interview uses no answers with the Practice plan or the Maya add-on, and its one free interview is free
-  // (owner, 2026-10-26): its own steps use no answers then.
+  // (owner, 2026-10-26): its own steps use no answers then. A step the free interview pays for is counted, so the free
+  // interview has a size (round 59, TASTE_STEPS_MAX, the same count the backend keeps).
   if (MOCK_MODES.has(mode) && db && uid) {
-    const free = await db.collection("users").doc(uid).get().then((d) => mockStepsFree(d.data())).catch(() => false);
-    if (free) return { allowed: true, remaining: -1, waived: true };
+    const ref = db.collection("users").doc(uid);
+    const data = await ref.get().then((d) => d.data()).catch(() => undefined);
+    if (data && mockStepsFree(data)) {
+      if (mayaAccess(data).state !== "ok") await ref.set({ mayaTasteSteps: FieldValue.increment(1) }, { merge: true }).catch(() => {});
+      return { allowed: true, remaining: -1, waived: true };
+    }
   }
   const result = await checkAndDeductCreditsCore(uid, email, mode);
   if (result.allowed) await recordUsage(uid, email, mode, CREDIT_COSTS[mode] ?? 0);

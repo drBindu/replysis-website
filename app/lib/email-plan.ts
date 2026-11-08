@@ -45,3 +45,14 @@ export function onePerPerson<T extends { uid: string; kind: "maya-taste" | "out-
   }
   return [...byUid.values()];
 }
+
+/**
+ * The first name an email greets someone by: one plain word of letters, or nothing (round 59). A display name is typed by
+ * the person, so "https://evil.example" as a name went out as "Hi https://evil.example," from our address. "User" is
+ * only the placeholder.
+ */
+export function safeFirstName(displayName: unknown): string {
+  const first = String(displayName ?? "").trim().split(/\s+/)[0] ?? "";
+  if (!first || first === "User" || first.length > 30) return "";
+  return /^[\p{L}][\p{L}'-]*$/u.test(first) ? first : "";
+}

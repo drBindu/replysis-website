@@ -4,7 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { rateLimit } from "../../../lib/rate-limit";
+import { clientIp, rateLimit } from "../../../lib/rate-limit";
 import { verifiedUid } from "../../../lib/verify-user";
 import { mayaAccess } from "../../../lib/paid-plan";
 import { FREE_TASTES_PER_DAY } from "../../../../data/mayaAddon";
@@ -26,6 +26,15 @@ export async function POST(req: Request) {
   // transaction so two tabs cannot both have it. The owner's test accounts (tester: true) do not use the day's count.
   const access = user ? mayaAccess(user) : null;
   if (access?.state === "taste") {
+    // The day's free interviews are shared by everyone, so a claim needs a face that really joined today (the page joins
+    // on the check screen before Begin) and one free claim a day per address (round 59: three throwaway accounts could
+    // otherwise use up every new person's free interview each day without ever seeing Maya).
+    const joinedToday = Number(await db.collection("avatar_usage").doc(`${uid}_${new Date().toISOString().slice(0, 10)}`).get()
+      .then((d) => d.data()?.sessions ?? 0).catch(() => 1));
+    if (joinedToday < 1 && user?.tester !== true) return NextResponse.json({ ok: false, free: "error" });
+    if (user?.tester !== true && !rateLimit(`simli-begin-free-ip:${clientIp(req)}`, 1, 24 * 60 * 60_000).ok) {
+      return NextResponse.json({ ok: false, free: "full" });
+    }
     const userRef = db.collection("users").doc(uid);
     const dayRef = db.collection("avatar_usage").doc(`free_${new Date().toISOString().slice(0, 10)}`);
     const claimed = await db.runTransaction(async (tx) => {

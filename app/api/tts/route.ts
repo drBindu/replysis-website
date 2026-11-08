@@ -5,10 +5,10 @@
 
 import { NextResponse } from "next/server";
 import { getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { rateLimit, clientIp } from "../../lib/rate-limit";
 import { verifiedUid } from "../../lib/verify-user";
-import { mockConversationAllowed } from "../../lib/paid-plan";
+import { DAILY_VOICE_CHARS_WITH_MAYA, DAILY_VOICE_CHARS_WITHOUT_MAYA, hasMaya, mockConversationAllowed, usedToday } from "../../lib/paid-plan";
 
 export const dynamic = "force-dynamic";
 
@@ -63,16 +63,40 @@ async function cloudVoice(text: string, rate: number): Promise<Buffer | null> {
   }
 }
 
-// Her lines arrive a sentence at a time, and a Firestore read before each would be heard: a yes holds for a minute.
-const voiceAllowedUntil = new Map<string, number>();
+// Her lines arrive a sentence at a time, and a Firestore read before each would be heard: a yes holds for a minute, with
+// the characters voiced in that minute added up and written once it ends, against a day's ceiling (round 59: the voice
+// was free for anyone with 5 answers left, about $13 an hour per account).
+const voiceAllowedUntil = new Map<string, { until: number; left: number; spent: number; day: string }>();
 
-async function voiceAllowed(uid: string): Promise<boolean> {
-  if ((voiceAllowedUntil.get(uid) ?? 0) > Date.now()) return true;
-  // A store fault must not silence an interview.
-  const user = await getFirestore().collection("users").doc(uid).get().then((d) => d.data()).catch(() => undefined);
-  if (user && !mockConversationAllowed(user)) return false;
+/** True when these characters may be voiced now. A store fault never silences an interview. */
+async function voiceAllowed(uid: string, chars: number): Promise<boolean> {
+  const today = new Date().toISOString().slice(0, 10);
+  const known = voiceAllowedUntil.get(uid);
+  if (known && known.until > Date.now() && known.day === today) {
+    if (known.left < chars) return false;
+    known.left -= chars; known.spent += chars;
+    return true;
+  }
+  const db = getFirestore();
+  const ref = db.collection("users").doc(uid);
+  // The minute that just ended is written before today's total is read. A minute from yesterday no longer counts.
+  if (known) {
+    voiceAllowedUntil.delete(uid);
+    if (known.spent > 0 && known.day === today)
+      await ref.set({ voiceChars: FieldValue.increment(known.spent) }, { merge: true }).catch(() => {});
+  }
+  const snap = await ref.get().catch(() => null);
+  if (!snap) return true;                          // a store fault
+  if (!snap.exists) return false;                  // no account record: never signed in through the site or the apps
+  const user = snap.data() ?? {};
+  const withMaya = hasMaya(user);
+  if (!withMaya && !mockConversationAllowed(user)) return false;
+  const ceiling = withMaya ? DAILY_VOICE_CHARS_WITH_MAYA : DAILY_VOICE_CHARS_WITHOUT_MAYA;
+  const used = usedToday(user.voiceDay, user.voiceChars, today);
+  if (used + chars > ceiling) return false;
+  if (user.voiceDay !== today) await ref.set({ voiceDay: today, voiceChars: 0 }, { merge: true }).catch(() => {});
   if (voiceAllowedUntil.size > 5000) voiceAllowedUntil.clear();
-  voiceAllowedUntil.set(uid, Date.now() + 60_000);
+  voiceAllowedUntil.set(uid, { until: Date.now() + 60_000, left: ceiling - used - chars, spent: chars, day: today });
   return true;
 }
 
@@ -85,11 +109,10 @@ export async function POST(req: Request) {
   }
   const key = process.env.GEMINI_API_KEY;
   if (!key) return NextResponse.json({ error: "Voice unavailable" }, { status: 503 });
-  if (!(await voiceAllowed(uid))) return NextResponse.json({ error: "No interview to voice" }, { status: 402 });
-
   const body = await req.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.replace(/\s+/g, " ").trim() : "";
   if (!text || text.length > MAX_CHARS) return NextResponse.json({ error: "Invalid text" }, { status: 400 });
+  if (!(await voiceAllowed(uid, text.length))) return NextResponse.json({ error: "No interview to voice" }, { status: 402 });
 
   // How she sounds saying it (Maya's reactions, 2026-10-24). Gemini's voice follows a short spoken-style direction placed
   // before the line and does not read the direction aloud.
