@@ -3,6 +3,7 @@ import { spendMinutes } from "../../../../data/interviewMinutes";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { listeningPeriod } from "../../../lib/listening-period";
 
 // Same initialisation as the STT token route: firebase-admin is a singleton
 // per process, so whichever route runs first wins and the other reuses it.
@@ -124,16 +125,18 @@ export async function POST(req: Request) {
       // Shares the credits reset date, so a user's month is one month rather
       // than two that drift apart and confuse everybody.
       const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
-      let used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
-      if (resetAt && Date.now() >= resetAt) used = 0;
+      const period = listeningPeriod(resetAt, data.audioMinutesPeriodMs, Date.now());
+      let used = period === null ? Math.max(0, Number(data.audioMinutesUsed ?? 0)) : 0;
 
       // Bought interview minutes (India) are spent first; only the rest counts toward the month.
       const owned = Math.max(0, Number(data.minutesBalance ?? 0));
       const [balance, toMonth] = live ? spendMinutes(owned, minutes) : [owned, minutes];
       used += toMonth;
-      if (snap.exists) tx.update(userRef, minutes > 0
-        ? { audioMinutesUsed: used, minutesBalance: balance }
-        : { audioMinutesUsed: used });
+      if (snap.exists) tx.update(userRef, {
+        audioMinutesUsed: used,
+        ...(minutes > 0 ? { minutesBalance: balance } : {}),
+        ...(period !== null ? { audioMinutesPeriodMs: period } : {}),
+      });
 
       return { used, allowance };
     });
