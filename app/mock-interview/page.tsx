@@ -1402,9 +1402,19 @@ export default function MockInterviewPage() {
       // question's feedback is prepared in the background for the report at the end.
       setHistory(newHistory);
       setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: null } }));
-      void runFeedback().then(({ feedback: fb, failed }) => {
-        setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: fb, failed } }));
-        if (!failed) setScores(prev => [...prev, fb?.score ?? 0]);
+      // When Maya asks the same question again (they asked her to repeat it, said they were nervous, or she did not catch
+      // it), that answer was not an answer: no feedback is bought for it and no score of 0 is added (bug round 52). Her
+      // reply is the one already being made, so this waits for nothing new.
+      // A real try of 12 words or more still gets its feedback, as on the phone (C:\rx interview.tsx).
+      void turnForRef.current(qIndex, ans).then((turn) => {
+        if (turn?.action === "repeat" && ans.trim().split(/\s+/).length < 12) {
+          setTurnFeedback(prev => { const left = { ...prev }; delete left[qIndex]; return left; });
+          return;
+        }
+        return runFeedback().then(({ feedback: fb, failed }) => {
+          setTurnFeedback(prev => ({ ...prev, [qIndex]: { question, answer: ans, feedback: fb, failed } }));
+          if (!failed) setScores(prev => [...prev, fb?.score ?? 0]);
+        });
       });
       isAnalyzingRef.current = false;
       setIsAnalyzing(false);
@@ -1490,6 +1500,8 @@ export default function MockInterviewPage() {
   // ── Maya's own words ──────────────────────────────────────
   const mayaHistory = useRef<{ q: string; a: string; said?: string }[]>([]);
   const mayaWarnings = useRef(0);
+  /** How many times each question has been asked again in this interview (at most two). */
+  const repeatsAt = useRef(new Map<number, number>());
   const indexRef = useRef(0);
   useEffect(() => { indexRef.current = index; }, [index]);
   const candidateName = () => (auth.currentUser?.displayName ?? "").trim().split(/\s+/)[0] ?? "";
@@ -1653,20 +1665,25 @@ export default function MockInterviewPage() {
       prepareAfter(i + 1);
       return;
     }
-    if (turn?.action === "repeat") {
+    // At most two repeats of one question, as on the phone: with steady background noise she said "I didn't catch that"
+    // forever and the interview never moved on (bug round 52). After that, the next question.
+    if (turn?.action === "repeat" && (repeatsAt.current.get(i) ?? 0) < 2) {
+      repeatsAt.current.set(i, (repeatsAt.current.get(i) ?? 0) + 1);
       resetAnswer();
       void speakQuestion(turn.say, i);
       return;
     }
+    // A repeat that went over the limit is not her goodbye or her way into the next question.
+    const said = turn && turn.action !== "repeat" ? turn.say : null;
     if (isLast || turn?.action === "end") {
       accountForListening(true);
-      if (turn && ttsEnabled) await speakLine(turn.say, false);
+      if (said && ttsEnabled) await speakLine(said, false);
       setPhase("summary");
       return;
     }
     setIndex(i + 1);
     resetAnswer();
-    void speakQuestion(turn?.say ?? list[i + 1], i + 1);
+    void speakQuestion(said ?? list[i + 1], i + 1);
     prepareAfter(i + 1);
   };
   const continueAfterAnswerRef = useRef(continueAfterAnswer);
@@ -1834,6 +1851,7 @@ export default function MockInterviewPage() {
     prepareAfter(0);
     mayaHistory.current = [];
     mayaWarnings.current = 0;
+    repeatsAt.current = new Map();
     setAskedText({});
     followUpIndexes.current = new Set();
     followUpsAsked.current = 0;
