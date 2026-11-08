@@ -29,6 +29,7 @@ import { MOCK_PLAN } from "../../data/mayaAddon";
 import AnswerPacks from "../../components/AnswerPacks";
 import InterviewMinutes from "../../components/InterviewMinutes";
 import InviteFriends from "../../components/InviteFriends";
+import { refreshShownDate } from "../lib/refresh-date";
 
 type AccountProfile = {
   displayName?: string;
@@ -321,7 +322,7 @@ export default function AccountPage() {
                     ? `Your free trial ends ${formatDate(profile?.passExpiresAt)}. No card, nothing is charged.`
                     : profile?.planSource === "pass"
                     ? `Your month ends ${formatDate(profile?.passExpiresAt)}. Nothing renews automatically.`
-                    : isPaid ? `Refreshes ${formatDate(profile?.creditsResetDate)}` : "Free answers are one time and do not refresh"}
+                    : isPaid ? `Refreshes ${formatDate(refreshShownDate(profile))}` : "Free answers are one time and do not refresh"}
                 </div>
               </div>
 
