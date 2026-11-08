@@ -16,6 +16,8 @@ const MAX_REQUEST_BYTES = 256 * 1024;
 const MAX_TURNS = 200;
 const MAX_TURN_CHARS = 8_000;
 const MAX_SESSION_TEXT_CHARS = 160;
+const SESSIONS_SHOWN = 50;
+const SESSIONS_READ = 500;
 
 function requestTooLarge(req: Request): boolean {
   const contentLength = Number(req.headers.get("content-length") || "0");
@@ -131,7 +133,9 @@ export async function GET(req: Request) {
     const snap = await db
       .collection("interview_sessions")
       .where("userEmail", "==", requestedEmail)
-      .limit(50)
+      // Firestore returns these in document id order, which is random, so a plain limit(50) dropped the newest
+      // interviews once someone had more than 50 (bug round 49). Read a wider window, then keep the newest 50.
+      .limit(SESSIONS_READ)
       .get();
 
     const sessions = snap.docs
@@ -151,7 +155,8 @@ export async function GET(req: Request) {
         };
       })
       // Sort newest-first  -  no composite index needed
-      .sort((a, b) => b._createdAtSeconds - a._createdAtSeconds);
+      .sort((a, b) => b._createdAtSeconds - a._createdAtSeconds)
+      .slice(0, SESSIONS_SHOWN);
 
     return NextResponse.json({ sessions });
   } catch (err: any) {
