@@ -12,4 +12,13 @@ if (setName < 0 || refresh < 0 || finish < 0 || refresh > finish) {
   console.error("components/AuthModal.tsx: sign-up must call getIdToken(true) after updateProfile and before finishAuthentication");
   process.exit(1);
 }
+// The account exists by then, so the name step must be best effort: a failed refresh must not stop sign-up (round 42).
+const tryStart = source.lastIndexOf("try {", setName);
+const tryEnd = source.indexOf("} catch", refresh);
+const verify = source.indexOf("sendEmailVerification(result.user)", refresh);
+const between = source.slice(tryStart, setName);
+if (tryStart < 0 || tryEnd < 0 || verify < 0 || tryEnd > verify || between.includes("let result") || between.includes("{\n          if")) {
+  console.error("components/AuthModal.tsx: the updateProfile and getIdToken(true) step must sit in its own try/catch before finishAuthentication");
+  process.exit(1);
+}
 console.log("sign-up name reaches the session ok");
