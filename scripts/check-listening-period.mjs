@@ -17,4 +17,11 @@ if (listeningPeriod(0, undefined, Date.now()) !== null) fail("zeroed with no res
 
 const route = readFileSync(new URL("../app/api/usage/listening/route.ts", import.meta.url), "utf8");
 if (!route.includes("listeningPeriod(") || !route.includes("audioMinutesPeriodMs")) fail("route no longer uses the rule");
+
+// The speech key gate must use the same rule (round 57): it used to allow everyone once the reset date had passed, so a
+// listen only account was never limited on the website even after the reports started counting again.
+const tokens = readFileSync(new URL("../app/api/stt/tokens/route.ts", import.meta.url), "utf8");
+const gate = tokens.slice(tokens.indexOf("async function hasAudioTimeLeft"), tokens.indexOf("const UNLIMITED_EMAILS"));
+if (!gate.includes("listeningPeriod(") || !gate.includes("audioMinutesPeriodMs")) fail("speech key gate does not use the rule");
+if (/Date\.now\(\) >= resetAt\) return true/.test(gate)) fail("speech key gate still allows everyone after the reset date");
 console.log("listening counter zeroed once per reset ok");

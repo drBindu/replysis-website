@@ -12,6 +12,7 @@ import {
 } from "../../../real-interview/_lib/promptBuilder";
 import { CREDIT_ACTION_COSTS, PLAN_MONTHLY_CREDITS as PLAN_CAPS, creditsAfterMonthlyReset, nextMonthStartISO as nextResetISO } from "../../../../data/productFacts";
 import { chargeCap, mockConversationAllowed, mockStepsFree } from "../../../lib/paid-plan";
+import { listeningPeriod } from "../../../lib/listening-period";
 
 export const dynamic = "force-dynamic";
 
@@ -370,11 +371,13 @@ async function hasAudioTimeLeft(uid: string, email: string): Promise<boolean> {
     const plan = typeof data.plan === "string" ? data.plan : "free";
 
     // Shares the credits reset date, so one month means one month everywhere.
+    // A passed reset date zeroes the counter once (listeningPeriod, the same rule the reports and the backend use); after
+    // that the month's minutes count again, so only listening keeps no one past the allowance.
     const resetAt = data.creditsResetDate ? Date.parse(data.creditsResetDate) : 0;
-    if (resetAt && Date.now() >= resetAt) return true;
+    const zeroNow = listeningPeriod(resetAt, data.audioMinutesPeriodMs, Date.now()) !== null;
 
     if (Number(data.minutesBalance ?? 0) > 0) return true;   // bought interview minutes left
-    const used = Math.max(0, Number(data.audioMinutesUsed ?? 0));
+    const used = zeroNow ? 0 : Math.max(0, Number(data.audioMinutesUsed ?? 0));
     return used < audioAllowance(plan, data);
   } catch (err) {
     console.error("Audio allowance check error:", err);

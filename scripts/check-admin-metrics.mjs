@@ -15,6 +15,13 @@ const friendOnTrial = realPlanCounts({ paid: 3, pro: 3, max: 0, trial: 2, intern
 assert.equal(friendOnTrial.realPaid, 1, "one stranger pays: 3 on pro, 1 internal trial, 1 external trial");
 assert.equal(friendOnTrial.realPro, 1);
 
+// An owner test account on an India month is already out of realPro, so it must not come off the subscriptions again
+// (round 57). Two outside Pro subscribers plus one internal India month: two subscriptions.
+const internalIndia = realPlanCounts({ paid: 3, pro: 3, max: 0, trial: 0, internal: 1, internalPaid: 1, internalPro: 1, internalMax: 0,
+                                       internalTrial: 0, passPro: 1, passMax: 0, internalPassPro: 1, internalPassMax: 0 });
+assert.equal(internalIndia.realPro, 2);
+assert.equal(internalIndia.subPro, 2, "an internal India month is not taken off the monthly revenue twice");
+
 // Rupee sales: dollar pack receipts and refund receipts are not rupee sales; a refund that took something back counts.
 const ms = (v) => (typeof v === "number" ? v : null);
 const now = Date.parse("2026-11-07T12:00:00Z");

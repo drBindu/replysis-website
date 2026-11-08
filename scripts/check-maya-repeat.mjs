@@ -13,7 +13,10 @@ const branch = page.slice(end, page.indexOf("continueAfterAnswerRef.current(qInd
 const turnAt = branch.indexOf("turnForRef.current(qIndex, ans)");
 const feedbackAt = branch.indexOf("runFeedback()");
 if (turnAt < 0 || feedbackAt < 0 || feedbackAt < turnAt) fail("feedback must wait for Maya's turn, so a repeated question is not charged");
-if (!/action === "repeat" && ans\.trim\(\)\.split\(\/\\s\+\/\)\.length < 12/.test(branch)) fail("a short answer Maya repeats must skip feedback");
+if (!/action === "repeat" && repeatsBefore < 2 && ans\.trim\(\)\.split\(\/\\s\+\/\)\.length < 12/.test(branch)) fail("a short answer Maya repeats must skip feedback, but only while she really repeats it");
+// After two repeats she moves on, so that answer stays in the report (round 57). The count is read before her turn moves it.
+const before = branch.indexOf("const repeatsBefore = repeatsAt.current.get(qIndex)");
+if (before < 0 || before > turnAt) fail("the repeat count must be read before Maya's turn moves it on");
 
 if (!/action === "repeat" && \(repeatsAt\.current\.get\(i\) \?\? 0\) < 2/.test(page)) fail("repeats of one question must be capped at two");
 if (!page.includes("repeatsAt.current = new Map();")) fail("the repeat count must reset with each new interview");

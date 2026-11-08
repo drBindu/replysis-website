@@ -920,6 +920,8 @@ export async function GET(req: Request) {
       internalTrial,
       passPro,
       passMax,
+      internalPassPro,
+      internalPassMax,
       deletionSnap,
     ] = await Promise.all([
       usersQuery.get(),
@@ -951,6 +953,8 @@ export async function GET(req: Request) {
       users.where("internal", "==", true).where("planSource", "==", "trial").count().get(),
       users.where("planSource", "==", "pass").where("plan", "==", "pro").count().get(),
       users.where("planSource", "==", "pass").where("plan", "==", "max").count().get(),
+      users.where("internal", "==", true).where("planSource", "==", "pass").where("plan", "==", "pro").count().get(),
+      users.where("internal", "==", true).where("planSource", "==", "pass").where("plan", "==", "max").count().get(),
       // Account deletion requests waiting for the owner. Apple needs them done; the privacy page promises 30 days.
       db.collection("deletion_requests").where("status", "==", "requested").limit(50).get().catch(() => null),
     ]);
@@ -963,6 +967,7 @@ export async function GET(req: Request) {
       internal: internalCount.data().count, internalPaid: internalPaid.data().count, internalPro: internalPro.data().count,
       internalMax: internalMax.data().count, internalTrial: internalTrial.data().count,
       passPro: passPro.data().count, passMax: passMax.data().count,
+      internalPassPro: internalPassPro.data().count, internalPassMax: internalPassMax.data().count,
     });
 
     const hasMore = userPage.docs.length > requestedPageSize;

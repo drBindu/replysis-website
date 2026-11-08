@@ -12,6 +12,8 @@ export type PlanCounts = {
   internalTrial: number; // internal and on the trial
   passPro?: number;      // India months paid once: paying, but their money is in the rupee sales, not a subscription
   passMax?: number;
+  internalPassPro?: number;  // the owner's own accounts among them: already left out of realPro and realMax
+  internalPassMax?: number;
 };
 
 /**
@@ -28,8 +30,9 @@ export function realPlanCounts(c: PlanCounts) {
     realMax,
     // Subscriptions only, for the monthly revenue: an India month was priced at the dollar Pro price and its rupees
     // were added again from the sales, so one customer counted twice.
-    subPro: Math.max(0, realPro - (c.passPro ?? 0)),
-    subMax: Math.max(0, realMax - (c.passMax ?? 0)),
+    // Only outside India months come off: the internal ones were never in realPro or realMax (round 57).
+    subPro: Math.max(0, realPro - Math.max(0, (c.passPro ?? 0) - (c.internalPassPro ?? 0))),
+    subMax: Math.max(0, realMax - Math.max(0, (c.passMax ?? 0) - (c.internalPassMax ?? 0))),
   };
 }
 

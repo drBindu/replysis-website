@@ -47,5 +47,13 @@ assert.ok(admin.includes("deletionRequests: pendingDeletionRequests("));
 const webhook = readFileSync(new URL("../app/api/stripe/webhook/route.ts", import.meta.url), "utf8");
 const end = webhook.slice(webhook.indexOf("async function endSubscription"), webhook.indexOf("async function endSubscription") + 600);
 assert.ok(end.includes("if (!snap.exists)"), "a deleted account is not recreated by a late Stripe event");
+// The check outside the write is not enough: the account can be deleted in between, so the write itself checks too, and
+// Practice ending checks as well (round 57).
+const endWhole = webhook.slice(webhook.indexOf("async function endSubscription"), webhook.indexOf("function getInvoiceSubscriptionId"));
+assert.ok(/applyUserUpdate\([\s\S]*\}, true\);/.test(endWhole), "ending a subscription writes only to an existing record");
+const update = webhook.slice(webhook.indexOf("async function applyUserUpdate"), webhook.indexOf("async function applyActiveSubscription"));
+assert.ok(update.includes("if (onlyIfExists && !current.exists) return;"), "the shared write can refuse a missing record");
+const practice = webhook.slice(webhook.indexOf("async function endPractice"), webhook.indexOf("async function applyMayaPass"));
+assert.ok(practice.includes("if (!snap.exists) return;"), "Practice ending does not recreate a deleted account");
 
 console.log("account deletion ok");

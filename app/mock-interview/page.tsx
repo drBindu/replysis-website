@@ -1406,8 +1406,10 @@ export default function MockInterviewPage() {
       // it), that answer was not an answer: no feedback is bought for it and no score of 0 is added (bug round 52). Her
       // reply is the one already being made, so this waits for nothing new.
       // A real try of 12 words or more still gets its feedback, as on the phone (C:\rx interview.tsx).
+      // Only while Maya really asks it again: after two repeats she moves on, and that answer belongs in the report (round 57).
+      const repeatsBefore = repeatsAt.current.get(qIndex) ?? 0;
       void turnForRef.current(qIndex, ans).then((turn) => {
-        if (turn?.action === "repeat" && ans.trim().split(/\s+/).length < 12) {
+        if (turn?.action === "repeat" && repeatsBefore < 2 && ans.trim().split(/\s+/).length < 12) {
           setTurnFeedback(prev => { const left = { ...prev }; delete left[qIndex]; return left; });
           return;
         }

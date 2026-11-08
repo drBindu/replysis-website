@@ -284,7 +284,7 @@ async function endSubscription(uid: string, eventCreated: number, sub: any, stat
     stripeSubscriptionStatus: status,
     stripeCancelAtPeriodEnd: false,
     stripeCurrentPeriodEnd: null,
-  });
+  }, true);
 }
 
 // Stripe API versions from 2025-03-31.basil onward moved an invoice's
@@ -340,10 +340,12 @@ async function failEvent(eventId: string) {
   }, { merge: true });
 }
 
-async function applyUserUpdate(uid: string, eventCreated: number, updates: Record<string, unknown>) {
+async function applyUserUpdate(uid: string, eventCreated: number, updates: Record<string, unknown>, onlyIfExists = false) {
   const userRef = db!.collection("users").doc(uid);
   await db!.runTransaction(async (transaction) => {
     const current = await transaction.get(userRef);
+    // An ending must never make a record: the account may have been deleted between the check and this write (round 57).
+    if (onlyIfExists && !current.exists) return;
     const lastEventCreated = Number(current.data()?.stripeLastEventCreated ?? 0);
     if (lastEventCreated > eventCreated) return;
 
@@ -552,7 +554,10 @@ async function applyPractice(uid: string, opts: { india: boolean; subscriptionId
 async function endPractice(uid: string) {
   const userRef = db!.collection("users").doc(uid);
   await db!.runTransaction(async (tx) => {
-    const d = (await tx.get(userRef)).data() ?? {};
+    const snap = await tx.get(userRef);
+    // A deleted account: deleting it cancels Practice, and Stripe's late "ended" event must not make a new record (round 57).
+    if (!snap.exists) return;
+    const d = snap.data() ?? {};
     const onPlan = typeof d.plan === "string" && d.plan !== "free" && d.planSource !== "trial";
     tx.set(userRef, {
       mockPlan: false,
