@@ -451,7 +451,9 @@ console.log("\nMaya: the free interview, Practice and the add-on");
   for (const [k, v] of Object.entries(AGREED_MAYA)) (got[k] === v ? ok : bad)(`Maya ${k} is ${v} (data/mayaAddon.ts says ${got[k]})`);
 
   const page = read(resolve(FRONT, "app/pricing/page.tsx")) || "";
-  (/Get Practice/.test(page) && /MOCK_PLAN\.usd/.test(page) ? ok : bad)("the pricing page shows the Practice plan with its price from data/mayaAddon.ts");
+  // The price goes through app/lib/display-prices.ts (bug round 43), which reads MOCK_PLAN in every currency.
+  const shownHelper = read(resolve(FRONT, "app/lib/display-prices.ts")) || "";
+  (/Get Practice/.test(page) && (/MOCK_PLAN\.usd/.test(page) || (/shownPrices\(/.test(page) && /MOCK_PLAN\.usd/.test(shownHelper))) ? ok : bad)("the pricing page shows the Practice plan with its price from data/mayaAddon.ts");
   (!/MOCK_PLAN\.interviews|MAYA_ADDON\.interviews|PRO_ANSWERS\)\} answers|interviewsFor\(/.test(page) ? ok : bad)(
     "the pricing page shows no answer or interview numbers for paid plans (owner, 2026-10-27)");
   (!/unlimited (practice|mock)/i.test(page) ? ok : bad)("the pricing page never calls Maya unlimited (owner: a clear number)");

@@ -13,7 +13,8 @@ import "../home-v2.css";
 import { copyFor } from "../../components/feedback/messages";
 import InterviewMinutes from "../../components/InterviewMinutes";
 import type { LocalPlanPrices } from "../../data/localPrices";
-import { MAYA_ADDON, MOCK_PLAN } from "../../data/mayaAddon";
+import { MAYA_ADDON } from "../../data/mayaAddon";
+import { PLAN_INR, PLAN_USD, shownPrices } from "../lib/display-prices";
 import {
   PUBLIC_CREDIT_COSTS, PUBLIC_PLAN_CAPACITY, PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE,
   answersFor, TRIAL_ANSWERS, TRIAL_DAYS,
@@ -122,8 +123,8 @@ const ALL_PLANS: {
     name: "Pro",
     emoji: "👑",
     tagline: "Live answers for your interviews, every month.",
-    monthlyPrice: 34.99,
-    inrMonthly: 699,
+    monthlyPrice: PLAN_USD.pro,
+    inrMonthly: PLAN_INR.pro,
     inrAnnualYearly: 6990,
     inrCredits: INDIA_PLAN_ALLOWANCE.pro.credits,
     inrHours: INDIA_PLAN_ALLOWANCE.pro.audioMinutes / 60,
@@ -153,8 +154,8 @@ const ALL_PLANS: {
     name: "Max",
     emoji: "👑",
     tagline: "The most listening time, with Maya included.",
-    monthlyPrice: 79.99,
-    inrMonthly: 1299,
+    monthlyPrice: PLAN_USD.max,
+    inrMonthly: PLAN_INR.max,
     inrAnnualYearly: 12990,
     inrCredits: INDIA_PLAN_ALLOWANCE.max.credits,
     inrHours: INDIA_PLAN_ALLOWANCE.max.audioMinutes / 60,
@@ -220,6 +221,8 @@ const perMonth = (plan: typeof PRO_PLAN, annual: boolean, india = false, local: 
 };
 
 // ─── COMPARISON ROWS ──────────────────────────────────────────────────────────
+// The Maya row's Pro cell is rewritten in the visitor's currency when the table is drawn (see visibleRows).
+const MAYA_ROW_LABEL = "Mock interview with live Maya";
 const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean | string; max: boolean | string }[] = [
   { cat: "Live Copilot",  label: "AI answers in real-time",              free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Answer speed",                         free: "About a second", pro: "About a second", max: "About a second"},
@@ -227,7 +230,7 @@ const ROWS: { cat: string; label: string; free: boolean | string; pro: boolean |
   { cat: "Live Copilot",  label: "Zoom, Teams, Meet support",            free: true,           pro: true,          max: true},
   { cat: "Live Copilot",  label: "Desktop capture exclusion",            free: "Included",     pro: "Included",     max: "Included"},
   { cat: "Live Copilot",  label: "Camera practice mode",                 free: false,          pro: true,          max: true},
-  { cat: "Mock Practice", label: "Mock interview with live Maya",        free: "1 free interview", pro: `Add for $${MAYA_ADDON.usd}/month`, max: "Included"},
+  { cat: "Mock Practice", label: MAYA_ROW_LABEL,                         free: "1 free interview", pro: `Add for $${MAYA_ADDON.usd}/month`, max: "Included"},
   { cat: "Mock Practice", label: "Questions tailored to role and JD",    free: true,           pro: true,          max: true},
   { cat: "Mock Practice", label: "Saved interview history",              free: false,          pro: true,          max: true},
   { cat: "Resume",        label: "Resume builder and PDF download",      free: true,           pro: true,          max: true},
@@ -448,8 +451,9 @@ export default function PricingPage() {
     }
     setPracticeLoading(false);
   };
-  const addonPrice = india ? `₹${MAYA_ADDON.inr}` : localPrices ? `${localPrices.symbol}${MAYA_ADDON.local[localPrices.currency]}` : `$${MAYA_ADDON.usd}`;
-  const practicePrice = india ? `₹${MOCK_PLAN.inr}` : localPrices ? `${localPrices.symbol}${MOCK_PLAN.local[localPrices.currency]}` : `$${MOCK_PLAN.usd}`;
+  const shown = shownPrices(india, localPrices);
+  const addonPrice = shown.maya;
+  const practicePrice = shown.practice;
 
   const openFreeAccount = () => {
     setPendingPlan(null);
@@ -484,7 +488,9 @@ export default function PricingPage() {
   const onTrial = profile?.planSource === "trial";
   const hasPaidPlan = Boolean(currentPlan && currentPlan !== "free" && !onTrial);
   const indiaMonthly = india && !annual;
-  const visibleRows = showAll ? ROWS : ROWS.slice(0, 10);
+  // The Maya add-on in the currency the checkout charges, not always dollars.
+  const rows = ROWS.map((row) => row.label === MAYA_ROW_LABEL ? { ...row, pro: `Add for ${addonPrice}/month` } : row);
+  const visibleRows = showAll ? rows : rows.slice(0, 10);
 
   return (
     <div className="marketing hv2 min-h-screen">

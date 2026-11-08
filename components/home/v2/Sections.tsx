@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import AppWindow, { SAY_TWO_SUM } from "./AppWindow";
 import EditorScreen from "./EditorScreen";
 import { OSDownloadButtons } from "../HeroSection";
 import { PUBLIC_PLAN_CAPACITY } from "../../../data/productFacts";
-import { MOCK_PLAN } from "../../../data/mayaAddon";
+import { shownPrices } from "../../../app/lib/display-prices";
+import type { LocalPlanPrices } from "../../../data/localPrices";
 
 type Nav = (path: string) => void;
 type Download = (os: "win" | "win-direct" | "mac") => void;
@@ -143,6 +144,18 @@ export function PracticeAndResume({ onNav }: { onNav: Nav }) {
 /** The facts a careful buyer asks for, as a table of plain rows. Replaces the feature grid and the statistic cards. */
 export function PlainFacts({ onNav }: { onNav: Nav }) {
   const plans = PUBLIC_PLAN_CAPACITY;
+  // Prices in the currency the checkout will charge this visitor (India, UK, Canada, Australia), from the same
+  // /api/geo as the pricing page; dollars until it answers.
+  const [geo, setGeo] = useState<{ india: boolean; local: LocalPlanPrices | null }>({ india: false, local: null });
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/geo").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (cancelled || !d) return;
+      setGeo({ india: d.country === "IN", local: d.localPrices ?? null });
+    }).catch(() => { /* dollars */ });
+    return () => { cancelled = true; };
+  }, []);
+  const price = shownPrices(geo.india, geo.local);
   return (
     <section className="hv2-section">
       <div className="hv2-wrap">
@@ -171,8 +184,8 @@ export function PlainFacts({ onNav }: { onNav: Nav }) {
             <dt>Plans</dt>
             <dd>
               Starter: {plans.free.summary}, and one free interview with Maya. Practice: interviews with Maya and live answers
-              every month, ${MOCK_PLAN.usd} a month. Pro: {plans.pro.summary}, $34.99 a month. Max: {plans.max.summary}, $79.99 a
-              month. Max includes Maya; Pro can add her.{" "}
+              every month, {price.practice} {price.per}. Pro: {plans.pro.summary}, {price.pro} {price.per}. Max: {plans.max.summary},
+              {" "}{price.max} {price.per}. Max includes Maya; Pro can add her.{" "}
               <a href="/pricing" onClick={(e) => { e.preventDefault(); onNav("pricing"); }}>See pricing</a>.
             </dd>
           </div>
