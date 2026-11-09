@@ -166,51 +166,81 @@ body.light-page {
 }
 .animate-spotlight { animation: spotlight 8s ease-in-out infinite; }
 
-/* Footer follow buttons in the real Instagram and Facebook colours: a breathing glow, a light sweep, a lift on hover. */
+/* Footer follow icons in the real Instagram and Facebook colours:
+   a spinning brand ring, a ripple every few seconds, a breathing glow, a light sweep, and a pop with a label on hover. */
+.social-wrap { position: relative; display: inline-flex; }
 .social-btn {
   position: relative;
-  overflow: hidden;
   isolation: isolate;
   color: #fff;
-  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, filter .25s ease;
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, filter .3s ease;
   animation: social-breathe 3.2s ease-in-out infinite;
 }
-.social-btn::after {             /* the light sweep */
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.38) 48%, transparent 66%);
-  transform: translateX(-120%);
+.social-btn .social-face { position: absolute; inset: 0; border-radius: 9999px; overflow: hidden; z-index: -1; background: inherit; }
+.social-btn .social-face::after {     /* the light sweep */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 48%, transparent 66%);
+  transform: translateX(-130%);
   animation: social-sweep 4.5s ease-in-out infinite;
-  pointer-events: none; z-index: -1;
 }
-.social-btn:hover { transform: translateY(-3px) scale(1.04); filter: saturate(1.15) brightness(1.06); }
-.social-btn:active { transform: translateY(-1px) scale(.98); }
-.social-btn:hover svg { animation: social-wiggle .5s ease; }
-.social-ig {
+.social-ring {                         /* spinning brand ring just outside the circle */
+  position: absolute; inset: -5px; border-radius: 9999px; z-index: -2; pointer-events: none;
+  padding: 2px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: social-spin 6s linear infinite;
+  opacity: .9;
+}
+.social-ripple {                       /* a ring that pulses outward */
+  position: absolute; inset: 0; border-radius: 9999px; z-index: -3; pointer-events: none;
+  border: 2px solid rgba(var(--glow), .7);
+  animation: social-ripple 3.2s cubic-bezier(.2,.6,.3,1) infinite;
+}
+.social-tip {
+  position: absolute; left: -4px; top: calc(100% + 14px);
+  transform: translateY(-6px) scale(.9); transform-origin: 26px 0; opacity: 0; z-index: 5;
+  white-space: nowrap; pointer-events: none;
+  padding: 6px 12px; border-radius: 9999px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  box-shadow: 0 8px 24px rgba(var(--glow), .45);
+  transition: opacity .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.social-wrap:hover .social-tip, .social-btn:focus-visible + .social-tip { opacity: 1; transform: translateY(0) scale(1); }
+.social-btn:hover { transform: translateY(-4px) scale(1.12) rotate(-6deg); filter: saturate(1.2) brightness(1.08); }
+.social-btn:active { transform: translateY(-1px) scale(.96); }
+.social-btn:hover svg { animation: social-pop .55s cubic-bezier(.34,1.56,.64,1); }
+.social-btn:hover .social-ring { animation-duration: 1.6s; opacity: 1; }
+.social-btn:hover, .social-btn:focus-visible { box-shadow: 0 14px 40px rgba(var(--glow), .7), 0 0 0 1px rgba(255,255,255,.22) inset; }
+
+.social-ig { --glow: 214, 41, 118; }
+.social-ig, .social-ig + .social-tip {
   background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #fa7e1e);
   background-size: 300% 300%;
-  --glow: 214, 41, 118;
-  animation: social-breathe 3.2s ease-in-out infinite, social-flow 6s ease infinite;
 }
-.social-fb { background: #1877F2; --glow: 24, 119, 242; }
-.social-fb::after { animation-delay: 1.4s; }
-.social-btn:hover { box-shadow: 0 10px 34px rgba(var(--glow), .65), 0 0 0 1px rgba(255,255,255,.18) inset; }
+.social-ig { animation: social-breathe 3.2s ease-in-out infinite, social-flow 6s ease infinite; }
+.social-ig .social-ring { background: conic-gradient(#feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
+
+.social-fb { --glow: 24, 119, 242; background: #1877F2; }
+.social-fb + .social-tip { background: #1877F2; }
+.social-fb .social-ring { background: conic-gradient(#1877F2, #6cb2ff, #ffffff, #6cb2ff, #1877F2); }
+.social-fb .social-face::after, .social-fb .social-ripple { animation-delay: 1.6s; }
+
 @keyframes social-breathe {
-  0%, 100% { box-shadow: 0 4px 16px rgba(var(--glow), .30), 0 0 0 1px rgba(255,255,255,.12) inset; }
-  50%      { box-shadow: 0 6px 28px rgba(var(--glow), .55), 0 0 0 1px rgba(255,255,255,.18) inset; }
+  0%, 100% { box-shadow: 0 4px 18px rgba(var(--glow), .35), 0 0 0 1px rgba(255,255,255,.14) inset; }
+  50%      { box-shadow: 0 6px 32px rgba(var(--glow), .65), 0 0 0 1px rgba(255,255,255,.2) inset; }
 }
-@keyframes social-sweep {
-  0%, 55% { transform: translateX(-120%); }
-  85%, 100% { transform: translateX(120%); }
+@keyframes social-sweep { 0%, 55% { transform: translateX(-130%); } 85%, 100% { transform: translateX(130%); } }
+@keyframes social-flow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes social-spin { to { transform: rotate(360deg); } }
+@keyframes social-ripple {
+  0%   { transform: scale(1);   opacity: .8; }
+  70%  { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
 }
-@keyframes social-flow {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-@keyframes social-wiggle {
-  0%, 100% { transform: rotate(0); }
-  30% { transform: rotate(-12deg) scale(1.1); }
-  60% { transform: rotate(8deg) scale(1.1); }
+@keyframes social-pop {
+  0%   { transform: scale(1) rotate(0); }
+  40%  { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0); }
 }
 
 main { overflow: visible !important; height: auto !important; }

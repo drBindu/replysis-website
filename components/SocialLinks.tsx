@@ -23,19 +23,23 @@ type Props = { className?: string; style?: CSSProperties };
 export default function SocialLinks({ className = "", style }: Props) {
   return (
     <div className={className} style={style}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-5 pt-1">
         {SOCIAL.map((s) => (
-          <a
-            key={s.label}
-            href={s.href}
-            target="_blank"
-            rel="noopener noreferrer me"
-            aria-label={`Follow Replysis on ${s.label}`}
-            title={`${s.label} ${s.handle}`}
-            className={`social-btn ${s.label === "Instagram" ? "social-ig" : "social-fb"} flex h-11 w-11 items-center justify-center rounded-full`}
-          >
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor" aria-hidden="true"><path d={s.icon} /></svg>
-          </a>
+          <span key={s.label} className="social-wrap">
+            <a
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer me"
+              aria-label={`Follow Replysis on ${s.label}`}
+              className={`social-btn ${s.label === "Instagram" ? "social-ig" : "social-fb"} flex h-[52px] w-[52px] items-center justify-center rounded-full`}
+            >
+              <span className="social-face" aria-hidden="true" />
+              <span className="social-ring" aria-hidden="true" />
+              <span className="social-ripple" aria-hidden="true" />
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d={s.icon} /></svg>
+            </a>
+            <span className="social-tip" aria-hidden="true">{s.label} {s.handle}</span>
+          </span>
         ))}
       </div>
     </div>
