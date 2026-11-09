@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Download, Globe, Laptop, Loader2, LogIn, Mail, Mic2, Smartphone } from "lucide-react";
 import { useAuth } from "../../components/AuthProvider";
 import { PageFooter, PageHeader } from "../../components/PageShell";
+import SocialLinks from "../../components/SocialLinks";
 import { MAC_DOWNLOAD, WINDOWS_DIRECT_DOWNLOAD, WINDOWS_DOWNLOAD } from "../lib/downloads";
 import { TRIAL_ANSWERS, TRIAL_DAYS } from "../../data/productFacts";
 import "../home-v2.css";
@@ -163,6 +164,8 @@ export default function StartPage() {
             </p>
           )}
         </div>
+
+        <SocialLinks tone="light" className="mt-8 rounded-2xl border border-slate-200 bg-white px-5 py-4" />
       </section>
 
       <PageFooter />

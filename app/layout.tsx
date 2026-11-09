@@ -20,12 +20,14 @@ export const metadata: Metadata = {
   description: 'Prepare your resume, practice realistic interviews, and stream resume-grounded answer suggestions in real time. Free to start with clear monthly limits.',
   keywords: ['AI interview assistant', 'interview copilot', 'real-time interview help', 'mock interview AI', 'job interview preparation', 'AI coaching', 'career'],
   authors: [{ name: 'Replysis' }],
-  twitter: { card: 'summary', images: ['/icon.png'] },
+  // The big share card comes from app/opengraph-image.png and app/twitter-image.png (the real home page, 1200x630).
+  twitter: { card: 'summary_large_image' },
   openGraph: {
     title: 'Replysis | Live interview answers',
-    images: ['/icon.png'],
     description: 'AI interview workspace for resume preparation, mock practice, and fast resume-grounded answer suggestions. Free to start.',
     type: 'website',
+    url: 'https://replysis.com',
+    siteName: 'Replysis',
   },
 }
 
