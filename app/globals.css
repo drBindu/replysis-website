@@ -166,6 +166,8 @@ body.light-page {
 }
 .animate-spotlight { animation: spotlight 8s ease-in-out infinite; }
 
+@property --social-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
 /* Footer follow icons in the real Instagram and Facebook colours:
    a spinning brand ring, a ripple every few seconds, a breathing glow, a light sweep, and a pop with a label on hover. */
 .social-wrap { position: relative; display: inline-flex; }
@@ -176,7 +178,7 @@ body.light-page {
   transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, filter .3s ease;
   animation: social-breathe 3.2s ease-in-out infinite;
 }
-.social-btn .social-face { position: absolute; inset: 0; border-radius: 9999px; overflow: hidden; z-index: -1; background: inherit; }
+.social-btn .social-face { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; z-index: -1; background: inherit; }
 .social-btn .social-face::after {     /* the light sweep */
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 48%, transparent 66%);
@@ -184,7 +186,7 @@ body.light-page {
   animation: social-sweep 4.5s ease-in-out infinite;
 }
 .social-ring {                         /* spinning brand ring just outside the circle */
-  position: absolute; inset: -5px; border-radius: 9999px; z-index: -2; pointer-events: none;
+  position: absolute; inset: -5px; border-radius: inherit; z-index: -2; pointer-events: none;
   padding: 2px;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
@@ -192,7 +194,7 @@ body.light-page {
   opacity: .9;
 }
 .social-ripple {                       /* a ring that pulses outward */
-  position: absolute; inset: 0; border-radius: 9999px; z-index: -3; pointer-events: none;
+  position: absolute; inset: 0; border-radius: inherit; z-index: -3; pointer-events: none;
   border: 2px solid rgba(var(--glow), .7);
   animation: social-ripple 3.2s cubic-bezier(.2,.6,.3,1) infinite;
 }
@@ -212,17 +214,20 @@ body.light-page {
 .social-btn:hover .social-ring { animation-duration: 1.6s; opacity: 1; }
 .social-btn:hover, .social-btn:focus-visible { box-shadow: 0 14px 40px rgba(var(--glow), .7), 0 0 0 1px rgba(255,255,255,.22) inset; }
 
-.social-ig { --glow: 214, 41, 118; }
+.social-glyph { width: 60%; height: 60%; }
+.social-ig { --glow: 214, 41, 118; border-radius: 28%; }
+.social-ig .social-ring { border-radius: 32%; }
 .social-ig, .social-ig + .social-tip {
-  background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #fa7e1e);
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
   background-size: 300% 300%;
 }
-.social-ig { animation: social-breathe 3.2s ease-in-out infinite, social-flow 6s ease infinite; }
-.social-ig .social-ring { background: conic-gradient(#feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
 
-.social-fb { --glow: 24, 119, 242; background: #1877F2; }
+.social-ig .social-ring { background: conic-gradient(from var(--social-ang), #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
+
+.social-fb { --glow: 24, 119, 242; background: #fff; color: #1877F2; border-radius: 9999px; }
+.social-fb .social-glyph { width: 100%; height: 100%; }   /* the logo path is the blue disc with the f cut out */
 .social-fb + .social-tip { background: #1877F2; }
-.social-fb .social-ring { background: conic-gradient(#1877F2, #6cb2ff, #ffffff, #6cb2ff, #1877F2); }
+.social-fb .social-ring { background: conic-gradient(from var(--social-ang), #1877F2, #6cb2ff, #ffffff, #6cb2ff, #1877F2); }
 .social-fb .social-face::after, .social-fb .social-ripple { animation-delay: 1.6s; }
 
 @keyframes social-breathe {
@@ -231,7 +236,7 @@ body.light-page {
 }
 @keyframes social-sweep { 0%, 55% { transform: translateX(-130%); } 85%, 100% { transform: translateX(130%); } }
 @keyframes social-flow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-@keyframes social-spin { to { transform: rotate(360deg); } }
+@keyframes social-spin { to { --social-ang: 360deg; } }   /* the colours travel round; the shape stays still */
 @keyframes social-ripple {
   0%   { transform: scale(1);   opacity: .8; }
   70%  { transform: scale(1.7); opacity: 0; }
