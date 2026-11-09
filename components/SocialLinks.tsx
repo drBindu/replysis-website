@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-// Official Replysis pages, shown in the footer and on the Get started page.
+// Official Replysis pages, shown in the footer only.
 // Keep in step with SOCIAL_PROFILES in app/layout.tsx (that list tells Google these pages are ours).
 export const SOCIAL = [
   {
