@@ -29,6 +29,23 @@ export const metadata: Metadata = {
   },
 }
 
+// Official Replysis pages. Keep in step with SOCIAL in components/Footer.tsx.
+const SOCIAL_PROFILES = [
+  'https://www.instagram.com/replysis_ai/',
+  'https://www.facebook.com/profile.php?id=61594662147470',
+]
+
+// Tells Google the website, the logo and the social pages belong to one organization.
+const ORGANIZATION_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Replysis',
+  url: 'https://replysis.com',
+  logo: 'https://replysis.com/icon.png',
+  email: 'support@replysis.com',
+  sameAs: SOCIAL_PROFILES,
+}
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -47,6 +64,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }} />
       </head>
       <body className="antialiased">
         <StaleBuildReload />
