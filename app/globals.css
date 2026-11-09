@@ -166,82 +166,32 @@ body.light-page {
 }
 .animate-spotlight { animation: spotlight 8s ease-in-out infinite; }
 
-@property --social-ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-
-/* Footer follow icons: the real Instagram and Facebook logos at 36 px (a little above the footer chips).
-   Pop in on view, breathing glow, colours travelling round a thin ring, a ripple, a lean toward the pointer
-   with a slight 3D tilt, a label on hover and brand colour sparks on click. */
-.social-wrap { position: relative; display: inline-flex; opacity: 0; transform: scale(.4) rotate(-20deg); }
-.social-wrap.social-in { animation: social-enter .7s cubic-bezier(.34,1.56,.64,1) forwards; }
+/* Footer follow icons: the real Instagram and Facebook logos, 32 px, still.
+   Hover: a small lift, a soft shadow in the brand colour and a label. The tap area stays 44 px. */
+.social-wrap { position: relative; display: inline-flex; }
 .social-btn {
-  --mx: 0px; --my: 0px; --rx: 0deg; --ry: 0deg; --lift: 0px; --s: 1;
-  position: relative; isolation: isolate; color: #fff;
-  transform: perspective(240px) translate(var(--mx), calc(var(--my) + var(--lift))) rotateX(var(--rx)) rotateY(var(--ry)) scale(var(--s));
-  transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, filter .3s ease;
-  animation: social-breathe 3.4s ease-in-out infinite;
-  will-change: transform;
+  position: relative; color: #fff;
+  width: 32px !important; height: 32px !important; min-width: 0 !important; min-height: 0 !important;
+  transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+  opacity: .92;
 }
-.social-btn:hover, .social-btn:focus-visible { --lift: -3px; --s: 1.12; filter: saturate(1.15) brightness(1.06);
-  box-shadow: 0 10px 26px rgba(var(--glow), .7), 0 0 0 1px rgba(255,255,255,.22) inset; }
-.social-btn:active { --s: .94; }
-/* the visible logo stays 36 px; the tap area stays 44 px (an invisible ring around it) */
-.social-btn { width: 36px !important; height: 36px !important; min-width: 0 !important; min-height: 0 !important; }
-.social-btn::before { content: ""; position: absolute; inset: -4px; border-radius: inherit; }
-.social-btn .social-face { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; z-index: -1; background: inherit; }
-.social-btn .social-face::after {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.5) 48%, transparent 66%);
-  transform: translateX(-130%); animation: social-sweep 5s ease-in-out infinite;
-}
-.social-ring {
-  position: absolute; inset: -3px; border-radius: inherit; z-index: -2; pointer-events: none; padding: 1.5px;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  animation: social-spin 5s linear infinite; opacity: .85;
-}
-.social-btn:hover .social-ring { animation-duration: 1.4s; opacity: 1; }
-.social-ripple {
-  position: absolute; inset: 0; border-radius: inherit; z-index: -3; pointer-events: none;
-  border: 1.5px solid rgba(var(--glow), .7);
-  animation: social-ripple 3.4s cubic-bezier(.2,.6,.3,1) infinite;
-}
-.social-glyph { width: 62%; height: 62%; filter: drop-shadow(0 1px 1px rgba(0,0,0,.15)); }
-.social-btn:hover .social-glyph { animation: social-pop .5s cubic-bezier(.34,1.56,.64,1); }
+.social-btn::before { content: ""; position: absolute; inset: -6px; border-radius: inherit; }   /* 44 px tap area */
+.social-btn:hover, .social-btn:focus-visible { transform: translateY(-2px); opacity: 1; box-shadow: 0 6px 16px rgba(var(--glow), .35); }
+.social-glyph { width: 60%; height: 60%; }
 .social-tip {
-  position: absolute; left: -2px; top: calc(100% + 10px); z-index: 5;
-  transform: translateY(-5px) scale(.9); transform-origin: 18px 0; opacity: 0;
-  white-space: nowrap; pointer-events: none; padding: 4px 10px; border-radius: 9999px;
-  font-size: 11px; font-weight: 700; color: #fff; box-shadow: 0 6px 18px rgba(var(--glow), .45);
-  transition: opacity .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+  position: absolute; left: 0; top: calc(100% + 8px); z-index: 5;
+  transform: translateY(-3px); opacity: 0;
+  white-space: nowrap; pointer-events: none; padding: 3px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; color: rgba(255,255,255,.85); background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  transition: opacity .15s ease, transform .2s ease;
 }
-.social-wrap:hover .social-tip, .social-btn:focus-visible + .social-tip { opacity: 1; transform: translateY(0) scale(1); }
-.social-spark {
-  position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 9999px;
-  pointer-events: none; z-index: 6; animation: social-spark .65s cubic-bezier(.2,.7,.3,1) forwards;
-}
+.social-wrap:hover .social-tip, .social-btn:focus-visible + .social-tip { opacity: 1; transform: translateY(0); }
 
-.social-ig { --glow: 214, 41, 118; border-radius: 28%; }
-.social-ig, .social-ig + .social-tip {
-  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-}
-.social-ig .social-ring { border-radius: 32%; background: conic-gradient(from var(--social-ang), #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5, #feda75); }
+.social-ig { --glow: 214, 41, 118; border-radius: 28%;
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
 .social-fb { --glow: 24, 119, 242; background: #fff; color: #1877F2; border-radius: 9999px; }
-.social-fb .social-glyph { width: 100%; height: 100%; filter: none; }   /* the logo path is the blue disc with the f cut out */
-.social-fb + .social-tip { background: #1877F2; }
-.social-fb .social-ring { background: conic-gradient(from var(--social-ang), #1877F2, #6cb2ff, #ffffff, #6cb2ff, #1877F2); }
-.social-fb .social-face::after, .social-fb .social-ripple { animation-delay: 1.7s; }
-
-@keyframes social-enter { to { opacity: 1; transform: none; } }
-@keyframes social-breathe {
-  0%, 100% { box-shadow: 0 3px 12px rgba(var(--glow), .30), 0 0 0 1px rgba(255,255,255,.12) inset; }
-  50%      { box-shadow: 0 4px 22px rgba(var(--glow), .60), 0 0 0 1px rgba(255,255,255,.18) inset; }
-}
-@keyframes social-sweep { 0%, 60% { transform: translateX(-130%); } 88%, 100% { transform: translateX(130%); } }
-@keyframes social-spin { to { --social-ang: 360deg; } }   /* the colours travel round; the shape stays still */
-@keyframes social-ripple { 0% { transform: scale(1); opacity: .75; } 70%, 100% { transform: scale(1.6); opacity: 0; } }
-@keyframes social-pop { 0% { transform: scale(1); } 40% { transform: scale(1.25) rotate(8deg); } 100% { transform: scale(1); } }
-@keyframes social-spark { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .social-wrap { opacity: 1; transform: none; } }
+.social-fb .social-glyph { width: 100%; height: 100%; }   /* the logo path is the blue disc with the f cut out */
 
 main { overflow: visible !important; height: auto !important; }
 
