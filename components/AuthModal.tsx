@@ -52,6 +52,12 @@ const FRIENDLY: Record<string, string> = {
 
 export default function AuthModal({ open, initialMode = "signin", onClose, onSuccess }: Props) {
   const [mode, setMode]         = useState<Mode>(initialMode);
+  // Pick the right form in the same render the modal opens, so "Sign up" never flashes the sign in form first.
+  const [wasOpen, setWasOpen]   = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setMode(initialMode);
+  }
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [name, setName]         = useState("");

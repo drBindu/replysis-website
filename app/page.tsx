@@ -468,7 +468,8 @@ export default function Home() {
         )}
       </header>
 
-      <HeroV2 mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go} />
+      <HeroV2 mounted={mounted} detectedOS={detectedOS} onDownload={download} onNav={go}
+        onSignup={() => (user ? go("real-interview") : openAuth("signup"))} />
       <WhatItDoes />
       <ScreenReading />
       <PracticeAndResume onNav={go} />
