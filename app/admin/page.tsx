@@ -10,6 +10,7 @@ import {
 import { PLAN_MONTHLY_CREDITS, PLAN_MONTHLY_AUDIO_MINUTES, TRIAL_CREDITS, TRIAL_AUDIO_MINUTES } from "../../data/productFacts";
 import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/providerRates";
 import LivePanel from "./LivePanel";
+import ActivityPanel from "./ActivityPanel";
 import VisitorsPanel from "./VisitorsPanel";
 import PeoplePanel from "./PeoplePanel";
 import EmailUsersPanel from "./EmailUsersPanel";
@@ -645,6 +646,7 @@ export default function AdminPage() {
 
         {/* What is happening right now */}
         <LivePanel />
+        <ActivityPanel />
         <VisitorsPanel />
 
         {/* Usage */}

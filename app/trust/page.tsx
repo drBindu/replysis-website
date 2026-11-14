@@ -26,6 +26,12 @@ const DATA_FLOW = [
     title: "Save only when used",
     text: "If saved interview history is used, session turns, company, role, duration, and a short resume snippet are stored in the user's account until deletion.",
   },
+  {
+    number: "04",
+    title: "App activity",
+    // Owner approved this wording with the activity diary, 2026-11-14.
+    text: "Replysis records which features you use, which settings you choose and which problems appear, only so we can find and fix problems. It never records what anyone says, the answers, your screen, your resume, your passwords or your keystrokes. These records are deleted after 90 days.",
+  },
 ];
 
 const CONTROLS = [

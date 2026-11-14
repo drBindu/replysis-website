@@ -725,6 +725,64 @@ async function visitorsView(db: Firestore, days: number) {
   };
 }
 
+/**
+ * The app activity diary: batches from app_activity (written by the backend's AppDiaryService), flattened to one row per event,
+ * newest first, with the person's email. Grouped per person so the page can show each one's day in order.
+ */
+async function activityView(db: Firestore, hours: number, onlyUid: string) {
+  const since = new Date(Date.now() - hours * 3_600_000);
+  // One range filter and its own order only, so no composite index is needed; one person is picked out below.
+  const snap = await db.collection("app_activity").where("receivedAt", ">=", since).orderBy("receivedAt", "desc").limit(2000).get();
+
+  type Row = { t: number; event: string; props: Record<string, unknown>; platform: string; v: string; session: string };
+  const byUid = new Map<string, Row[]>();
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    const uid = String(d.uid || "");
+    if (!uid || (onlyUid && uid !== onlyUid)) continue;
+    const rows = byUid.get(uid) ?? [];
+    for (const e of Array.isArray(d.events) ? d.events : []) {
+      rows.push({
+        t: Number(e.t) || 0,
+        event: String(e.event || ""),
+        props: e.props && typeof e.props === "object" ? e.props : {},
+        platform: String(d.platform || ""),
+        v: String(d.appVersion || ""),
+        session: String(d.sessionId || ""),
+      });
+    }
+    byUid.set(uid, rows);
+  }
+
+  const uids = [...byUid.keys()];
+  const emails = new Map<string, { email: string; internal: boolean }>();
+  for (let i = 0; i < uids.length; i += 100) {
+    const refs = uids.slice(i, i + 100).map((u) => db.collection("users").doc(u));
+    const docs = refs.length ? await db.getAll(...refs) : [];
+    for (const u of docs) {
+      const x = u.data() || {};
+      emails.set(u.id, { email: String(x.email || ""), internal: x.internal === true });
+    }
+  }
+
+  const people = uids.map((uid) => {
+    const rows = (byUid.get(uid) ?? []).sort((a, b) => b.t - a.t);
+    const problems = rows.filter((r) => r.event === "problem_shown" || r.event === "speech_dropped").length;
+    return {
+      uid,
+      email: emails.get(uid)?.email || "",
+      internal: emails.get(uid)?.internal || false,
+      lastAt: rows[0]?.t || 0,
+      platforms: [...new Set(rows.map((r) => `${r.platform} ${r.v}`.trim()))],
+      count: rows.length,
+      problems,
+      events: rows.slice(0, 400),
+    };
+  }).sort((a, b) => b.lastAt - a.lastAt);
+
+  return { hours, people, truncated: snap.size >= 2000 };
+}
+
 export async function GET(req: Request) {
   // The Live panel polls every few seconds and gets its own, larger allowance so it never starves the page's own reads.
   const isLive = new URL(req.url).searchParams.get("view") === "live";
@@ -765,6 +823,17 @@ export async function GET(req: Request) {
     } catch (error) {
       console.error("[admin] Visitors view failed", error);
       return NextResponse.json({ error: "Unable to load visitors" }, { status: 500 });
+    }
+  }
+
+  // The apps' activity diary (owner, 2026-11-14): what people did in the Mac and Windows apps, names and numbers only.
+  if (query.get("view") === "activity") {
+    const hours = Math.min(24 * 30, Math.max(1, Number(query.get("hours")) || 48));
+    try {
+      return NextResponse.json(await activityView(db, hours, query.get("uid") || ""));
+    } catch (error) {
+      console.error("[admin] Activity view failed", error);
+      return NextResponse.json({ error: "Unable to load app activity" }, { status: 500 });
     }
   }
 
