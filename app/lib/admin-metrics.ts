@@ -70,6 +70,46 @@ export function indiaSales(receipts: Receipt[], ms: (v: unknown) => number | nul
   return { perUser, totalInr, last30Inr, refunds };
 }
 
+// Stripe amounts are in the smallest unit (cents, paise); these currencies have none.
+const ZERO_DECIMAL = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
+
+export type Money = Record<string, number>;
+
+/**
+ * Money in, in every currency, from every receipt: subscription payments, India months, minutes, packs. Refund receipts and
+ * receipts without an amount are skipped. The admin showed rupees only, so a $34.99 Pro sale was invisible (2026-11-24).
+ */
+export function moneyIn(receipts: Receipt[], ms: (v: unknown) => number | null, now = Date.now()) {
+  const allTime: Money = {};
+  const last30: Money = {};
+  const perUser = new Map<string, Money>();
+  const add = (m: Money, c: string, v: number) => { m[c] = (m[c] ?? 0) + v; };
+  for (const r of receipts) {
+    if (r.id.startsWith("refund_") || typeof r.uid !== "string") continue;
+    const amount = Number(r.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    const currency = typeof r.currency === "string" && r.currency ? r.currency.toLowerCase() : "inr";
+    const value = ZERO_DECIMAL.has(currency) ? amount : amount / 100;
+    add(allTime, currency, value);
+    if ((ms(r.createdAt) ?? 0) > now - 30 * 86_400_000) add(last30, currency, value);
+    const mine = perUser.get(r.uid) ?? {};
+    add(mine, currency, value);
+    perUser.set(r.uid, mine);
+  }
+  return { allTime, last30, perUser };
+}
+
+/** "$34.99 + ₹699" for any mix of currencies; "" when there is none. */
+export function formatMoney(m: Money | null | undefined): string {
+  if (!m) return "";
+  return Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([c, v]) => {
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: c.toUpperCase(),
+        maximumFractionDigits: Number.isInteger(v) ? 0 : 2 }).format(v);
+    } catch { return `${v.toFixed(2)} ${c.toUpperCase()}`; }
+  }).join(" + ");
+}
+
 /**
  * What a plan set by hand writes. A trial account given a plan by the owner kept planSource "trial", so the trial job
  * put it back to free a day later and the panel counted it as a trial, not as paying.

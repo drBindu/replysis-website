@@ -63,49 +63,49 @@ export default function ActivityPanel() {
   const people = (data?.people ?? []).filter((p) => showMine || !p.internal);
 
   return (
-    <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
+    <section className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">App activity</h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
+          <p className="mt-0.5 text-[11px] text-[#7A756A]">
             What people did in the Mac and Windows apps, newest first. Never what anyone said, the answers, the screen or the resume.
           </p>
         </div>
         <div className="flex items-center gap-2 text-[12px]">
-          <label className="flex items-center gap-1.5 text-zinc-400">
+          <label className="flex items-center gap-1.5 text-[#5E5A51]">
             <input type="checkbox" checked={showMine} onChange={(e) => setShowMine(e.target.checked)} />
             Include yours and friends
           </label>
           {RANGES.map((r) => (
             <button key={r.hours} onClick={() => setHours(r.hours)}
-              className={`rounded-md px-2 py-1 ${hours === r.hours ? "bg-white/10 text-white" : "text-zinc-400 hover:text-white"}`}>
+              className={`rounded-md px-2 py-1 ${hours === r.hours ? "bg-[#ECE8DF] text-[#1F1E1B]" : "text-[#5E5A51] hover:text-[#1F1E1B]"}`}>
               {r.label}
             </button>
           ))}
         </div>
       </div>
 
-      {error ? <div className="text-[12px] text-amber-300">{error}</div> : null}
-      {data && !people.length ? <div className="py-6 text-center text-[12px] text-zinc-500">No app activity in this range.</div> : null}
+      {error ? <div className="text-[12px] text-[#8A5A12]">{error}</div> : null}
+      {data && !people.length ? <div className="py-6 text-center text-[12px] text-[#7A756A]">No app activity in this range.</div> : null}
 
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-[#ECE8DF]">
         {people.map((p) => (
           <li key={p.uid} className="py-2">
             <button onClick={() => setOpen(open === p.uid ? null : p.uid)} className="flex w-full items-center justify-between gap-3 text-left text-[12.5px]">
-              <span className="truncate text-zinc-200">{p.email || p.uid}{p.internal ? " (yours)" : ""}</span>
-              <span className="shrink-0 text-zinc-500">
+              <span className="truncate text-[#2B2A26]">{p.email || p.uid}{p.internal ? " (yours)" : ""}</span>
+              <span className="shrink-0 text-[#7A756A]">
                 {p.platforms.join(", ")}, {p.count} events
-                {p.problems ? <span className="text-amber-300">, {p.problems} problems</span> : null}, {when(p.lastAt)}
+                {p.problems ? <span className="text-[#8A5A12]">, {p.problems} problems</span> : null}, {when(p.lastAt)}
               </span>
             </button>
             {open === p.uid ? (
               <table className="mt-2 w-full text-[11.5px]">
                 <tbody>
                   {p.events.map((e, i) => (
-                    <tr key={i} className={isProblem(e) ? "text-amber-300" : "text-zinc-400"}>
+                    <tr key={i} className={isProblem(e) ? "text-[#8A5A12]" : "text-[#5E5A51]"}>
                       <td className="whitespace-nowrap py-0.5 pr-3 tabular-nums">{when(e.t)}</td>
                       <td className="whitespace-nowrap pr-3">{e.platform}</td>
-                      <td className="whitespace-nowrap pr-3 text-zinc-200">{e.event.replace(/_/g, " ")}</td>
+                      <td className="whitespace-nowrap pr-3 text-[#2B2A26]">{e.event.replace(/_/g, " ")}</td>
                       <td className="w-full">{propsText(e.props)}</td>
                     </tr>
                   ))}
@@ -115,7 +115,7 @@ export default function ActivityPanel() {
           </li>
         ))}
       </ul>
-      {data?.truncated ? <p className="mt-2 text-[11px] text-zinc-600">Only the newest 2,000 batches are shown. Pick a shorter range.</p> : null}
+      {data?.truncated ? <p className="mt-2 text-[11px] text-[#9A9487]">Only the newest 2,000 batches are shown. Pick a shorter range.</p> : null}
     </section>
   );
 }

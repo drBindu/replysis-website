@@ -79,12 +79,12 @@ export function overallState(systems: Systems | undefined): PartState | "unknown
 
 // Which app a person has open. Colour is only a hint; the word is always there.
 const APP_LOOK: Record<AppKind, { label: string; tone: string }> = {
-  windows: { label: "Windows",            tone: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
-  mac:     { label: "Mac",                tone: "border-violet-500/30 bg-violet-500/10 text-violet-300" },
-  android: { label: "Android phone",      tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
-  ios:     { label: "iPhone",             tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
-  app:     { label: "App, older version", tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" },
-  web:     { label: "Website",            tone: "border-white/10 bg-white/5 text-zinc-400" },
+  windows: { label: "Windows",            tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]" },
+  mac:     { label: "Mac",                tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]" },
+  android: { label: "Android phone",      tone: "border-[#BFD6C5] bg-[#EAF2EC] text-[#2F6B4F]" },
+  ios:     { label: "iPhone",             tone: "border-[#BFD6C5] bg-[#EAF2EC] text-[#2F6B4F]" },
+  app:     { label: "App, older version", tone: "border-[#D6D0C4] bg-[#ECE8DF] text-[#3D3B35]" },
+  web:     { label: "Website",            tone: "border-[#E3DED3] bg-[#F1EEE7] text-[#5E5A51]" },
 };
 
 type Filter = "all" | "answers" | "screens" | "phone" | "people" | "problems";
@@ -98,16 +98,16 @@ const FILTERS: Array<[Filter, string, (e: LiveEvent) => boolean]> = [
 ];
 
 const KIND: Record<LiveEvent["kind"], { label: string; tone: string; Icon: LucideIcon }> = {
-  answer:   { label: "Answer",       tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             Icon: MessageSquare },
-  screen:   { label: "Screen read",  tone: "border-violet-500/30 bg-violet-500/10 text-violet-300",    Icon: ImageIcon },
-  refund:   { label: "Refunded",     tone: "border-amber-500/30 bg-amber-500/10 text-amber-300",       Icon: RotateCcw },
-  resume:   { label: "Resume tool",  tone: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",          Icon: MessageSquare },
-  mock:     { label: "Mock interview", tone: "border-teal-500/30 bg-teal-500/10 text-teal-300",       Icon: MessageSquare },
-  listen:   { label: "Listening",    tone: "border-sky-500/30 bg-sky-500/10 text-sky-300",             Icon: MessageSquare },
-  signup:   { label: "New account",  tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: UserPlus },
-  download: { label: "Download",     tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: Download },
-  error:    { label: "App problem",  tone: "border-rose-500/30 bg-rose-500/10 text-rose-300",          Icon: AlertTriangle },
-  alert:    { label: "Alert",        tone: "border-rose-500/30 bg-rose-500/10 text-rose-300",          Icon: AlertTriangle },
+  answer:   { label: "Answer",       tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",             Icon: MessageSquare },
+  screen:   { label: "Screen read",  tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",    Icon: ImageIcon },
+  refund:   { label: "Refunded",     tone: "border-[#E5D3AE] bg-[#F6EEDC] text-[#8A5A12]",       Icon: RotateCcw },
+  resume:   { label: "Resume tool",  tone: "border-[#D6D0C4] bg-[#ECE8DF] text-[#3D3B35]",          Icon: MessageSquare },
+  mock:     { label: "Mock interview", tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",       Icon: MessageSquare },
+  listen:   { label: "Listening",    tone: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",             Icon: MessageSquare },
+  signup:   { label: "New account",  tone: "border-[#BFD6C5] bg-[#EAF2EC] text-[#2F6B4F]", Icon: UserPlus },
+  download: { label: "Download",     tone: "border-[#BFD6C5] bg-[#EAF2EC] text-[#2F6B4F]", Icon: Download },
+  error:    { label: "App problem",  tone: "border-[#E7C4BC] bg-[#F7E6E2] text-[#A33A2B]",          Icon: AlertTriangle },
+  alert:    { label: "Alert",        tone: "border-[#E7C4BC] bg-[#F7E6E2] text-[#A33A2B]",          Icon: AlertTriangle },
 };
 
 /** Merges new rows into what is held: no row twice, newest first, capped. Pure so it can be checked on its own. */
@@ -154,23 +154,23 @@ function ago(ms: number | null, now: number): string {
 function Chip({ label, value, tone = "plain", sub }: {
   label: string; value: number | string; tone?: "plain" | "good" | "warn" | "bad"; sub?: string;
 }) {
-  const color = tone === "good" ? "text-emerald-300" : tone === "warn" ? "text-amber-300"
-    : tone === "bad" ? "text-rose-300" : "text-white";
+  const color = tone === "good" ? "text-[#2F6B4F]" : tone === "warn" ? "text-[#8A5A12]"
+    : tone === "bad" ? "text-[#A33A2B]" : "text-[#1F1E1B]";
   return (
-    <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">{label}</div>
+    <div className="rounded-lg border border-[#E3DED3] bg-[#F1EEE7] px-3 py-2.5">
+      <div className="text-[10px] font-semibold text-[#7A756A]">{label}</div>
       <div className={`mt-1 text-xl font-semibold tabular-nums ${color}`}>{value}</div>
-      {sub ? <div className="text-[10px] text-zinc-600">{sub}</div> : null}
+      {sub ? <div className="text-[10px] text-[#9A9487]">{sub}</div> : null}
     </div>
   );
 }
 
 const STATE_LOOK: Record<PartState | "unknown", { dot: string; label: string; text: string }> = {
-  awake:    { dot: "bg-emerald-400", label: "Awake",     text: "text-emerald-300" },
-  slow:     { dot: "bg-amber-400",   label: "Slow",      text: "text-amber-300" },
-  down:     { dot: "bg-rose-500",    label: "Down",      text: "text-rose-300" },
-  starting: { dot: "bg-zinc-500",    label: "Starting",  text: "text-zinc-400" },
-  unknown:  { dot: "bg-zinc-600",    label: "Checking",  text: "text-zinc-400" },
+  awake:    { dot: "bg-[#2F6B4F]", label: "Awake",     text: "text-[#2F6B4F]" },
+  slow:     { dot: "bg-[#C08A2E]",   label: "Slow",      text: "text-[#8A5A12]" },
+  down:     { dot: "bg-[#A33A2B]",    label: "Down",      text: "text-[#A33A2B]" },
+  starting: { dot: "bg-[#A39C8E]",    label: "Starting",  text: "text-[#5E5A51]" },
+  unknown:  { dot: "bg-[#B9B2A4]",    label: "Checking",  text: "text-[#5E5A51]" },
 };
 
 /** One line that says whether the product is awake, and what each part took the last time it was checked. */
@@ -179,13 +179,13 @@ function SystemsStrip({ systems }: { systems: Systems | undefined }) {
   const look = STATE_LOOK[overall];
   const ok = systems && systems.reachable ? systems : null;
   return (
-    <div className="mb-4 rounded-lg border border-white/10 bg-black/20 px-3 py-3">
+    <div className="mb-4 rounded-lg border border-[#E3DED3] bg-[#F4F1EA] px-3 py-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <span className={`inline-block h-2.5 w-2.5 rounded-full ${look.dot}`} />
           <span className={look.text}>{look.label}</span>
         </span>
-        <span className="text-[11px] text-zinc-500">
+        <span className="text-[11px] text-[#7A756A]">
           {overall === "awake" ? "Everything an answer needs is ready."
             : overall === "slow" ? "Working, but something is answering late."
             : overall === "down" ? (systems && !systems.reachable ? "The server is not answering." : "Something an answer needs is not working.")
@@ -200,11 +200,11 @@ function SystemsStrip({ systems }: { systems: Systems | undefined }) {
           const l = STATE_LOOK[state];
           return (
             <li key={key} className="min-w-0" title={part?.note || undefined}>
-              <div className="flex items-center gap-2 text-xs text-zinc-300">
+              <div className="flex items-center gap-2 text-xs text-[#3D3B35]">
                 <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${l.dot}`} />
                 <span className="truncate">{label}</span>
               </div>
-              <div className="ml-4 text-[10px] text-zinc-600">
+              <div className="ml-4 text-[10px] text-[#9A9487]">
                 {part && part.state !== "starting" ? `${l.label}${part.ms ? `, ${part.ms} ms` : ""}` : l.label}
               </div>
             </li>
@@ -348,17 +348,17 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
   }
 
   return (
-    <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
+    <section className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             <span className="relative flex h-2.5 w-2.5">
-              {live ? <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" /> : null}
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${live ? "bg-emerald-400" : "bg-zinc-600"}`} />
+              {live ? <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2F6B4F] opacity-60" /> : null}
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${live ? "bg-[#2F6B4F]" : "bg-[#B9B2A4]"}`} />
             </span>
             Live
           </h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
+          <p className="mt-0.5 text-[11px] text-[#7A756A]">
             {paused ? "Paused." : "Updates every few seconds while this page is open and in front."}
             {lastOk ? ` Last update ${ago(lastOk, now)}.` : ""}
           </p>
@@ -367,29 +367,29 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
           <button
             onClick={sendTestAlert}
             disabled={testing}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white disabled:opacity-50">
+            className="flex items-center gap-1.5 rounded-lg border border-[#E3DED3] bg-[#F1EEE7] px-3 py-1.5 text-xs font-medium text-[#3D3B35] transition hover:text-[#1F1E1B] disabled:opacity-50">
             <AlertTriangle size={12} />
             {testing ? "Sending" : "Send me a test alert"}
           </button>
           <button
             onClick={() => setPaused((p) => !p)}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white">
+            className="flex items-center gap-1.5 rounded-lg border border-[#E3DED3] bg-[#F1EEE7] px-3 py-1.5 text-xs font-medium text-[#3D3B35] transition hover:text-[#1F1E1B]">
             {paused ? <Play size={12} /> : <Pause size={12} />}
             {paused ? "Resume" : "Pause"}
           </button>
         </div>
       </div>
       {testNote ? (
-        <div role="status" className="mb-3 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-zinc-300">{testNote}</div>
+        <div role="status" className="mb-3 rounded-lg border border-[#E3DED3] bg-[#F1EEE7] px-3 py-2 text-[11px] text-[#3D3B35]">{testNote}</div>
       ) : null}
 
       {error ? (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+        <div className="mb-3 rounded-lg border border-[#E5D3AE] bg-[#F6EEDC] px-3 py-2 text-[11px] text-[#8A5A12]">
           The live feed could not update: {error}. It keeps trying.
         </div>
       ) : null}
       {problems.length > 0 ? (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+        <div className="mb-3 rounded-lg border border-[#E5D3AE] bg-[#F6EEDC] px-3 py-2 text-[11px] text-[#8A5A12]">
           Not available right now: {problems.join(", ")}. Everything else is live.
         </div>
       ) : null}
@@ -406,20 +406,20 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
       </div>
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="min-w-0 rounded-lg border border-[#E3DED3] bg-[#F4F1EA] lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-[#E3DED3] px-3 py-2 text-[10px] font-semibold text-[#7A756A]">
             <span>Who is here</span>
-            <span className="normal-case tracking-normal text-zinc-600">{online.length} open</span>
+            <span className="normal-case tracking-normal text-[#9A9487]">{online.length} open</span>
           </div>
-          <ul className="max-h-[28rem] divide-y divide-white/5 overflow-y-auto">
+          <ul className="max-h-[28rem] divide-y divide-[#ECE8DF] overflow-y-auto">
             {people.length === 0 ? (
-              <li className="px-3 py-6 text-center text-[11px] text-zinc-600">Nobody has the app or the website open right now.</li>
+              <li className="px-3 py-6 text-center text-[11px] text-[#9A9487]">Nobody has the app or the website open right now.</li>
             ) : people.map((u) => {
               return (
                 <li key={u.id} className="px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-xs text-zinc-200">{u.email ?? u.id.slice(0, 8)}</span>
-                    <span className={`shrink-0 text-[10px] font-medium ${u.listening ? "text-emerald-300" : "text-zinc-500"}`}>
+                    <span className="min-w-0 truncate text-xs text-[#2B2A26]">{u.email ?? u.id.slice(0, 8)}</span>
+                    <span className={`shrink-0 text-[10px] font-medium ${u.listening ? "text-[#2F6B4F]" : "text-[#7A756A]"}`}>
                       {u.listening ? "Listening" : "Open"}
                     </span>
                   </div>
@@ -429,10 +429,10 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                         {APP_LOOK[w.app].label}{w.version ? ` ${w.version}` : ""}
                       </span>
                     ))}
-                    <span className="text-[10px] text-zinc-600">{u.plan}, seen {ago(u.lastActive, now)}</span>
+                    <span className="text-[10px] text-[#9A9487]">{u.plan}, seen {ago(u.lastActive, now)}</span>
                   </div>
                   {u.openedAt ? (
-                    <p className="mt-1 text-[10px] text-zinc-500">
+                    <p className="mt-1 text-[10px] text-[#7A756A]">
                       Opened {shortClock(u.openedAt)}, open {span(now - u.openedAt)}{startNote(u.openedAt, u.lastListeningAt, u.listening)}
                     </p>
                   ) : null}
@@ -442,18 +442,18 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
           </ul>
           {left.length > 0 && (
             <>
-              <div className="flex items-center justify-between border-y border-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <div className="flex items-center justify-between border-y border-[#E3DED3] px-3 py-2 text-[10px] font-semibold text-[#7A756A]">
                 <span>Recently left</span>
-                <span className="normal-case tracking-normal text-zinc-600">last 12 hours</span>
+                <span className="normal-case tracking-normal text-[#9A9487]">last 12 hours</span>
               </div>
-              <ul className="max-h-[20rem] divide-y divide-white/5 overflow-y-auto">
+              <ul className="max-h-[20rem] divide-y divide-[#ECE8DF] overflow-y-auto">
                 {left.map((u) => (
                   <li key={u.id} className="px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-xs text-zinc-400">{u.email ?? u.id.slice(0, 8)}</span>
-                      <span className="shrink-0 text-[10px] text-zinc-500">Left {shortClock(u.leftAt)}</span>
+                      <span className="min-w-0 truncate text-xs text-[#5E5A51]">{u.email ?? u.id.slice(0, 8)}</span>
+                      <span className="shrink-0 text-[10px] text-[#7A756A]">Left {shortClock(u.leftAt)}</span>
                     </div>
-                    <p className="mt-1 text-[10px] text-zinc-600">
+                    <p className="mt-1 text-[10px] text-[#9A9487]">
                       {APP_LOOK[u.app].label}{u.version ? ` ${u.version}` : ""}, {u.plan}
                       {u.openedAt ? `, opened ${shortClock(u.openedAt)}, was open ${span(u.leftAt - u.openedAt)}` : ""}
                       {startNote(u.openedAt, u.lastListeningAt, false)}
@@ -465,9 +465,9 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
           )}
         </div>
 
-        <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 lg:col-span-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="min-w-0 rounded-lg border border-[#E3DED3] bg-[#F4F1EA] lg:col-span-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E3DED3] px-3 py-2">
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#7A756A]">
               <Activity size={11} /> What just happened
             </span>
             <div className="flex flex-wrap gap-1" role="group" aria-label="Filter what just happened">
@@ -476,16 +476,16 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
                 return (
                   <button key={key} type="button" aria-pressed={filter === key} onClick={() => setFilter(key)}
                     className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                      filter === key ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
+                      filter === key ? "bg-[#ECE8DF] text-[#1F1E1B]" : "text-[#7A756A] hover:text-[#1F1E1B]"}`}>
                     {label}{count > 0 ? ` ${count}` : ""}
                   </button>
                 );
               })}
             </div>
           </div>
-          <ul className="max-h-[28rem] divide-y divide-white/5 overflow-y-auto">
+          <ul className="max-h-[28rem] divide-y divide-[#ECE8DF] overflow-y-auto">
             {shown.length === 0 ? (
-              <li className="px-3 py-8 text-center text-[11px] text-zinc-600">
+              <li className="px-3 py-8 text-center text-[11px] text-[#9A9487]">
                 {events.length === 0
                   ? "Nothing in the last 30 minutes. New activity appears here the moment it happens."
                   : `Nothing under ${activeFilter[1]} yet.`}
@@ -494,24 +494,24 @@ export default function LivePanel({ getToken }: { getToken?: () => Promise<strin
               const k = KIND[e.kind];
               const fresh = now - e.at < FRESH_MS;
               return (
-                <li key={e.id} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 transition-colors sm:flex-nowrap ${fresh ? "bg-emerald-500/5" : ""}`}>
-                  <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-zinc-500 sm:w-[78px]">{clock(e.at)}</span>
+                <li key={e.id} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 transition-colors sm:flex-nowrap ${fresh ? "bg-[#EAF2EC]" : ""}`}>
+                  <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-[#7A756A] sm:w-[78px]">{clock(e.at)}</span>
                   <span className={`flex w-[104px] shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${k.tone}`}>
                     <k.Icon size={10} />{k.label}
                   </span>
-                  <span className="min-w-0 basis-full truncate text-xs text-zinc-300 sm:flex-1 sm:basis-0">
-                    {e.who ? <span className="text-zinc-200">{e.who}</span> : null}
-                    {e.app ? <span className="ml-2 text-[10px] text-zinc-500">{APP_LOOK[e.app].label}</span> : null}
-                    {e.detail ? <span className="ml-2 text-zinc-500">{e.detail}</span> : null}
+                  <span className="min-w-0 basis-full truncate text-xs text-[#3D3B35] sm:flex-1 sm:basis-0">
+                    {e.who ? <span className="text-[#2B2A26]">{e.who}</span> : null}
+                    {e.app ? <span className="ml-2 text-[10px] text-[#7A756A]">{APP_LOOK[e.app].label}</span> : null}
+                    {e.detail ? <span className="ml-2 text-[#7A756A]">{e.detail}</span> : null}
                     {e.more ? (
                       <details className="mt-1 ml-2">
-                        <summary className="cursor-pointer text-[11px] text-zinc-500 hover:text-zinc-300">What the app saw</summary>
-                        <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded bg-black/40 p-2 text-[11px] leading-snug text-zinc-400">{e.more.split(" | ").join(String.fromCharCode(10))}</pre>
+                        <summary className="cursor-pointer text-[11px] text-[#7A756A] hover:text-[#1F1E1B]">What the app saw</summary>
+                        <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded bg-[#EDE9E0] p-2 text-[11px] leading-snug text-[#5E5A51]">{e.more.split(" | ").join(String.fromCharCode(10))}</pre>
                       </details>
                     ) : null}
                   </span>
                   {typeof e.credits === "number" && e.credits !== 0 ? (
-                    <span className={`shrink-0 text-[11px] tabular-nums ${e.credits < 0 ? "text-amber-300" : "text-zinc-500"}`}>
+                    <span className={`shrink-0 text-[11px] tabular-nums ${e.credits < 0 ? "text-[#8A5A12]" : "text-[#7A756A]"}`}>
                       {e.credits > 0 ? `-${e.credits}` : `+${-e.credits}`}
                     </span>
                   ) : null}

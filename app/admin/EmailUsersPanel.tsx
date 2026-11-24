@@ -33,37 +33,37 @@ export default function EmailUsersPanel() {
 
   const ready = subject.trim().length > 0 && message.trim().length > 0 && !busy;
   return (
-    <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
-      <h2 className="text-sm font-semibold text-white">Email all users</h2>
-      <p className="mt-0.5 text-[12px] text-zinc-500">
+    <section className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
+      <h2 className="text-sm font-semibold text-[#1F1E1B]">Email all users</h2>
+      <p className="mt-0.5 text-[12px] text-[#7A756A]">
         For news like a new version. Every email has an unsubscribe link, and people who unsubscribed are skipped.
         New users get a welcome email on their own.
       </p>
       <div className="mt-3 grid gap-2">
         <input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="Subject"
-          className="rounded-md border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white outline-none focus:border-white/30" />
+          className="rounded-md border border-[#E3DED3] bg-[#F1EEE7] px-3 py-2 text-[13px] text-[#1F1E1B] outline-none focus:border-[#BDB6A8]" />
         <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={5000} rows={6}
           placeholder={"Hi,\n\nReplysis 1.0.42 is out. ..."}
-          className="rounded-md border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white outline-none focus:border-white/30" />
+          className="rounded-md border border-[#E3DED3] bg-[#F1EEE7] px-3 py-2 text-[13px] text-[#1F1E1B] outline-none focus:border-[#BDB6A8]" />
         <div className="flex flex-wrap items-center gap-2">
           <button disabled={!ready} onClick={() => send(true)}
-            className="rounded-md border border-white/15 px-3 py-1.5 text-[12px] font-medium text-zinc-200 hover:bg-white/5 disabled:opacity-40">
+            className="rounded-md border border-[#D6D0C4] px-3 py-1.5 text-[12px] font-medium text-[#2B2A26] hover:bg-[#F1EEE7] disabled:opacity-40">
             Send me a test first
           </button>
           {!confirming ? (
             <button disabled={!ready} onClick={() => setConfirming(true)}
-              className="rounded-md bg-emerald-500/20 px-3 py-1.5 text-[12px] font-semibold text-emerald-200 hover:bg-emerald-500/30 disabled:opacity-40">
+              className="rounded-md bg-[#DCEADF] px-3 py-1.5 text-[12px] font-semibold text-[#1F5A3F] hover:bg-[#D7E6DA] disabled:opacity-40">
               Send to everyone
             </button>
           ) : (
             <>
-              <span className="text-[12px] text-amber-200">Send this to every user now?</span>
+              <span className="text-[12px] text-[#8A5A12]">Send this to every user now?</span>
               <button disabled={busy} onClick={() => send(false)}
-                className="rounded-md bg-emerald-500/30 px-3 py-1.5 text-[12px] font-semibold text-emerald-100">Yes, send</button>
-              <button onClick={() => setConfirming(false)} className="px-2 text-[12px] text-zinc-400">Cancel</button>
+                className="rounded-md bg-[#DCEADF] px-3 py-1.5 text-[12px] font-semibold text-[#1F5A3F]">Yes, send</button>
+              <button onClick={() => setConfirming(false)} className="px-2 text-[12px] text-[#5E5A51]">Cancel</button>
             </>
           )}
-          {note && <span className={`text-[12px] ${note.ok ? "text-emerald-300" : "text-red-300"}`}>{note.text}</span>}
+          {note && <span className={`text-[12px] ${note.ok ? "text-[#2F6B4F]" : "text-[#A33A2B]"}`}>{note.text}</span>}
         </div>
       </div>
     </section>

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { PLAN_MONTHLY_CREDITS, PLAN_MONTHLY_AUDIO_MINUTES, TRIAL_CREDITS, TRIAL_AUDIO_MINUTES } from "../../data/productFacts";
 import { MODEL_RATES, ratesConfigured, tokenCost, sttCost } from "../../data/providerRates";
+import { formatMoney } from "../lib/admin-metrics";
 import LivePanel from "./LivePanel";
 import ActivityPanel from "./ActivityPanel";
 import VisitorsPanel from "./VisitorsPanel";
@@ -35,7 +36,7 @@ const PLAN_PRICE_USD: Record<string, number> = {
 const WINDOWS = [7, 30, 90] as const;
 
 type AdminMetrics = {
-  users: number; paidUsers: number; proUsers: number; maxUsers: number; minuteBuyers?: number; minuteRevenueInr?: number;
+  users: number; paidUsers: number; proUsers: number; maxUsers: number; minuteBuyers?: number; minuteRevenueInr?: number; moneyAllTime?: Record<string, number>; moneyLast30?: Record<string, number>;
   liveUsers: number; listeningNow: number; totalUsageMinutes: number;
   winDownloads: number; macDownloads: number;
   internalUsers: number; realUsers: number; realPaid: number; realPro: number; realMax: number;
@@ -154,21 +155,32 @@ function costOf(row: UsageRow | null, listeningMinutes = 0) {
   return { usd, unpricedTokens, priced };
 }
 
+// ── Sections of the dashboard ─────────────────────────────────────
+type AdminView = "overview" | "people" | "live" | "money" | "visitors" | "email";
+const VIEWS: Array<{ key: AdminView; label: string; hint: string }> = [
+  { key: "overview", label: "Overview", hint: "Revenue, people and what needs you" },
+  { key: "people", label: "People", hint: "Who signed up, what worked, who paid" },
+  { key: "live", label: "Live", hint: "Sessions and app activity right now" },
+  { key: "money", label: "Usage and cost", hint: "Answers, screen reads and provider cost" },
+  { key: "visitors", label: "Website", hint: "Who visited the site" },
+  { key: "email", label: "Email users", hint: "Write to your users" },
+];
+
 // ── Building blocks ───────────────────────────────────────────────
 function Kpi({ label, value, sub, icon, tone = "plain" }: {
   label: string; value: string; sub?: string;
   icon?: React.ReactNode; tone?: "plain" | "good" | "warn";
 }) {
   const valueTone =
-    tone === "good" ? "text-emerald-300" : tone === "warn" ? "text-amber-300" : "text-white";
+    tone === "good" ? "text-[#2F6B4F]" : tone === "warn" ? "text-[#8A5A12]" : "text-[#1F1E1B]";
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0e0e15] px-4 py-3.5">
-      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-        {icon}
+    <div className="rounded-2xl border border-[#E3DED3] bg-[#FBFAF6] px-5 py-4 shadow-[0_1px_2px_rgba(60,50,30,0.05)]">
+      <div className="flex items-center gap-2 text-[13px] font-medium text-[#5E5A51]">
+        <span className="text-[#9A9487]">{icon}</span>
         <span>{label}</span>
       </div>
-      <div className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight ${valueTone}`}>{value}</div>
-      {sub ? <div className="mt-0.5 text-[11px] text-zinc-500">{sub}</div> : null}
+      <div className={`mt-2.5 text-[30px] font-semibold leading-none tabular-nums tracking-tight ${valueTone}`}>{value}</div>
+      {sub ? <div className="mt-2 text-[12.5px] leading-snug text-[#7A756A]">{sub}</div> : null}
     </div>
   );
 }
@@ -176,16 +188,16 @@ function Kpi({ label, value, sub, icon, tone = "plain" }: {
 function PlanBadge({ plan }: { plan: string }) {
   const key = (plan || "free").toLowerCase();
   const tone: Record<string, string> = {
-    pro: "border-sky-500/30 bg-sky-500/10 text-sky-300",
-    max: "border-violet-500/30 bg-violet-500/10 text-violet-300",
-    lifetime: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-    teams: "border-teal-500/30 bg-teal-500/10 text-teal-300",
-    trial: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-    free: "border-white/10 bg-white/5 text-zinc-400",
-    guest: "border-white/10 bg-white/5 text-zinc-500",
+    pro: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",
+    max: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",
+    lifetime: "border-[#E5D3AE] bg-[#F6EEDC] text-[#8A5A12]",
+    teams: "border-[#D3DAD3] bg-[#ECEFEA] text-[#4B5A55]",
+    trial: "border-[#BFD6C5] bg-[#EAF2EC] text-[#2F6B4F]",
+    free: "border-[#E3DED3] bg-[#F1EEE7] text-[#5E5A51]",
+    guest: "border-[#E3DED3] bg-[#F1EEE7] text-[#7A756A]",
   };
   return (
-    <span className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${tone[key] ?? tone.free}`}>
+    <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium capitalize ${tone[key] ?? tone.free}`}>
       {key}
     </span>
   );
@@ -213,7 +225,7 @@ function UsageBars({ byDay, days }: { byDay: Record<string, number>; days: numbe
 
   if (!series.some((p) => p.value > 0)) {
     return (
-      <div className="flex h-[72px] items-center justify-center rounded-lg border border-dashed border-white/10 text-[11px] text-zinc-600">
+      <div className="flex h-[72px] items-center justify-center rounded-lg border border-dashed border-[#E3DED3] text-[11px] text-[#9A9487]">
         No credits charged in this window
       </div>
     );
@@ -234,7 +246,7 @@ function UsageBars({ byDay, days }: { byDay: Record<string, number>; days: numbe
           );
         })}
       </svg>
-      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-zinc-600">
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-[#9A9487]">
         <span>{series[0]?.day}</span>
         <span>peak {num(peak)}</span>
         <span>{series[series.length - 1]?.day}</span>
@@ -245,12 +257,12 @@ function UsageBars({ byDay, days }: { byDay: Record<string, number>; days: numbe
 
 function Bd({ counts }: { counts: Record<string, number> }) {
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  if (!entries.length) return <span className="text-zinc-600">none</span>;
+  if (!entries.length) return <span className="text-[#9A9487]">none</span>;
   return (
     <span className="flex flex-wrap gap-1.5">
       {entries.map(([k, v]) => (
-        <span key={k} className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-300">
-          {k} <span className="tabular-nums text-zinc-500">{num(v)}</span>
+        <span key={k} className="rounded border border-[#E3DED3] bg-[#F1EEE7] px-1.5 py-0.5 text-[10px] text-[#3D3B35]">
+          {k} <span className="tabular-nums text-[#7A756A]">{num(v)}</span>
         </span>
       ))}
     </span>
@@ -259,6 +271,11 @@ function Bd({ counts }: { counts: Record<string, number> }) {
 
 // ── Page ──────────────────────────────────────────────────────────
 export default function AdminPage() {
+  const [view, setView] = useState<AdminView>(() => {
+    try { const v = typeof window !== "undefined" ? window.localStorage.getItem("admin.view") : null;
+      return (VIEWS.some(x => x.key === v) ? v : "overview") as AdminView; } catch { return "overview"; }
+  });
+  const go = (v: AdminView) => { setView(v); try { window.localStorage.setItem("admin.view", v); } catch {} window.scrollTo({ top: 0 }); };
   const [users, setUsers] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<AdminMetrics>(EMPTY_METRICS);
   const [deletionRequests, setDeletionRequests] = useState<Array<{ uid: string; email: string; daysWaiting: number }>>([]);
@@ -336,6 +353,8 @@ export default function AdminPage() {
         paidUsers: Number(m.paidUsers) || 0,
         minuteBuyers: Number(m.minuteBuyers) || 0,
         minuteRevenueInr: Number(m.minuteRevenueInr) || 0,
+        moneyAllTime: m.moneyAllTime ?? {},
+        moneyLast30: m.moneyLast30 ?? {},
         proUsers: Number(m.proUsers) || 0,
         maxUsers: Number(m.maxUsers) || 0,
         liveUsers: Number(m.liveUsers) || 0,
@@ -501,7 +520,7 @@ export default function AdminPage() {
 
   // ── Gates ───────────────────────────────────────────────────────
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#06060a] text-zinc-500">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F1EA] text-[#7A756A]">
       <div className="flex items-center gap-3">
         <Shield size={20} className="animate-pulse" />
         <span className="text-sm font-medium">Loading admin</span>
@@ -510,17 +529,17 @@ export default function AdminPage() {
   );
 
   if (serverError) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#06060a] p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0e0e15] p-7 text-center">
-        <AlertTriangle size={24} className="mx-auto mb-3 text-amber-400" />
-        <h2 className="text-lg font-semibold text-white">Server error</h2>
-        <p className="mt-2 break-words font-mono text-xs text-zinc-400">{serverError}</p>
-        <p className="mt-3 text-xs text-zinc-500">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F1EA] p-6">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E3DED3] bg-[#FBFAF6] p-7 text-center">
+        <AlertTriangle size={24} className="mx-auto mb-3 text-[#8A5A12]" />
+        <h2 className="text-lg font-semibold text-[#1F1E1B]">Server error</h2>
+        <p className="mt-2 break-words font-mono text-xs text-[#5E5A51]">{serverError}</p>
+        <p className="mt-3 text-xs text-[#7A756A]">
           Usually a Firestore quota or Firebase Admin problem, not a sign-in problem.
         </p>
         <button
           onClick={() => { setServerError(null); setLoading(true); fetchAll(); }}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/15">
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#ECE8DF] px-5 py-2.5 text-sm font-medium text-[#1F1E1B] transition hover:bg-[#E6E1D6]">
           <RefreshCw size={14} /> Retry
         </button>
       </div>
@@ -528,28 +547,28 @@ export default function AdminPage() {
   );
 
   if (!isAdmin) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#06060a] p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0e0e15] p-7 text-center">
-        <Shield size={24} className="mx-auto mb-3 text-red-400" />
-        <h2 className="text-lg font-semibold text-white">Access restricted</h2>
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F1EA] p-6">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E3DED3] bg-[#FBFAF6] p-7 text-center">
+        <Shield size={24} className="mx-auto mb-3 text-[#A33A2B]" />
+        <h2 className="text-lg font-semibold text-[#1F1E1B]">Access restricted</h2>
         {authedEmail ? (
           <>
-            <p className="mt-2 text-sm text-zinc-400">
-              Signed in as <span className="font-medium text-zinc-200">{authedEmail}</span>, which is not the admin account.
+            <p className="mt-2 text-sm text-[#5E5A51]">
+              Signed in as <span className="font-medium text-[#2B2A26]">{authedEmail}</span>, which is not the admin account.
             </p>
             <button
               onClick={async () => { await signOut(auth); window.location.href = "/?auth=required&next=/admin"; }}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/15">
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#ECE8DF] px-5 py-2.5 text-sm font-medium text-[#1F1E1B] transition hover:bg-[#E6E1D6]">
               <LogIn size={14} /> Sign out and switch account
             </button>
           </>
         ) : (
           <>
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-[#5E5A51]">
               {authChecked ? "Sign in with the admin account to continue." : "Checking your session"}
             </p>
             <a href="/?auth=required&next=/admin"
-               className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/15">
+               className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#ECE8DF] px-5 py-2.5 text-sm font-medium text-[#1F1E1B] transition hover:bg-[#E6E1D6]">
               <LogIn size={14} /> Sign in as admin
             </a>
           </>
@@ -560,14 +579,34 @@ export default function AdminPage() {
 
   // ── Dashboard ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#06060a] font-sans text-white">
-      <div className="mx-auto max-w-[1600px] space-y-5 p-5 lg:p-7">
+    <div className="min-h-screen bg-[#F4F1EA] font-sans text-[#1F1E1B] lg:flex">
+      <aside className="border-b border-[#E3DED3] bg-[#EFEBE3] lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r">
+        <div className="flex items-center gap-2.5 px-5 pb-2 pt-5 lg:pb-6 lg:pt-7">
+          <img src="/brand/replysis-icon-128.png" alt="" className="h-7 w-7 rounded-lg" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <div>
+            <div className="text-[15px] font-semibold leading-tight text-[#1F1E1B]">Replysis</div>
+            <div className="text-[12px] leading-tight text-[#7A756A]">Admin</div>
+          </div>
+        </div>
+        <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible lg:pb-0">
+          {VIEWS.map((v) => (
+            <button key={v.key} onClick={() => go(v.key)} aria-current={view === v.key ? "page" : undefined}
+              className={`shrink-0 rounded-lg px-3 py-2 text-left text-[14px] transition lg:py-2.5 ${
+                view === v.key ? "bg-[#FBFAF6] font-semibold text-[#1F1E1B] shadow-[0_1px_2px_rgba(60,50,30,0.08)]" : "text-[#5E5A51] hover:bg-[#E6E1D6] hover:text-[#1F1E1B]"}`}>
+              {v.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <main className="min-w-0 flex-1">
+      <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-10">
 
         {/* Header */}
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Admin</h1>
-            <p className="mt-1 text-[13px] text-zinc-500">
+            <h1 className="text-[26px] font-semibold tracking-tight text-[#1F1E1B]">{VIEWS.find(v => v.key === view)?.label}</h1>
+            <p className="mt-1 text-[14px] text-[#5E5A51]">{VIEWS.find(v => v.key === view)?.hint}</p>
+            <p className="mt-1 text-[13px] text-[#7A756A]">
               {num(metrics.users)} users, {num(metrics.liveUsers)} live now
               {lastRefreshed ? `, updated ${timeAgo(lastRefreshed)}` : ""}
             </p>
@@ -576,13 +615,13 @@ export default function AdminPage() {
             <button
               onClick={() => { setEditMode(!editMode); setEditingCredits(null); setEditingMinutes(null); setDeleteConfirm(null); }}
               className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-xs font-medium transition ${
-                editMode ? "border-amber-400/40 bg-amber-400/10 text-amber-200" : "border-white/10 bg-[#0e0e15] text-zinc-300 hover:bg-white/5"}`}>
+                editMode ? "border-[#E5D3AE] bg-[#F6EEDC] text-[#8A5A12]" : "border-[#E3DED3] bg-[#FBFAF6] text-[#3D3B35] hover:bg-[#F1EEE7]"}`}>
               {editMode ? "Done editing" : "Edit"}
             </button>
             <button
               onClick={() => fetchAll(true, currentCursor)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-[#0e0e15] px-3.5 py-2 text-xs font-medium text-zinc-300 transition hover:bg-white/5 disabled:opacity-50">
+              className="inline-flex items-center gap-2 rounded-lg border border-[#E3DED3] bg-[#FBFAF6] px-3.5 py-2 text-xs font-medium text-[#3D3B35] transition hover:bg-[#F1EEE7] disabled:opacity-50">
               <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
               {refreshing ? "Refreshing" : "Refresh"}
             </button>
@@ -590,20 +629,20 @@ export default function AdminPage() {
         </header>
 
         {actionError && (
-          <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-200">
+          <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-[#E7C4BC] bg-[#F7E6E2] px-4 py-2.5 text-sm text-[#8E2F22]">
             <span>{actionError}</span>
             <button onClick={() => setActionError(null)} aria-label="Dismiss"><X size={15} /></button>
           </div>
         )}
 
         {metrics.listeningNow >= SPEECH_WARN_AT ? (
-          <div role="alert" className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-200">
+          <div role="alert" className="flex items-start gap-3 rounded-xl border border-[#E5D3AE] bg-[#F6EEDC] px-4 py-3 text-[13px] text-[#8A5A12]">
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <div>
               <div className="font-semibold">
                 {num(metrics.listeningNow)} people are listening at once. The limit is {num(SPEECH_SESSION_LIMIT)}.
               </div>
-              <div className="mt-0.5 text-amber-200/80">
+              <div className="mt-0.5 text-[#8A6420]">
                 Ask Deepgram for a higher limit before it fills: deepgram.com/contact-us
               </div>
             </div>
@@ -611,9 +650,9 @@ export default function AdminPage() {
         ) : null}
 
         {deletionRequests.length ? (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-200">
+          <div className="rounded-xl border border-[#E5D3AE] bg-[#F6EEDC] px-4 py-3 text-[13px] text-[#8A5A12]">
             <div className="font-semibold">{num(deletionRequests.length)} account deletion {deletionRequests.length === 1 ? "request is" : "requests are"} waiting</div>
-            <div className="mt-1 space-y-0.5 text-amber-200/80">
+            <div className="mt-1 space-y-0.5 text-[#8A6420]">
               {deletionRequests.map((r) => (
                 <div key={r.uid}>{r.email || r.uid}, asked {r.daysWaiting === 0 ? "today" : `${num(r.daysWaiting)} days ago`}. Delete it from the user list within 30 days.</div>
               ))}
@@ -622,9 +661,10 @@ export default function AdminPage() {
         ) : null}
 
         {/* Who came, what they did, whether it worked, how fast, who paid */}
-        <PeoplePanel />
-        <EmailUsersPanel />
+        {view === "people" && <PeoplePanel />}
+        {view === "email" && <EmailUsersPanel />}
 
+        {view === "overview" && <>
         {/* Money and people */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Monthly revenue" value={money(mrr)}
@@ -639,34 +679,36 @@ export default function AdminPage() {
           <Kpi label="Listening time" value={fmtMinutes(metrics.totalUsageMinutes)}
                sub="all users, all time" icon={<Clock size={12} />} />
         </section>
-        <p className="-mt-2 text-[11px] text-zinc-600">
+        <p className="-mt-2 text-[11px] text-[#9A9487]">
           These four are current state and all-time totals. They do not follow the
           date range below.
         </p>
 
-        {/* What is happening right now */}
-        <LivePanel />
-        <ActivityPanel />
-        <VisitorsPanel />
+        </>}
 
+        {/* What is happening right now */}
+        {view === "live" && <><LivePanel /><ActivityPanel /></>}
+        {view === "visitors" && <VisitorsPanel />}
+
+        {view === "money" && <>
         {/* Usage */}
-        <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
+        <section className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">Usage and charges</h2>
-              <p className="mt-0.5 text-[11px] text-zinc-500">
+              <p className="mt-0.5 text-[11px] text-[#7A756A]">
                 One row per billable action. This range drives everything in this
                 section and the usage columns in the table.
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider text-zinc-600">Range</span>
-              <div className="flex rounded-lg border border-white/10 bg-black/30 p-0.5">
+              <span className="text-[10px] text-[#9A9487]">Range</span>
+              <div className="flex rounded-lg border border-[#E3DED3] bg-[#F1EEE7] p-0.5">
                 {WINDOWS.map((d) => (
                   <button key={d}
                     onClick={() => { setWindowDays(d); fetchAll(true, currentCursor, d); }}
                     className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${
-                      windowDays === d ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
+                      windowDays === d ? "bg-[#ECE8DF] text-[#1F1E1B]" : "text-[#7A756A] hover:text-[#1F1E1B]"}`}>
                     {d} days
                   </button>
                 ))}
@@ -675,20 +717,20 @@ export default function AdminPage() {
           </div>
 
           {usage?.window?.truncated && (
-            <div className="mb-4 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+            <div className="mb-4 rounded border border-[#E5D3AE] bg-[#F6EEDC] px-3 py-2 text-[11px] text-[#8A5A12]">
               More events than can be read at once. Showing the newest{" "}
               {num(usage.window.eventsScanned)}, so totals below understate the range.
             </div>
           )}
 
           {usageError ? (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+            <div className="rounded-lg border border-[#E5D3AE] bg-[#F6EEDC] px-4 py-3 text-xs text-[#8A5A12]">
               {usageError}
             </div>
           ) : !totals || totals.events === 0 ? (
-            <div className="rounded-lg border border-dashed border-white/10 px-4 py-6 text-center">
-              <p className="text-sm text-zinc-400">No usage recorded yet</p>
-              <p className="mx-auto mt-1.5 max-w-lg text-[11px] leading-relaxed text-zinc-600">
+            <div className="rounded-lg border border-dashed border-[#E3DED3] px-4 py-6 text-center">
+              <p className="text-sm text-[#5E5A51]">No usage recorded yet</p>
+              <p className="mx-auto mt-1.5 max-w-lg text-[11px] leading-relaxed text-[#9A9487]">
                 Recording starts from the backend deploy that introduced it. Charges
                 made before then updated the balance on the account but were never
                 written down anywhere, so they cannot be shown here. Numbers will
@@ -735,10 +777,10 @@ export default function AdminPage() {
               </div>
 
               {!ratesConfigured() && (
-                <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] leading-relaxed text-zinc-400">
+                <div className="mb-5 rounded-lg border border-[#E3DED3] bg-[#FBFAF6] px-4 py-3 text-[11px] leading-relaxed text-[#5E5A51]">
                   Token counts above are measured, straight from the provider on every
                   request. Money is not: it has to come from a published price list.
-                  Put today&apos;s rates into <code className="text-zinc-300">data/providerRates.ts</code> and
+                  Put today&apos;s rates into <code className="text-[#3D3B35]">data/providerRates.ts</code> and
                   cost per user appears here and in the table. Until then nothing is
                   guessed.
                 </div>
@@ -748,11 +790,11 @@ export default function AdminPage() {
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 <div>
-                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">By action</div>
+                  <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">By action</div>
                   <Bd counts={totals.byAction} />
                 </div>
                 <div>
-                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">By model</div>
+                  <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">By model</div>
                   <Bd counts={totals.byModel} />
                 </div>
               </div>
@@ -760,29 +802,32 @@ export default function AdminPage() {
           )}
         </section>
 
+        </>}
+
+        {view === "people" && <>
         {/* Controls */}
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
-            <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+            <Search size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9A9487]" />
             <input
               type="text"
               placeholder="Search by email or user id"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-[#0e0e15] py-2.5 pl-9 pr-9 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-white/25"
+              className="w-full rounded-lg border border-[#E3DED3] bg-[#FBFAF6] py-2.5 pl-9 pr-9 text-sm text-[#1F1E1B] placeholder-[#A8A294] outline-none transition focus:border-[#C8C1B4]"
             />
             {search && (
               <button onClick={() => setSearch("")} aria-label="Clear search"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white">
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9A9487] hover:text-[#1F1E1B]">
                 <X size={13} />
               </button>
             )}
           </div>
-          <div className="flex rounded-lg border border-white/10 bg-[#0e0e15] p-0.5">
+          <div className="flex rounded-lg border border-[#E3DED3] bg-[#FBFAF6] p-0.5">
             {([["recent", "Recent"], ["usage", "Most usage"], ["credits", "Balance"]] as const).map(([key, label]) => (
               <button key={key} onClick={() => setSortBy(key)}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  sortBy === key ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>
+                  sortBy === key ? "bg-[#ECE8DF] text-[#1F1E1B]" : "text-[#7A756A] hover:text-[#1F1E1B]"}`}>
                 {label}
               </button>
             ))}
@@ -790,11 +835,11 @@ export default function AdminPage() {
         </div>
 
         {/* Users */}
-        <section className="overflow-hidden rounded-xl border border-white/10 bg-[#0e0e15]">
+        <section className="overflow-hidden rounded-xl border border-[#E3DED3] bg-[#FBFAF6]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] text-left">
               <thead>
-                <tr className="border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                <tr className="border-b border-[#E3DED3] text-[10px] font-semibold text-[#7A756A]">
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3 text-right">Billed</th>
@@ -811,7 +856,7 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {rows.length === 0 && (
-                  <tr><td colSpan={12} className="px-4 py-10 text-center text-sm text-zinc-600">
+                  <tr><td colSpan={12} className="px-4 py-10 text-center text-sm text-[#9A9487]">
                     {search ? "No user matches that search" : "No users yet"}
                   </td></tr>
                 )}
@@ -829,52 +874,60 @@ export default function AdminPage() {
                     <React.Fragment key={user.id}>
                       <tr
                         onClick={() => setExpandedUser(open ? null : user.id)}
-                        className="cursor-pointer border-b border-white/5 transition hover:bg-white/[0.03]">
+                        className="cursor-pointer border-b border-[#ECE8DF] transition hover:bg-[#F1EEE7]">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
-                            {open ? <ChevronDown size={14} className="text-zinc-600" />
-                                  : <ChevronRight size={14} className="text-zinc-600" />}
-                            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${online ? "bg-emerald-400" : "bg-zinc-700"}`}
+                            {open ? <ChevronDown size={14} className="text-[#9A9487]" />
+                                  : <ChevronRight size={14} className="text-[#9A9487]" />}
+                            <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${online ? "bg-[#2F6B4F]" : "bg-[#CFC9BC]"}`}
                                   title={online ? "Online" : "Offline"} />
                             <div className="min-w-0">
-                              <div className="truncate text-[13px] font-medium text-zinc-200">
+                              <div className="truncate text-[13px] font-medium text-[#2B2A26]">
                                 {user.email || "No email on record"}
                               </div>
-                              <div className="truncate font-mono text-[10px] text-zinc-600">{user.id}</div>
+                              <div className="truncate font-mono text-[10px] text-[#9A9487]">{user.id}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3"><PlanBadge plan={plan} /></td>
-                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-zinc-300">
-                          {PLAN_PRICE_USD[plan] ? `${money(PLAN_PRICE_USD[plan])}/mo` : <span className="text-zinc-600">free</span>}
-                          {Number(user.minutesPaidInr) > 0 && (
-                            <div className="text-[11px] font-semibold text-emerald-300" title={`${user.minutesPurchases} minute purchase(s)`}>
-                              +₹{num(Math.round(Number(user.minutesPaidInr)))} minutes
+                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-[#3D3B35]">
+                          {/* Billed is what the card is actually charged. A plan given by hand (yours, friends, tests) showed
+                              its list price here as if it were paid (2026-11-24). Only a live Stripe subscription is a dollar bill. */}
+                          {PLAN_PRICE_USD[plan] && ["active", "trialing", "past_due"].includes(String(user.stripeSubscriptionStatus))
+                            ? <span className="font-semibold text-[#2F6B4F]">{money(PLAN_PRICE_USD[plan])}/mo</span>
+                            : user.planSource === "pass"
+                              ? <span className="text-[#2F6B4F]">India month</span>
+                              : PLAN_PRICE_USD[plan]
+                                ? <span className="text-[#9A9487]">given, not paid</span>
+                                : <span className="text-[#9A9487]">free</span>}
+                          {formatMoney(user.paidMoney) && (
+                            <div className="text-[11px] font-semibold text-[#2F6B4F]" title="Everything this account has paid, in each currency">
+                              {formatMoney(user.paidMoney)} paid
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">
-                          {u ? <span className="text-white">{num(u.charged)}</span>
-                             : <span className="text-zinc-700">0</span>}
+                          {u ? <span className="text-[#1F1E1B]">{num(u.charged)}</span>
+                             : <span className="text-[#B3AD9F]">0</span>}
                           {u && u.refunded > 0 && (
-                            <span className="ml-1 text-[10px] text-amber-400">-{num(u.refunded)}</span>
+                            <span className="ml-1 text-[10px] text-[#8A5A12]">-{num(u.refunded)}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-zinc-400">
+                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-[#5E5A51]">
                           {num(u?.byAction.answer ?? 0)}
                         </td>
-                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-zinc-400">
+                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-[#5E5A51]">
                           {num(u?.byAction.screen ?? 0)}
                         </td>
-                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-zinc-400">
+                        <td className="px-4 py-3 text-right text-[13px] tabular-nums text-[#5E5A51]">
                           {u ? fmtTokens(u.promptTokens + u.completionTokens)
-                             : <span className="text-zinc-700">0</span>}
+                             : <span className="text-[#B3AD9F]">0</span>}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">
                           {userCost.priced
                             ? <span className={PLAN_PRICE_USD[plan] && userCost.usd > PLAN_PRICE_USD[plan]
-                                ? "text-amber-300" : "text-zinc-300"}>{money(userCost.usd)}</span>
-                            : <span className="text-zinc-700" title="No rate set for this user's models">
+                                ? "text-[#8A5A12]" : "text-[#3D3B35]"}>{money(userCost.usd)}</span>
+                            : <span className="text-[#B3AD9F]" title="No rate set for this user's models">
                                 not priced
                               </span>}
                         </td>
@@ -884,31 +937,31 @@ export default function AdminPage() {
                               <input
                                 type="number" autoFocus value={newCreditValue}
                                 onChange={(e) => setNewCreditValue(Number(e.target.value))}
-                                className="w-20 rounded border border-white/15 bg-black/40 px-2 py-1 text-right text-xs tabular-nums text-white outline-none"
+                                className="w-20 rounded border border-[#D6D0C4] bg-[#EDE9E0] px-2 py-1 text-right text-xs tabular-nums text-[#1F1E1B] outline-none"
                               />
                               <button onClick={() => handleManualCredits(user.id)} aria-label="Save credits"
-                                      className="rounded p-1 text-emerald-400 hover:bg-white/10"><Check size={13} /></button>
+                                      className="rounded p-1 text-[#2F6B4F] hover:bg-[#ECE8DF]"><Check size={13} /></button>
                               <button onClick={() => setEditingCredits(null)} aria-label="Cancel"
-                                      className="rounded p-1 text-zinc-500 hover:bg-white/10"><X size={13} /></button>
+                                      className="rounded p-1 text-[#7A756A] hover:bg-[#ECE8DF]"><X size={13} /></button>
                             </div>
                           ) : (
                             <button disabled={!editMode}
                               onClick={(e) => { e.stopPropagation(); setEditingCredits(user.id); setNewCreditValue(Number(user.credits) || 0); }}
-                              className="text-[13px] tabular-nums text-zinc-300 underline-offset-2 enabled:hover:underline disabled:cursor-default">
+                              className="text-[13px] tabular-nums text-[#3D3B35] underline-offset-2 enabled:hover:underline disabled:cursor-default">
                               {num(Number(user.credits) || 0)}
-                              <span className="text-zinc-600"> / {num(allowance)}</span>
+                              <span className="text-[#9A9487]"> / {num(allowance)}</span>
                             </button>
                           )}
                           {editingMinutes === user.id ? (
                             <div className="mt-1 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                               <input type="number" autoFocus min={0} value={newMinuteValue}
                                 onChange={(e) => setNewMinuteValue(Number(e.target.value))}
-                                className="w-16 rounded border border-white/15 bg-black/40 px-2 py-0.5 text-right text-[11px] tabular-nums text-white outline-none" />
-                              <span className="text-[11px] text-zinc-500">min</span>
+                                className="w-16 rounded border border-[#D6D0C4] bg-[#EDE9E0] px-2 py-0.5 text-right text-[11px] tabular-nums text-[#1F1E1B] outline-none" />
+                              <span className="text-[11px] text-[#7A756A]">min</span>
                               <button onClick={() => handleManualMinutes(user.id)} aria-label="Save minutes"
-                                      className="rounded p-0.5 text-emerald-400 hover:bg-white/10"><Check size={12} /></button>
+                                      className="rounded p-0.5 text-[#2F6B4F] hover:bg-[#ECE8DF]"><Check size={12} /></button>
                               <button onClick={() => setEditingMinutes(null)} aria-label="Cancel"
-                                      className="rounded p-0.5 text-zinc-500 hover:bg-white/10"><X size={12} /></button>
+                                      className="rounded p-0.5 text-[#7A756A] hover:bg-[#ECE8DF]"><X size={12} /></button>
                             </div>
                           ) : (
                             <button disabled={!editMode}
@@ -918,36 +971,36 @@ export default function AdminPage() {
                               {/* A paid plan covers answers, so leftover gift or bought minutes are spare, not a limit (2026-10-23:
                                   a Pro customer read as "1 min left"). */}
                               {(user.plan === "pro" || user.plan === "max") && Number(user.minutesBalance) > 0 ? (
-                                <span className="text-zinc-500">Plan covers it<span className="text-zinc-600">, {num(Number(user.minutesBalance) || 0)} spare min</span></span>
+                                <span className="text-[#7A756A]">Plan covers it<span className="text-[#9A9487]">, {num(Number(user.minutesBalance) || 0)} spare min</span></span>
                               ) : (Number(user.minutesBought) > 0 || Number(user.minutesBalance) > 0) ? (
-                                <span className="text-emerald-300">{num(Number(user.minutesBalance) || 0)} min left
-                                  <span className="text-zinc-600"> of {num(Number(user.minutesBought) || 0)} bought</span></span>
-                              ) : <span className="text-zinc-600">0 min</span>}
+                                <span className="text-[#2F6B4F]">{num(Number(user.minutesBalance) || 0)} min left
+                                  <span className="text-[#9A9487]"> of {num(Number(user.minutesBought) || 0)} bought</span></span>
+                              ) : <span className="text-[#9A9487]">0 min</span>}
                             </button>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right text-[13px] tabular-nums">
-                          <span className={audioUsed > audioCap ? "text-amber-300" : "text-zinc-400"}>
+                          <span className={audioUsed > audioCap ? "text-[#8A5A12]" : "text-[#5E5A51]"}>
                             {fmtMinutes(audioUsed)}
                           </span>
-                          <span className="text-zinc-600"> / {fmtMinutes(audioCap)}</span>
+                          <span className="text-[#9A9487]"> / {fmtMinutes(audioCap)}</span>
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-zinc-400">{timeAgo(seenMs(user))}</td>
+                        <td className="px-4 py-3 text-[13px] text-[#5E5A51]">{timeAgo(seenMs(user))}</td>
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {deleteConfirm === user.id ? (
                             <div className="flex items-center justify-end gap-1">
                               <button onClick={() => removeUser(user.id)}
-                                      className="rounded bg-red-500/20 px-2 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/30">
+                                      className="rounded bg-[#F7E6E2] px-2 py-1 text-[11px] font-medium text-[#A33A2B] hover:bg-[#F0D6D0]">
                                 Delete
                               </button>
                               <button onClick={() => setDeleteConfirm(null)}
-                                      className="rounded px-2 py-1 text-[11px] text-zinc-500 hover:text-white">
+                                      className="rounded px-2 py-1 text-[11px] text-[#7A756A] hover:text-[#1F1E1B]">
                                 Cancel
                               </button>
                             </div>
                           ) : editMode && (
                             <button onClick={() => setDeleteConfirm(user.id)} aria-label="Delete user"
-                                    className="rounded p-1.5 text-zinc-600 transition hover:bg-red-500/10 hover:text-red-400">
+                                    className="rounded p-1.5 text-[#9A9487] transition hover:bg-[#F7E6E2] hover:text-[#A33A2B]">
                               <Trash2 size={14} />
                             </button>
                           )}
@@ -955,90 +1008,90 @@ export default function AdminPage() {
                       </tr>
 
                       {open && (
-                        <tr className="border-b border-white/5 bg-black/30">
+                        <tr className="border-b border-[#ECE8DF] bg-[#F1EEE7]">
                           <td colSpan={12} className="px-4 py-5">
                             <div className="grid gap-6 lg:grid-cols-3">
                               <div>
-                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Account</div>
+                                <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">Account</div>
                                 <dl className="space-y-1.5 text-[12px]">
                                   <div className="flex justify-between gap-4">
-                                    <dt className="text-zinc-500">Created</dt>
-                                    <dd className="text-zinc-300">{fmtTs(user.createdAt || user.authCreated)}</dd>
+                                    <dt className="text-[#7A756A]">Created</dt>
+                                    <dd className="text-[#3D3B35]">{fmtTs(user.createdAt || user.authCreated)}</dd>
                                   </div>
                                   <div className="flex justify-between gap-4">
-                                    <dt className="text-zinc-500">Last sign in</dt>
-                                    <dd className="text-zinc-300">{fmtTs(user.authLastSignIn)}</dd>
+                                    <dt className="text-[#7A756A]">Last sign in</dt>
+                                    <dd className="text-[#3D3B35]">{fmtTs(user.authLastSignIn)}</dd>
                                   </div>
                                   <div className="flex justify-between gap-4">
-                                    <dt className="text-zinc-500">Sessions</dt>
-                                    <dd className="tabular-nums text-zinc-300">{num(Number(user.loginCount) || 0)}</dd>
+                                    <dt className="text-[#7A756A]">Sessions</dt>
+                                    <dd className="tabular-nums text-[#3D3B35]">{num(Number(user.loginCount) || 0)}</dd>
                                   </div>
                                   <div className="flex justify-between gap-4">
-                                    <dt className="text-zinc-500">Credits spent, all time</dt>
-                                    <dd className="tabular-nums text-zinc-300">{num(Number(user.creditsUsed) || 0)}</dd>
+                                    <dt className="text-[#7A756A]">Credits spent, all time</dt>
+                                    <dd className="tabular-nums text-[#3D3B35]">{num(Number(user.creditsUsed) || 0)}</dd>
                                   </div>
                                   {user.location && (
                                     <div className="flex justify-between gap-4">
-                                      <dt className="text-zinc-500">Location</dt>
-                                      <dd className="text-zinc-300">{String(user.location)}</dd>
+                                      <dt className="text-[#7A756A]">Location</dt>
+                                      <dd className="text-[#3D3B35]">{String(user.location)}</dd>
                                     </div>
                                   )}
                                 </dl>
                               </div>
 
                               <div>
-                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                                <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">
                                   Usage, last {windowDays} days
                                 </div>
                                 {u ? (
                                   <div className="space-y-2.5 text-[12px]">
                                     <div className="flex justify-between gap-4">
-                                      <span className="text-zinc-500">Credits kept</span>
-                                      <span className="tabular-nums text-zinc-200">{num(u.credits)}</span>
+                                      <span className="text-[#7A756A]">Credits kept</span>
+                                      <span className="tabular-nums text-[#2B2A26]">{num(u.credits)}</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="text-zinc-500">Failed and refunded</span>
-                                      <span className="tabular-nums text-zinc-200">{num(u.refunds)}</span>
+                                      <span className="text-[#7A756A]">Failed and refunded</span>
+                                      <span className="tabular-nums text-[#2B2A26]">{num(u.refunds)}</span>
                                     </div>
                                     <div>
-                                      <div className="mb-1 text-zinc-500">Actions</div>
+                                      <div className="mb-1 text-[#7A756A]">Actions</div>
                                       <Bd counts={u.byAction} />
                                     </div>
                                     <div>
-                                      <div className="mb-1 text-zinc-500">Models</div>
+                                      <div className="mb-1 text-[#7A756A]">Models</div>
                                       <Bd counts={u.byModel} />
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="text-zinc-500">Tokens in and out</span>
-                                      <span className="tabular-nums text-zinc-200">
+                                      <span className="text-[#7A756A]">Tokens in and out</span>
+                                      <span className="tabular-nums text-[#2B2A26]">
                                         {fmtTokens(u.promptTokens)} / {fmtTokens(u.completionTokens)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="text-zinc-500">Cost to us</span>
-                                      <span className="tabular-nums text-zinc-200">
+                                      <span className="text-[#7A756A]">Cost to us</span>
+                                      <span className="tabular-nums text-[#2B2A26]">
                                         {userCost.priced ? money(userCost.usd) : "rate not set"}
                                       </span>
                                     </div>
                                     {PLAN_PRICE_USD[plan] > 0 && userCost.priced && (
                                       <div className="flex justify-between gap-4">
-                                        <span className="text-zinc-500">They pay / we spend</span>
+                                        <span className="text-[#7A756A]">They pay / we spend</span>
                                         <span className={`tabular-nums ${
-                                          userCost.usd > PLAN_PRICE_USD[plan] ? "text-amber-300" : "text-emerald-300"}`}>
+                                          userCost.usd > PLAN_PRICE_USD[plan] ? "text-[#8A5A12]" : "text-[#2F6B4F]"}`}>
                                           {money(PLAN_PRICE_USD[plan])} / {money(userCost.usd)}
                                         </span>
                                       </div>
                                     )}
                                     {Object.keys(u.tokensByModel ?? {}).length > 0 && (
                                       <div>
-                                        <div className="mb-1 text-zinc-500">Tokens by model</div>
+                                        <div className="mb-1 text-[#7A756A]">Tokens by model</div>
                                         <div className="space-y-0.5">
                                           {Object.entries(u.tokensByModel).map(([m, t]) => {
                                             const c = tokenCost(m, t.prompt, t.completion);
                                             return (
                                               <div key={m} className="flex justify-between gap-4 text-[11px]">
-                                                <span className="truncate text-zinc-400">{m}</span>
-                                                <span className="flex-shrink-0 tabular-nums text-zinc-500">
+                                                <span className="truncate text-[#5E5A51]">{m}</span>
+                                                <span className="flex-shrink-0 tabular-nums text-[#7A756A]">
                                                   {fmtTokens(t.prompt + t.completion)}
                                                   {c === null ? "" : ` (${money(c)})`}
                                                 </span>
@@ -1050,24 +1103,24 @@ export default function AdminPage() {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-[12px] text-zinc-600">
+                                  <p className="text-[12px] text-[#9A9487]">
                                     Nothing recorded in this window.
                                   </p>
                                 )}
                               </div>
 
                               <div>
-                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Counted as</div>
+                                <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">Counted as</div>
                                 <button disabled={!editMode} onClick={() => toggleInternal(user.id, user.internal !== true)}
                                   className={`mb-4 rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                     user.internal === true
-                                      ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
-                                      : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}>
+                                      ? "border-[#E5D3AE] bg-[#F6EEDC] text-[#8A5A12]"
+                                      : "border-[#E3DED3] text-[#5E5A51] hover:bg-[#F1EEE7] hover:text-[#1F1E1B]"}`}>
                                   {user.internal === true
                                     ? `Yours or a friend's (left out of the numbers)${editMode ? ". Click to count as a real user" : ""}`
                                     : `Real user${editMode ? ". Click to mark as yours or a friend's" : ""}`}
                                 </button>
-                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Change plan</div>
+                                <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">Change plan</div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {/* Only the plans actually sold. "lifetime" and
                                       "teams" are retired in productFacts.ts and
@@ -1080,18 +1133,18 @@ export default function AdminPage() {
                                     <button key={p} disabled={!editMode} onClick={() => updatePlan(user.id, p)}
                                       className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                         plan === p
-                                          ? "border-white/25 bg-white/10 text-white"
-                                          : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}>
+                                          ? "border-[#C8C1B4] bg-[#ECE8DF] text-[#1F1E1B]"
+                                          : "border-[#E3DED3] text-[#5E5A51] hover:bg-[#F1EEE7] hover:text-[#1F1E1B]"}`}>
                                       {p}
                                     </button>
                                   ))}
                                 </div>
-                                <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
+                                <p className="mt-2 text-[11px] leading-relaxed text-[#9A9487]">
                                   Changing the plan also resets the balance to that plan&apos;s monthly
                                   allowance. It does not change anything in Stripe.
                                 </p>
                                 {(plan === "lifetime" || plan === "teams") && (
-                                  <p className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-200">
+                                  <p className="mt-2 rounded border border-[#E5D3AE] bg-[#F6EEDC] px-2 py-1.5 text-[11px] text-[#8A5A12]">
                                     This account is on {plan}, a retired plan. It keeps working, but
                                     moving it to another plan cannot be undone from here.
                                   </p>
@@ -1108,39 +1161,42 @@ export default function AdminPage() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/10 px-4 py-3">
-            <span className="text-[11px] text-zinc-600">
+          <div className="flex items-center justify-between border-t border-[#E3DED3] px-4 py-3">
+            <span className="text-[11px] text-[#9A9487]">
               Showing {num(rows.length)} of {num(metrics.users)} users
             </span>
             <div className="flex gap-2">
               <button onClick={goToPreviousPage} disabled={!cursorHistory.length}
-                className="rounded-md border border-white/10 px-3 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:bg-white/5 disabled:opacity-40">
+                className="rounded-md border border-[#E3DED3] px-3 py-1.5 text-[11px] font-medium text-[#3D3B35] transition hover:bg-[#F1EEE7] disabled:opacity-40">
                 Previous
               </button>
               <button onClick={goToNextPage} disabled={!nextCursor}
-                className="rounded-md border border-white/10 px-3 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:bg-white/5 disabled:opacity-40">
+                className="rounded-md border border-[#E3DED3] px-3 py-1.5 text-[11px] font-medium text-[#3D3B35] transition hover:bg-[#F1EEE7] disabled:opacity-40">
                 Next
               </button>
             </div>
           </div>
         </section>
 
+        </>}
+
+        {view === "money" && <>
         {/* Recent activity */}
         {usage && usage.recent.length > 0 && (
-          <section className="rounded-xl border border-white/10 bg-[#0e0e15] p-5">
+          <section className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
             <h2 className="mb-3 text-sm font-semibold">Recent activity</h2>
             <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
               {usage.recent.map((e, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-md px-2 py-1.5 text-[12px] hover:bg-white/[0.03]">
-                  <span className="w-16 flex-shrink-0 tabular-nums text-zinc-600">{timeAgo(e.at)}</span>
-                  <span className="min-w-0 flex-1 truncate text-zinc-300">
-                    {e.email || <span className="font-mono text-zinc-500">{e.identityId.slice(0, 16)}</span>}
-                    {e.guest && <span className="ml-1.5 text-[10px] text-zinc-600">guest</span>}
+                <div key={i} className="flex items-center gap-3 rounded-md px-2 py-1.5 text-[12px] hover:bg-[#F1EEE7]">
+                  <span className="w-16 flex-shrink-0 tabular-nums text-[#9A9487]">{timeAgo(e.at)}</span>
+                  <span className="min-w-0 flex-1 truncate text-[#3D3B35]">
+                    {e.email || <span className="font-mono text-[#7A756A]">{e.identityId.slice(0, 16)}</span>}
+                    {e.guest && <span className="ml-1.5 text-[10px] text-[#9A9487]">guest</span>}
                   </span>
-                  <span className="w-24 flex-shrink-0 text-zinc-400">{e.action}</span>
-                  <span className="hidden w-44 flex-shrink-0 truncate text-zinc-600 sm:block">{e.model}</span>
+                  <span className="w-24 flex-shrink-0 text-[#5E5A51]">{e.action}</span>
+                  <span className="hidden w-44 flex-shrink-0 truncate text-[#9A9487] sm:block">{e.model}</span>
                   <span className={`w-14 flex-shrink-0 text-right tabular-nums ${
-                    e.credits < 0 ? "text-amber-400" : "text-zinc-300"}`}>
+                    e.credits < 0 ? "text-[#8A5A12]" : "text-[#3D3B35]"}`}>
                     {e.credits > 0 ? `-${e.credits}` : `+${-e.credits}`}
                   </span>
                 </div>
@@ -1149,18 +1205,24 @@ export default function AdminPage() {
           </section>
         )}
 
+        </>}
+
+        {view === "overview" && <>
         {/* Distribution */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Windows downloads" value={num(metrics.winDownloads)} icon={<Monitor size={12} />} />
           <Kpi label="Mac downloads" value={num(metrics.macDownloads)} icon={<Apple size={12} />} />
           <Kpi label="Free accounts" value={num(Math.max(0, metrics.realUsers - metrics.realPaid))} icon={<Users size={12} />} />
-          <Kpi label="India sales (minutes + month)" value={`₹${num(metrics.minuteRevenueInr ?? 0)}`} icon={<Users size={12} />} />
-          <Kpi label="India buyers" value={num(metrics.minuteBuyers ?? 0)}
-               sub={metrics.refunds ? `${num(metrics.refunds)} refunds taken back` : undefined} icon={<Users size={12} />} />
+          <Kpi label="Money in, last 30 days" value={formatMoney(metrics.moneyLast30) || "0"}
+               sub="every currency, as paid" icon={<TrendingUp size={12} />} tone={formatMoney(metrics.moneyLast30) ? "good" : "plain"} />
+          <Kpi label="Money in, all time" value={formatMoney(metrics.moneyAllTime) || "0"}
+               sub={metrics.refunds ? `${num(metrics.refunds)} refunds taken back` : "subscriptions, months, minutes and packs"} icon={<CreditCard size={12} />} />
           <Kpi label="Conversion" value={`${metrics.realUsers ? ((metrics.realPaid / metrics.realUsers) * 100).toFixed(1) : "0.0"}%`}
                sub="paying / total" icon={<TrendingUp size={12} />} />
         </section>
+        </>}
       </div>
+      </main>
     </div>
   );
 }

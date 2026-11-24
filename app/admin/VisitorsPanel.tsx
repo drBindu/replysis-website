@@ -35,7 +35,7 @@ function regionName(code: string): string {
 }
 
 function BarList({ rows, total, label }: { rows: Row[]; total: number; label?: (r: Row) => React.ReactNode }) {
-  if (!rows.length) return <div className="py-6 text-center text-[12px] text-slate-500">Nothing yet today.</div>;
+  if (!rows.length) return <div className="py-6 text-center text-[12px] text-[#7A756A]">Nothing yet today.</div>;
   return (
     <ul className="space-y-2.5">
       {rows.map((r) => {
@@ -43,11 +43,11 @@ function BarList({ rows, total, label }: { rows: Row[]; total: number; label?: (
         return (
           <li key={r.name}>
             <div className="mb-1 flex items-center justify-between gap-3 text-[12.5px]">
-              <span className="truncate text-slate-200">{label ? label(r) : r.name}</span>
-              <span className="tabular-nums text-slate-400">{r.count}</span>
+              <span className="truncate text-[#2B2A26]">{label ? label(r) : r.name}</span>
+              <span className="tabular-nums text-[#5E5A51]">{r.count}</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
-              <div className="h-full rounded-full bg-emerald-400/80" style={{ width: `${pct}%` }} />
+            <div className="h-1.5 overflow-hidden rounded-full bg-[#F1EEE7]">
+              <div className="h-full rounded-full bg-[#2F6B4F]" style={{ width: `${pct}%` }} />
             </div>
           </li>
         );
@@ -58,13 +58,13 @@ function BarList({ rows, total, label }: { rows: Row[]; total: number; label?: (
 
 function Stat({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: React.ReactNode; sub: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300/90">
+    <div className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-4">
+      <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#5E5A51]">
         {icon}
         {label}
       </div>
-      <div className="mt-2 text-3xl font-black tabular-nums text-white">{value}</div>
-      <div className="mt-1 text-[12px] text-slate-400">{sub}</div>
+      <div className="mt-2 text-3xl font-semibold tabular-nums text-[#1F1E1B]">{value}</div>
+      <div className="mt-1 text-[12px] text-[#5E5A51]">{sub}</div>
     </div>
   );
 }
@@ -107,17 +107,17 @@ export default function VisitorsPanel() {
   const deltaText = !data ? " " : delta === 0 ? "same as yesterday" : `${delta > 0 ? "+" : ""}${delta} vs yesterday (${yesterday})`;
 
   return (
-    <section aria-label="Website visitors" className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+    <section aria-label="Website visitors" className="rounded-2xl border border-[#E3DED3] bg-[#FBFAF6] p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <Globe2 size={16} className="text-emerald-300" />
-          <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-emerald-300">Website visitors</h2>
+          <Globe2 size={16} className="text-[#2F6B4F]" />
+          <h2 className="text-[15px] font-semibold text-[#1F1E1B]">Website visitors</h2>
         </div>
-        <span className="text-[11.5px] text-slate-500">Real people only. Scanners and bots are not counted. Days are Chicago time (CST).</span>
+        <span className="text-[11.5px] text-[#7A756A]">Real people only. Scanners and bots are not counted. Days are Chicago time (CST).</span>
       </div>
 
       {error && !data ? (
-        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-200">
+        <div className="mt-6 rounded-xl border border-[#E5D3AE] bg-[#F6EEDC] px-4 py-3 text-[13px] text-[#8A5A12]">
           Could not load visitors. Try again in a minute.
         </div>
       ) : (
@@ -129,11 +129,11 @@ export default function VisitorsPanel() {
             <Stat icon={<MonitorSmartphone size={12} />} label="On a phone"
                   value={`${devTotal ? Math.round(((data?.devices.mobile ?? 0) / devTotal) * 100) : 0}%`}
                   sub={data ? `${data.devices.mobile} phone, ${data.devices.desktop} computer` : " "} />
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300/90">Last 14 days</div>
+            <div className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-4">
+              <div className="text-[13px] font-medium text-[#5E5A51]">Last 14 days</div>
               <div className="mt-3 flex h-14 items-end gap-1" role="img" aria-label="Visitors per day for the last 14 days">
                 {(data?.series ?? []).map((s) => (
-                  <div key={s.day} title={`${s.day}: ${s.visitors}`} className="flex-1 rounded-sm bg-emerald-400/70"
+                  <div key={s.day} title={`${s.day}: ${s.visitors}`} className="flex-1 rounded-sm bg-[#4F8A6C]"
                        style={{ height: `${Math.max(6, (s.visitors / max) * 100)}%`, opacity: s.visitors ? 1 : 0.25 }} />
                 ))}
               </div>
@@ -141,23 +141,23 @@ export default function VisitorsPanel() {
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Where from</div>
+            <div className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-4">
+              <div className="mb-3 text-[13px] font-medium text-[#5E5A51]">Where from</div>
               <BarList rows={data?.countries ?? []} total={today}
                        label={(r) => <span>{flag(r.name)} {r.name === "??" ? "Unknown" : regionName(r.name)}</span>} />
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">First page they opened</div>
+            <div className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-4">
+              <div className="mb-3 text-[13px] font-medium text-[#5E5A51]">First page they opened</div>
               <BarList rows={data?.landing ?? []} total={today} />
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">How they found you</div>
+            <div className="rounded-xl border border-[#E3DED3] bg-[#FBFAF6] p-4">
+              <div className="mb-3 text-[13px] font-medium text-[#5E5A51]">How they found you</div>
               <BarList rows={data?.referrers ?? []} total={today}
                        label={(r) => (r.name === "direct" ? "Typed the address or an app" : r.name)} />
             </div>
           </div>
           {data?.truncated ? (
-            <p className="mt-3 text-[11.5px] text-amber-300">Very busy period: older days may be undercounted.</p>
+            <p className="mt-3 text-[11.5px] text-[#8A5A12]">Very busy period: older days may be undercounted.</p>
           ) : null}
         </>
       )}

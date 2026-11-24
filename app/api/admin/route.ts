@@ -12,7 +12,7 @@ import {
 import { clientIp, rateLimit } from "../../lib/rate-limit";
 import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
 
-import { indiaSales, manualPlanFields, realPlanCounts } from "../../lib/admin-metrics";
+import { indiaSales, manualPlanFields, moneyIn, realPlanCounts } from "../../lib/admin-metrics";
 import { cancelChargingSubscriptions, pendingDeletionRequests } from "../../lib/account-deletion";
 const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
@@ -843,7 +843,7 @@ export async function GET(req: Request) {
     const days = Math.min(3650, Math.max(1, Number(query.get("days")) || 7));
     const since = new Date(Date.now() - days * 86_400_000);
     try {
-      const [userSnap, useSnap, actSnap, buySnap, passSnap, mayaSnap] = await Promise.all([
+      const [userSnap, useSnap, actSnap, buySnap, passSnap, mayaSnap, subPaySnap] = await Promise.all([
         db.collection("users").where("lastActive", ">=", since).limit(400).get(),
         db.collection("usage_events").where("createdAt", ">", since).limit(5000).get(),
         db.collection("activity_events").where("createdAt", ">", since).limit(5000).get(),
@@ -851,7 +851,10 @@ export async function GET(req: Request) {
         db.collection("plan_passes").get(),
         // Paid Maya interviews (one document per person and month). The free one is on the user (mayaFreeUsedAt).
         db.collection("avatar_usage").where("updatedAt", ">=", since).limit(1000).get(),
+        db.collection("subscription_payments").get(),
       ]);
+      // Every currency, every kind of purchase (round 2026-11-24: rupees only before).
+      const money = moneyIn([...buySnap.docs, ...passSnap.docs, ...subPaySnap.docs].map((d) => ({ id: d.id, ...d.data() })), anyMs);
       // A customer who had a Maya interview showed as "Signed up, did nothing" (2026-10-28): Maya was never counted.
       const mayaPaid = new Map<string, number>();
       for (const d of mayaSnap.docs) {
@@ -901,7 +904,12 @@ export async function GET(req: Request) {
         // A trial account is on Pro but has paid nothing: shown as "trial" and never counted as paid (2026-10-24).
         const plan = d.planSource === "trial" ? "trial" : typeof d.plan === "string" ? d.plan : "free";
         const paidInr = bought.get(doc.id) ?? 0;
-        const paid = paidInr > 0 || ["pro", "max", "lifetime", "teams"].includes(plan);
+        // Paid means money came in: a rupee receipt, a live Stripe subscription, or an India month. A plan given by hand
+        // (the owner's, friends', test accounts) is not paid, and was counted as paid here (2026-11-24).
+        const subscribed = ["pro", "max"].includes(plan)
+          && ["active", "trialing", "past_due"].includes(String(d.stripeSubscriptionStatus));
+        const paidMoney = money.perUser.get(doc.id) ?? {};
+        const paid = paidInr > 0 || subscribed || d.planSource === "pass" || Object.keys(paidMoney).length > 0;
         const got = (u?.answers ?? 0) + (u?.screens ?? 0);
         const freeAt = anyMs(d.mayaFreeUsedAt);
         const maya = (mayaPaid.get(doc.id) ?? 0) + (d.mayaFreeUsed === true && freeAt && freeAt >= since.getTime() ? 1 : 0);
@@ -920,7 +928,7 @@ export async function GET(req: Request) {
           : "signed-up-only";
         return {
           id: doc.id, email: typeof d.email === "string" ? d.email : null, internal: d.internal === true,
-          joined: anyMs(d.createdAt), lastSeen: anyMs(d.lastActive), plan, paid, paidInr,
+          joined: anyMs(d.createdAt), lastSeen: anyMs(d.lastActive), plan, paid, paidInr, subscribed, paidMoney,
           minutesLeft: Number(d.minutesBalance) || 0, answersLeft: Math.floor((Number(d.credits) || 0) / 5),
           app, answers: u?.answers ?? 0, screens: u?.screens ?? 0, mock: u?.mock ?? 0, resume: u?.resume ?? 0, maya,
           refunds: u?.refunds ?? 0, medianMs: median(u?.ms ?? []), slowest: u?.ms.length ? Math.max(...u.ms) : null,
@@ -992,6 +1000,8 @@ export async function GET(req: Request) {
       internalPassPro,
       internalPassMax,
       deletionSnap,
+      subPaySnap,
+      internalSnap,
     ] = await Promise.all([
       usersQuery.get(),
       users.count().get(),
@@ -1026,10 +1036,19 @@ export async function GET(req: Request) {
       users.where("internal", "==", true).where("planSource", "==", "pass").where("plan", "==", "max").count().get(),
       // Account deletion requests waiting for the owner. Apple needs them done; the privacy page promises 30 days.
       db.collection("deletion_requests").where("status", "==", "requested").limit(50).get().catch(() => null),
+      db.collection("subscription_payments").get().catch(() => null),
+      // Ids only: whose money is the owner's own or a friend's test, left out of money in.
+      users.where("internal", "==", true).select().get().catch(() => null),
     ]);
     // India money in. plan_passes also holds dollar pack receipts and refund receipts, which are not rupee sales.
     const sales = indiaSales([...planPasses.docs, ...minutePurchases.docs].map((d) => ({ id: d.id, ...d.data() })), anyMs);
     const paidMinutes = sales.perUser;
+    const internalIds = new Set((internalSnap?.docs ?? []).map((d) => d.id));
+    const allReceipts = [...planPasses.docs, ...minutePurchases.docs, ...(subPaySnap?.docs ?? [])]
+      .map((d) => ({ id: d.id, ...d.data() } as { id: string; uid?: unknown }));
+    // Per account: everything it paid. Money in totals: real customers only.
+    const money = moneyIn(allReceipts, anyMs);
+    const realMoney = moneyIn(allReceipts.filter((r) => !(typeof r.uid === "string" && internalIds.has(r.uid))), anyMs);
     const minuteRevenueInr = sales.totalInr;
     const real = realPlanCounts({
       paid: paidCount.data().count, pro: proCount.data().count, max: maxCount.data().count, trial: trialCount.data().count,
@@ -1054,6 +1073,7 @@ export async function GET(req: Request) {
           realUsageMinutes: Math.round((Number(data.totalDurationSeconds) || 0) / 60),
           minutesPaidInr: paidMinutes.get(doc.id)?.inr ?? 0,
           minutesPurchases: paidMinutes.get(doc.id)?.count ?? 0,
+          paidMoney: money.perUser.get(doc.id) ?? {},
         };
       }),
       metrics: {
@@ -1077,6 +1097,8 @@ export async function GET(req: Request) {
         minuteRevenueInr: Math.round(minuteRevenueInr),
         indiaSalesLast30Inr: Math.round(sales.last30Inr),
         refunds: sales.refunds,
+        moneyAllTime: realMoney.allTime,
+        moneyLast30: realMoney.last30,
       },
       deletionRequests: pendingDeletionRequests((deletionSnap?.docs ?? []).map((doc) => ({ id: doc.id, data: doc.data() }))),
       page: {

@@ -967,6 +967,16 @@ export async function POST(req: Request) {
         if (sub.metadata?.kind === "mock" && typeof uid === "string" && invoice.billing_reason === "subscription_cycle") {
           await applyPractice(uid, { india: String(invoice.currency) === "inr", subscriptionId: subscriptionId, customer: sub.customer });
         }
+        // A receipt for every subscription payment, in its own currency, so the admin can show money in for any currency.
+        // Subscriptions left no receipt at all: a $34.99 Pro sale did not appear in the money figures (2026-11-24).
+        // Keyed by invoice, so a repeated event writes the same receipt once.
+        if (typeof uid === "string" && uid && Number(invoice.amount_paid ?? 0) > 0) {
+          await db!.collection("subscription_payments").doc(String(invoice.id)).set({
+            uid, amount: Number(invoice.amount_paid), currency: String(invoice.currency ?? "usd").toLowerCase(),
+            plan: plan ?? (sub.metadata?.kind === "mock" ? "practice" : null), reason: invoice.billing_reason ?? null,
+            subscriptionId, createdAt: new Date(Number(invoice.created ?? eventCreated) * 1000),
+          }, { merge: true });
+        }
         // A plan change or add-on charged mid-month is not a renewal either.
         const midMonth = invoice.billing_reason === "subscription_update";
         // The free invoice that opens an AutoPay waiting for a paid month to end is not a renewal: no refill.
