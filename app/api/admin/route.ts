@@ -13,6 +13,7 @@ import { clientIp, rateLimit } from "../../lib/rate-limit";
 import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
 
 import { indiaSales, manualPlanFields, moneyIn, realPlanCounts } from "../../lib/admin-metrics";
+import { receiptItem, receiptNumber } from "../../lib/receipts";
 import { cancelChargingSubscriptions, pendingDeletionRequests } from "../../lib/account-deletion";
 const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
@@ -839,6 +840,43 @@ export async function GET(req: Request) {
 
   // One row per person for the last N days: what they did, whether it worked, how fast, whether they paid. Built for
   // the owner's question "who got answers, who worked, slow or fast" (2026-10-21), which needed five other tables.
+  // Every payment receipt, newest first, with the payer's email and whether the receipt email went out.
+  if (query.get("view") === "receipts") {
+    try {
+      const [passSnap, minSnap, subSnap, sentSnap] = await Promise.all([
+        db.collection("plan_passes").get(),
+        db.collection("minute_purchases").get(),
+        db.collection("subscription_payments").get(),
+        db.collection("receipt_emails").get(),
+      ]);
+      const sent = new Map(sentSnap.docs.map((d) => [d.id, String(d.data().status ?? "")]));
+      const rows = [
+        ...passSnap.docs.map((d) => ["plan_passes", d] as const),
+        ...minSnap.docs.map((d) => ["minute_purchases", d] as const),
+        ...subSnap.docs.map((d) => ["subscription_payments", d] as const),
+      ].flatMap(([collection, d]) => {
+        const data = d.data();
+        const amount = Number(data.amount);
+        if (d.id.startsWith("refund_") || typeof data.uid !== "string" || !Number.isFinite(amount) || amount <= 0) return [];
+        const paymentId = d.id.replace(/^(pack_|maya_|mock_)/, "");
+        return [{
+          id: `${collection}/${d.id}`, number: receiptNumber(paymentId), uid: data.uid,
+          item: receiptItem(collection, d.id, data), amount, currency: String(data.currency ?? "inr").toLowerCase(),
+          paidAt: anyMs(data.createdAt) ?? 0, source: collection, emailed: sent.get(paymentId) ?? null,
+        }];
+      });
+      const refs = [...new Set(rows.map((r) => r.uid))].map((u) => db.collection("users").doc(u));
+      const userDocs = refs.length ? await db.getAll(...refs) : [];
+      const info = new Map(userDocs.map((u) => [u.id, { email: u.data()?.email ?? null, internal: u.data()?.internal === true }]));
+      const receipts = rows.map((r) => ({ ...r, email: info.get(r.uid)?.email ?? null, internal: info.get(r.uid)?.internal ?? false }))
+        .sort((a, b) => b.paidAt - a.paidAt);
+      return NextResponse.json({ receipts });
+    } catch (error) {
+      console.error("[admin] Receipts query failed", error);
+      return NextResponse.json({ error: "Unable to load receipts" }, { status: 500 });
+    }
+  }
+
   if (query.get("view") === "people") {
     const days = Math.min(3650, Math.max(1, Number(query.get("days")) || 7));
     const since = new Date(Date.now() - days * 86_400_000);

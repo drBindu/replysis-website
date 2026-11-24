@@ -20,7 +20,8 @@ import crypto            from "node:crypto";
 import { PLAN_MONTHLY_CREDITS, INDIA_PLAN_ALLOWANCE, nextMonthStartISO as getNextResetDate } from "../../../../data/productFacts";
 import { validMinutes } from "../../../../data/interviewMinutes";
 import { MAYA_ADDON, MOCK_PLAN } from "../../../../data/mayaAddon";
-import { sendOwnerAlert } from "../../../lib/user-mail";
+import { sendOwnerAlert, sendReceiptMail } from "../../../lib/user-mail";
+import { receiptHtml, receiptNumber, receiptText, type ReceiptRow } from "../../../lib/receipts";
 import { practiceActive } from "../../../lib/paid-plan";
 import { afterTakingBack, endAfterTakingBackMonth, isFullDispute, isFullRefund, purchaseFromMetadata, subscriptionRefundScope, type Purchase } from "../../../lib/refund-rules";
 
@@ -325,12 +326,70 @@ async function claimEvent(eventId: string, eventType: string): Promise<"claimed"
   });
 }
 
-async function completeEvent(eventId: string) {
+async function completeEvent(eventId: string, event?: any) {
   await db!.collection(EVENT_COLLECTION).doc(eventId).set({
     status: "completed",
     completedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   }, { merge: true });
+  if (event) await emailReceipt(event);
+}
+
+/**
+ * Emails the customer a receipt for a payment that went through (owner, 2026-11-24: every payer gets one automatically).
+ * One-time purchases come from their checkout; subscriptions from each paid invoice (the first one too), so a subscription
+ * checkout sends nothing itself. receipt_emails/{payment id} is created once, so a repeated event never sends twice.
+ * Never throws: a receipt must never fail a payment.
+ */
+async function emailReceipt(event: any): Promise<void> {
+  try {
+    const o = event?.data?.object;
+    if (!o) return;
+    let paymentId = "", uid = "", email: string | null = null, name: string | null = null, amount = 0, currency = "usd", item = "", source = "";
+    if ((event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")
+        && o.mode === "payment" && o.payment_status === "paid") {
+      paymentId = String(o.id); uid = String(o.metadata?.uid ?? "");
+      email = o.customer_details?.email ?? o.customer_email ?? null; name = o.customer_details?.name ?? null;
+      amount = Number(o.amount_total ?? 0); currency = String(o.currency ?? "usd");
+      const m = o.metadata ?? {};
+      item = m.purchaseType === "minutes" ? `${Number(m.minutes) || 0} interview minutes`
+        : m.purchaseType === "credit_pack" ? `${Number(m.credits) || 0} credits answer pack`
+        : m.purchaseType === "maya_pass" ? "Mock interview with Maya"
+        : m.purchaseType === "mock_pass" ? "Practice plan, one month"
+        : m.purchaseType === "plan_pass" ? `${m.plan === "max" ? "Max" : "Pro"} plan, one month`
+        : m.plan ? `${String(m.plan).charAt(0).toUpperCase()}${String(m.plan).slice(1)} plan` : "Replysis purchase";
+      source = String(m.purchaseType ?? "checkout");
+    } else if (event.type === "invoice.paid" && Number(o.amount_paid ?? 0) > 0) {
+      paymentId = String(o.id);
+      email = o.customer_email ?? null; name = o.customer_name ?? null;
+      amount = Number(o.amount_paid); currency = String(o.currency ?? "usd");
+      const line = o.lines?.data?.[0];
+      item = String(line?.description ?? "Replysis subscription");
+      uid = String(line?.metadata?.uid ?? o.subscription_details?.metadata?.uid ?? o.parent?.subscription_details?.metadata?.uid ?? "");
+      source = "subscription";
+    } else {
+      return;
+    }
+    if (!paymentId || amount <= 0) return;
+    if (!email && uid) {
+      const u = await db!.collection("users").doc(uid).get();
+      email = typeof u.data()?.email === "string" ? u.data()!.email : null;
+    }
+    if (!email) { console.warn(`[receipt] no email for ${paymentId}`); return; }
+
+    const sentRef = db!.collection("receipt_emails").doc(paymentId);
+    try { await sentRef.create({ uid: uid || null, to: email, createdAt: FieldValue.serverTimestamp(), status: "sending" }); }
+    catch { return; } // already sent (or being sent) for this payment
+
+    const row: ReceiptRow = { number: receiptNumber(paymentId), uid, email, name, item, amount, currency,
+      paidAt: Number(o.created ?? event.created ?? Date.now() / 1000) * 1000, source };
+    const ok = await sendReceiptMail(email, `Your Replysis receipt ${row.number}`, receiptHtml(row), receiptText(row));
+    await sentRef.set({ status: ok ? "sent" : "failed", number: row.number, item, amount, currency }, { merge: true });
+    console.log(`[receipt] ${row.number} ${ok ? "sent" : "FAILED"}`);
+    if (!ok) await sentRef.delete().catch(() => {}); // let a Stripe retry of this event try again
+  } catch (e) {
+    console.error("[receipt] error:", (e as Error)?.message);
+  }
 }
 
 async function failEvent(eventId: string) {
@@ -789,7 +848,7 @@ export async function POST(req: Request) {
       const charge = event.data.object;
       if (isFullRefund(charge)) await takeBackCharge(charge, "a charge was refunded in full");
       else await sendOwnerAlert("Replysis: a partial refund", `Charge ${charge.id} was partly refunded (${charge.amount_refunded} of ${charge.amount}, ${charge.currency}). Nothing was changed on the account.`);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
     if (event.type === "charge.dispute.created") {
@@ -797,7 +856,7 @@ export async function POST(req: Request) {
       const charge = await stripeGet(`charges/${encodeURIComponent(String(dispute.charge))}`);
       if (isFullDispute(dispute.amount, charge.amount)) await takeBackCharge(charge, "a charge was disputed");
       else await sendOwnerAlert("Replysis: a partial dispute", `Charge ${charge.id} is disputed for ${dispute.amount} of ${charge.amount} (${charge.currency}). Nothing was changed on the account.`);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -817,7 +876,7 @@ export async function POST(req: Request) {
       const session = event.data.object;
       if (session.payment_status === "paid") await addBoughtMinutes(session);
       else console.log(`[webhook] minutes checkout not paid yet (${session.payment_status})`);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -835,7 +894,7 @@ export async function POST(req: Request) {
           await alertMayaBought("Practice plan");
         }
       }
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
     if (event.data?.object?.object === "subscription" && event.data.object.metadata?.kind === "mock"
@@ -844,7 +903,7 @@ export async function POST(req: Request) {
       const uid = sub.metadata?.uid;
       const dead = ["canceled", "unpaid", "incomplete_expired"].includes(sub.status);
       if (typeof uid === "string" && uid && (event.type === "customer.subscription.deleted" || dead)) await endPractice(uid);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -853,7 +912,7 @@ export async function POST(req: Request) {
         && event.data?.object?.metadata?.purchaseType === "maya_pass") {
       const session = event.data.object;
       if (session.payment_status === "paid") await applyMayaPass(session);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -863,7 +922,7 @@ export async function POST(req: Request) {
       const session = event.data.object;
       if (session.payment_status === "paid") await applyPlanPass(session);
       else console.log(`[webhook] plan pass checkout not paid yet (${session.payment_status})`);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -894,7 +953,7 @@ export async function POST(req: Request) {
         });
         console.log(`CREDIT PACK: ${uid} +${purchased}`);
       } else if (session.payment_status !== "paid") console.log(`[webhook] answer pack not paid yet (${session.payment_status})`);
-      await completeEvent(event.id);
+      await completeEvent(event.id, event);
       return NextResponse.json({ received: true });
     }
 
@@ -1055,7 +1114,7 @@ export async function POST(req: Request) {
       }
     }
 
-    await completeEvent(event.id);
+    await completeEvent(event.id, event);
     return NextResponse.json({ received: true });
   } catch (err: any) {
     console.error("[webhook] Handler error:", err);

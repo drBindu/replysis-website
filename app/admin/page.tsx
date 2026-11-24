@@ -15,6 +15,7 @@ import ActivityPanel from "./ActivityPanel";
 import VisitorsPanel from "./VisitorsPanel";
 import PeoplePanel from "./PeoplePanel";
 import EmailUsersPanel from "./EmailUsersPanel";
+import ReceiptsPanel from "./ReceiptsPanel";
 
 // A user counts as online if their last heartbeat was within this window. The
 // client beats every 60s, so 150s tolerates one missed beat.
@@ -156,10 +157,11 @@ function costOf(row: UsageRow | null, listeningMinutes = 0) {
 }
 
 // ── Sections of the dashboard ─────────────────────────────────────
-type AdminView = "overview" | "people" | "live" | "money" | "visitors" | "email";
+type AdminView = "overview" | "people" | "receipts" | "live" | "money" | "visitors" | "email";
 const VIEWS: Array<{ key: AdminView; label: string; hint: string }> = [
   { key: "overview", label: "Overview", hint: "Revenue, people and what needs you" },
   { key: "people", label: "People", hint: "Who signed up, what worked, who paid" },
+  { key: "receipts", label: "Receipts", hint: "Every payment, with a receipt to open or download" },
   { key: "live", label: "Live", hint: "Sessions and app activity right now" },
   { key: "money", label: "Usage and cost", hint: "Answers, screen reads and provider cost" },
   { key: "visitors", label: "Website", hint: "Who visited the site" },
@@ -663,6 +665,7 @@ export default function AdminPage() {
         {/* Who came, what they did, whether it worked, how fast, who paid */}
         {view === "people" && <PeoplePanel />}
         {view === "email" && <EmailUsersPanel />}
+        {view === "receipts" && <ReceiptsPanel />}
 
         {view === "overview" && <>
         {/* Money and people */}

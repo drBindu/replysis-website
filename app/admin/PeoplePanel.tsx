@@ -164,7 +164,7 @@ export default function PeoplePanel() {
                 <td className="px-3 py-2 text-right tabular-nums"><Speed ms={p.medianMs} /></td>
                 <td className="px-3 py-2 text-[#5E5A51]">{p.app ?? <span className="text-[#B3AD9F]">not opened</span>}</td>
                 <td className="px-3 py-2">
-                  {formatMoney(p.paidMoney) ? <span className="font-semibold text-[#2F6B4F]">{formatMoney(p.paidMoney)}{p.plan !== "free" ? <span className="capitalize"> {p.plan}</span> : " minutes"}</span>
+                  {formatMoney(p.paidMoney) ? <span className="font-semibold text-[#2F6B4F]">{formatMoney(p.paidMoney)}{p.plan !== "free" ? <span className="capitalize"> {p.plan}</span> : " paid"}</span>
                     : p.paid ? <span className="font-semibold text-[#2F6B4F]">{p.subscribed && USD_PLAN[p.plan] ? `$${USD_PLAN[p.plan]}/mo ` : ""}<span className="capitalize">{p.plan}</span></span>
                     : <span className="text-[#9A9487]">free</span>}
                 </td>

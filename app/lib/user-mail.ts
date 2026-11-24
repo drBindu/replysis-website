@@ -56,6 +56,25 @@ export async function sendMails(mails: Mail[]): Promise<{ sent: number; failed: 
   return { sent, failed, error };
 }
 
+/**
+ * A payment receipt to the customer. Transactional, so no unsubscribe line: a receipt is owed for every payment.
+ * Returns true when the mail service accepted it. Never throws: a receipt must never break a payment.
+ */
+export async function sendReceiptMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+  const key = process.env.ALERTS_RESEND_KEY;
+  if (!key || !to) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: FROM, to: [to], reply_to: "support@replysis.com", subject, html, text }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** An email to the owner (ALERTS_TO, else support@), without the customer unsubscribe line. Never throws. */
 export async function sendOwnerAlert(subject: string, text: string): Promise<void> {
   const key = process.env.ALERTS_RESEND_KEY;
