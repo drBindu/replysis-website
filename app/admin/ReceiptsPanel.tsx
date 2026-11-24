@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { auth } from "../firebaseConfig";
 import { RefreshCw, Download, FileText } from "lucide-react";
-import { receiptHtml, receiptMoney, type ReceiptRow } from "../lib/receipts";
+import { receiptHtml, receiptMoney, receiptPdf, receiptValue, type ReceiptRow } from "../lib/receipts";
 import { formatMoney } from "../lib/admin-metrics";
 
 type Row = ReceiptRow & { id: string; emailed: string | null; internal: boolean };
@@ -17,6 +17,28 @@ export default function ReceiptsPanel() {
   const [busy, setBusy] = useState(false);
   const [hideMine, setHideMine] = useState(true);
   const [open, setOpen] = useState<Row | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function sendAgain(r: Row) {
+    setSending(r.id); setNote(null);
+    try {
+      const token = (await auth.currentUser?.getIdToken()) ?? "";
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "emailReceipt", receiptId: r.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setNote({ ok: true, text: `Receipt ${r.number} emailed to ${body.sent}.` });
+      setRows((all) => (all ?? []).map((x) => (x.id === r.id ? { ...x, emailed: "sent" } : x)));
+    } catch (e) {
+      setNote({ ok: false, text: e instanceof Error ? e.message : "Could not send" });
+    } finally {
+      setSending(null);
+    }
+  }
   const frameRef = React.useRef<HTMLIFrameElement>(null);
 
   const load = useCallback(async () => {
@@ -37,14 +59,14 @@ export default function ReceiptsPanel() {
 
   const shown = useMemo(() => (rows ?? []).filter((r) => !hideMine || !r.internal), [rows, hideMine]);
   const total = useMemo(() => shown.reduce((m, r) => {
-    const v = r.amount / 100; m[r.currency] = (m[r.currency] ?? 0) + v; return m;
+    const v = receiptValue(r.amount, r.currency); m[r.currency] = (m[r.currency] ?? 0) + v; return m;
   }, {} as Record<string, number>), [shown]);
 
   /** Shows the receipt on the page; from there it prints (or saves as PDF) or downloads. No pop-up window to be blocked. */
   function openReceipt(r: Row) { setOpen(r); }
 
-  function downloadFile(name: string, content: string, type: string) {
-    const url = URL.createObjectURL(new Blob([content], { type }));
+  function downloadFile(name: string, content: string | Uint8Array, type: string) {
+    const url = URL.createObjectURL(new Blob([content as BlobPart], { type }));
     const a = document.createElement("a");
     a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -55,7 +77,7 @@ export default function ReceiptsPanel() {
     const lines = [["Receipt", "Date", "Email", "Item", "Amount", "Currency", "Emailed"].map(q).join(",")];
     for (const r of shown)
       lines.push([r.number, new Date(r.paidAt).toISOString().slice(0, 10), r.email, r.item,
-        (r.amount / 100).toFixed(2), r.currency.toUpperCase(), r.emailed ?? "before receipts"].map(q).join(","));
+        receiptValue(r.amount, r.currency), r.currency.toUpperCase(), r.emailed === "sent" ? "sent" : "not sent"].map(q).join(","));
     downloadFile(`Replysis-receipts-${new Date().toISOString().slice(0, 10)}.csv`, lines.join("\n"), "text/csv");
   }
 
@@ -88,16 +110,17 @@ export default function ReceiptsPanel() {
           <div className="flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl bg-[#F4F1EA] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <iframe ref={frameRef} title={`Receipt ${open.number}`} srcDoc={receiptHtml(open)} className="h-[560px] w-full border-0" />
             <div className="flex items-center justify-end gap-2 border-t border-[#E3DED3] bg-[#FBFAF6] px-4 py-3">
-              <button onClick={() => downloadFile(`Replysis-receipt-${open.number}.html`, receiptHtml(open), "text/html")}
-                className="rounded-lg border border-[#E3DED3] px-3 py-1.5 text-[13px] text-[#3D3B35] hover:bg-[#F1EEE7]">Download</button>
               <button onClick={() => frameRef.current?.contentWindow?.print()}
-                className="rounded-lg bg-[#2F6B4F] px-3 py-1.5 text-[13px] font-medium text-[#FBFAF6] hover:bg-[#285C44]">Print or save as PDF</button>
+                className="rounded-lg border border-[#E3DED3] px-3 py-1.5 text-[13px] text-[#3D3B35] hover:bg-[#F1EEE7]">Print</button>
+              <button onClick={() => downloadFile(`Replysis-receipt-${open.number}.pdf`, receiptPdf(open), "application/pdf")}
+                className="rounded-lg bg-[#2F6B4F] px-3 py-1.5 text-[13px] font-medium text-[#FBFAF6] hover:bg-[#285C44]">Download PDF</button>
               <button onClick={() => setOpen(null)} className="rounded-lg px-3 py-1.5 text-[13px] text-[#5E5A51] hover:bg-[#F1EEE7]">Close</button>
             </div>
           </div>
         </div>
       )}
 
+      {note && <div className={`mt-4 rounded-lg border px-3 py-2 text-[13px] ${note.ok ? "border-[#BFD6C5] bg-[#EAF2EC] text-[#1F5A3F]" : "border-[#E7C4BC] bg-[#F7E6E2] text-[#8E2F22]"}`}>{note.text}</div>}
       {error && <div className="mt-4 rounded-lg border border-[#E7C4BC] bg-[#F7E6E2] px-3 py-2 text-[13px] text-[#8E2F22]">{error}</div>}
 
       <div className="mt-4 text-[14px] text-[#3D3B35]">
@@ -124,14 +147,24 @@ export default function ReceiptsPanel() {
                 <td className="py-2.5 pr-3 text-[#3D3B35]">{r.item}</td>
                 <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-[#1F1E1B]">{receiptMoney(r.amount, r.currency)}</td>
                 <td className="py-2.5 pr-3 text-[#7A756A]">
-                  {r.emailed === "sent" ? <span className="text-[#2F6B4F]">Sent</span>
-                    : r.emailed === "failed" ? <span className="text-[#A33A2B]">Not sent</span>
-                    : "Paid before receipts"}
+                  {r.emailed === "sent" ? <span className="text-[#2F6B4F]">Sent</span> : (
+                    <span className="inline-flex items-center gap-2">
+                      <span className={r.emailed ? "text-[#A33A2B]" : ""}>{r.emailed ? "Not sent" : "Not emailed yet"}</span>
+                      <button onClick={() => sendAgain(r)} disabled={sending === r.id}
+                        className="rounded-md border border-[#E3DED3] px-2 py-0.5 text-[12px] text-[#3D3B35] hover:bg-[#F1EEE7] disabled:opacity-50">
+                        {sending === r.id ? "Sending" : r.emailed ? "Send again" : "Send"}
+                      </button>
+                    </span>
+                  )}
                 </td>
                 <td className="py-2.5 text-right">
                   <button onClick={() => openReceipt(r)}
                     className="inline-flex items-center gap-1 rounded-md border border-[#E3DED3] px-2.5 py-1 text-[12.5px] text-[#3D3B35] hover:bg-[#F1EEE7]">
                     <FileText size={12} /> Open
+                  </button>
+                  <button onClick={() => downloadFile(`Replysis-receipt-${r.number}.pdf`, receiptPdf(r), "application/pdf")}
+                    className="ml-1.5 inline-flex items-center gap-1 rounded-md border border-[#E3DED3] px-2.5 py-1 text-[12.5px] text-[#3D3B35] hover:bg-[#F1EEE7]">
+                    <Download size={12} /> PDF
                   </button>
                 </td>
               </tr>

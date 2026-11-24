@@ -10,10 +10,10 @@ import {
   type Firestore,
 } from "firebase-admin/firestore";
 import { clientIp, rateLimit } from "../../lib/rate-limit";
-import { mailConfigured, sendMails, type Mail } from "../../lib/user-mail";
+import { mailConfigured, sendMails, sendReceiptMail, type Mail } from "../../lib/user-mail";
 
 import { indiaSales, manualPlanFields, moneyIn, realPlanCounts } from "../../lib/admin-metrics";
-import { receiptItem, receiptNumber } from "../../lib/receipts";
+import { receiptHtml, receiptItem, receiptNumber, receiptText } from "../../lib/receipts";
 import { cancelChargingSubscriptions, pendingDeletionRequests } from "../../lib/account-deletion";
 const auditRefFor = (db: FirebaseFirestore.Firestore) => db.collection("admin_audit").doc();
 
@@ -1189,6 +1189,32 @@ export async function POST(req: Request) {
       await auditRefFor(db).set(auditData(principal, body.test === true ? "emailUsersTest" : "emailUsers", "all",
         {}, { subject, recipients: mails.length, sent: result.sent, failed: result.failed }));
       return NextResponse.json({ success: result.failed === 0, recipients: mails.length, ...result });
+    }
+
+    // Emails one payment's receipt to its customer: one that failed, or one paid before receipts were sent.
+    if (action === "emailReceipt") {
+      const [collection, docId] = String(body.receiptId ?? "").split("/");
+      if (!["plan_passes", "minute_purchases", "subscription_payments"].includes(collection) || !docId || docId.length > 200)
+        throw new HttpError(400, "Unknown receipt");
+      if (!mailConfigured()) throw new HttpError(503, "Emails are not set up yet: the email key is missing on the server");
+      const snap = await db.collection(collection).doc(docId).get();
+      const data = snap.data();
+      const amount = Number(data?.amount);
+      if (!snap.exists || typeof data?.uid !== "string" || !Number.isFinite(amount) || amount <= 0 || docId.startsWith("refund_"))
+        throw new HttpError(404, "That receipt was not found");
+      const user = (await db.collection("users").doc(data.uid).get()).data();
+      const to = typeof user?.email === "string" ? user.email : "";
+      if (!to.includes("@")) throw new HttpError(400, "This customer has no email address");
+      const paymentId = docId.replace(/^(pack_|maya_|mock_)/, "");
+      const row = { number: receiptNumber(paymentId), uid: data.uid, email: to, name: typeof user?.displayName === "string" ? user.displayName : null,
+        item: receiptItem(collection, docId, data), amount, currency: String(data.currency ?? "inr").toLowerCase(),
+        paidAt: anyMs(data.createdAt) ?? Date.now(), source: collection };
+      const ok = await sendReceiptMail(to, `Your Replysis receipt ${row.number}`, receiptHtml(row), receiptText(row));
+      await db.collection("receipt_emails").doc(paymentId).set({ uid: data.uid, to, number: row.number, item: row.item, amount,
+        currency: row.currency, status: ok ? "sent" : "failed", sentAt: ok ? FieldValue.serverTimestamp() : null, byAdmin: true }, { merge: true });
+      await auditRefFor(db).set(auditData(principal, "emailReceipt", data.uid, {}, { receipt: row.number, ok }));
+      if (!ok) throw new HttpError(502, "The email service did not accept it. Try again in a minute.");
+      return NextResponse.json({ success: true, sent: to });
     }
 
     const userId = body.userId;

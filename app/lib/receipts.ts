@@ -15,6 +15,11 @@ export type ReceiptRow = {
 
 const ZERO_DECIMAL = new Set(["bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf"]);
 
+/** The amount in whole units (dollars, rupees); yen and the like have no smaller unit. */
+export function receiptValue(amount: number, currency: string): number {
+  return ZERO_DECIMAL.has((currency || "usd").toLowerCase()) ? amount : amount / 100;
+}
+
 export function receiptMoney(amount: number, currency: string): string {
   const c = (currency || "usd").toLowerCase();
   const value = ZERO_DECIMAL.has(c) ? amount : amount / 100;
@@ -95,6 +100,59 @@ export function receiptHtml(r: ReceiptRow): string {
   </table>
   <div class="foot">Questions about this payment: support@replysis.com<br>Varoxel LLC, replysis.com</div>
 </div></div></body></html>`;
+}
+
+/**
+ * The receipt as a one page PDF, built by hand (no library): Helvetica text and two rules on A4. The built-in PDF fonts
+ * cannot draw symbols like the rupee sign, so amounts are written with their currency code ("INR 699.00").
+ */
+export function receiptPdf(r: ReceiptRow): Uint8Array {
+  const value = receiptValue(r.amount, r.currency);
+  const money = `${r.currency.toUpperCase()} ${ZERO_DECIMAL.has(r.currency.toLowerCase()) ? String(value) : value.toFixed(2)}`;
+  const ascii = (s: string) => s.normalize("NFKD").replace(/[^\x20-\x7E]/g, "").replace(/([\\()])/g, "\\$1");
+  const W = 595, left = 64, right = W - 64;
+  const ops: string[] = [];
+  const text = (x: number, y: number, size: number, bold: boolean, s: string, alignRight = false) => {
+    // Helvetica averages about half the font size per character; good enough to right-align short amounts.
+    const tx = alignRight ? x - ascii(s).length * size * 0.53 : x;
+    ops.push(`BT /${bold ? "F2" : "F1"} ${size} Tf ${tx.toFixed(1)} ${y} Td (${ascii(s)}) Tj ET`);
+  };
+  const rule = (y: number) => ops.push(`0.85 0.83 0.78 RG 0.8 w ${left} ${y} m ${right} ${y} l S`);
+  const grey = () => ops.push("0.48 0.46 0.42 rg");
+  const ink = () => ops.push("0.12 0.12 0.11 rg");
+
+  ink(); text(left, 770, 22, true, "Receipt from Replysis");
+  grey(); text(left, 748, 11, false, "Thank you for your payment.");
+  const meta: Array<[string, string]> = [
+    ["Receipt number", r.number],
+    ["Date paid", dateText(r.paidAt)],
+    ["Paid by", r.name ? `${r.name}, ${r.email ?? ""}` : r.email ?? ""],
+  ];
+  let y = 706;
+  for (const [k, v] of meta) { grey(); text(left, y, 10, false, k); ink(); text(left, y - 15, 12, false, v); y -= 44; }
+  y -= 6; rule(y + 16);
+  ink(); text(left, y - 6, 12, false, r.item); text(right, y - 6, 12, false, money, true);
+  rule(y - 22);
+  text(left, y - 46, 12, true, "Total paid"); text(right, y - 46, 12, true, money, true);
+  grey(); text(left, 96, 10, false, "Questions about this payment: support@replysis.com");
+  text(left, 81, 10, false, "Varoxel LLC, replysis.com");
+
+  const content = ops.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>`,
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  objects.forEach((o, i) => { offsets.push(pdf.length); pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` + offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("");
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return new TextEncoder().encode(pdf); // all ASCII, so byte offsets equal string offsets
 }
 
 /** A short receipt number from a Stripe id or receipt document id. */

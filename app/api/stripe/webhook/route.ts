@@ -363,7 +363,9 @@ async function emailReceipt(event: any): Promise<void> {
       paymentId = String(o.id);
       email = o.customer_email ?? null; name = o.customer_name ?? null;
       amount = Number(o.amount_paid); currency = String(o.currency ?? "usd");
-      const line = o.lines?.data?.[0];
+      // A plan change bills a negative "Unused time on ..." line first; the receipt names the line that was charged.
+      const lines: any[] = Array.isArray(o.lines?.data) ? o.lines.data : [];
+      const line = lines.find((l) => Number(l?.amount ?? 0) > 0) ?? lines[0];
       item = String(line?.description ?? "Replysis subscription");
       uid = String(line?.metadata?.uid ?? o.subscription_details?.metadata?.uid ?? o.parent?.subscription_details?.metadata?.uid ?? "");
       source = "subscription";
@@ -377,16 +379,23 @@ async function emailReceipt(event: any): Promise<void> {
     }
     if (!email) { console.warn(`[receipt] no email for ${paymentId}`); return; }
 
-    const sentRef = db!.collection("receipt_emails").doc(paymentId);
-    try { await sentRef.create({ uid: uid || null, to: email, createdAt: FieldValue.serverTimestamp(), status: "sending" }); }
-    catch { return; } // already sent (or being sent) for this payment
-
+    // The event is already marked completed here, so Stripe will not send it again: a failed receipt stays "failed",
+    // with everything needed to send it, and the admin Receipts page offers "Send again".
     const row: ReceiptRow = { number: receiptNumber(paymentId), uid, email, name, item, amount, currency,
-      paidAt: Number(o.created ?? event.created ?? Date.now() / 1000) * 1000, source };
+      paidAt: Number(event.created ?? o.created ?? Date.now() / 1000) * 1000, source };
+    const sentRef = db!.collection("receipt_emails").doc(paymentId);
+    try {
+      await sentRef.create({ uid: uid || null, to: email, name, number: row.number, item, amount, currency,
+        paidAtMs: row.paidAt, source, createdAt: FieldValue.serverTimestamp(), status: "sending" });
+    } catch (e) {
+      if ((e as { code?: number })?.code === 6) return; // ALREADY_EXISTS: this payment's receipt was sent before
+      throw e;
+    }
     const ok = await sendReceiptMail(email, `Your Replysis receipt ${row.number}`, receiptHtml(row), receiptText(row));
-    await sentRef.set({ status: ok ? "sent" : "failed", number: row.number, item, amount, currency }, { merge: true });
+    await sentRef.set({ status: ok ? "sent" : "failed", sentAt: ok ? FieldValue.serverTimestamp() : null }, { merge: true });
     console.log(`[receipt] ${row.number} ${ok ? "sent" : "FAILED"}`);
-    if (!ok) await sentRef.delete().catch(() => {}); // let a Stripe retry of this event try again
+    if (!ok) await sendOwnerAlert("Replysis: a receipt email did not send",
+      `Receipt ${row.number} (${item}) for ${email} could not be emailed. Open Admin, Receipts, and press Send again.`);
   } catch (e) {
     console.error("[receipt] error:", (e as Error)?.message);
   }
