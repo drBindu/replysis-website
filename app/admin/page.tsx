@@ -433,6 +433,16 @@ export default function AdminPage() {
     }
   }
 
+  // location is stored as an object ({ city, region, country, ... }) on newer accounts and a string on older ones.
+  function placeText(loc: unknown): string {
+    if (typeof loc === "string") return loc;
+    if (!loc || typeof loc !== "object") return "";
+    const o = loc as Record<string, unknown>;
+    const parts = ["city", "region", "regionName", "country", "countryName"].map((k) => o[k]).filter((v) => typeof v === "string" && v);
+    const list = parts.length ? parts : Object.values(o).filter((v) => typeof v === "string" && v && String(v).length < 40);
+    return [...new Set(list as string[])].join(", ");
+  }
+
   async function updatePlan(userId: string, plan: string) {
     const credits = PLAN_MONTHLY_CREDITS[plan as keyof typeof PLAN_MONTHLY_CREDITS] ?? PLAN_MONTHLY_CREDITS.free;
     if (await runAdminAction("updatePlan", { userId, plan, credits })) fetchAll(true, currentCursor);
@@ -1036,7 +1046,7 @@ export default function AdminPage() {
                                   {user.location && (
                                     <div className="flex justify-between gap-4">
                                       <dt className="text-[#7A756A]">Location</dt>
-                                      <dd className="text-[#3D3B35]">{String(user.location)}</dd>
+                                      <dd className="text-right text-[#3D3B35]">{placeText(user.location)}</dd>
                                     </div>
                                   )}
                                 </dl>
@@ -1114,14 +1124,14 @@ export default function AdminPage() {
 
                               <div>
                                 <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">Counted as</div>
-                                <button disabled={!editMode} onClick={() => toggleInternal(user.id, user.internal !== true)}
+                                <button onClick={() => toggleInternal(user.id, user.internal !== true)}
                                   className={`mb-4 rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                     user.internal === true
                                       ? "border-[#E5D3AE] bg-[#F6EEDC] text-[#8A5A12]"
                                       : "border-[#E3DED3] text-[#5E5A51] hover:bg-[#F1EEE7] hover:text-[#1F1E1B]"}`}>
                                   {user.internal === true
-                                    ? `Yours or a friend's (left out of the numbers)${editMode ? ". Click to count as a real user" : ""}`
-                                    : `Real user${editMode ? ". Click to mark as yours or a friend's" : ""}`}
+                                    ? "Yours or a friend's (left out of the numbers). Click to count as a real user"
+                                    : "Real user. Click to mark as yours or a friend's"}
                                 </button>
                                 <div className="mb-2 text-[10px] font-semibold text-[#7A756A]">Change plan</div>
                                 <div className="flex flex-wrap gap-1.5">
@@ -1133,7 +1143,8 @@ export default function AdminPage() {
                                       them as buttons would let a retired plan be
                                       handed out again. */}
                                   {(["free", "pro", "max"] as const).map((p) => (
-                                    <button key={p} disabled={!editMode} onClick={() => updatePlan(user.id, p)}
+                                    <button key={p} disabled={plan === p}
+                                      onClick={() => { if (window.confirm(`Move ${user.email ?? "this account"} to ${p}? The balance resets to ${p}'s monthly allowance.`)) updatePlan(user.id, p); }}
                                       className={`rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition disabled:pointer-events-none ${
                                         plan === p
                                           ? "border-[#C8C1B4] bg-[#ECE8DF] text-[#1F1E1B]"
