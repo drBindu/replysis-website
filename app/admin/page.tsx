@@ -434,7 +434,12 @@ export default function AdminPage() {
   }
 
   // location is stored as an object ({ city, region, country, ... }) on newer accounts and a string on older ones.
-  function placeText(loc: unknown): string {
+  function countryText(code: unknown): string {
+  if (typeof code !== "string" || !code) return "";
+  try { return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code; } catch { return code; }
+}
+
+function placeText(loc: unknown): string {
     if (typeof loc === "string") return loc;
     if (!loc || typeof loc !== "object") return "";
     const o = loc as Record<string, unknown>;
@@ -1043,10 +1048,10 @@ export default function AdminPage() {
                                     <dt className="text-[#7A756A]">Credits spent, all time</dt>
                                     <dd className="tabular-nums text-[#3D3B35]">{num(Number(user.creditsUsed) || 0)}</dd>
                                   </div>
-                                  {user.location && (
+                                  {(user.location || user.country) && (
                                     <div className="flex justify-between gap-4">
                                       <dt className="text-[#7A756A]">Location</dt>
-                                      <dd className="text-right text-[#3D3B35]">{placeText(user.location)}</dd>
+                                      <dd className="text-right text-[#3D3B35]">{placeText(user.location) || countryText(user.country)}</dd>
                                     </div>
                                   )}
                                 </dl>

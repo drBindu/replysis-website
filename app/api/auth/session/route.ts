@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { countryOf } from "../../../lib/buyer-country";
 import { PLAN_MONTHLY_CREDITS, TRIAL_AUDIO_MINUTES, TRIAL_CREDITS, TRIAL_DAYS } from "../../../../data/productFacts";
 
 export const runtime = "nodejs";
@@ -38,7 +39,13 @@ const cookieOptions = {
   maxAge: 60 * 60,
 };
 
-async function ensureUserProfile(uid: string, email: string, displayName: string) {
+// The two-letter country of this sign-in (owner, 2026-11-26): emails to India can then speak of rupees and minutes, and
+// everyone else gets the normal one. Only the code from the address lookup is kept, never the address itself.
+function countryFields(country: string | null): Record<string, unknown> {
+  return country ? { country, countrySeenAt: FieldValue.serverTimestamp() } : {};
+}
+
+async function ensureUserProfile(uid: string, email: string, displayName: string, country: string | null) {
   const db = getFirestore();
   const ref = db.collection("users").doc(uid);
 
@@ -48,7 +55,7 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       // The backend can make this record first, when a new account's first speech key request arrives
       // before this route does. It does not know the email or name, so fill them in here.
       const data = snapshot.data() ?? {};
-      const update: Record<string, unknown> = { lastLogin: FieldValue.serverTimestamp() };
+      const update: Record<string, unknown> = { lastLogin: FieldValue.serverTimestamp(), ...countryFields(country) };
       if (!data.email && email) update.email = email;
       // "User" is only the placeholder: sign-up sets the real name a moment after the first profile write.
       if (!data.displayName || (data.displayName === "User" && displayName)) update.displayName = displayName || "User";
@@ -80,6 +87,7 @@ async function ensureUserProfile(uid: string, email: string, displayName: string
       stripeBillingInterval: null,
       createdAt: FieldValue.serverTimestamp(),
       lastLogin: FieldValue.serverTimestamp(),
+      ...countryFields(country),
     });
   });
 }
@@ -118,6 +126,7 @@ export async function POST(req: Request) {
       decodedToken.uid,
       typeof decodedToken.email === "string" ? decodedToken.email : "",
       typeof decodedToken.name === "string" ? decodedToken.name : "User",
+      await countryOf(req.headers).catch(() => null),
     );
   } catch (error) {
     console.error("[auth-session] User profile initialization failed", (error as Error)?.name ?? "Error");
